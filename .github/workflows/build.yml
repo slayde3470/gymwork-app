@@ -5,6 +5,9 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -26,9 +29,13 @@ jobs:
       - name: APK 만들기
         run: gradle assembleDebug --no-daemon --stacktrace
 
-      - name: APK 올려두기
-        uses: actions/upload-artifact@v4
-        with:
-          name: hasenheide-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
-          if-no-files-found: error
+      - name: 이름 정리
+        run: cp app/build/outputs/apk/debug/app-debug.apk hasenheide.apk
+
+      - name: 폰에서 받을 수 있게 내보내기
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "build-${{ github.run_number }}" hasenheide.apk \
+            --title "하젠하이데 최신 APK (빌드 ${{ github.run_number }})" \
+            --notes "자동으로 만들어진 APK입니다. 아래 hasenheide.apk 를 받아서 설치하세요."
