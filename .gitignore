@@ -1,0 +1,7 @@
+# 빌드 결과물 — 저장소에 올리지 않는다 (올릴 때마다 용량만 커진다)
+build/
+.gradle/
+local.properties
+*.apk
+.idea/
+.DS_Store

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 임시 아이콘: 바벨 모양. 나중에 제대로 된 디자인으로 교체할 것. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M30,48 h48 v12 h-48 z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M24,40 h8 v28 h-8 z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M76,40 h8 v28 h-8 z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M16,46 h6 v16 h-6 z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M86,46 h6 v16 h-6 z" />
+</vector>

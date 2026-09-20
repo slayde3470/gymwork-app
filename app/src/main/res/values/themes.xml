@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 앱이 켜지는 아주 짧은 순간에 쓰이는 기본 테마.
+         실제 화면 색과 글자는 ui/theme/Theme.kt 에서 정한다. -->
+    <style name="Theme.Hasenheide" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 홈 화면과 앱 목록에 보이는 이름. 여기만 고치면 바뀐다. -->
+    <string name="app_name">하젠하이데</string>
+</resources>
