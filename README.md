@@ -3,7 +3,7 @@
 개인 운동기록 · 루틴 트래커. 안드로이드 앱.
 
 - 패키지명: `com.slayde.hasenheide`
-- 기술: Kotlin + Jetpack Compose, 서버는 Supabase (예정)
+- 기술: Kotlin + Jetpack Compose. 기록은 지금은 폰 안에 저장 (서버 Supabase 는 예정)
 
 ## 문서
 

@@ -1,0 +1,377 @@
+package com.slayde.hasenheide.ui
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Icon
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import com.slayde.hasenheide.data.루틴
+import com.slayde.hasenheide.data.루틴바꿈
+import com.slayde.hasenheide.data.루틴성장
+import com.slayde.hasenheide.data.루틴종목
+import com.slayde.hasenheide.data.무게글
+import com.slayde.hasenheide.data.무게반올림
+import com.slayde.hasenheide.data.묶음정리
+import com.slayde.hasenheide.data.분초
+import com.slayde.hasenheide.data.슈퍼묶기
+import com.slayde.hasenheide.data.슈퍼풀기
+import com.slayde.hasenheide.data.시간글
+import com.slayde.hasenheide.data.예상초
+import com.slayde.hasenheide.data.예정초기화
+import com.slayde.hasenheide.data.종목
+import com.slayde.hasenheide.data.종목옮기기
+import com.slayde.hasenheide.data.지금기준
+import com.slayde.hasenheide.data.초읽기
+import com.slayde.hasenheide.data.총세트
+import com.slayde.hasenheide.data.다음차례
+import com.slayde.hasenheide.ui.theme.Local색
+import com.slayde.hasenheide.ui.theme.간격
+import com.slayde.hasenheide.ui.theme.높이
+import com.slayde.hasenheide.ui.theme.모서리
+import com.slayde.hasenheide.ui.theme.크기
+import kotlin.math.max
+
+/** 집은 종목 — 꾹 눌러 집고, 목적지를 눌러 놓는다 (8-2) */
+private data class 집은것(val rid: String, val j: Int, val 이름: String)
+
+@Composable
+fun 루틴화면(상태: 앱상태) {
+    val c = Local색.current
+    val d = 상태.d
+    val 오늘 = 상태.오늘
+    var 열린루틴 by remember { mutableStateOf<String?>(null) }
+    var 이름고침 by remember { mutableStateOf<String?>(null) }
+    var 열린종목 by remember { mutableStateOf<String?>(null) }   // "rid|j"
+    var 켠칸 by remember { mutableStateOf<String?>(null) }
+    var 고르기 by remember { mutableStateOf<String?>(null) }     // 종목 추가 칸이 열린 루틴
+    var 방금 by remember { mutableStateOf(listOf<String>()) }
+    var 집기 by remember { mutableStateOf<집은것?>(null) }
+    val 진동 = LocalHapticFeedback.current
+
+    fun 구조바뀜(f: (com.slayde.hasenheide.data.앱데이터) -> com.slayde.hasenheide.data.앱데이터) =
+        상태.바꿈 { f(it).예정초기화(오늘) }
+
+    Box(Modifier.fillMaxSize()) {
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 간격.넓게)) {
+            제목글("루틴", Modifier.padding(top = 14.dp))
+            글("순서대로 돌아갑니다 · 빠진 날은 이어서", Modifier.padding(top = 2.dp, bottom = 12.dp), 크기값 = 크기.조금작게, 색 = c.옅음)
+
+            val 다음 = d.다음차례(오늘)
+            d.루틴들.forEachIndexed { i, r ->
+                val 열림 = 열린루틴 == r.id
+                카드(Modifier.padding(bottom = 10.dp), 안쪽 = 0.dp) {
+                    // ── 머리줄 ──
+                    Row(Modifier.fillMaxWidth().padding(start = 12.dp, end = 6.dp, top = 9.dp, bottom = 9.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Row(Modifier.weight(1f).눌림 { 열린루틴 = if (열림) null else r.id; 열린종목 = null }, verticalAlignment = Alignment.CenterVertically) {
+                            글("${i + 1}", Modifier.width(22.dp), 크기값 = 크기.크게, 색 = c.흐림, 굵기 = FontWeight.Medium)
+                            Column(Modifier.weight(1f)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    제목글(r.이름, Modifier.weight(1f, fill = false), 크기값 = 크기.크게)
+                                    if (다음?.id == r.id) { Box(Modifier.width(6.dp)); 알약("다음", c.좋음) }
+                                }
+                                글(if (r.휴식일) "휴식일" else "${r.종목.size}종목 · ${총세트(r)}세트 · ${시간글(예상초(r))}", 크기값 = 크기.작게, 색 = c.옅음)
+                            }
+                        }
+                        아이콘버튼(아이콘.위로, "앞으로", { 구조바뀜 { dd -> dd.copy(루틴들 = 자리바꿈(dd.루틴들, i, i - 1)) } }, 쓸수있음 = i > 0)
+                        Box(Modifier.width(3.dp))
+                        아이콘버튼(아이콘.아래로, "뒤로", { 구조바뀜 { dd -> dd.copy(루틴들 = 자리바꿈(dd.루틴들, i, i + 1)) } }, 쓸수있음 = i < d.루틴들.size - 1)
+                        Box(Modifier.width(3.dp))
+                        아이콘버튼(아이콘.설정, "루틴 설정", { 이름고침 = if (이름고침 == r.id) null else r.id }, 켬 = 이름고침 == r.id)
+                        펼침단추(열림) { 열린루틴 = if (열림) null else r.id; 열린종목 = null }
+                    }
+                    // ── 이름 고치기 · 지우기 ──
+                    if (이름고침 == r.id) {
+                        var 새이름 by remember(r.id) { mutableStateOf(r.이름) }
+                        구분선()
+                        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            입력칸(새이름, { 새이름 = it }, Modifier.weight(1f), 안내 = "루틴 이름")
+                            버튼("저장", { 상태.바꿈 { it.루틴바꿈(r.id) { x -> x.copy(이름 = 새이름.trim().ifEmpty { x.이름 }) } }; 이름고침 = null }, 작게 = true, 주요 = true)
+                            버튼("지우기", {
+                                이름고침 = null
+                                상태.지우고알림("${r.이름}을(를) 지웠습니다") { dd -> dd.copy(루틴들 = dd.루틴들.filter { it.id != r.id }).예정초기화(오늘) }
+                            }, 작게 = true, 글색 = c.나쁨)
+                        }
+                    }
+                    // ── 몸통 ──
+                    if (열림) {
+                        구분선()
+                        Column(Modifier.padding(start = 12.dp, end = 12.dp, top = 6.dp, bottom = 12.dp)) {
+                            if (r.휴식일) 글("휴식일 · 순서에서 한 칸 차지", Modifier.padding(vertical = 8.dp), 크기값 = 크기.조금작게, 색 = c.옅음)
+                            else {
+                            성장줄(r.이름, d.루틴성장(r.id, 오늘), d.지금기준().기간, Modifier.padding(vertical = 6.dp))
+                            if (r.종목.isEmpty()) 글("아직 종목이 없습니다", Modifier.padding(vertical = 8.dp), 크기값 = 크기.조금작게, 색 = c.옅음)
+                            // 슈퍼세트 묶음은 상자로 모아 그린다
+                            var j = 0
+                            while (j < r.종목.size) {
+                                val g = r.종목[j].슈퍼
+                                if (g == null) {
+                                    val jj = j
+                                    종목줄(상태, r, jj, 열린종목 == "${r.id}|$jj", 켠칸, 집기,
+                                        on열기 = { 열린종목 = if (열린종목 == "${r.id}|$jj") null else "${r.id}|$jj"; 켠칸 = null },
+                                        on칸 = { k -> 열린종목 = "${r.id}|$jj"; 켠칸 = if (켠칸 == k) null else k },
+                                        on집기 = { 진동.performHapticFeedback(HapticFeedbackType.LongPress); 열린종목 = null; 집기 = 집은것(r.id, jj, r.종목[jj].이름) },
+                                        on놓기 = { 비율 -> 집기 = 놓기(상태, 집기, r.id, jj, 비율) },
+                                    )
+                                    j++
+                                } else {
+                                    val 시작 = j
+                                    while (j < r.종목.size && r.종목[j].슈퍼 == g) j++
+                                    val 끝 = j
+                                    Column(
+                                        Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                                            .clip(RoundedCornerShape(모서리.작게))
+                                            .border(1.dp, c.휴식.copy(alpha = 0.45f), RoundedCornerShape(모서리.작게))
+                                            .background(c.휴식옅음.copy(alpha = 0.5f))
+                                            .padding(horizontal = 9.dp, vertical = 4.dp),
+                                    ) {
+                                        Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                                            글("슈퍼세트 · ${끝 - 시작}종목을 번갈아", Modifier.weight(1f), 크기값 = 크기.작게, 색 = c.휴식, 굵기 = FontWeight.Bold)
+                                            글("풀기", Modifier.눌림 { 상태.바꿈 { it.루틴바꿈(r.id) { x -> x.슈퍼풀기(g) } } }.padding(4.dp), 크기값 = 크기.작게, 색 = c.휴식, 굵기 = FontWeight.Bold)
+                                        }
+                                        for (jj in 시작 until 끝) {
+                                            종목줄(상태, r, jj, 열린종목 == "${r.id}|$jj", 켠칸, 집기,
+                                                on열기 = { 열린종목 = if (열린종목 == "${r.id}|$jj") null else "${r.id}|$jj"; 켠칸 = null },
+                                                on칸 = { k -> 열린종목 = "${r.id}|$jj"; 켠칸 = if (켠칸 == k) null else k },
+                                                on집기 = { 진동.performHapticFeedback(HapticFeedbackType.LongPress); 열린종목 = null; 집기 = 집은것(r.id, jj, r.종목[jj].이름) },
+                                                on놓기 = { 비율 -> 집기 = 놓기(상태, 집기, r.id, jj, 비율) },
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                            // ── 종목 추가 — 그 자리에서 여러 개 (4-5) ──
+                            if (고르기 == r.id) {
+                                안고르기(상태, r, 방금, { 방금 = it }) { 고르기 = null; 방금 = emptyList() }
+                            } else {
+                                Box(Modifier.height(10.dp))
+                                버튼("종목 추가", { 고르기 = r.id; 방금 = emptyList(); 열린종목 = null }, Modifier.fillMaxWidth(), 작게 = true, 그림 = 아이콘.더하기)
+                            }
+                            }
+                        }
+                    }
+                }
+            }
+            Row(Modifier.fillMaxWidth().padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                버튼("루틴 추가", {
+                    val id = "r" + System.currentTimeMillis()
+                    val 번호 = d.루틴들.count { !it.휴식일 } + 1
+                    구조바뀜 { it.copy(루틴들 = it.루틴들 + 루틴(id, "새 루틴 $번호")) }
+                    열린루틴 = id; 이름고침 = id
+                }, Modifier.weight(1f), 그림 = 아이콘.더하기)
+                버튼("휴식일", {
+                    구조바뀜 { it.copy(루틴들 = it.루틴들 + 루틴("r" + System.currentTimeMillis(), "휴식", 휴식일 = true)) }
+                }, Modifier.weight(0.7f), 그림 = 아이콘.더하기)
+            }
+            Box(Modifier.height(100.dp))
+        }
+        집기?.let { g ->
+            아래띠("${g.이름} 집음 · 위=앞으로 · 가운데=슈퍼세트 · 아래=뒤로", "취소", { 집기 = null }, 어둡게 = false)
+        }
+    }
+}
+
+private fun <T> 자리바꿈(l: List<T>, a: Int, b: Int): List<T> {
+    if (b !in l.indices) return l
+    val m = l.toMutableList(); val t = m[a]; m[a] = m[b]; m[b] = t
+    return m
+}
+
+/** 목적지를 눌렀을 때 — 줄의 위 30% = 앞으로, 아래 30% = 뒤로, 가운데 = 슈퍼세트 */
+private fun 놓기(상태: 앱상태, 집기: 집은것?, rid: String, to: Int, 비율: Float): 집은것? {
+    val g = 집기 ?: return null
+    if (g.rid != rid) return null            // 다른 루틴으로는 옮기지 않는다
+    if (g.j == to) return null               // 자기 자신을 누르면 취소
+    상태.바꿈 { d ->
+        d.루틴바꿈(rid) { r ->
+            when {
+                비율 < 0.3f -> r.종목옮기기(g.j, to, false)
+                비율 > 0.7f -> r.종목옮기기(g.j, to, true)
+                else -> r.슈퍼묶기(g.j, to, "g" + System.currentTimeMillis())
+            }.묶음정리()
+        }
+    }
+    return null
+}
+
+@Composable
+fun 펼침단추(열림: Boolean, onClick: () -> Unit) {
+    val c = Local색.current
+    Box(Modifier.size(높이.낮게).눌림(onClick), contentAlignment = Alignment.Center) {
+        Icon(아이콘.아래, if (열림) "접기" else "펼치기", Modifier.size(18.dp).rotate(if (열림) 180f else 0f), tint = c.옅음)
+    }
+}
+
+@Composable
+private fun 종목줄(
+    상태: 앱상태, r: 루틴, j: Int, 열림: Boolean, 켠칸: String?, 집기: 집은것?,
+    on열기: () -> Unit, on칸: (String) -> Unit, on집기: () -> Unit, on놓기: (Float) -> Unit,
+) {
+    val c = Local색.current
+    val e = r.종목[j]
+    val 폭 = 상태.d.설정.무게폭
+    var 줄높이 by remember { mutableStateOf(1) }
+    val 집힘 = 집기 != null && 집기.rid == r.id && 집기.j == j
+    Column(Modifier.fillMaxWidth().alpha(if (집힘) 0.35f else 1f)) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = 48.dp)
+                .onSizeChanged { 줄높이 = max(1, it.height) }
+                .pointerInput(r.id, j, 집기) {
+                    detectTapGestures(
+                        onLongPress = { if (집기 == null) on집기() },
+                        onTap = { p -> if (집기 != null) on놓기(p.y / 줄높이) else on열기() },
+                    )
+                }
+                .padding(vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(Modifier.weight(1f)) {
+                글(e.이름, 굵기 = FontWeight.Medium)
+                글("${무게글(e.무게)}kg × ${e.횟수}회 × ${e.세트}세트 · 휴식 ${분초(e.휴식)}", 크기값 = 크기.작게, 색 = c.옅음)
+            }
+            아이콘버튼(아이콘.지우기, "이 루틴에서 빼기", {
+                상태.지우고알림("${e.이름}을(를) 루틴에서 뺐습니다") { d -> d.루틴바꿈(r.id) { x -> x.copy(종목 = x.종목.filterIndexed { k, _ -> k != j }).묶음정리() } }
+            }, 칠함 = false)
+            펼침단추(열림, on열기)
+        }
+        if (열림) {
+            fun 고침(f: (루틴종목) -> 루틴종목) = 상태.바꿈 { d -> d.루틴바꿈(r.id) { x -> x.copy(종목 = x.종목.mapIndexed { k, y -> if (k == j) f(y) else y }) } }
+            숫자버튼줄(
+                listOf(
+                    숫자칸("s", "세트", "${e.세트}", "", false, { 고침 { it.copy(세트 = max(1, it.세트 - 1)) } }, { 고침 { it.copy(세트 = it.세트 + 1) } },
+                        { t -> t.toIntOrNull()?.let { v -> 고침 { it.copy(세트 = max(1, v)) } } }),
+                    숫자칸("w", "무게", 무게글(e.무게), "kg", true, { 고침 { it.copy(무게 = 무게반올림(max(0.0, it.무게 - 폭))) } }, { 고침 { it.copy(무게 = 무게반올림(it.무게 + 폭)) } },
+                        { t -> t.replace(',', '.').toDoubleOrNull()?.let { v -> 고침 { it.copy(무게 = 무게반올림(max(0.0, v))) } } }),
+                    숫자칸("r", "횟수", "${e.횟수}", "회", false, { 고침 { it.copy(횟수 = max(0, it.횟수 - 1)) } }, { 고침 { it.copy(횟수 = it.횟수 + 1) } },
+                        { t -> t.toIntOrNull()?.let { v -> 고침 { it.copy(횟수 = max(0, v)) } } }),
+                    숫자칸("t", "휴식", 분초(e.휴식), "", false, { 고침 { it.copy(휴식 = max(0, it.휴식 - 5)) } }, { 고침 { it.copy(휴식 = it.휴식 + 5) } },
+                        { t -> 초읽기(t)?.let { v -> 고침 { it.copy(휴식 = v) } } }),
+                ),
+                켠칸, on칸, Modifier.padding(bottom = 6.dp),
+            )
+        }
+        구분선()
+    }
+}
+
+/** 루틴 안에서 바로 고르는 칸 — 누르면 바로 들어가고, 다시 누르면 빠진다 (4-5) */
+@Composable
+private fun 안고르기(상태: 앱상태, r: 루틴, 방금: List<String>, 방금바꿈: (List<String>) -> Unit, 완료: () -> Unit) {
+    val c = Local색.current
+    val d = 상태.d
+    var 부위 by remember { mutableStateOf("전체") }
+    var 새로 by remember { mutableStateOf(false) }
+    var 새이름 by remember { mutableStateOf("") }
+    var 새장비 by remember { mutableStateOf("") }
+    var 새부위 by remember { mutableStateOf(d.카테고리.firstOrNull() ?: "") }
+    val 있음 = r.종목.map { it.이름 }.toSet()
+
+    Column(
+        Modifier.fillMaxWidth().padding(top = 10.dp)
+            .clip(RoundedCornerShape(모서리.작게))
+            .background(c.면2)
+            .border(1.dp, c.선, RoundedCornerShape(모서리.작게))
+            .padding(10.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            글("종목 추가", 굵기 = FontWeight.Bold)
+            글(if (방금.isEmpty()) "누르면 추가" else "${방금.size}개 넣음", Modifier.weight(1f).padding(start = 8.dp), 크기값 = 크기.작게, 색 = c.옅음)
+            버튼("완료", 완료, 작게 = true, 주요 = true)
+        }
+        Box(Modifier.height(8.dp))
+        칩줄(listOf("전체") + d.카테고리, 부위, { 부위 = it })
+        Box(Modifier.height(4.dp))
+        // 새 종목 만들기 — 처음엔 종목이 하나도 없으므로 여기서 바로 만든다
+        if (새로) {
+            Column(Modifier.padding(vertical = 8.dp)) {
+                입력칸(새이름, { 새이름 = it }, Modifier.fillMaxWidth(), 안내 = "종목 이름 (예: 벤치프레스)")
+                Box(Modifier.height(6.dp))
+                칩줄(d.카테고리, 새부위, { 새부위 = it })
+                Box(Modifier.height(6.dp))
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    입력칸(새장비, { 새장비 = it }, Modifier.weight(1f), 안내 = "장비 (바벨 · 덤벨 …)")
+                    버튼("만들고 넣기", {
+                        val 이름 = 새이름.trim()
+                        if (이름.isNotEmpty()) {
+                            상태.바꿈 { dd ->
+                                val 표 = if (dd.종목표.any { it.이름 == 이름 }) dd.종목표 else dd.종목표 + 종목(이름, 새부위, 새장비.trim())
+                                dd.copy(종목표 = 표).루틴바꿈(r.id) { x -> x.copy(종목 = x.종목 + 루틴종목(이름, 휴식 = dd.설정.기본휴식)) }
+                            }
+                            방금바꿈(방금 + 이름); 새이름 = ""; 새장비 = ""; 새로 = false
+                        }
+                    }, 작게 = true, 주요 = true)
+                }
+            }
+        } else {
+            고르기줄("새 종목 만들기", null, 아이콘.더하기) { 새로 = true }
+        }
+        val 목록 = d.종목표.filter { 부위 == "전체" || it.부위 == 부위 }
+        if (목록.isEmpty() && !새로) 글("이 부위에 종목이 없습니다", Modifier.padding(vertical = 10.dp), 크기값 = 크기.조금작게, 색 = c.옅음)
+        Column(Modifier.heightIn(max = 360.dp).verticalScroll(rememberScrollState())) {
+            목록.forEach { e ->
+                val 넣음 = e.이름 in 방금
+                val 원래 = e.이름 in 있음 && !넣음
+                Row(
+                    Modifier.fillMaxWidth()
+                        .then(if (원래) Modifier else Modifier.눌림 {
+                            if (넣음) {
+                                상태.바꿈 { dd -> dd.루틴바꿈(r.id) { x ->
+                                    val k = x.종목.indexOfLast { it.이름 == e.이름 }
+                                    if (k < 0) x else x.copy(종목 = x.종목.filterIndexed { i, _ -> i != k }).묶음정리()
+                                } }
+                                방금바꿈(방금 - e.이름)
+                            } else {
+                                상태.바꿈 { dd -> dd.루틴바꿈(r.id) { x -> x.copy(종목 = x.종목 + 루틴종목(e.이름, 휴식 = dd.설정.기본휴식)) } }
+                                방금바꿈(방금 + e.이름)
+                            }
+                        })
+                        .padding(vertical = 11.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Row(Modifier.weight(1f), verticalAlignment = Alignment.Bottom) {
+                        글(e.이름, Modifier.weight(1f, fill = false), 색 = if (원래) c.옅음 else if (넣음) c.강조 else c.글, 굵기 = if (넣음) FontWeight.Bold else FontWeight.Normal)
+                        Box(Modifier.width(6.dp))
+                        글(listOf(e.부위, e.장비).filter { it.isNotBlank() }.joinToString("·"), 크기값 = 크기.작게, 색 = c.옅음)
+                    }
+                    when {
+                        원래 -> 글("있음", 크기값 = 크기.작게, 색 = c.옅음)
+                        넣음 -> Icon(아이콘.체크, "넣음", Modifier.size(18.dp), tint = c.강조)
+                        else -> Icon(아이콘.더하기, "넣기", Modifier.size(18.dp), tint = c.강조)
+                    }
+                }
+                구분선()
+            }
+        }
+    }
+}
