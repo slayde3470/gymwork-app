@@ -256,6 +256,17 @@ fun 운동세션.유효세트(): List<세트> = 정식().flatMap { it.찬것().t
 fun 운동세션.묶음이름(e: 세션종목): String? =
     e.슈퍼?.let { g -> 종목들.filter { it.슈퍼 == g }.map { it.이름 }.sorted().joinToString("+") }
 
+/** 슈퍼세트 식구의 번호들 (목록 순서). 묶음이 아니면 자기 하나 */
+fun 운동세션.식구(j: Int): List<Int> {
+    val g = 종목들.getOrNull(j)?.슈퍼 ?: return listOf(j)
+    return 종목들.indices.filter { 종목들[it].슈퍼 == g }
+}
+/** 이 종목의 세트 줄에 휴식을 보일까 — 슈퍼세트는 마지막 종목만 (09-21 메모) */
+fun 운동세션.휴식보임(j: Int): Boolean = 식구(j).last() == j
+
+/** 운동한 시간(초) — 마무리 화면에 들어오면 멈춘다 */
+fun 운동세션.흐른초(지금: Long): Long = ((끝시각 ?: 지금) - 시작시각) / 1000
+
 fun 운동시작(r: 루틴, 지금: Long): 운동세션? {
     if (r.휴식일 || r.종목.isEmpty()) return null
     val 들 = r.종목.map {
@@ -272,42 +283,75 @@ private fun 운동세션.종목바꿈(idx: Int, f: (세션종목) -> 세션종�
 fun 운동세션.자리로(ni: Int, ns: Int): 운동세션 {
     val e = 종목들.getOrNull(ni) ?: return this
     val v = e.기록.칸(ns) ?: e.예정값.칸(ns) ?: 세트(e.무게, e.횟수)
-    return copy(i = ni, s = ns, 무게 = v.w, 횟수 = v.r, 끝화면 = false)
+    return copy(i = ni, s = ns, 무게 = v.w, 횟수 = v.r, 끝화면 = false, 끝시각 = null)
 }
 
-/** 체크 결과 — 다음 할 일을 알려준다 */
-fun 운동세션.체크(k: Int, 지금: Long): 운동세션 {
-    val e = 지금종목
-    if (e.기록.칸(k) != null) return 종목바꿈(i) { it.copy(기록 = it.기록.칸바꿈(k, null)) }   // 체크 풀기 — 그 칸만 빈다
-    val 지금세트 = k == s
-    val v = if (지금세트) 세트(무게, 횟수) else 세트값(e, k, false)
+/** 마무리 화면으로 — 운동 시간을 여기서 멈춘다 */
+fun 운동세션.끝냄(지금: Long): 운동세션 = copy(휴식 = null, 끝화면 = true, 끝시각 = 끝시각 ?: 지금)
+
+/** 마무리 화면에서 운동으로 돌아가기 — 마무리 화면에 머문 시간은 빼고 이어서 잰다 */
+fun 운동세션.재개(지금: Long): 운동세션 {
+    val 멈춘 = 끝시각?.let { max(0L, 지금 - it) } ?: 0L
+    return copy(끝화면 = false, 끝시각 = null, 시작시각 = 시작시각 + 멈춘)
+}
+
+/** 이 휴식이 (j, k) 세트 줄의 것인가 */
+fun 운동세션.휴식자리(j: Int, k: Int): Boolean {
+    val h = 휴식 ?: return false
+    return h.k == k && (if (h.종목 >= 0) h.종목 == j else i == j)
+}
+
+/**
+ * 체크 — j 번째 종목의 k 번째 세트.
+ *  · 이미 한 세트면 → 체크 풀기. 그 칸만 비고, 값은 남겨 두며, 그 세트가 '지금 할 세트'가 된다
+ *    (09-21 메모: 풀었다 다시 체크하면 휴식이 안 돌던 것 — 지금 세트가 아니어서였다)
+ *  · 안 한 세트면 → 그 세트로 자리를 옮겨 기록하고 휴식을 시작한다
+ */
+fun 운동세션.체크(j: Int, k: Int, 지금: Long): 운동세션 {
+    val e0 = 종목들.getOrNull(j) ?: return this
+    val rec0 = e0.기록.칸(k)
+    if (rec0 != null) {
+        var S = 종목바꿈(j) { it.copy(기록 = it.기록.칸바꿈(k, null), 예정값 = it.예정값.칸바꿈(k, rec0)) }
+        if (S.휴식자리(j, k)) S = S.copy(휴식 = null)
+        return S.자리로(j, k)
+    }
+    val S0 = if (j != i || k != s) 자리로(j, k) else this
+    return S0.지금체크(지금)
+}
+
+/** 옛 호출 모양 — 지금 종목의 k 번째 */
+fun 운동세션.체크(k: Int, 지금: Long): 운동세션 = 체크(i, k, 지금)
+
+private fun 운동세션.지금체크(지금: Long): 운동세션 {
+    val k = s
+    val v = 세트(무게, 횟수)
     var S = 종목바꿈(i) { it.copy(기록 = it.기록.칸바꿈(k, v)) }
-    if (!지금세트) return S
     val ex = S.지금종목
 
     // 슈퍼세트 — 묶인 종목을 한 바퀴 돈 뒤에만 쉰다 (8-2)
     if (ex.슈퍼 != null) {
         val 식구 = S.종목들.withIndex().filter { it.value.슈퍼 == ex.슈퍼 && !it.value.마감 }.map { it.index }
         val 자리 = 식구.indexOf(S.i)
-        if (자리 >= 0 && 자리 < 식구.size - 1) return S.copy(휴식 = null).자리로(식구[자리 + 1], k)
+        if (자리 >= 0 && 자리 < 식구.size - 1) {
+            val 다음 = 식구[자리 + 1]
+            if (k < S.종목들[다음].총칸() && S.종목들[다음].기록.칸(k) == null) return S.copy(휴식 = null).자리로(다음, k)
+        }
         if (자리 >= 0) {
-            val 첫 = S.종목들[식구[0]]
-            val 다음칸 = k + 1
+            // 한 바퀴 끝 — 첫 종목부터 빈 세트를 찾는다
+            val 다음칸 = 식구.map { m -> m to 다음빈칸(S.종목들[m], k) }.filter { (m, n) -> n < S.종목들[m].총칸() }.minByOrNull { it.second }
             S = S.copy(s = 다음빈칸(ex, k))
-            if (다음칸 < 첫.총칸()) return S.휴식시작(k, 지금, 식구[0], 다음칸)
+            if (다음칸 != null) return S.휴식시작(k, 지금, 다음칸.first, 다음칸.second)
         }
     }
     S = S.copy(s = 다음빈칸(S.지금종목, k))
-    val 마지막 = S.s >= S.지금종목.총칸()
-    if (마지막 && S.종목들.withIndex().all { (j, x) -> j == S.i || x.마감 || !x.덜한가() }) {
-        return S.copy(휴식 = null, 끝화면 = true)
-    }
+    // 모든 종목을 다 했으면 쉬지 않고 마무리
+    if (S.종목들.all { it.마감 || !it.덜한가() }) return S.끝냄(지금)
     return S.휴식시작(k, 지금)
 }
 
 fun 운동세션.휴식시작(k: Int, 지금: Long, 다음i: Int? = null, 다음s: Int? = null): 운동세션 {
     val 쉴 = 지금종목.세트휴식(k)
-    return copy(휴식 = 휴식중(k, 지금 + 쉴 * 1000L, false, 다음i, 다음s))
+    return copy(휴식 = 휴식중(k, 지금 + 쉴 * 1000L, false, 다음i, 다음s, 총초 = 쉴, 종목 = i))
 }
 
 fun 운동세션.휴식조절(초: Int, 지금: Long): 운동세션 {
@@ -316,78 +360,83 @@ fun 운동세션.휴식조절(초: Int, 지금: Long): 운동세션 {
 }
 
 /** 휴식이 끝났을 때 — 넘어가기 전 확인이 켜져 있으면 묻는다 */
-fun 운동세션.휴식끝(설정: 설정값): 운동세션 {
+fun 운동세션.휴식끝(설정: 설정값, 지금: Long = System.currentTimeMillis()): 운동세션 {
     val h = 휴식 ?: return this
-    return if (설정.넘어가기전확인 || !설정.자동진행) copy(휴식 = h.copy(물음 = true)) else 다음으로()
+    return if (설정.넘어가기전확인 || !설정.자동진행) copy(휴식 = h.copy(물음 = true)) else 다음으로(지금)
 }
 
-/** 휴식을 치우고 다음 세트로 (슈퍼세트면 기다리던 자리로) */
-fun 운동세션.다음으로(): 운동세션 {
+/** 휴식을 치우고 다음 세트로 (슈퍼세트면 기다리던 자리로). 이 종목을 다 했으면 덜 한 종목으로 */
+fun 운동세션.다음으로(지금: Long = System.currentTimeMillis()): 운동세션 {
     val h = 휴식
     val S = copy(휴식 = null)
     if (h?.다음i != null && h.다음s != null) return S.자리로(h.다음i, h.다음s)
-    if (S.s >= S.지금종목.총칸()) {
-        return if (S.i < S.종목들.size - 1) S.자리로(S.i + 1, 다음빈칸(S.종목들[S.i + 1], -1)) else S.copy(끝화면 = true)
-    }
+    if (S.s >= S.지금종목.총칸()) return S.다음종목으로(false, 지금)
     return S.자리로(S.i, S.s)
 }
 
 fun 운동세션.종목으로(idx: Int): 운동세션 {
     if (idx !in 종목들.indices) return this
-    return copy(휴식 = null).자리로(idx, 다음빈칸(종목들[idx], -1))
+    val 빈칸 = 다음빈칸(종목들[idx], -1)
+    return copy(휴식 = null).자리로(idx, if (빈칸 < 종목들[idx].총칸()) 빈칸 else 0)
 }
 
 /** '다음' — 뒤쪽의 덜 한 종목 → 앞쪽 → 없으면 마무리 (5-1 ⑥) */
-fun 운동세션.다음종목으로(끝낼까: Boolean): 운동세션 {
+fun 운동세션.다음종목으로(끝낼까: Boolean, 지금: Long = System.currentTimeMillis()): 운동세션 {
     var S = copy(휴식 = null)
     if (끝낼까) S = S.종목바꿈(i) { it.copy(마감 = true) }
     var n = S.종목들.withIndex().indexOfFirst { (j, e) -> j > S.i && !e.마감 && e.덜한가() }
     if (n < 0) n = S.종목들.withIndex().indexOfFirst { (j, e) -> j != S.i && !e.마감 && e.덜한가() }
-    return if (n >= 0) S.종목으로(n) else S.copy(끝화면 = true)
+    return if (n >= 0) S.종목으로(n) else S.끝냄(지금)
 }
 
 /** ＋ — 맨 아래 세트를 그대로 베낀다. 슈퍼세트면 묶인 종목 전부에 (5-1 ③, 8-2) */
-fun 운동세션.세트추가(): 운동세션 {
-    val ex = 지금종목
-    return copy(종목들 = 종목들.mapIndexed { j, x ->
+fun 운동세션.세트추가(j: Int = i): 운동세션 {
+    val ex = 종목들.getOrNull(j) ?: return this
+    return copy(종목들 = 종목들.mapIndexed { jj, x ->
         if (x !== ex && (ex.슈퍼 == null || x.슈퍼 != ex.슈퍼)) return@mapIndexed x
         val 끝 = x.총칸() - 1
-        val 베낄 = if (끝 >= 0) 세트값(x, 끝, j == i) else 세트(x.무게, x.횟수)
+        val 베낄 = if (끝 >= 0) 세트값(x, 끝, jj == i) else 세트(x.무게, x.횟수)
         val 쉴 = if (끝 >= 0) x.세트휴식(끝) else x.휴식
         val 새 = x.총칸()
         x.copy(세트 = 새 + 1, 예정값 = x.예정값.칸바꿈(새, 베낄), 휴식들 = x.휴식들.칸바꿈(새, 쉴))
     })
 }
 
-fun 운동세션.세트삭제(k: Int): 운동세션 {
-    val S = 종목바꿈(i) { e ->
+fun 운동세션.세트삭제(j: Int, k: Int): 운동세션 {
+    var S = 종목바꿈(j) { e ->
         fun <T> List<T?>.뺌(): List<T?> = if (k in indices) toMutableList().also { it.removeAt(k) } else this
         e.copy(기록 = e.기록.뺌(), 휴식들 = e.휴식들.뺌(), 예정값 = e.예정값.뺌(), 세트 = max(1, e.세트 - 1))
     }
-    return if (S.s > k) S.copy(s = S.s - 1) else S
+    if (S.휴식자리(j, k)) S = S.copy(휴식 = null)
+    return if (j == S.i && S.s > k) S.copy(s = S.s - 1) else S
 }
+fun 운동세션.세트삭제(k: Int): 운동세션 = 세트삭제(i, k)
 
 /** 세트 값 고치기 — 한 세트면 기록을, 지금 세트면 입력값을, 아직이면 그 줄만 */
-fun 운동세션.값고치기(k: Int, 새무게: Double? = null, 새횟수: Int? = null): 운동세션 {
-    val e = 지금종목
+fun 운동세션.값고치기(j: Int, k: Int, 새무게: Double? = null, 새횟수: Int? = null): 운동세션 {
+    val e = 종목들.getOrNull(j) ?: return this
     val w = 새무게?.let { 무게반올림(max(0.0, it)) }
     val r = 새횟수?.let { max(0, it) }
     val rec = e.기록.칸(k)
     return when {
-        rec != null -> 종목바꿈(i) { it.copy(기록 = it.기록.칸바꿈(k, 세트(w ?: rec.w, r ?: rec.r))) }
-        k == s -> copy(무게 = w ?: 무게, 횟수 = r ?: 횟수)
+        rec != null -> 종목바꿈(j) { it.copy(기록 = it.기록.칸바꿈(k, 세트(w ?: rec.w, r ?: rec.r))) }
+        j == i && k == s -> copy(무게 = w ?: 무게, 횟수 = r ?: 횟수)
         else -> {
             val 이제 = 세트값(e, k)
-            종목바꿈(i) { it.copy(예정값 = it.예정값.칸바꿈(k, 세트(w ?: 이제.w, r ?: 이제.r))) }
+            종목바꿈(j) { it.copy(예정값 = it.예정값.칸바꿈(k, 세트(w ?: 이제.w, r ?: 이제.r))) }
         }
     }
 }
-fun 운동세션.휴식고치기(k: Int, 초: Int): 운동세션 = 종목바꿈(i) { it.copy(휴식들 = it.휴식들.칸바꿈(k, 초.coerceIn(0, 600))) }
+fun 운동세션.값고치기(k: Int, 새무게: Double? = null, 새횟수: Int? = null): 운동세션 = 값고치기(i, k, 새무게, 새횟수)
+fun 운동세션.휴식고치기(j: Int, k: Int, 초: Int): 운동세션 = 종목바꿈(j) { it.copy(휴식들 = it.휴식들.칸바꿈(k, 초.coerceIn(0, 600))) }
+fun 운동세션.휴식고치기(k: Int, 초: Int): 운동세션 = 휴식고치기(i, k, 초)
 
-/** 운동 추가 — 오늘만. 지금 종목 바로 뒤에 끼운다 (5-2) */
-fun 운동세션.불러오기(이름: String, 기본휴식: Int): 운동세션 {
-    val 새 = 세션종목(이름, 3, 0, 20.0, 10, 기본휴식, 휴식들 = List(3) { 기본휴식 }, 임시 = true)
-    return copy(종목들 = 종목들.toMutableList().also { it.add(i + 1, 새) })
+/** 운동 추가 — 오늘만. 지금 종목(묶음이면 묶음 전체) 바로 뒤에 끼운다 (5-2) */
+fun 운동세션.불러오기(이름: String, 기본휴식: Int, 세트수: Int = 3): 운동세션 {
+    val n = max(1, 세트수)
+    val 새 = 세션종목(이름, n, 0, 20.0, 10, 기본휴식, 휴식들 = List(n) { 기본휴식 }, 임시 = true)
+    val 뒤 = 식구(i).last() + 1
+    return copy(종목들 = 종목들.toMutableList().also { it.add(뒤, 새) })
 }
 
 fun 운동세션.마감풀기(): 운동세션 = 종목바꿈(i) { it.copy(마감 = false) }
@@ -399,12 +448,56 @@ fun 앱데이터.운동저장(오늘: String, 지금: Long): 앱데이터 {
         val 찬 = e.찬것()
         if (찬.isEmpty()) null else 종목기록(e.이름, 찬, e.임시, S.묶음이름(e))
     }
-    val rec = 날기록(S.루틴id, S.루틴이름, S.한세트수() >= S.목표세트(), 들, ((지금 - S.시작시각) / 1000).toInt())
+    val rec = 날기록(S.루틴id, S.루틴이름, S.한세트수() >= S.목표세트(), 들, S.흐른초(지금).toInt())
     val 새 = copy(기록 = 기록 + (오늘 to rec), 세션 = null)
     val i = 루틴들.indexOfFirst { it.id == S.루틴id }
     if (루틴들.isEmpty()) return 새
     val 남김 = 새.예정.filterKeys { it < 오늘 }
     return 새.copy(예정 = 새.예정채움(날더하기(오늘, 1), ((i + 1) % 루틴들.size + 루틴들.size) % 루틴들.size, 남김))
+}
+
+// ─────────────── 마무리 화면 — 직전 대비 · 추이 그래프 (09-21 메모) ───────────────
+
+/** 같은 루틴의 직전 기록 (오늘 것 제외) */
+fun 앱데이터.직전기록(rid: String, 오늘: String): Pair<String, 날기록>? =
+    기록.filter { it.value.루틴id == rid && it.key < 오늘 }.maxByOrNull { it.key }?.toPair()
+
+enum class 묶기(val 이름: String) { 일("일"), 주("주"), 월("월") }
+data class 점(val 날: String, val 값: Double)
+
+/**
+ * 한 종목의 변화 — 일: 한 세션씩 / 주: 월요일부터 한 주 / 월: 한 달.
+ * 볼륨은 기간 안의 합, 1RM 은 기간 안의 최고. 오늘 아직 저장하지 않은 세트도 넣는다.
+ */
+fun 앱데이터.종목추이(이름: String, 단위: 묶기, 일RM으로: Boolean, 오늘: String, 오늘세트: List<세트>): List<점> {
+    val 날별 = sortedMapOf<String, List<세트>>()
+    기록.forEach { (k, rec) ->
+        val s = rec.종목들.filter { it.이름 == 이름 }.flatMap { it.세트들 }
+        if (s.isNotEmpty()) 날별[k] = s
+    }
+    if (오늘세트.isNotEmpty()) 날별[오늘] = 오늘세트
+    fun 기간(k: String): String = when (단위) {
+        묶기.일 -> k
+        묶기.주 -> 키(날(k).minusDays((날(k).dayOfWeek.value - 1).toLong()))
+        묶기.월 -> k.substring(0, 7)
+    }
+    val 모음 = linkedMapOf<String, MutableList<List<세트>>>()
+    날별.forEach { (k, s) -> 모음.getOrPut(기간(k)) { mutableListOf() }.add(s) }
+    val 점들 = 모음.map { (p, 들) ->
+        점(p, if (일RM으로) 들.flatten().maxOf { 일RM(it.w, it.r) } else 들.sumOf { 볼륨(it) })
+    }
+    val 최대 = when (단위) { 묶기.일 -> 30; 묶기.주 -> 26; 묶기.월 -> 24 }
+    return 점들.takeLast(최대)
+}
+
+/** 카테고리 지우기 — 그 부위의 종목도 함께 (종목 탭 ⚙ 와 같은 동작. 5초 되돌리기) */
+fun 앱데이터.카테고리지우기(p: String): 앱데이터 {
+    val 이름들 = 종목표.filter { it.부위 == p }.map { it.이름 }.toSet()
+    return copy(
+        카테고리 = 카테고리 - p,
+        종목표 = 종목표.filter { it.부위 != p },
+        루틴들 = 루틴들.map { r -> r.copy(종목 = r.종목.filter { it.이름 !in 이름들 }) },
+    )
 }
 
 // ─────────────── 루틴 편집 ───────────────

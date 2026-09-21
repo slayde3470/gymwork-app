@@ -10,6 +10,28 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.key
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlin.math.abs
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -273,95 +295,222 @@ fun 입력칸(
     }
 }
 
-// ─────────────── 숫자 버튼 줄 (1-3 · 4-4-1) ───────────────
+// ─────────────── 숫자 버튼 줄 (1-3 · 4-4-1 · 09-21 메모) ───────────────
 
-/** 버튼 한 칸 — 평소엔 [이름표/값], 누르면 [− 값 ＋] */
+enum class 입력종류 { 정수, 소수, 분초 }
+
+/**
+ * 버튼 한 칸 — 평소엔 [이름표/값], 누르면 [− 값 ＋] + 아래에 숫자 휠.
+ *  · 누르자마자 자판이 뜬다. 무언가 치는 순간 옛 값이 지워진다 (치지 않으면 그대로)
+ *  · 휠을 만지면 자판이 내려간다
+ */
 data class 숫자칸(
     val 키: String,
     val 라벨: String,
     val 값글: String,
     val 단위: String,
-    val 소수: Boolean = false,
+    val 종류: 입력종류 = 입력종류.정수,
     val 빼기: () -> Unit,
     val 더하기: () -> Unit,
     /** 직접 쳐 넣은 글 — 받는 쪽에서 숫자로 바꾼다 */
     val 넣기: (String) -> Unit,
+    /** 휠에 늘어놓을 값들과 그 글 모양. 휠에서 고르면 넣기(글) 로 들어간다 */
+    val 휠: List<Double> = emptyList(),
+    val 휠글: (Double) -> String = { it.toString() },
+    val 지금값: Double = 0.0,
 )
+
+/** 휠 값 목록 — 세트 1–50 · 무게 0–500(5kg) · 횟수 1–50 · 휴식 0–180초(10초) */
+object 휠값 {
+    val 세트 = (1..50).map { it.toDouble() }
+    val 무게 = (0..100).map { it * 5.0 }
+    val 횟수 = (1..50).map { it.toDouble() }
+    val 휴식 = (0..18).map { it * 10.0 }
+}
 
 @Composable
 fun 숫자버튼줄(칸들: List<숫자칸>, 켠: String?, on고름: (String) -> Unit, modifier: Modifier = Modifier) {
     val c = Local색.current
-    Row(
+    val 끌어올림 = remember { BringIntoViewRequester() }
+    val 켠칸 = 칸들.firstOrNull { it.키 == 켠 }
+    LaunchedEffect(켠) { if (켠 != null) { delay(350); 끌어올림.bringIntoView() } }
+    Column(
         modifier
             .fillMaxWidth()
+            .bringIntoViewRequester(끌어올림)
             .clip(RoundedCornerShape(모서리.작게))
             .background(c.면)
             .border(1.dp, c.선, RoundedCornerShape(모서리.작게))
             .padding(6.dp),
-        horizontalArrangement = Arrangement.spacedBy(5.dp),
     ) {
-        칸들.forEach { k ->
-            if (k.키 == 켠) {
-                Row(
-                    Modifier
-                        .weight(2.3f)
-                        .height(높이.보통)
-                        .clip(RoundedCornerShape(모서리.작게))
-                        .background(c.면)
-                        .border(1.5.dp, c.강조, RoundedCornerShape(모서리.작게)),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Box(Modifier.width(30.dp).fillMaxHeight().눌림(k.빼기), contentAlignment = Alignment.Center) {
-                        Icon(아이콘.빼기, "${k.라벨} 빼기", Modifier.size(18.dp), tint = c.강조)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+            칸들.forEach { k ->
+                if (k.키 == 켠) {
+                    Row(
+                        Modifier
+                            .weight(2.3f)
+                            .height(높이.보통)
+                            .clip(RoundedCornerShape(모서리.작게))
+                            .background(c.면)
+                            .border(1.5.dp, c.강조, RoundedCornerShape(모서리.작게)),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Box(Modifier.width(30.dp).fillMaxHeight().눌림(k.빼기), contentAlignment = Alignment.Center) {
+                            Icon(아이콘.빼기, "${k.라벨} 빼기", Modifier.size(18.dp), tint = c.강조)
+                        }
+                        Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                            글(k.라벨, 크기값 = 크기.아주작게, 색 = c.옅음)
+                            숫자입력(k.키, k.값글, k.종류, k.넣기) { on고름(k.키) }
+                        }
+                        Box(Modifier.width(30.dp).fillMaxHeight().눌림(k.더하기), contentAlignment = Alignment.Center) {
+                            Icon(아이콘.더하기, "${k.라벨} 더하기", Modifier.size(18.dp), tint = c.강조)
+                        }
                     }
-                    Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                } else {
+                    Column(
+                        Modifier
+                            .weight(1f)
+                            .height(높이.보통)
+                            .clip(RoundedCornerShape(모서리.작게))
+                            .background(c.면2)
+                            .눌림 { on고름(k.키) },
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
+                    ) {
                         글(k.라벨, 크기값 = 크기.아주작게, 색 = c.옅음)
-                        숫자입력(k.값글, k.소수, k.넣기)
-                    }
-                    Box(Modifier.width(30.dp).fillMaxHeight().눌림(k.더하기), contentAlignment = Alignment.Center) {
-                        Icon(아이콘.더하기, "${k.라벨} 더하기", Modifier.size(18.dp), tint = c.강조)
+                        글(k.값글 + k.단위, 크기값 = 크기.버튼, 굵기 = FontWeight.Bold)
                     }
                 }
-            } else {
-                Column(
-                    Modifier
-                        .weight(1f)
-                        .height(높이.보통)
-                        .clip(RoundedCornerShape(모서리.작게))
-                        .background(c.면2)
-                        .눌림 { on고름(k.키) },
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                ) {
-                    글(k.라벨, 크기값 = 크기.아주작게, 색 = c.옅음)
-                    글(k.값글 + k.단위, 크기값 = 크기.버튼, 굵기 = FontWeight.Bold)
-                }
+            }
+        }
+        if (켠칸 != null && 켠칸.휠.isNotEmpty()) {
+            val 초점 = LocalFocusManager.current
+            key(켠칸.키) {
+                숫자휠(켠칸.휠, 켠칸.지금값, 켠칸.휠글, 손댐 = { 초점.clearFocus() }) { v -> 켠칸.넣기(켠칸.휠글(v)) }
             }
         }
     }
 }
 
-/** 직접 쳐 넣는 숫자 — 다 치고 '완료'를 누르거나 다른 곳을 누를 때 반영한다 */
+/**
+ * 직접 쳐 넣는 숫자.
+ *  · 열리면 바로 초점 → 자판. 처음엔 글 전체가 선택돼 있어서, 무언가 치는 순간 옛 값이 지워진다
+ *  · 아무것도 안 치고 닫으면 옛 값 그대로
+ *  · 분초(휴식): 숫자 하나를 치면 '1:00' 이 되고 커서는 ':' 뒤 → 이어 치면 초가 채워진다
+ */
 @Composable
-private fun 숫자입력(값글: String, 소수: Boolean, 넣기: (String) -> Unit) {
+private fun 숫자입력(키: String, 값글: String, 종류: 입력종류, 넣기: (String) -> Unit, 닫기: () -> Unit) {
     val c = Local색.current
     val 초점 = LocalFocusManager.current
-    var 글값 by remember(값글) { mutableStateOf(값글) }
-    var 만졌나 by remember { mutableStateOf(false) }
+    val 요청 = remember { FocusRequester() }
+    val 자판 = LocalSoftwareKeyboardController.current
+    var tv by remember(키, 값글) { mutableStateOf(TextFieldValue(값글, TextRange(0, 값글.length))) }
+    var 만졌나 by remember(키, 값글) { mutableStateOf(false) }
+    var 분 by remember(키, 값글) { mutableStateOf("") }
+    var 초 by remember(키, 값글) { mutableStateOf("") }
+    LaunchedEffect(키) { try { 요청.requestFocus(); 자판?.show() } catch (_: Exception) { } }
+
+    fun 분초모양() {
+        val 글 = if (분.isEmpty()) "" else "$분:" + 초.padEnd(2, '0')
+        tv = TextFieldValue(글, TextRange(if (분.isEmpty()) 0 else 2 + 초.length))
+    }
+
     BasicTextField(
-        value = 글값,
-        onValueChange = { 글값 = it; 만졌나 = true },
+        value = tv,
+        onValueChange = { 새 ->
+            if (새.text == tv.text) { tv = 새; return@BasicTextField }   // 커서만 옮김
+            만졌나 = true
+            when (종류) {
+                입력종류.분초 -> {
+                    val 바꿈범위 = tv.selection.length
+                    val 넣음 = 새.text.length > tv.text.length ||
+                        (바꿈범위 > 0 && 새.text.length >= tv.text.length - 바꿈범위 + 1)
+                    val 글자 = if (넣음) 새.text.getOrNull(새.selection.start - 1) else null
+                    if (바꿈범위 > 0 && 바꿈범위 == tv.text.length) { 분 = ""; 초 = "" }   // 처음 — 옛 값 지우기
+                    when {
+                        글자 != null && 글자.isDigit() -> if (분.isEmpty()) 분 = 글자.toString() else if (초.length < 2) 초 += 글자
+                        글자 != null -> {}
+                        초.isNotEmpty() -> 초 = 초.dropLast(1)
+                        else -> 분 = ""
+                    }
+                    분초모양()
+                }
+                else -> {
+                    val 걸러 = 새.text.filter { it.isDigit() || (종류 == 입력종류.소수 && (it == '.' || it == ',')) }
+                    tv = 새.copy(text = 걸러, selection = TextRange(minOf(새.selection.start, 걸러.length)))
+                }
+            }
+        },
         singleLine = true,
         textStyle = TextStyle(fontSize = 크기.본문, fontWeight = FontWeight.Bold, color = c.글, textAlign = TextAlign.Center),
         cursorBrush = SolidColor(c.강조),
         keyboardOptions = KeyboardOptions(
-            keyboardType = if (소수) KeyboardType.Decimal else KeyboardType.Number, imeAction = ImeAction.Done,
+            keyboardType = if (종류 == 입력종류.소수) KeyboardType.Decimal else KeyboardType.Number, imeAction = ImeAction.Done,
         ),
-        keyboardActions = KeyboardActions(onDone = { if (만졌나) 넣기(글값); 만졌나 = false; 초점.clearFocus() }),
+        keyboardActions = KeyboardActions(onDone = {
+            if (만졌나 && tv.text.isNotBlank()) 넣기(tv.text)
+            만졌나 = false; 초점.clearFocus(); 닫기()
+        }),
         modifier = Modifier
             .widthIn(max = 64.dp)
-            .onFocusChanged { if (!it.isFocused && 만졌나) { 넣기(글값); 만졌나 = false } },
+            .focusRequester(요청)
+            .onFocusChanged { if (!it.isFocused && 만졌나) { if (tv.text.isNotBlank()) 넣기(tv.text); 만졌나 = false } },
     )
+}
+
+/**
+ * 숫자 휠 — 위아래로 끌어서 고른다. 가운데 줄이 고른 값.
+ * 손을 떼고 멈추면 가장 가까운 칸에 맞추고 그 값을 넣는다. 칸을 눌러도 된다.
+ */
+@Composable
+private fun 숫자휠(값들: List<Double>, 지금: Double, 글로: (Double) -> String, 손댐: () -> Unit, 고름: (Double) -> Unit) {
+    val c = Local색.current
+    val 칸 = 34.dp
+    val 칸px = with(LocalDensity.current) { 칸.toPx() }
+    val 가까운 = { v: Double -> 값들.indices.minByOrNull { abs(값들[it] - v) } ?: 0 }
+    val 목록 = rememberLazyListState(가까운(지금))
+    val 범위 = rememberCoroutineScope()
+    var 만짐 by remember { mutableStateOf(false) }
+    val 고름최신 by rememberUpdatedState(고름)
+    val 가운데 = { 목록.firstVisibleItemIndex + if (목록.firstVisibleItemScrollOffset > 칸px / 2) 1 else 0 }
+
+    // 멈추면 칸에 맞추고 넣는다
+    LaunchedEffect(목록) {
+        snapshotFlow { 목록.isScrollInProgress }.collect { 움직임 ->
+            if (!움직임 && 만짐) {
+                val n = 가운데().coerceIn(0, 값들.size - 1)
+                if (목록.firstVisibleItemScrollOffset != 0 || 목록.firstVisibleItemIndex != n) 목록.animateScrollToItem(n)
+                고름최신(값들[n])
+            }
+        }
+    }
+    // − ＋ 나 직접 입력으로 값이 바뀌면 휠도 따라간다
+    LaunchedEffect(지금) { if (!목록.isScrollInProgress) { val n = 가까운(지금); if (n != 가운데()) 목록.scrollToItem(n) } }
+
+    Box(Modifier.fillMaxWidth().padding(top = 6.dp).height(칸 * 5), contentAlignment = Alignment.Center) {
+        Box(Modifier.fillMaxWidth().height(칸).clip(RoundedCornerShape(모서리.작게)).background(c.강조옅음))
+        LazyColumn(
+            state = 목록,
+            contentPadding = PaddingValues(vertical = 칸 * 2),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(Unit) {
+                    awaitEachGesture { awaitFirstDown(requireUnconsumed = false); 만짐 = true; 손댐() }
+                },
+        ) {
+            items(값들.size) { n ->
+                val 고른것 = n == 가운데()
+                Box(
+                    Modifier.fillMaxWidth().height(칸).눌림 { 만짐 = true; 손댐(); 범위.launch { 목록.animateScrollToItem(n) } },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    글(글로(값들[n]), 크기값 = if (고른것) 크기.크게 else 크기.버튼, 색 = if (고른것) c.강조 else c.옅음,
+                        굵기 = if (고른것) FontWeight.Bold else FontWeight.Normal)
+                }
+            }
+        }
+    }
 }
 
 // ─────────────── 시트 · 띠 ───────────────

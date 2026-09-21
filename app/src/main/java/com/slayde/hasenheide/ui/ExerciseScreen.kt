@@ -1,6 +1,12 @@
 package com.slayde.hasenheide.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Icon
+import com.slayde.hasenheide.data.카테고리지우기
+import com.slayde.hasenheide.ui.theme.높이
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -184,7 +190,7 @@ fun 새종목칸(상태: 앱상태, 처음부위: String, 닫기: () -> Unit) {
         이름표("새 종목")
         입력칸(이름, { 이름 = it }, Modifier.fillMaxWidth().padding(top = 6.dp), 안내 = "종목 이름 (예: 벤치프레스)")
         Box(Modifier.height(8.dp))
-        칩줄(d.카테고리, 부위, { 부위 = it })
+        부위고르기(상태, 부위, { 부위 = it })
         Box(Modifier.height(8.dp))
         입력칸(장비, { 장비 = it }, Modifier.fillMaxWidth(), 안내 = "장비 (바벨 · 덤벨 · 머신 …)")
         Box(Modifier.height(10.dp))
@@ -215,14 +221,7 @@ private fun 카테고리관리(상태: 앱상태, 닫기: () -> Unit) {
                 글(p, Modifier.weight(1f))
                 글(if (수 > 0) "종목 ${수}개" else "", 크기값 = 크기.작게, 색 = c.옅음)
                 아이콘버튼(아이콘.지우기, "카테고리 지우기", {
-                    상태.지우고알림(if (수 > 0) "$p · 종목 ${수}개와 함께 지웠습니다" else "$p 카테고리를 지웠습니다") { d ->
-                        val 이름들 = d.종목표.filter { it.부위 == p }.map { it.이름 }.toSet()
-                        d.copy(
-                            카테고리 = d.카테고리 - p,
-                            종목표 = d.종목표.filter { it.부위 != p },
-                            루틴들 = d.루틴들.map { r -> r.copy(종목 = r.종목.filter { it.이름 !in 이름들 }) },
-                        )
-                    }
+                    상태.지우고알림(if (수 > 0) "$p · 종목 ${수}개와 함께 지웠습니다" else "$p 카테고리를 지웠습니다") { it.카테고리지우기(p) }
                 }, 칠함 = false)
             }
             구분선()
@@ -236,6 +235,54 @@ private fun 카테고리관리(상태: 앱상태, 닫기: () -> Unit) {
                 if (n.isNotEmpty() && n !in 상태.d.카테고리) 상태.바꿈 { it.copy(카테고리 = it.카테고리 + n) }
                 새 = ""
             }, 주요 = true)
+        }
+    }
+}
+
+/**
+ * 부위 고르기 — 새 종목을 만들 때. 칩 줄 끝의 ＋ 로 부위를 더하고, − 를 누르면 칩마다 ✕ 가 붙어 지울 수 있다.
+ * (09-21 메모: 고정된 부위 외에는 만들 길이 안 보였다. 종목 탭 ⚙ 와 같은 목록을 쓴다)
+ */
+@Composable
+fun 부위고르기(상태: 앱상태, 선택: String, on선택: (String) -> Unit) {
+    val c = Local색.current
+    var 더하는중 by remember { mutableStateOf(false) }
+    var 지우는중 by remember { mutableStateOf(false) }
+    var 새 by remember { mutableStateOf("") }
+    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+        상태.d.카테고리.forEach { p ->
+            val 켬 = p == 선택 && !지우는중
+            Row(
+                Modifier.height(높이.낮게).clip(CircleShape)
+                    .background(if (지우는중) c.나쁨.copy(alpha = 0.10f) else if (켬) c.강조 else c.면2)
+                    .눌림 {
+                        if (지우는중) {
+                            val 수 = 상태.d.종목표.count { it.부위 == p }
+                            상태.지우고알림(if (수 > 0) "$p · 종목 ${수}개와 함께 지웠습니다" else "$p 부위를 지웠습니다") { it.카테고리지우기(p) }
+                            if (p == 선택) on선택(상태.d.카테고리.firstOrNull() ?: "")
+                        } else on선택(p)
+                    }
+                    .padding(horizontal = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                글(p, 크기값 = 크기.버튼, 색 = if (지우는중) c.나쁨 else if (켬) c.강조글 else c.흐림, 굵기 = FontWeight.Medium)
+                if (지우는중) { Box(Modifier.width(4.dp)); Icon(아이콘.닫기, "지우기", Modifier.size(13.dp), tint = c.나쁨) }
+            }
+        }
+        아이콘버튼(아이콘.더하기, "부위 더하기", { 더하는중 = !더하는중; 지우는중 = false }, 켬 = 더하는중)
+        아이콘버튼(if (지우는중) 아이콘.체크 else 아이콘.빼기, if (지우는중) "지우기 끝" else "부위 지우기", { 지우는중 = !지우는중; 더하는중 = false }, 켬 = 지우는중)
+    }
+    if (더하는중) {
+        val 넣기 = {
+            val n = 새.trim()
+            if (n.isNotEmpty() && n !in 상태.d.카테고리) 상태.바꿈 { it.copy(카테고리 = it.카테고리 + n) }
+            if (n.isNotEmpty()) on선택(n)
+            새 = ""; 더하는중 = false
+        }
+        Row(Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+            입력칸(새, { 새 = it }, Modifier.weight(1f), 안내 = "새 부위 (예: 전완)", onDone = 넣기)
+            Box(Modifier.width(6.dp))
+            버튼("추가", 넣기, 작게 = true, 주요 = true)
         }
     }
 }

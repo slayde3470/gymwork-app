@@ -66,11 +66,12 @@ object 저장소 {
 
     private fun 설정to(s: 설정값) = JSONObject().put("자동진행", s.자동진행).put("넘어가기전확인", s.넘어가기전확인)
         .put("소리진동", s.소리진동).put("화면유지", s.화면유지).put("무게폭", s.무게폭)
-        .put("기본휴식", s.기본휴식).put("기준", s.기준)
+        .put("기본휴식", s.기본휴식).put("기준", s.기준).put("기본세트", s.기본세트)
 
     private fun 세션to(S: 운동세션) = JSONObject().put("루틴id", S.루틴id).put("루틴이름", S.루틴이름)
         .put("시작시각", S.시작시각).put("i", S.i).put("s", S.s).put("무게", S.무게).put("횟수", S.횟수)
         .put("끝화면", S.끝화면)
+        .also { o -> if (S.끝시각 != null) o.put("끝시각", S.끝시각) }
         .put("종목들", JSONArray().also { a ->
             S.종목들.forEach { e ->
                 a.put(JSONObject().put("이름", e.이름).put("세트", e.세트).put("계획세트", e.계획세트)
@@ -82,7 +83,7 @@ object 저장소 {
         })
         .also { o ->
             S.휴식?.let { h ->
-                o.put("휴식", JSONObject().put("k", h.k).put("끝시각", h.끝시각).put("물음", h.물음)
+                o.put("휴식", JSONObject().put("k", h.k).put("끝시각", h.끝시각).put("물음", h.물음).put("총초", h.총초).put("종목", h.종목)
                     .also { if (h.다음i != null) it.put("다음i", h.다음i) }
                     .also { if (h.다음s != null) it.put("다음s", h.다음s) })
             }
@@ -92,6 +93,7 @@ object 저장소 {
 
     fun 글에서(글: String): 앱데이터 {
         val o = JSONObject(글)
+        val 판 = o.optInt("스키마", 1)
         return 앱데이터(
             종목표 = 목록(o.optJSONArray("종목표")) { a, i -> a.getJSONObject(i).let { 종목(it.getString("이름"), it.optString("부위"), it.optString("장비"), 글또는널(it, "달력이름")) } },
             카테고리 = if (o.has("카테고리")) 목록(o.optJSONArray("카테고리")) { a, i -> a.getString(i) } else 앱데이터.기본카테고리,
@@ -99,7 +101,7 @@ object 저장소 {
             기록 = 사전(o.optJSONObject("기록")) { m, k -> 날기록from(m.getJSONObject(k)) },
             예정 = 사전(o.optJSONObject("예정")) { m, k -> m.getString(k) },
             일정 = 사전(o.optJSONObject("일정")) { m, k -> 목록(m.optJSONArray(k)) { a, i -> a.getString(i) } },
-            설정 = o.optJSONObject("설정")?.let { 설정from(it) } ?: 설정값(),
+            설정 = o.optJSONObject("설정")?.let { 설정from(it, 판) } ?: 설정값(),
             메모 = 목록(o.optJSONArray("메모")) { a, i -> a.getJSONObject(i).let { 수정메모(it.optLong("시각"), it.optString("화면"), it.optString("글")) } },
             세션 = o.optJSONObject("세션")?.let { 세션from(it) },
         )
@@ -144,10 +146,14 @@ object 저장소 {
         o.optInt("걸린초"),
     )
 
-    private fun 설정from(o: JSONObject) = 설정값(
-        o.optBoolean("자동진행", true), o.optBoolean("넘어가기전확인", false), o.optBoolean("소리진동", true),
-        o.optBoolean("화면유지", true), o.optDouble("무게폭", 2.5), o.optInt("기본휴식", 90), o.optInt("기준", 3),
-    )
+    /** 스키마 1(v0.2) 의 무게폭 2.5 는 고른 값이 아니라 기본값이었다 → 새 기본값 1 로 (09-21 메모) */
+    private fun 설정from(o: JSONObject, 판: Int): 설정값 {
+        val 폭 = o.optDouble("무게폭", 1.0).let { if (판 < 2 && it == 2.5) 1.0 else it }
+        return 설정값(
+            o.optBoolean("자동진행", true), o.optBoolean("넘어가기전확인", false), o.optBoolean("소리진동", true),
+            o.optBoolean("화면유지", true), 폭, o.optInt("기본휴식", 90), o.optInt("기본세트", 5), o.optInt("기준", 3),
+        )
+    }
 
     private fun 세션from(o: JSONObject) = 운동세션(
         o.getString("루틴id"), o.optString("루틴이름"), o.optLong("시작시각"), o.optInt("i"), o.optInt("s"),
@@ -162,7 +168,8 @@ object 저장소 {
                 )
             }
         },
-        o.optJSONObject("휴식")?.let { h -> 휴식중(h.getInt("k"), h.getLong("끝시각"), h.optBoolean("물음"), 수또는널(h, "다음i"), 수또는널(h, "다음s")) },
+        o.optJSONObject("휴식")?.let { h -> 휴식중(h.getInt("k"), h.getLong("끝시각"), h.optBoolean("물음"), 수또는널(h, "다음i"), 수또는널(h, "다음s"), h.optInt("총초", 0), h.optInt("종목", -1)) },
         o.optBoolean("끝화면"),
+        if (o.has("끝시각") && !o.isNull("끝시각")) o.getLong("끝시각") else null,
     )
 }

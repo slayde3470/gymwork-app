@@ -8,6 +8,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -60,15 +64,6 @@ import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
 
-/** 2026년 공휴일 — 시제품과 같다. 안드로이드에서 자동으로 받기는 나중에 (업데이트 예정 ⑬) */
-val 공휴일 = mapOf(
-    "2026-01-01" to "신정", "2026-02-16" to "설 연휴", "2026-02-17" to "설날", "2026-02-18" to "설 연휴",
-    "2026-03-01" to "삼일절", "2026-03-02" to "대체휴일", "2026-05-05" to "어린이날", "2026-05-24" to "부처님오신날",
-    "2026-05-25" to "대체휴일", "2026-06-06" to "현충일", "2026-08-15" to "광복절", "2026-08-17" to "대체휴일",
-    "2026-09-24" to "추석 연휴", "2026-09-25" to "추석", "2026-09-26" to "추석 연휴", "2026-10-03" to "개천절",
-    "2026-10-05" to "대체휴일", "2026-10-09" to "한글날", "2026-12-25" to "성탄절",
-)
-
 /** "가슴날, 3개월 동안 18% 성장했습니다" — 오르면 빨강 내리면 파랑 (6-3) */
 @Composable
 fun 성장줄(대상: String, 결과: 대비결과?, 기간: String, modifier: Modifier = Modifier) {
@@ -87,6 +82,10 @@ fun 성장줄(대상: String, 결과: 대비결과?, 기간: String, modifier: M
     Text(글자, modifier, style = 글꼴.보통(크기.버튼), color = c.흐림, maxLines = 1, overflow = TextOverflow.Ellipsis)
 }
 
+/** 오늘 칸을 두 번 누르면 시작할 수 있는 루틴 (예정돼 있고, 종목이 있고, 오늘 기록이 없을 때) */
+private fun 오늘시작루틴(d: 앱데이터, 오늘: String): 루틴? =
+    if (d.기록.containsKey(오늘)) null else d.예정루틴(오늘)?.takeIf { !it.휴식일 && it.종목.isNotEmpty() }
+
 @Composable
 fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit) {
     val c = Local색.current
@@ -94,29 +93,45 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit) {
     val 오늘 = 상태.오늘
     var 보는달 by remember { mutableStateOf(YearMonth.from(LocalDate.parse(오늘))) }
     var 고른날 by remember { mutableStateOf(오늘) }
-    var 열린시트 by remember { mutableStateOf<String?>(null) }     // "루틴" | "휴식"
+    var 열린시트 by remember { mutableStateOf<String?>(null) }     // "루틴" | "휴식" | "시작"
 
+    // 스크롤 없이 한 화면 (09-21 메모) — 달력이 남는 높이를 다 쓰고, 아래 판은 자기 안에서만 넘긴다
     Box(Modifier.fillMaxSize()) {
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 간격.넓게)) {
-            Row(Modifier.fillMaxWidth().padding(vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-                제목글("하젠하이데", Modifier.weight(1f))
-                글("${보는달.year}.${보는달.monthValue.toString().padStart(2, '0')}", 크기값 = 크기.조금작게, 색 = c.옅음)
-            }
-            카드(안쪽 = 10.dp) {
+        Column(Modifier.fillMaxSize().padding(horizontal = 간격.보통).padding(top = 8.dp, bottom = 8.dp)) {
+            카드(Modifier.weight(1f), 안쪽 = 8.dp) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     아이콘버튼(아이콘.왼쪽, "이전 달", { 보는달 = 보는달.minusMonths(1) })
                     제목글("${보는달.year}년 ${보는달.monthValue}월", Modifier.weight(1f).padding(start = 12.dp), 크기값 = 크기.크게)
                     아이콘버튼(아이콘.오른쪽, "다음 달", { 보는달 = 보는달.plusMonths(1) })
                 }
-                Box(Modifier.height(8.dp))
-                달력(d, 오늘, 보는달, 고른날) { 고른날 = it }
+                Box(Modifier.height(4.dp))
+                달력(d, 오늘, 보는달, 고른날, Modifier.weight(1f), on고름 = { 고른날 = it }, on두번 = { 고른날 = it; 열린시트 = "시작" })
             }
-            Box(Modifier.height(10.dp))
-            날짜판(상태, 고른날, 루틴으로, { 열린시트 = "루틴" }, { 열린시트 = "휴식" })
-            Box(Modifier.height(90.dp))
+            Box(Modifier.height(8.dp))
+            Box(Modifier.fillMaxWidth().heightIn(max = 250.dp)) {
+                Column(Modifier.verticalScroll(rememberScrollState())) {
+                    날짜판(상태, 고른날, 루틴으로, { 열린시트 = "루틴" }, { 열린시트 = "휴식" })
+                }
+            }
         }
 
         when (열린시트) {
+            "시작" -> {
+                val r = 오늘시작루틴(d, 오늘)
+                if (r == null) 열린시트 = null
+                else 시트("운동을 시작할까요?", { 열린시트 = null }) {
+                    글("${r.이름} · ${r.종목.size}종목 · ${총세트(r)}세트 · 약 ${시간글(예상초(r))}", 크기값 = 크기.버튼, 색 = c.흐림)
+                    Box(Modifier.height(12.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        버튼("시작", {
+                            val S = 운동시작(r, System.currentTimeMillis())
+                            if (S != null) 상태.바꿈 { it.copy(세션 = S) }
+                            열린시트 = null
+                        }, Modifier.weight(1f), 주요 = true)
+                        버튼("아니오", { 열린시트 = null }, Modifier.weight(1f))
+                    }
+                }
+            }
             "루틴" -> 시트("${LocalDate.parse(고른날).monthValue}월 ${LocalDate.parse(고른날).dayOfMonth}일에 넣을 루틴", { 열린시트 = null }) {
                 글("이 날부터 순서를 다시 깝니다 · 앞선 날은 그대로", 크기값 = 크기.조금작게, 색 = c.옅음)
                 d.루틴들.forEach { r ->
@@ -139,7 +154,7 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit) {
 }
 
 @Composable
-private fun 달력(d: 앱데이터, 오늘: String, 달: YearMonth, 고른날: String, on고름: (String) -> Unit) {
+private fun 달력(d: 앱데이터, 오늘: String, 달: YearMonth, 고른날: String, modifier: Modifier, on고름: (String) -> Unit, on두번: (String) -> Unit) {
     val c = Local색.current
     Row(Modifier.fillMaxWidth()) {
         listOf("일", "월", "화", "수", "목", "금", "토").forEach {
@@ -154,37 +169,47 @@ private fun 달력(d: 앱데이터, 오늘: String, 달: YearMonth, 고른날: S
         val g = LocalDate.parse(고른날)
         if (YearMonth.from(g) == 달) (앞빈칸 + g.dayOfMonth - 1) / 7 else -1
     }
-    for (줄 in 0 until 줄수) {
-        val 펼침 = 줄 == 고른줄                        // 누른 날이 있는 줄만 종목까지 (2-1)
-        Row(Modifier.fillMaxWidth().padding(top = 4.dp)) {
-            for (칸 in 0 until 7) {
-                val n = 줄 * 7 + 칸 - 앞빈칸 + 1
-                if (n < 1 || n > 달.lengthOfMonth()) { Box(Modifier.weight(1f)); continue }
-                val 날 = 달.atDay(n)
-                날칸(d, 날.toString(), 날, 오늘, 날.toString() == 고른날, 펼침, Modifier.weight(1f)) { on고름(날.toString()) }
+    val 두번가능 = 오늘시작루틴(d, 오늘) != null
+    // 줄마다 높이를 나눠 가진다 — 펼친 줄(누른 날이 있는 줄)이 더 크게 (2-1)
+    Column(modifier.fillMaxWidth()) {
+        for (줄 in 0 until 줄수) {
+            val 펼침 = 줄 == 고른줄
+            Row(Modifier.fillMaxWidth().weight(if (펼침) 2.4f else 1f).padding(top = 2.dp)) {
+                for (칸 in 0 until 7) {
+                    val n = 줄 * 7 + 칸 - 앞빈칸 + 1
+                    if (n < 1 || n > 달.lengthOfMonth()) { Box(Modifier.weight(1f)); continue }
+                    val 날 = 달.atDay(n)
+                    val k = 날.toString()
+                    날칸(d, k, 날, 오늘, k == 고른날, 펼침, Modifier.weight(1f).fillMaxHeight(),
+                        두번 = if (k == 오늘 && 두번가능) ({ on두번(k) }) else null) { on고름(k) }
+                }
             }
         }
     }
 }
 
 @Composable
-private fun 날칸(d: 앱데이터, k: String, 날: LocalDate, 오늘: String, 고름: Boolean, 펼침: Boolean, modifier: Modifier, onClick: () -> Unit) {
+private fun 날칸(d: 앱데이터, k: String, 날: LocalDate, 오늘: String, 고름: Boolean, 펼침: Boolean, modifier: Modifier, 두번: (() -> Unit)?, onClick: () -> Unit) {
     val c = Local색.current
     val rec = d.기록[k]
     val 예 = if (rec == null && k >= 오늘) d.예정루틴(k) else null
-    val 휴 = 공휴일[k]
+    val 누름 by rememberUpdatedState(onClick)
+    val 두번누름 by rememberUpdatedState(두번)
     val 숫자색 = when {
-        휴 != null || 날.dayOfWeek == DayOfWeek.SUNDAY -> c.나쁨
+        날.dayOfWeek == DayOfWeek.SUNDAY -> c.나쁨
         날.dayOfWeek == DayOfWeek.SATURDAY -> c.내림
         else -> c.글
     }
     Column(
         modifier
             .padding(1.dp)
-            .heightIn(min = 52.dp)
             .clip(RoundedCornerShape(모서리.아주작게))
             .then(if (고름) Modifier.border(1.5.dp, c.강조, RoundedCornerShape(모서리.아주작게)) else Modifier)
-            .눌림(onClick)
+            // 칸 전체가 누르는 곳 (09-21 메모: 펼친 줄의 빈 곳이 안 눌렸다). 오늘 칸만 두 번 누르기를 받는다
+            .pointerInput(k, 두번 != null) {
+                if (두번누름 != null) detectTapGestures(onTap = { 누름() }, onDoubleTap = { 누름(); 두번누름?.invoke() })
+                else detectTapGestures(onTap = { 누름() })
+            }
             .padding(2.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -208,7 +233,6 @@ private fun 날칸(d: 앱데이터, k: String, 날: LocalDate, 오늘: String, �
                 contentAlignment = Alignment.Center,
             ) { 글(이름, 크기값 = 크기.아주작게, 색 = 글색, 굵기 = FontWeight.Bold) }
         }
-        if (휴 != null) 글(휴, 크기값 = 크기.아주작게, 색 = c.나쁨)
         if (rec != null) 글("${정식세트(rec).size}세트", 크기값 = 크기.아주작게, 색 = c.옅음)
         if (펼침) {
             val 종목들 = rec?.종목들?.map { it.이름 } ?: 예?.종목?.map { it.이름 } ?: emptyList()
@@ -227,11 +251,7 @@ private fun 날짜판(상태: 앱상태, k: String, 루틴으로: () -> Unit, �
     val d = 상태.d
     val 오늘 = 상태.오늘
     val 날 = LocalDate.parse(k)
-    val 요일 = "일월화수목금토"[날.dayOfWeek.value % 7]
-    val 머리 = (if (k == 오늘) "오늘 · " else "") + "${날.monthValue}월 ${날.dayOfMonth}일 ($요일)"
-    카드 {
-        글(머리, 크기값 = 크기.조금작게, 색 = c.옅음, 굵기 = FontWeight.Bold)
-        Box(Modifier.height(6.dp))
+    카드(안쪽 = 12.dp) {
         val rec = d.기록[k]
         when {
             d.루틴들.isEmpty() -> {
