@@ -259,7 +259,7 @@ fun 루틴화면(상태: 앱상태) {
                     구조바뀜 { it.copy(루틴들 = it.루틴들 + 루틴("r" + System.currentTimeMillis(), "휴식", 휴식일 = true)) }
                 }, Modifier.weight(0.7f), 그림 = 아이콘.더하기)
             }
-            Box(Modifier.height(100.dp))
+            Box(Modifier.height(16.dp))   // 끝에 빈 공간을 두지 않는다 (09-21 메모)
         }
         // 끄는 동안 손가락을 따라오는 초록 알약 (1-3 '끌 때 이름표')
         끌기?.let { g ->
@@ -400,12 +400,18 @@ private fun 안고르기(상태: 앱상태, r: 루틴, 방금: List<String>, 방
         // 새 종목 만들기 — 처음엔 종목이 하나도 없으므로 여기서 바로 만든다
         if (새로) {
             Column(Modifier.padding(vertical = 8.dp)) {
-                입력칸(새이름, { 새이름 = it }, Modifier.fillMaxWidth(), 안내 = "종목 이름 (예: 벤치프레스)")
+                종목이름칸(상태, 새이름, { 새이름 = it }) { 이름, 부, 장 ->
+                    새이름 = 이름
+                    if (부 in d.카테고리) 새부위 = 부
+                    if (장.isNotBlank()) 새장비 = 장
+                }
                 Box(Modifier.height(6.dp))
                 부위고르기(상태, 새부위, { 새부위 = it })
                 Box(Modifier.height(6.dp))
+                장비고르기(상태, 새장비, { 새장비 = it })
+                Box(Modifier.height(6.dp))
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    입력칸(새장비, { 새장비 = it }, Modifier.weight(1f), 안내 = "장비 (바벨 · 덤벨 …)")
+                    버튼("취소", { 새로 = false; 새이름 = ""; 새장비 = "" }, Modifier.weight(1f), 작게 = true)
                     버튼("만들고 넣기", {
                         val 이름 = 새이름.trim()
                         if (이름.isNotEmpty()) {
@@ -415,7 +421,7 @@ private fun 안고르기(상태: 앱상태, r: 루틴, 방금: List<String>, 방
                             }
                             방금바꿈(방금 + 이름); 새이름 = ""; 새장비 = ""; 새로 = false
                         }
-                    }, 작게 = true, 주요 = true)
+                    }, Modifier.weight(1.4f), 작게 = true, 주요 = true)
                 }
             }
         } else {
@@ -426,10 +432,12 @@ private fun 안고르기(상태: 앱상태, r: 루틴, 방금: List<String>, 방
         Column(Modifier.heightIn(max = 360.dp).verticalScroll(rememberScrollState())) {
             목록.forEach { e ->
                 val 넣음 = e.이름 in 방금
+                // 이미 있는 종목도 한 번 더 넣을 수 있다 (09-21 메모). 방금 넣은 것을 다시 누르면 빠진다
                 val 원래 = e.이름 in 있음 && !넣음
+                val 몇개 = r.종목.count { it.이름 == e.이름 }
                 Row(
                     Modifier.fillMaxWidth()
-                        .then(if (원래) Modifier else Modifier.눌림 {
+                        .then(Modifier.눌림 {
                             if (넣음) {
                                 상태.바꿈 { dd -> dd.루틴바꿈(r.id) { x ->
                                     val k = x.종목.indexOfLast { it.이름 == e.이름 }
@@ -445,13 +453,20 @@ private fun 안고르기(상태: 앱상태, r: 루틴, 방금: List<String>, 방
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Row(Modifier.weight(1f), verticalAlignment = Alignment.Bottom) {
-                        글(e.이름, Modifier.weight(1f, fill = false), 색 = if (원래) c.옅음 else if (넣음) c.강조 else c.글, 굵기 = if (넣음) FontWeight.Bold else FontWeight.Normal)
+                        글(e.이름, Modifier.weight(1f, fill = false), 색 = if (넣음) c.강조 else c.글, 굵기 = if (넣음) FontWeight.Bold else FontWeight.Normal)
                         Box(Modifier.width(6.dp))
                         글(listOf(e.부위, e.장비).filter { it.isNotBlank() }.joinToString("·"), 크기값 = 크기.작게, 색 = c.옅음)
                     }
                     when {
-                        원래 -> 글("있음", 크기값 = 크기.작게, 색 = c.옅음)
-                        넣음 -> Icon(아이콘.체크, "넣음", Modifier.size(18.dp), tint = c.강조)
+                        원래 -> Row(verticalAlignment = Alignment.CenterVertically) {
+                            글(if (몇개 > 1) "있음 ×$몇개" else "있음", 크기값 = 크기.작게, 색 = c.옅음)
+                            Box(Modifier.width(6.dp))
+                            Icon(아이콘.더하기, "한 번 더 넣기", Modifier.size(18.dp), tint = c.강조)
+                        }
+                        넣음 -> Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (몇개 > 1) { 글("×$몇개", 크기값 = 크기.작게, 색 = c.강조); Box(Modifier.width(6.dp)) }
+                            Icon(아이콘.체크, "넣음", Modifier.size(18.dp), tint = c.강조)
+                        }
                         else -> Icon(아이콘.더하기, "넣기", Modifier.size(18.dp), tint = c.강조)
                     }
                 }

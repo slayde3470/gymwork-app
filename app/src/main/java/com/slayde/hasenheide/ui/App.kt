@@ -2,6 +2,15 @@ package com.slayde.hasenheide.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.isImeVisible
+import androidx.compose.runtime.mutableLongStateOf
+import com.slayde.hasenheide.data.분초
+import com.slayde.hasenheide.data.시분초
+import com.slayde.hasenheide.data.흐른초
+import com.slayde.hasenheide.data.휴식끝
+import kotlin.math.max
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -86,47 +95,84 @@ enum class 탭(val 이름: String, val 그림: ImageVector) {
     캘린더("캘린더", 아이콘.달력), 루틴("루틴", 아이콘.루틴), 종목("종목", 아이콘.바벨), 설정("설정", 아이콘.톱니)
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun 앱(상태: 앱상태, 폰: 폰기능) {
     val c = Local색.current
     var 지금탭 by remember { mutableStateOf(탭.캘린더) }
     var 메모열림 by remember { mutableStateOf(false) }
+    // 운동 중이어도 다른 탭을 볼 수 있다 — 운동은 그대로 이어지고, 위의 띠로 돌아온다 (09-21 메모)
+    var 운동보기 by remember { mutableStateOf(true) }
+    val 세션 = 상태.d.세션
+    LaunchedEffect(세션?.시작시각) { if (세션 != null) 운동보기 = true }
 
     // 앱을 켤 때 한 번, 그 뒤로 1분마다 날짜가 바뀌었는지 본다
     LaunchedEffect(Unit) { while (true) { 상태.날짜확인(); delay(60_000) } }
     // 되돌리기 띠는 5초 뒤 사라진다
     LaunchedEffect(상태.되돌림) { if (상태.되돌림 != null) { delay(5_000); 상태.되돌림치움() } }
+    // 휴식 시계 — 다른 탭을 보고 있어도 돈다. 끝나면 알리고 다음으로
+    LaunchedEffect(Unit) {
+        while (true) {
+            val 지금 = System.currentTimeMillis()
+            val h = 상태.d.세션?.휴식
+            if (h != null && !h.물음 && 지금 >= h.끝시각) {
+                if (상태.d.설정.소리진동) 폰.알림()
+                상태.바꿈 { dd -> dd.세션?.let { dd.copy(세션 = it.휴식끝(dd.설정, 지금)) } ?: dd }
+            }
+            delay(250)
+        }
+    }
 
-    val 운동중 = 상태.d.세션 != null
-    val 화면이름 = if (운동중) "운동 중" else 지금탭.이름
+    val 운동화면중 = 세션 != null && 운동보기
+    val 화면이름 = if (운동화면중) "운동 중" else 지금탭.이름
+    // 자판이 떠 있거나 숫자를 고치는 중이면 아래 탭을 숨긴다 (09-21 메모)
+    val 탭숨김 = WindowInsets.isImeVisible || 입력중.수 > 0
 
     Box(Modifier.fillMaxSize().background(c.바탕)) {
         Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().imePadding()) {
             Box(Modifier.weight(1f).fillMaxWidth()) {
-                if (운동중) 운동화면(상태, 폰)
+                if (운동화면중) 운동화면(상태, 폰)
                 else when (지금탭) {
-                    탭.캘린더 -> 캘린더화면(상태) { 지금탭 = 탭.루틴 }
+                    탭.캘린더 -> 캘린더화면(상태, { 지금탭 = 탭.루틴 }, { 운동보기 = true })
                     탭.루틴 -> 루틴화면(상태)
                     탭.종목 -> 종목화면(상태)
                     탭.설정 -> 설정화면(상태, 폰)
                 }
             }
-            // 아래 탭 — 운동 중에도 살아 있다. 맨 오른쪽은 '수정 메모'(어느 화면에서든)
-            Row(
-                Modifier.fillMaxWidth().background(c.면).padding(top = 1.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-            ) {
-                탭.entries.forEach { t ->
-                    탭단추(t.이름, t.그림, !운동중 && 지금탭 == t) {
-                        if (운동중) return@탭단추       // 운동 중에는 '운동 끝내기'로만 나간다
-                        지금탭 = t
+            if (세션 != null && !운동보기) 운동중띠(세션) { 운동보기 = true }
+            if (!탭숨김) {
+                // 아래 탭 — 예전보다 25% 낮게 (09-21 메모). 맨 오른쪽은 '수정 메모'
+                Row(
+                    Modifier.fillMaxWidth().background(c.면).padding(top = 1.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                ) {
+                    탭.entries.forEach { t ->
+                        탭단추(t.이름, t.그림, !운동화면중 && 지금탭 == t) { 지금탭 = t; 운동보기 = false }
                     }
+                    탭단추("메모", 아이콘.연필, 메모열림) { 메모열림 = true }
                 }
-                탭단추("메모", 아이콘.연필, 메모열림) { 메모열림 = true }
             }
         }
-        상태.되돌림?.let { (글자, _) -> 아래띠(글자, "되돌리기", { 상태.되돌리기() }, 바깥 = Modifier.navigationBarsPadding().padding(bottom = 62.dp)) }
+        상태.되돌림?.let { (글자, _) -> 아래띠(글자, "되돌리기", { 상태.되돌리기() }, 바깥 = Modifier.navigationBarsPadding().padding(bottom = if (탭숨김) 0.dp else 46.dp)) }
         if (메모열림) 메모시트(상태, 화면이름, 폰) { 메모열림 = false }
+    }
+}
+
+/** 다른 탭을 보는 동안 탭 위에 뜨는 띠 — 누르면 운동 화면으로 */
+@Composable
+private fun 운동중띠(S: com.slayde.hasenheide.data.운동세션, 돌아가기: () -> Unit) {
+    val c = Local색.current
+    var 지금 by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(Unit) { while (true) { 지금 = System.currentTimeMillis(); delay(1000) } }
+    val h = S.휴식
+    val 곁 = if (h != null && !h.물음) "휴식 ${분초(max(0L, (h.끝시각 - 지금 + 999) / 1000).toInt())}" else 시분초(S.흐른초(지금))
+    Row(
+        Modifier.fillMaxWidth().background(c.강조).눌림(돌아가기).padding(horizontal = 16.dp, vertical = 9.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        글("운동 중 · ${S.루틴이름} · $곁", Modifier.weight(1f), 크기값 = 크기.버튼, 색 = c.강조글, 굵기 = FontWeight.Bold)
+        글("돌아가기", 크기값 = 크기.버튼, 색 = c.강조글, 굵기 = FontWeight.Bold)
+        Icon(아이콘.오른쪽, null, Modifier.size(16.dp), tint = c.강조글)
     }
 }
 
@@ -134,11 +180,11 @@ fun 앱(상태: 앱상태, 폰: 폰기능) {
 private fun androidx.compose.foundation.layout.RowScope.탭단추(이름: String, 그림: ImageVector, 켬: Boolean, onClick: () -> Unit) {
     val c = Local색.current
     Column(
-        Modifier.weight(1f).눌림(onClick).padding(top = 9.dp, bottom = 10.dp),
+        Modifier.weight(1f).눌림(onClick).padding(top = 5.dp, bottom = 6.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Icon(그림, 이름, Modifier.size(21.dp), tint = if (켬) c.강조 else c.흐림)
-        Box(Modifier.height(3.dp))
-        글(이름, 크기값 = 크기.작게, 색 = if (켬) c.강조 else c.흐림, 굵기 = if (켬) FontWeight.Bold else FontWeight.Medium)
+        Icon(그림, 이름, Modifier.size(18.dp), tint = if (켬) c.강조 else c.흐림)
+        Box(Modifier.height(2.dp))
+        글(이름, 크기값 = 크기.아주작게, 색 = if (켬) c.강조 else c.흐림, 굵기 = if (켬) FontWeight.Bold else FontWeight.Medium)
     }
 }

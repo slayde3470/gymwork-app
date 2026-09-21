@@ -33,14 +33,17 @@ fun 무게글(w: Double): String = if (w == w.toLong().toDouble()) w.toLong().to
 fun 콤마(n: Number): String = "%,d".format(n.toDouble().roundToInt())
 fun 분초(초: Int): String = "${초 / 60}:${(초 % 60).toString().padStart(2, '0')}"
 
+/** 휴식 최대 — 99분 59초 (분 칸에 60 을 치면 60분이 되도록, 09-21 메모) */
+const val 휴식최대 = 5999
+
 /** "3:00" 또는 "180" → 초 */
 fun 초읽기(글: String): Int? {
     val t = 글.trim()
     if (t.contains(':')) {
         val (m, s) = t.split(':', limit = 2)
-        return ((m.toIntOrNull() ?: 0) * 60 + (s.toIntOrNull() ?: 0)).coerceIn(0, 3600)
+        return ((m.toIntOrNull() ?: 0) * 60 + (s.toIntOrNull() ?: 0)).coerceIn(0, 휴식최대)
     }
-    return t.toIntOrNull()?.coerceIn(0, 3600)
+    return t.toIntOrNull()?.coerceIn(0, 휴식최대)
 }
 
 /** 운동 중 흐른 시간 — "02분 41초" / 60분 넘으면 "1시간 02분 05초" (5-1) */
@@ -305,7 +308,7 @@ fun 운동세션.휴식자리(j: Int, k: Int): Boolean {
  * 체크 — j 번째 종목의 k 번째 세트.
  *  · 이미 한 세트면 → 체크 풀기. 그 칸만 비고, 값은 남겨 두며, 그 세트가 '지금 할 세트'가 된다
  *    (09-21 메모: 풀었다 다시 체크하면 휴식이 안 돌던 것 — 지금 세트가 아니어서였다)
- *  · 안 한 세트면 → 그 세트로 자리를 옮겨 기록하고 휴식을 시작한다
+ *  · 안 한 세트면 → 앞에 빈 칸이 있으면 그 자리로 당겨 온 뒤(1·2 하고 4 체크 → 1·2·3), 기록하고 휴식
  */
 fun 운동세션.체크(j: Int, k: Int, 지금: Long): 운동세션 {
     val e0 = 종목들.getOrNull(j) ?: return this
@@ -315,8 +318,27 @@ fun 운동세션.체크(j: Int, k: Int, 지금: Long): 운동세션 {
         if (S.휴식자리(j, k)) S = S.copy(휴식 = null)
         return S.자리로(j, k)
     }
-    val S0 = if (j != i || k != s) 자리로(j, k) else this
+    var T = this
+    var kk = k
+    val 첫빈 = (0 until k).firstOrNull { e0.기록.칸(it) == null }
+    if (첫빈 != null) {
+        // 입력 중이던 '지금 세트' 값을 먼저 그 줄에 적어 둔다 — 줄이 움직여도 값이 따라가게
+        if (T.i == j && T.s < e0.총칸() && e0.기록.칸(T.s) == null) T = T.종목바꿈(j) { it.copy(예정값 = it.예정값.칸바꿈(T.s, 세트(T.무게, T.횟수))) }
+        T = T.종목바꿈(j) { it.copy(기록 = it.기록.당김(첫빈, k), 예정값 = it.예정값.당김(첫빈, k), 휴식들 = it.휴식들.당김(첫빈, k)) }
+        kk = 첫빈
+    }
+    // 당겼으면 그 칸 값을 새로 올려야 한다 (지금 세트 자리와 번호가 같아도 값은 옮겨 온 줄의 것)
+    val S0 = if (첫빈 != null || j != T.i || kk != T.s) T.자리로(j, kk) else T
     return S0.지금체크(지금)
+}
+
+/** k 번째 칸을 f 번째 자리로 당기고, 그 사이 칸들은 한 칸씩 뒤로 */
+private fun <T> List<T?>.당김(f: Int, k: Int): List<T?> {
+    val m = toMutableList()
+    while (m.size <= k) m.add(null)
+    val x = m.removeAt(k)
+    m.add(f, x)
+    return m
 }
 
 /** 옛 호출 모양 — 지금 종목의 k 번째 */
@@ -328,19 +350,27 @@ private fun 운동세션.지금체크(지금: Long): 운동세션 {
     var S = 종목바꿈(i) { it.copy(기록 = it.기록.칸바꿈(k, v)) }
     val ex = S.지금종목
 
-    // 슈퍼세트 — 묶인 종목을 한 바퀴 돈 뒤에만 쉰다 (8-2)
+    // 슈퍼세트 (09-21 메모: 뒤죽박죽 체크해도 되게)
+    //  · 덜 한 종목이 있으면 → 쉬지 않고 그 종목으로 (가장 덜 한 것, 같으면 목록 순서)
+    //  · 모두 같은 수만큼 했으면 → 한 바퀴 끝. 마지막 종목의 휴식으로 쉰 뒤 가장 덜 한 종목부터
     if (ex.슈퍼 != null) {
         val 식구 = S.종목들.withIndex().filter { it.value.슈퍼 == ex.슈퍼 && !it.value.마감 }.map { it.index }
-        val 자리 = 식구.indexOf(S.i)
-        if (자리 >= 0 && 자리 < 식구.size - 1) {
-            val 다음 = 식구[자리 + 1]
-            if (k < S.종목들[다음].총칸() && S.종목들[다음].기록.칸(k) == null) return S.copy(휴식 = null).자리로(다음, k)
-        }
-        if (자리 >= 0) {
-            // 한 바퀴 끝 — 첫 종목부터 빈 세트를 찾는다
-            val 다음칸 = 식구.map { m -> m to 다음빈칸(S.종목들[m], k) }.filter { (m, n) -> n < S.종목들[m].총칸() }.minByOrNull { it.second }
-            S = S.copy(s = 다음빈칸(ex, k))
-            if (다음칸 != null) return S.휴식시작(k, 지금, 다음칸.first, 다음칸.second)
+        if (S.i in 식구 && 식구.size > 1) {
+            val 수 = 식구.associateWith { S.종목들[it].찬것().size }
+            val 남은 = 식구.filter { S.종목들[it].덜한가() }
+            if (남은.isNotEmpty()) {
+                val 가장많이 = 수.values.max()
+                val 뒤처진 = 남은.filter { 수.getValue(it) < 가장많이 }
+                val 다음 = (if (뒤처진.isNotEmpty()) 뒤처진 else 남은).minBy { 수.getValue(it) }
+                val 다음칸 = 다음빈칸(S.종목들[다음], -1)
+                if (뒤처진.isNotEmpty()) return S.copy(휴식 = null).자리로(다음, 다음칸)
+                // 한 바퀴 끝 — 휴식은 마지막 종목의 그 바퀴 세트 줄에서
+                val 끝 = 식구.last()
+                val 바퀴 = max(0, 수.getValue(끝) - 1)
+                val 쉴 = S.종목들[끝].세트휴식(바퀴)
+                S = S.copy(s = 다음빈칸(S.지금종목, k))
+                return S.copy(휴식 = 휴식중(바퀴, 지금 + 쉴 * 1000L, false, 다음, 다음칸, 총초 = 쉴, 종목 = 끝))
+            }
         }
     }
     S = S.copy(s = 다음빈칸(S.지금종목, k))
@@ -428,7 +458,7 @@ fun 운동세션.값고치기(j: Int, k: Int, 새무게: Double? = null, 새횟�
     }
 }
 fun 운동세션.값고치기(k: Int, 새무게: Double? = null, 새횟수: Int? = null): 운동세션 = 값고치기(i, k, 새무게, 새횟수)
-fun 운동세션.휴식고치기(j: Int, k: Int, 초: Int): 운동세션 = 종목바꿈(j) { it.copy(휴식들 = it.휴식들.칸바꿈(k, 초.coerceIn(0, 600))) }
+fun 운동세션.휴식고치기(j: Int, k: Int, 초: Int): 운동세션 = 종목바꿈(j) { it.copy(휴식들 = it.휴식들.칸바꿈(k, 초.coerceIn(0, 휴식최대))) }
 fun 운동세션.휴식고치기(k: Int, 초: Int): 운동세션 = 휴식고치기(i, k, 초)
 
 /** 운동 추가 — 오늘만. 지금 종목(묶음이면 묶음 전체) 바로 뒤에 끼운다 (5-2) */

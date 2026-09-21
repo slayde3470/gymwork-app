@@ -3,6 +3,8 @@ package com.slayde.hasenheide.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.RowScope
+import com.slayde.hasenheide.ui.theme.높이
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -66,13 +68,14 @@ import java.time.YearMonth
 
 /** "가슴날, 3개월 동안 18% 성장했습니다" — 오르면 빨강 내리면 파랑 (6-3) */
 @Composable
-fun 성장줄(대상: String, 결과: 대비결과?, 기간: String, modifier: Modifier = Modifier) {
+fun 성장줄(대상: String?, 결과: 대비결과?, 기간: String, modifier: Modifier = Modifier) {
     val c = Local색.current
     val 글자 = buildAnnotatedString {
-        withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = c.글)) { append(대상) }
+        // 대상이 null 이면 이름 없이 — 바로 위에 이름이 이미 있을 때 (09-21 메모: 이름이 두 번 나왔다)
+        if (대상 != null) withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = c.글)) { append(대상) }
         val p = 결과?.볼륨?.pct
-        if (p == null) { append(" · $기간 비교 기록 없음"); return@buildAnnotatedString }
-        append(", $기간 ")
+        if (p == null) { append(if (대상 != null) " · $기간 비교 기록 없음" else "$기간 비교 기록 없음"); return@buildAnnotatedString }
+        append(if (대상 != null) ", $기간 " else "$기간 ")
         when {
             p > 0 -> { withStyle(SpanStyle(color = c.오름, fontWeight = FontWeight.Bold)) { append("${p}% 성장") }; append("했습니다") }
             p < 0 -> { withStyle(SpanStyle(color = c.내림, fontWeight = FontWeight.Bold)) { append("${-p}% 줄었") }; append("습니다") }
@@ -87,7 +90,7 @@ private fun 오늘시작루틴(d: 앱데이터, 오늘: String): 루틴? =
     if (d.기록.containsKey(오늘)) null else d.예정루틴(오늘)?.takeIf { !it.휴식일 && it.종목.isNotEmpty() }
 
 @Composable
-fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit) {
+fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: () -> Unit) {
     val c = Local색.current
     val d = 상태.d
     val 오늘 = 상태.오늘
@@ -107,10 +110,10 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit) {
                 Box(Modifier.height(4.dp))
                 달력(d, 오늘, 보는달, 고른날, Modifier.weight(1f), on고름 = { 고른날 = it }, on두번 = { 고른날 = it; 열린시트 = "시작" })
             }
-            Box(Modifier.height(8.dp))
-            Box(Modifier.fillMaxWidth().heightIn(max = 250.dp)) {
+            Box(Modifier.height(6.dp))
+            Box(Modifier.fillMaxWidth().heightIn(max = 190.dp)) {
                 Column(Modifier.verticalScroll(rememberScrollState())) {
-                    날짜판(상태, 고른날, 루틴으로, { 열린시트 = "루틴" }, { 열린시트 = "휴식" })
+                    날짜판(상태, 고른날, 루틴으로, 운동으로, { 열린시트 = "루틴" }, { 열린시트 = "휴식" })
                 }
             }
         }
@@ -118,7 +121,8 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit) {
         when (열린시트) {
             "시작" -> {
                 val r = 오늘시작루틴(d, 오늘)
-                if (r == null) 열린시트 = null
+                if (d.세션 != null) { 열린시트 = null; 운동으로() }
+                else if (r == null) 열린시트 = null
                 else 시트("운동을 시작할까요?", { 열린시트 = null }) {
                     글("${r.이름} · ${r.종목.size}종목 · ${총세트(r)}세트 · 약 ${시간글(예상초(r))}", 크기값 = 크기.버튼, 색 = c.흐림)
                     Box(Modifier.height(12.dp))
@@ -174,7 +178,7 @@ private fun 달력(d: 앱데이터, 오늘: String, 달: YearMonth, 고른날: S
     Column(modifier.fillMaxWidth()) {
         for (줄 in 0 until 줄수) {
             val 펼침 = 줄 == 고른줄
-            Row(Modifier.fillMaxWidth().weight(if (펼침) 2.4f else 1f).padding(top = 2.dp)) {
+            Row(Modifier.fillMaxWidth().weight(if (펼침) 3f else 1f).padding(top = 2.dp)) {
                 for (칸 in 0 until 7) {
                     val n = 줄 * 7 + 칸 - 앞빈칸 + 1
                     if (n < 1 || n > 달.lengthOfMonth()) { Box(Modifier.weight(1f)); continue }
@@ -245,72 +249,93 @@ private fun 날칸(d: 앱데이터, k: String, 날: LocalDate, 오늘: String, �
     }
 }
 
+/**
+ * 날짜 아래 판 — 작게 (09-21 메모: 30% 가량 줄임).
+ * 첫 줄에 이름 · 요약, 둘째 줄에 향상도, 셋째 줄에 버튼 넷(높이 32). 일정은 있을 때만 아래에.
+ */
 @Composable
-private fun 날짜판(상태: 앱상태, k: String, 루틴으로: () -> Unit, 다른루틴: () -> Unit, 쉬기: () -> Unit) {
+private fun 날짜판(상태: 앱상태, k: String, 루틴으로: () -> Unit, 운동으로: () -> Unit, 다른루틴: () -> Unit, 쉬기: () -> Unit) {
     val c = Local색.current
     val d = 상태.d
     val 오늘 = 상태.오늘
     val 날 = LocalDate.parse(k)
-    카드(안쪽 = 12.dp) {
+    var 일정적기 by remember(k) { mutableStateOf(false) }
+    val 일정버튼: @Composable RowScope.() -> Unit = { 버튼("일정", { 일정적기 = !일정적기 }, Modifier.weight(0.8f), 낮게 = true, 그림 = 아이콘.더하기) }
+    카드(안쪽 = 10.dp) {
         val rec = d.기록[k]
         when {
             d.루틴들.isEmpty() -> {
-                글("아직 루틴이 없습니다", 굵기 = FontWeight.Bold)
-                글("루틴을 만들면 순서대로 달력에 깔립니다", 크기값 = 크기.조금작게, 색 = c.옅음)
-                Box(Modifier.height(10.dp))
-                버튼("루틴 만들러 가기", 루틴으로, Modifier.fillMaxWidth(), 주요 = true, 그림 = 아이콘.더하기)
+                글("아직 루틴이 없습니다 · 만들면 순서대로 깔립니다", 크기값 = 크기.조금작게, 색 = c.옅음)
+                Box(Modifier.height(6.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    버튼("루틴 만들러 가기", 루틴으로, Modifier.weight(2f), 주요 = true, 낮게 = true, 그림 = 아이콘.더하기)
+                    일정버튼()
+                }
             }
             rec != null -> {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    제목글(rec.루틴이름, 크기값 = 크기.크게)
-                    Box(Modifier.width(8.dp))
-                    알약(if (rec.달성) "달성" else "미달성", if (rec.달성) c.좋음 else c.나쁨)
-                }
                 val 세트들 = 정식세트(rec)
-                글("${세트들.size}세트 · 볼륨 ${콤마(볼륨(세트들))}kg · ${시분초(rec.걸린초.toLong())}", 크기값 = 크기.조금작게, 색 = c.흐림)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    제목글(rec.루틴이름, 크기값 = 크기.본문)
+                    Box(Modifier.width(6.dp))
+                    알약(if (rec.달성) "달성" else "미달성", if (rec.달성) c.좋음 else c.나쁨)
+                    Box(Modifier.width(6.dp))
+                    글("${세트들.size}세트 · ${콤마(볼륨(세트들))}kg · ${시분초(rec.걸린초.toLong())}", Modifier.weight(1f), 크기값 = 크기.작게, 색 = c.흐림)
+                }
                 val 앞 = d.기록.filter { it.value.루틴id == rec.루틴id && it.key < k }.keys.maxOrNull()
                 val 결과 = 앞?.let { 대비(세트들, 정식세트(d.기록[it]!!), it) }
-                성장줄(rec.루틴이름, 결과, "직전 대비", Modifier.padding(vertical = 6.dp))
+                성장줄(null, 결과, "직전 대비", Modifier.padding(top = 2.dp))
                 rec.종목들.forEach { e ->
-                    Row(Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
-                        글(e.이름, Modifier.weight(1f), 크기값 = 크기.버튼)
+                    Row(Modifier.fillMaxWidth().padding(top = 3.dp)) {
+                        글(e.이름, Modifier.weight(1f), 크기값 = 크기.조금작게)
                         글(e.세트들.joinToString(" ") { "${com.slayde.hasenheide.data.무게글(it.w)}×${it.r}" }, Modifier.weight(1.4f), 크기값 = 크기.작게, 색 = c.흐림)
                     }
                 }
-                Box(Modifier.height(8.dp))
-                버튼("이 날 기록 지우기", {
-                    상태.지우고알림("${날.monthValue}월 ${날.dayOfMonth}일 기록을 지웠습니다") { it.copy(기록 = it.기록 - k).예정초기화(오늘) }
-                }, Modifier.fillMaxWidth(), 작게 = true, 글색 = c.나쁨)
+                Box(Modifier.height(6.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    버튼("이 날 기록 지우기", {
+                        상태.지우고알림("${날.monthValue}월 ${날.dayOfMonth}일 기록을 지웠습니다") { it.copy(기록 = it.기록 - k).예정초기화(오늘) }
+                    }, Modifier.weight(2f), 낮게 = true, 글색 = c.나쁨)
+                    일정버튼()
+                }
             }
-            k < 오늘 -> 글("기록이 없는 날입니다", 색 = c.옅음)
+            k < 오늘 -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                글("기록이 없는 날입니다", Modifier.weight(2f), 크기값 = 크기.조금작게, 색 = c.옅음)
+                일정버튼()
+            }
             else -> {
                 val r = d.예정루틴(k)
-                if (r == null) 글("예정된 루틴이 없습니다", 색 = c.옅음)
-                else if (r.휴식일) { 제목글("휴식일", 크기값 = 크기.크게); 글("순서에서 한 칸을 차지합니다", 크기값 = 크기.조금작게, 색 = c.옅음) }
-                else {
-                    Row(verticalAlignment = Alignment.Bottom) {
-                        제목글(r.이름, 크기값 = 크기.크게)
-                        Box(Modifier.width(8.dp))
-                        글("${r.종목.size}종목 · ${총세트(r)}세트 · 약 ${시간글(예상초(r))}", 크기값 = 크기.조금작게, 색 = c.흐림)
+                when {
+                    r == null -> 글("예정된 루틴이 없습니다", 크기값 = 크기.조금작게, 색 = c.옅음)
+                    r.휴식일 -> Row(verticalAlignment = Alignment.Bottom) {
+                        제목글("휴식일", 크기값 = 크기.본문); Box(Modifier.width(6.dp))
+                        글("순서에서 한 칸을 차지합니다", 크기값 = 크기.작게, 색 = c.옅음)
                     }
-                    성장줄(r.이름, d.루틴성장(r.id, 오늘), d.지금기준().기간, Modifier.padding(top = 4.dp))
+                    else -> {
+                        Row(verticalAlignment = Alignment.Bottom) {
+                            제목글(r.이름, Modifier.weight(1f, fill = false), 크기값 = 크기.본문)
+                            Box(Modifier.width(6.dp))
+                            글("${r.종목.size}종목 · ${총세트(r)}세트 · 약 ${시간글(예상초(r))}", 크기값 = 크기.작게, 색 = c.흐림)
+                        }
+                        성장줄(null, d.루틴성장(r.id, 오늘), d.지금기준().기간, Modifier.padding(top = 1.dp))
+                    }
                 }
-                Box(Modifier.height(10.dp))
+                Box(Modifier.height(6.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    if (k == 오늘 && r != null && !r.휴식일 && r.종목.isNotEmpty()) {
-                        버튼("운동 시작", {
-                            val S = 운동시작(r, System.currentTimeMillis())
-                            if (S != null) 상태.바꿈 { it.copy(세션 = S) }
-                        }, Modifier.weight(1.3f), 주요 = true, 작게 = true)
-                    }
-                    버튼("다른 루틴", 다른루틴, Modifier.weight(1f), 작게 = true)
-                    if (k == 오늘 && r != null && !r.휴식일) 버튼("휴식", 쉬기, Modifier.weight(1f), 작게 = true)
+                    val 오늘운동 = k == 오늘 && r != null && !r.휴식일 && r.종목.isNotEmpty()
+                    if (d.세션 != null && k == 오늘) 버튼("운동으로", 운동으로, Modifier.weight(1.2f), 주요 = true, 낮게 = true)
+                    else if (오늘운동) 버튼("운동 시작", {
+                        val S = 운동시작(r!!, System.currentTimeMillis())
+                        if (S != null) 상태.바꿈 { it.copy(세션 = S) }
+                    }, Modifier.weight(1.2f), 주요 = true, 낮게 = true)
+                    버튼("다른 루틴", 다른루틴, Modifier.weight(1f), 낮게 = true)
+                    if (k == 오늘 && r != null && !r.휴식일) 버튼("휴식", 쉬기, Modifier.weight(0.8f), 낮게 = true)
+                    일정버튼()
                 }
                 if (k == 오늘 && r != null && !r.휴식일 && r.종목.isEmpty())
-                    글("이 루틴에 종목이 없습니다 · 루틴 탭에서 넣어 주세요", Modifier.padding(top = 6.dp), 크기값 = 크기.작게, 색 = c.옅음)
+                    글("이 루틴에 종목이 없습니다 · 루틴 탭에서 넣어 주세요", Modifier.padding(top = 4.dp), 크기값 = 크기.작게, 색 = c.옅음)
             }
         }
-        일정칸(상태, k)
+        일정칸(상태, k, 일정적기) { 일정적기 = false }
     }
 }
 
@@ -321,39 +346,33 @@ fun 알약(글자: String, 색: Color) {
     }
 }
 
-/** 일정 — 그 자리에서 적는다 (팝업 없음) */
+/** 일정 — 있을 때만 목록, 적을 때만 입력칸 (팝업 없음) */
 @Composable
-private fun 일정칸(상태: 앱상태, k: String) {
+private fun 일정칸(상태: 앱상태, k: String, 적는중: Boolean, 다적음: () -> Unit) {
     val c = Local색.current
     val 것 = 상태.d.일정[k].orEmpty()
-    var 적는중 by remember(k) { mutableStateOf(false) }
     var 새글 by remember(k) { mutableStateOf("") }
-    Box(Modifier.height(10.dp))
-    구분선()
     것.forEachIndexed { i, t ->
-        Row(Modifier.fillMaxWidth().padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.fillMaxWidth().padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.width(6.dp).height(6.dp).clip(CircleShape).background(c.휴식))
-            글(t, Modifier.weight(1f).padding(start = 8.dp), 크기값 = 크기.버튼)
+            글(t, Modifier.weight(1f).padding(start = 8.dp), 크기값 = 크기.조금작게)
             아이콘버튼(아이콘.지우기, "일정 지우기", {
                 상태.지우고알림("'$t' 일정을 지웠습니다") { d ->
                     val 남 = d.일정[k].orEmpty().filterIndexed { j, _ -> j != i }
                     d.copy(일정 = if (남.isEmpty()) d.일정 - k else d.일정 + (k to 남))
                 }
-            }, 칠함 = false)
+            }, 칠함 = false, 크기칸 = 높이.아주낮게)
         }
     }
-    Box(Modifier.height(8.dp))
     if (적는중) {
         val 넣기 = {
             val t = 새글.trim()
             if (t.isNotEmpty()) 상태.바꿈 { d -> d.copy(일정 = d.일정 + (k to (d.일정[k].orEmpty() + t))) }
-            새글 = ""; 적는중 = false
+            새글 = ""; 다적음()
         }
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
             입력칸(새글, { 새글 = it }, Modifier.weight(1f), 안내 = "일정 적기", onDone = 넣기)
             Box(Modifier.padding(start = 6.dp)) { 버튼("넣기", 넣기, 주요 = true, 작게 = true) }
         }
-    } else {
-        버튼("일정 추가", { 적는중 = true }, Modifier.fillMaxWidth(), 작게 = true, 그림 = 아이콘.더하기)
     }
 }

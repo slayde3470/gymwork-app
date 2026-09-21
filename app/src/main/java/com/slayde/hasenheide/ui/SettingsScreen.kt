@@ -73,6 +73,6 @@ fun 설정화면(상태: 앱상태, 폰: 폰기능) {
         }
 
         글("하젠하이데 ${BuildConfig.VERSION_NAME} · 시험판", Modifier.fillMaxWidth().padding(top = 18.dp), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)
-        Box(Modifier.height(100.dp))
+        Box(Modifier.height(16.dp))   // 끝에 빈 공간을 두지 않는다 (09-21 메모)
     }
 }

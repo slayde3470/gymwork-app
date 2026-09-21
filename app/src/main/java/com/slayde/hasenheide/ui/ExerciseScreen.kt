@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import com.slayde.hasenheide.data.카테고리지우기
+import com.slayde.hasenheide.data.이름추천
+import androidx.compose.foundation.border
 import com.slayde.hasenheide.ui.theme.높이
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -81,7 +83,7 @@ fun 종목화면(상태: 앱상태) {
             Box(Modifier.height(10.dp))
             if (추가중) 새종목칸(상태, if (부위 == "전체") d.카테고리.firstOrNull() ?: "" else 부위) { 추가중 = false }
             else 버튼("종목 추가", { 추가중 = true }, Modifier.fillMaxWidth(), 그림 = 아이콘.더하기)
-            Box(Modifier.height(100.dp))
+            Box(Modifier.height(16.dp))   // 끝에 빈 공간을 두지 않는다 (09-21 메모)
         }
         if (카테고리시트) 카테고리관리(상태) { 카테고리시트 = false }
     }
@@ -138,10 +140,9 @@ private fun 종목한줄(상태: 앱상태, e: 종목, 열림: Boolean, on열기
             칩줄(d.카테고리, e.부위, { p -> 상태.바꿈 { d -> d.copy(종목표 = d.종목표.map { if (it.이름 == e.이름) it.copy(부위 = p) else it }) } }, Modifier.padding(top = 4.dp))
             Box(Modifier.height(10.dp))
             이름표("장비")
-            입력칸(장비, { 장비 = it }, Modifier.fillMaxWidth().padding(top = 4.dp), 안내 = "바벨 · 덤벨 · 머신 …", onDone = {
-                상태.바꿈 { d -> d.copy(종목표 = d.종목표.map { if (it.이름 == e.이름) it.copy(장비 = 장비.trim()) else it }) }
-            })
-            글("고친 뒤 자판의 '완료'를 누르면 저장됩니다", Modifier.padding(top = 4.dp), 크기값 = 크기.작게, 색 = c.옅음)
+            Box(Modifier.height(4.dp))
+            장비고르기(상태, e.장비, { v -> 장비 = v; 상태.바꿈 { d -> d.copy(종목표 = d.종목표.map { if (it.이름 == e.이름) it.copy(장비 = v.trim()) else it }) } })
+            글("이름은 고친 뒤 자판의 '완료'를 누르면 저장됩니다", Modifier.padding(top = 6.dp), 크기값 = 크기.작게, 색 = c.옅음)
             Box(Modifier.height(12.dp))
             버튼("이 종목 지우기", {
                 val 쓰는곳 = d.루틴들.filter { r -> r.종목.any { it.이름 == e.이름 } }.map { it.이름 }
@@ -188,11 +189,16 @@ fun 새종목칸(상태: 앱상태, 처음부위: String, 닫기: () -> Unit) {
     var 장비 by remember { mutableStateOf("") }
     카드 {
         이름표("새 종목")
-        입력칸(이름, { 이름 = it }, Modifier.fillMaxWidth().padding(top = 6.dp), 안내 = "종목 이름 (예: 벤치프레스)")
+        Box(Modifier.height(6.dp))
+        종목이름칸(상태, 이름, { 이름 = it }, 있는것도 = false) { n, 부, 장 ->
+            이름 = n
+            if (부 in d.카테고리) 부위 = 부
+            if (장.isNotBlank()) 장비 = 장
+        }
         Box(Modifier.height(8.dp))
         부위고르기(상태, 부위, { 부위 = it })
         Box(Modifier.height(8.dp))
-        입력칸(장비, { 장비 = it }, Modifier.fillMaxWidth(), 안내 = "장비 (바벨 · 덤벨 · 머신 …)")
+        장비고르기(상태, 장비, { 장비 = it })
         Box(Modifier.height(10.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             버튼("취소", 닫기, Modifier.weight(1f), 작게 = true)
@@ -283,6 +289,72 @@ fun 부위고르기(상태: 앱상태, 선택: String, on선택: (String) -> Uni
             입력칸(새, { 새 = it }, Modifier.weight(1f), 안내 = "새 부위 (예: 전완)", onDone = 넣기)
             Box(Modifier.width(6.dp))
             버튼("추가", 넣기, 작게 = true, 주요 = true)
+        }
+    }
+}
+
+/**
+ * 종목 이름 입력 + 추천 (09-21 메모).
+ * 자음·모음 단위로 좁혀 가며, 띄어쓰기는 무시한다. 추천은 기본 종목 목록 + 내가 만든 종목.
+ * 추천을 누르면 이름과 함께 부위 · 장비도 넘겨준다.
+ * 있는것도=false 면 이미 만든 종목은 추천하지 않는다 (종목 탭에서 새로 만들 때 — 같은 이름은 못 만드니까)
+ */
+@Composable
+fun 종목이름칸(상태: 앱상태, 이름: String, on이름: (String) -> Unit, 있는것도: Boolean = true, on고름: (String, String, String) -> Unit) {
+    val c = Local색.current
+    val 표 = 상태.d.종목표
+    val 정보 = linkedMapOf<String, Pair<String, String>>()
+    if (있는것도) 표.forEach { 정보[it.이름] = it.부위 to it.장비 }
+    이름추천.기본.forEach { b -> if (b.이름 !in 정보 && 표.none { it.이름 == b.이름 }) 정보[b.이름] = b.부위 to b.장비 }
+    val 추천 = 이름추천.찾기(이름, 정보.keys.toList())
+    입력칸(이름, on이름, Modifier.fillMaxWidth(), 안내 = "종목 이름 (예: 벤치프레스)")
+    if (추천.isNotEmpty()) {
+        Column(
+            Modifier.fillMaxWidth().padding(top = 4.dp).clip(RoundedCornerShape(모서리.작게))
+                .background(c.면).border(1.dp, c.선, RoundedCornerShape(모서리.작게)),
+        ) {
+            추천.forEachIndexed { i, n ->
+                if (i > 0) 구분선()
+                val (부, 장) = 정보.getValue(n)
+                Row(Modifier.fillMaxWidth().눌림 { on고름(n, 부, 장) }.padding(horizontal = 12.dp, vertical = 9.dp), verticalAlignment = Alignment.CenterVertically) {
+                    글(n, Modifier.weight(1f, fill = false), 크기값 = 크기.버튼, 굵기 = FontWeight.Medium)
+                    Box(Modifier.width(6.dp))
+                    글(listOf(부, 장).filter { it.isNotBlank() }.joinToString("·"), Modifier.weight(1f), 크기값 = 크기.작게, 색 = c.옅음)
+                    if (표.any { it.이름 == n }) 글("내 종목", 크기값 = 크기.작게, 색 = c.강조)
+                }
+            }
+        }
+    }
+}
+
+/** 장비 고르기 — 선택지 + 전에 쓴 장비 + '직접 입력' (09-21 메모). 고른 것을 다시 누르면 비운다 */
+@Composable
+fun 장비고르기(상태: 앱상태, 선택: String, on선택: (String) -> Unit) {
+    val c = Local색.current
+    val 목록 = (이름추천.장비목록 + 상태.d.종목표.map { it.장비.trim() } + listOf(선택.trim())).filter { it.isNotBlank() }.distinct()
+    var 직접 by remember { mutableStateOf(false) }
+    var 새 by remember { mutableStateOf("") }
+    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        목록.forEach { p ->
+            val 켬 = p == 선택.trim()
+            Box(
+                Modifier.height(높이.낮게).clip(CircleShape).background(if (켬) c.강조 else c.면2)
+                    .눌림 { 직접 = false; on선택(if (켬) "" else p) }.padding(horizontal = 12.dp),
+                contentAlignment = Alignment.Center,
+            ) { 글(p, 크기값 = 크기.버튼, 색 = if (켬) c.강조글 else c.흐림, 굵기 = FontWeight.Medium) }
+        }
+        Box(
+            Modifier.height(높이.낮게).clip(CircleShape).border(1.dp, if (직접) c.강조 else c.선, CircleShape)
+                .눌림 { 직접 = !직접 }.padding(horizontal = 12.dp),
+            contentAlignment = Alignment.Center,
+        ) { 글("직접 입력", 크기값 = 크기.버튼, 색 = if (직접) c.강조 else c.흐림, 굵기 = FontWeight.Medium) }
+    }
+    if (직접) {
+        val 넣기 = { val n = 새.trim(); if (n.isNotEmpty()) on선택(n); 새 = ""; 직접 = false }
+        Row(Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+            입력칸(새, { 새 = it }, Modifier.weight(1f), 안내 = "장비 이름", onDone = 넣기)
+            Box(Modifier.width(6.dp))
+            버튼("넣기", 넣기, 작게 = true, 주요 = true)
         }
     }
 }

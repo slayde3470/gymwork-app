@@ -41,7 +41,10 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInParent
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.draw.rotate
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -130,19 +133,8 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
 
     fun 바꿈(f: (운동세션) -> 운동세션) = 상태.바꿈 { dd -> dd.세션?.let { dd.copy(세션 = f(it)) } ?: dd }
 
-    // 시계 — 0.25초마다. 휴식이 끝나면 알리고 다음으로
-    LaunchedEffect(Unit) {
-        while (true) {
-            지금 = System.currentTimeMillis()
-            val s = 상태.d.세션
-            val h = s?.휴식
-            if (s != null && h != null && !h.물음 && 지금 >= h.끝시각) {
-                if (상태.d.설정.소리진동) 폰.알림()
-                상태.바꿈 { dd -> dd.세션?.let { dd.copy(세션 = it.휴식끝(dd.설정, 지금)) } ?: dd }
-            }
-            delay(250)
-        }
-    }
+    // 화면 시계 — 휴식 끝 알림은 앱 전체 시계(App.kt)가 맡는다. 다른 탭을 봐도 돈다
+    LaunchedEffect(Unit) { while (true) { 지금 = System.currentTimeMillis(); delay(250) } }
     // 운동 중에는 화면을 켜 둔다 (설정에서 끌 수 있다)
     val 뷰 = LocalView.current
     DisposableEffect(d.설정.화면유지) {
@@ -154,19 +146,40 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
         if (S.끝화면) 마무리(상태, S) else Column(Modifier.fillMaxSize()) {
             머리줄(S, 지금) { 바꿈 { it.끝냄(System.currentTimeMillis()) } }
             val 스크롤 = rememberScrollState()
-            val 자리 = remember { mutableStateMapOf<Int, Int>() }   // 종목 j → 목록 안 y(px)
-            // 지금 종목이 바뀌면 그 종목으로 부드럽게 옮긴다 (지난 종목은 위로 올려 보면 된다)
-            LaunchedEffect(S.i) { 자리[묶음머리(S, S.i)]?.let { 스크롤.animateScrollTo(max(0, it - 8)) } }
-            Column(Modifier.weight(1f).verticalScroll(스크롤).padding(horizontal = 간격.보통)) {
+            var 화면틀 by remember { mutableStateOf(Rect.Zero) }
+            var 지금줄 by remember { mutableStateOf<Rect?>(null) }
+            // 펼쳐 둔 '지난 종목' 묶음 (묶음 첫 종목 번호). 지금 종목이 바뀌면 다시 다 접는다 (09-21 메모)
+            val 펼친 = remember { mutableStateMapOf<Int, Boolean>() }
+            LaunchedEffect(S.i) { 펼친.clear() }
+            // 체크 · 휴식 · 종목 이동마다 지금 세트 줄로 화면을 옮긴다 — 화면 위 1/3 쯤에 오게
+            LaunchedEffect(S.i, S.s, S.한세트수(), S.휴식?.k) {
+                delay(60)
+                val 줄 = 지금줄 ?: return@LaunchedEffect
+                if (화면틀.height <= 0f) return@LaunchedEffect
+                스크롤.animateScrollBy(줄.top - (화면틀.top + 화면틀.height * 0.33f))
+            }
+            Column(Modifier.weight(1f).onGloballyPositioned { 화면틀 = it.boundsInRoot() }.verticalScroll(스크롤).padding(horizontal = 간격.보통)) {
                 val 그린 = mutableSetOf<Int>()
+                val 지금머리 = S.식구(S.i).first()
                 S.종목들.indices.forEach { j ->
                     if (j in 그린) return@forEach
                     val 식구 = S.식구(j)
                     그린.addAll(식구)
-                    Column(Modifier.onGloballyPositioned { 자리[j] = it.positionInParent().y.toInt() }) {
-                        종목묶음(상태, S, 식구, 지금, 열린세트, 켠칸,
+                    val 머리 = 식구.first()
+                    val 지난것 = 머리 != 지금머리 && (머리 < 지금머리 || 식구.all { S.종목들[it].마감 || !S.종목들[it].덜한가() })
+                    val 접힘 = 지난것 && 펼친[머리] != true
+                    Column(Modifier.onGloballyPositioned { b ->
+                        // 펼쳐 둔 지난 종목이 화면 밖으로 나가면 저절로 접는다
+                        if (펼친[머리] == true) {
+                            val r = b.boundsInRoot()
+                            if (r.bottom < 화면틀.top || r.top > 화면틀.bottom) 펼친.remove(머리)
+                        }
+                    }) {
+                        종목묶음(상태, S, 식구, 지금, 열린세트, 켠칸, 접힘, 지난것,
+                            on접기 = { if (펼친[머리] == true) 펼친.remove(머리) else 펼친[머리] = true },
                             on열기 = { key -> 열린세트 = if (열린세트 == key) null else key; 켠칸 = null },
                             on칸 = { key, f -> 열린세트 = key; 켠칸 = if (켠칸 == f) null else f },
+                            on지금줄 = { 지금줄 = it },
                             바꿈 = ::바꿈)
                     }
                 }
@@ -255,7 +268,8 @@ private fun 머리줄(S: 운동세션, 지금: Long, 끝내기: () -> Unit) {
 @Composable
 private fun 종목묶음(
     상태: 앱상태, S: 운동세션, 식구: List<Int>, 지금: Long, 열린세트: String?, 켠칸: String?,
-    on열기: (String) -> Unit, on칸: (String, String) -> Unit, 바꿈: ((운동세션) -> 운동세션) -> Unit,
+    접힘: Boolean, 지난것: Boolean, on접기: () -> Unit,
+    on열기: (String) -> Unit, on칸: (String, String) -> Unit, on지금줄: (Rect) -> Unit, 바꿈: ((운동세션) -> 운동세션) -> Unit,
 ) {
     val c = Local색.current
     val 지금묶음 = S.i in 식구
@@ -271,36 +285,47 @@ private fun 종목묶음(
             .padding(horizontal = 6.dp, vertical = 4.dp)
             .alpha(if (지금묶음) 1f else 0.8f),
     ) {
-        식구.forEachIndexed { n, j -> 종목머리(상태, S, j, if (슈퍼) 글자표(n) else null) { 바꿈 { it.종목으로(j) } } }
-        if (슈퍼) 글("슈퍼세트 · 번갈아 하고, 한 바퀴 뒤에 쉽니다", Modifier.padding(start = 4.dp, bottom = 2.dp), 크기값 = 크기.아주작게, 색 = c.휴식)
-        val 줄수 = 식구.maxOf { S.종목들[it].총칸() }
-        for (k in 0 until 줄수) {
-            식구.forEachIndexed { n, j ->
-                val e = S.종목들[j]
-                if (k >= e.총칸()) return@forEachIndexed
-                val key = "$j|$k"
-                세트줄(상태, S, j, k, if (슈퍼) "${k + 1}${글자표(n)}" else "${k + 1}", S.휴식보임(j), 지금,
-                    열린세트 == key, 켠칸,
-                    on열기 = { on열기(key) }, on칸 = { f -> on칸(key, f) }, 바꿈 = 바꿈)
+        // 지난 종목은 머리를 누르면 펼치고 접는다. 나머지는 누르면 그 종목으로 간다
+        식구.forEachIndexed { n, j ->
+            종목머리(상태, S, j, if (슈퍼) 글자표(n) else null, if (지난것) (if (접힘) 0 else 1) else -1) {
+                if (지난것) on접기() else 바꿈 { it.종목으로(j) }
             }
         }
-        if (지금묶음) {
-            // ＋ — 맨 아래 세트를 베낀다 (슈퍼세트면 묶인 종목 전부에)
-            Box(Modifier.fillMaxWidth().padding(vertical = 8.dp), contentAlignment = Alignment.Center) {
-                Box(
-                    Modifier.size(높이.보통).clip(CircleShape).background(c.면).border(1.dp, c.선, CircleShape).눌림 { 바꿈 { it.세트추가(it.i) } },
-                    contentAlignment = Alignment.Center,
-                ) { Icon(아이콘.더하기, "세트 추가", Modifier.size(20.dp), tint = c.강조) }
+        if (!접힘) {
+            if (슈퍼) 글("슈퍼세트 · 덜 한 종목부터 · 모두 같아지면 휴식", Modifier.padding(start = 4.dp, bottom = 2.dp), 크기값 = 크기.아주작게, 색 = c.휴식)
+            val 줄수 = 식구.maxOf { S.종목들[it].총칸() }
+            for (k in 0 until 줄수) {
+                식구.forEachIndexed { n, j ->
+                    val e = S.종목들[j]
+                    if (k >= e.총칸()) return@forEachIndexed
+                    val key = "$j|$k"
+                    세트줄(상태, S, j, k, if (슈퍼) "${k + 1}${글자표(n)}" else "${k + 1}", S.휴식보임(j), 지금,
+                        열린세트 == key, 켠칸,
+                        on열기 = { on열기(key) }, on칸 = { f -> on칸(key, f) }, on지금줄 = on지금줄, 바꿈 = 바꿈)
+                }
             }
-            if (S.지금종목.마감) 버튼("남은 운동 마저 하기", { 바꿈 { it.마감풀기() } }, Modifier.fillMaxWidth().padding(bottom = 6.dp), 작게 = true)
+            if (지금묶음) {
+                // ＋ — 맨 아래 세트를 베낀다 (슈퍼세트면 묶인 종목 전부에)
+                Box(Modifier.fillMaxWidth().padding(vertical = 8.dp), contentAlignment = Alignment.Center) {
+                    Box(
+                        Modifier.size(높이.보통).clip(CircleShape).background(c.면).border(1.dp, c.선, CircleShape).눌림 { 바꿈 { it.세트추가(it.i) } },
+                        contentAlignment = Alignment.Center,
+                    ) { Icon(아이콘.더하기, "세트 추가", Modifier.size(20.dp), tint = c.강조) }
+                }
+                if (S.지금종목.마감) 버튼("남은 운동 마저 하기", { 바꿈 { it.마감풀기() } }, Modifier.fillMaxWidth().padding(bottom = 6.dp), 작게 = true)
+            }
         }
     }
 }
 
+/** 상자 안 루틴 이름 — '가슴, 팔' → '가슴, 팔 루틴'. 이름에 이미 '루틴'이 있으면 그대로 (09-21 메모) */
+fun 루틴표시(이름: String): String = if (이름.contains("루틴")) 이름 else "$이름 루틴"
+
 private fun 글자표(n: Int): String = ('A' + n).toString()
 
+/** 접기표시: -1 = 없음, 0 = 접힘, 1 = 펼침 */
 @Composable
-private fun 종목머리(상태: 앱상태, S: 운동세션, j: Int, 표: String?, on누름: () -> Unit) {
+private fun 종목머리(상태: 앱상태, S: 운동세션, j: Int, 표: String?, 접기표시: Int, on누름: () -> Unit) {
     val c = Local색.current
     val e = S.종목들[j]
     val 지금세트 = e.찬것()
@@ -320,8 +345,12 @@ private fun 종목머리(상태: 앱상태, S: 운동세션, j: Int, 표: String
             뱃지.forEach { b -> Box(Modifier.width(4.dp)); 알약(b, c.휴식) }
         }
         글("${e.달성도()}%", 크기값 = 크기.작게, 색 = c.강조, 굵기 = FontWeight.Bold)
-        글("1RM ${if (rm > 0) "%.1f".format(rm) else "—"}", 크기값 = 크기.작게, 색 = c.흐림)
-        글("${콤마(볼륨(지금세트))}/${콤마(목표볼)}", 크기값 = 크기.작게, 색 = c.흐림)
+        if (접기표시 == 0) 글("${e.찬것().size}/${e.총칸()}세트", 크기값 = 크기.작게, 색 = c.흐림)
+        else {
+            글("1RM ${if (rm > 0) "%.1f".format(rm) else "—"}", 크기값 = 크기.작게, 색 = c.흐림)
+            글("${콤마(볼륨(지금세트))}/${콤마(목표볼)}", 크기값 = 크기.작게, 색 = c.흐림)
+        }
+        if (접기표시 >= 0) Icon(아이콘.아래, if (접기표시 == 0) "펼치기" else "접기", Modifier.size(16.dp).rotate(if (접기표시 == 1) 180f else 0f), tint = c.옅음)
     }
 }
 
@@ -329,7 +358,7 @@ private fun 종목머리(상태: 앱상태, S: 운동세션, j: Int, 표: String
 private fun 세트줄(
     상태: 앱상태, S: 운동세션, j: Int, k: Int, 번호: String, 휴식보임: Boolean, 지금: Long,
     열림: Boolean, 켠칸: String?,
-    on열기: () -> Unit, on칸: (String) -> Unit,
+    on열기: () -> Unit, on칸: (String) -> Unit, on지금줄: (Rect) -> Unit,
     바꿈: ((운동세션) -> 운동세션) -> Unit,
 ) {
     val c = Local색.current
@@ -343,6 +372,7 @@ private fun 세트줄(
     val h = S.휴식
     Column(
         Modifier.fillMaxWidth().padding(vertical = 2.dp)
+            .then(if (지금칸) Modifier.onGloballyPositioned { on지금줄(it.boundsInRoot()) } else Modifier)
             .clip(RoundedCornerShape(모서리.작게))
             .background(if (지금칸) c.강조옅음 else Color.Transparent)
             .padding(horizontal = 4.dp, vertical = 3.dp)
@@ -487,7 +517,7 @@ private fun 마무리(상태: 앱상태, S: 운동세션) {
         카드(Modifier.weight(1f), 안쪽 = 0.dp) {
             // 맨 위: 루틴 정보
             Column(Modifier.fillMaxWidth().background(c.면2).padding(horizontal = 14.dp, vertical = 10.dp)) {
-                성장줄(S.루틴이름, d.루틴성장(S.루틴id, 오늘, S.유효세트()), 기간)
+                성장줄(루틴표시(S.루틴이름), d.루틴성장(S.루틴id, 오늘, S.유효세트()), 기간)
                 글("${S.종목들.count { !it.임시 }}종목 · 달성도 ${S.루틴달성도()}%" + (직전?.let { " · 직전 ${직전세트?.size ?: 0}세트" } ?: ""),
                     크기값 = 크기.작게, 색 = c.옅음)
             }
