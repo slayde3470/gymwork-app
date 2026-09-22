@@ -285,6 +285,30 @@ fun 루틴종목.휴식(k: Int): Int = 휴식값.getOrNull(k) ?: 휴식
 fun 루틴종목.모두무게(w: Double): 루틴종목 = copy(무게 = w, 세트값 = 세트값.map { it.copy(w = w) })
 fun 루틴종목.모두횟수(r: Int): 루틴종목 = copy(횟수 = r, 세트값 = 세트값.map { it.copy(r = r) })
 fun 루틴종목.모두휴식(t: Int): 루틴종목 = copy(휴식 = t, 휴식값 = 휴식값.map { t })
+/** 세트별 목록을 세트 수만큼 채워 둔다 (비어 있으면 기본값으로) */
+private fun 루틴종목.펼친(): 루틴종목 =
+    copy(세트값 = (0 until 세트).map { 목표(it) }, 휴식값 = (0 until 세트).map { 휴식(it) })
+/** k 번째 세트만 고치기 (09-22: 루틴도 세트마다) */
+fun 루틴종목.세트고침(k: Int, w: Double? = null, r: Int? = null, t: Int? = null): 루틴종목 {
+    if (k !in 0 until 세트) return this
+    val e = 펼친()
+    val 새 = e.copy(
+        세트값 = e.세트값.mapIndexed { i, s -> if (i == k) 세트(w ?: s.w, r ?: s.r) else s },
+        휴식값 = e.휴식값.mapIndexed { i, h -> if (i == k) t ?: h else h },
+    )
+    return 새.copy(무게 = 새.세트값[0].w, 횟수 = 새.세트값[0].r, 휴식 = 새.휴식값[0])
+}
+/** ＋ — 맨 아래 세트의 무게 · 횟수 · 휴식을 베껴 한 세트 늘린다 (다른 앱들처럼) */
+fun 루틴종목.세트더하기(): 루틴종목 {
+    val e = 펼친()
+    return e.copy(세트 = 세트 + 1, 세트값 = e.세트값 + 목표(세트 - 1), 휴식값 = e.휴식값 + 휴식(세트 - 1))
+}
+/** − — 맨 아래 세트를 뺀다 (1세트 아래로는 안 줄어든다) */
+fun 루틴종목.세트빼기(): 루틴종목 {
+    if (세트 <= 1) return this
+    val e = 펼친()
+    return e.copy(세트 = 세트 - 1, 세트값 = e.세트값.dropLast(1), 휴식값 = e.휴식값.dropLast(1))
+}
 /** 루틴 줄 요약 — 세트마다 다르면 '60~62.5' 처럼 */
 fun 루틴종목.요약(): String {
     val 목 = (0 until 세트).map { 목표(it) }

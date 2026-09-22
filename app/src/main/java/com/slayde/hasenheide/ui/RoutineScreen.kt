@@ -4,6 +4,8 @@ import androidx.activity.compose.BackHandler
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.scrollBy
@@ -73,6 +75,11 @@ import com.slayde.hasenheide.data.총세트
 import com.slayde.hasenheide.data.다음차례
 import com.slayde.hasenheide.data.이름추천
 import com.slayde.hasenheide.data.요약
+import com.slayde.hasenheide.data.휴식
+import com.slayde.hasenheide.data.목표
+import com.slayde.hasenheide.data.세트빼기
+import com.slayde.hasenheide.data.세트더하기
+import com.slayde.hasenheide.data.세트고침
 import com.slayde.hasenheide.data.모두무게
 import com.slayde.hasenheide.data.모두횟수
 import com.slayde.hasenheide.data.모두휴식
@@ -359,26 +366,75 @@ private fun 종목줄(
         }
         if (열림) {
             fun 고침(f: (루틴종목) -> 루틴종목) = 상태.바꿈 { d -> d.루틴바꿈(r.id) { x -> x.copy(종목 = x.종목.mapIndexed { k, y -> if (k == j) f(y) else y }) } }
-            숫자버튼줄(
-                listOf(
-                    숫자칸("s", "세트", "${e.세트}", "", 입력종류.정수, { 고침 { it.copy(세트 = max(1, it.세트 - 1)) } }, { 고침 { it.copy(세트 = it.세트 + 1) } },
-                        { t -> t.toIntOrNull()?.let { v -> 고침 { it.copy(세트 = max(1, v)) } } },
-                        휠값.세트, { "${it.toInt()}" }, e.세트.toDouble(), 원래 = e, 되돌림 = { o -> (o as? 루틴종목)?.let { 옛 -> 고침 { 옛 } } }),
-                    숫자칸("w", "무게", 무게글(e.무게), "kg", 입력종류.소수, { 고침 { it.모두무게(무게반올림(max(0.0, it.무게 - 폭))) } }, { 고침 { it.모두무게(무게반올림(it.무게 + 폭)) } },
-                        { t -> t.replace(',', '.').toDoubleOrNull()?.let { v -> 고침 { it.모두무게(무게반올림(max(0.0, v))) } } },
-                        휠값.무게, { 무게글(it) }, e.무게, 원래 = e, 되돌림 = { o -> (o as? 루틴종목)?.let { 옛 -> 고침 { 옛 } } }),
-                    숫자칸("r", "횟수", "${e.횟수}", "회", 입력종류.정수, { 고침 { it.모두횟수(max(0, it.횟수 - 1)) } }, { 고침 { it.모두횟수(it.횟수 + 1) } },
-                        { t -> t.toIntOrNull()?.let { v -> 고침 { it.모두횟수(max(0, v)) } } },
-                        휠값.횟수, { "${it.toInt()}" }, e.횟수.toDouble(), 원래 = e, 되돌림 = { o -> (o as? 루틴종목)?.let { 옛 -> 고침 { 옛 } } }),
-                    숫자칸("t", "휴식", 분초(e.휴식), "", 입력종류.분초, { 고침 { it.모두휴식(max(0, it.휴식 - 5)) } }, { 고침 { it.모두휴식(it.휴식 + 5) } },
-                        { t -> 초읽기(t)?.let { v -> 고침 { it.모두휴식(v) } } },
-                        휠값.휴식, { 분초(it.toInt()) }, e.휴식.toDouble(), 원래 = e, 되돌림 = { o -> (o as? 루틴종목)?.let { 옛 -> 고침 { 옛 } } }),
-                ),
-                켠칸, on칸, Modifier.padding(bottom = 8.dp),
-            )
+            val 되돌림: (Any?) -> Unit = { o -> (o as? 루틴종목)?.let { 옛 -> 고침 { 옛 } } }
+            // 세트 줄 — 세트마다 무게 · 횟수 · 휴식 (09-22 메모: 다른 앱들처럼)
+            Column(Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+                for (k in 0 until e.세트) {
+                    val v = e.목표(k)
+                    val t = e.휴식(k)
+                    val 이줄 = 켠칸?.startsWith("$k|") == true
+                    Row(
+                        Modifier.fillMaxWidth().height(높이.보통).clip(RoundedCornerShape(모서리.작게))
+                            .background(if (이줄) c.강조옅음 else Color.Transparent),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        글("${k + 1}", Modifier.width(28.dp).padding(start = 8.dp), 크기값 = 크기.작게, 색 = c.옅음, 굵기 = FontWeight.Bold)
+                        세트값칸("${무게글(v.w)}kg", 켠칸 == "$k|w", Modifier.weight(1f)) { on칸("$k|w") }
+                        세트값칸("${v.r}회", 켠칸 == "$k|r", Modifier.weight(1f)) { on칸("$k|r") }
+                        세트값칸(분초(t), 켠칸 == "$k|t", Modifier.weight(1f)) { on칸("$k|t") }
+                    }
+                    if (이줄) 숫자버튼줄(
+                        listOf(
+                            숫자칸("$k|w", "무게", 무게글(v.w), "kg", 입력종류.소수,
+                                { 고침 { it.세트고침(k, w = 무게반올림(max(0.0, it.목표(k).w - 폭))) } }, { 고침 { it.세트고침(k, w = 무게반올림(it.목표(k).w + 폭)) } },
+                                { s -> s.replace(',', '.').toDoubleOrNull()?.let { x -> 고침 { it.세트고침(k, w = 무게반올림(max(0.0, x))) } } },
+                                휠값.무게, { 무게글(it) }, v.w, 원래 = e, 되돌림 = 되돌림),
+                            숫자칸("$k|r", "횟수", "${v.r}", "회", 입력종류.정수,
+                                { 고침 { it.세트고침(k, r = max(0, it.목표(k).r - 1)) } }, { 고침 { it.세트고침(k, r = it.목표(k).r + 1) } },
+                                { s -> s.toIntOrNull()?.let { x -> 고침 { it.세트고침(k, r = max(0, x)) } } },
+                                휠값.횟수, { "${it.toInt()}" }, v.r.toDouble(), 원래 = e, 되돌림 = 되돌림),
+                            숫자칸("$k|t", "휴식", 분초(t), "", 입력종류.분초,
+                                { 고침 { it.세트고침(k, t = max(0, it.휴식(k) - 5)) } }, { 고침 { it.세트고침(k, t = it.휴식(k) + 5) } },
+                                { s -> 초읽기(s)?.let { x -> 고침 { it.세트고침(k, t = x) } } },
+                                휠값.휴식, { 분초(it.toInt()) }, t.toDouble(), 원래 = e, 되돌림 = 되돌림),
+                        ),
+                        켠칸, on칸, Modifier.padding(vertical = 4.dp),
+                    )
+                }
+                // 세트 수 — − ＋ 만 (휠 · 직접 입력 없음). ＋ 는 맨 아래 세트를 베낀다
+                Row(
+                    Modifier.fillMaxWidth().padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    둥근단추(아이콘.빼기, "세트 빼기", e.세트 > 1) { 고침 { it.세트빼기() } }
+                    글("${e.세트}세트", 크기값 = 크기.버튼, 굵기 = FontWeight.Bold)
+                    둥근단추(아이콘.더하기, "세트 더하기 — 맨 아래 세트를 베낌", true) { 고침 { it.세트더하기() } }
+                }
+            }
         }
         구분선()
     }
+}
+
+/** 세트 줄의 값 한 칸 — 누르면 그 값을 고치는 칸이 열린다 */
+@Composable
+private fun 세트값칸(글자: String, 켬: Boolean, modifier: Modifier, on누름: () -> Unit) {
+    val c = Local색.current
+    Box(modifier.fillMaxHeight().눌림(on누름), contentAlignment = Alignment.CenterEnd) {
+        글(글자, Modifier.padding(end = 12.dp), 크기값 = 크기.버튼, 색 = if (켬) c.강조 else c.글, 굵기 = if (켬) FontWeight.Bold else FontWeight.Medium)
+    }
+}
+
+/** 동그란 − ＋ 단추 */
+@Composable
+private fun 둥근단추(그림: androidx.compose.ui.graphics.vector.ImageVector, 설명: String, 켜짐: Boolean, on누름: () -> Unit) {
+    val c = Local색.current
+    Box(
+        Modifier.size(높이.보통).clip(CircleShape).background(c.면).border(1.dp, if (켜짐) c.선 else c.면2, CircleShape)
+            .then(if (켜짐) Modifier.눌림(on누름) else Modifier),
+        contentAlignment = Alignment.Center,
+    ) { Icon(그림, 설명, Modifier.size(20.dp), tint = if (켜짐) c.강조 else c.옅음) }
 }
 
 /** 루틴 안에서 바로 고르는 칸 — 누르면 바로 들어가고, 다시 누르면 빠진다 (4-5) */

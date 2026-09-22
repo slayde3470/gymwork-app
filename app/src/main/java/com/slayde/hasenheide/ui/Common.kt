@@ -372,15 +372,8 @@ fun 숫자버튼줄(칸들: List<숫자칸>, 켠: String?, on고름: (String) ->
         if (켠 != null) 입력중.취소 = f
         onDispose { if (입력중.취소 === f) 입력중.취소 = null }
     }
-    // 자판의 뒤로 단추로 자판만 내려가도 취소로 본다 — 휠을 만지거나 '완료'를 눌러 내려간 것은 빼고
+    // ◁ 를 처음 누르면 안드로이드가 자판만 내린다 (칸 · 휠은 그대로). 한 번 더 누르면 위의 BackHandler 가 취소 (09-22 홍겸 님)
     var 휠만짐 by remember(켠) { mutableStateOf(false) }
-    val 자판 = WindowInsets.isImeVisible
-    var 자판있었나 by remember(켠) { mutableStateOf(false) }
-    LaunchedEffect(자판, 켠) {
-        if (자판) 자판있었나 = true
-        else if (자판있었나 && 켠 != null && !휠만짐 && !입력중.완료누름) { 자판있었나 = false; 취소최신() }
-        입력중.완료누름 = false
-    }
     Column(
         modifier
             .fillMaxWidth()

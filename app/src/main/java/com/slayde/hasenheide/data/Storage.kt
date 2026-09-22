@@ -155,7 +155,7 @@ object 저장소 {
         val 폭 = o.optDouble("무게폭", 1.0).let { if (판 < 2 && it == 2.5) 1.0 else it }
         return 설정값(
             o.optBoolean("자동진행", true), o.optBoolean("넘어가기전확인", false), o.optBoolean("소리진동", true),
-            o.optBoolean("화면유지", true), 폭, o.optInt("기본휴식", 90), o.optInt("기본세트", 5), o.optInt("기준", 3),
+            o.optBoolean("화면유지", true), 폭, o.optInt("기본휴식", 90), (if (판 < 3) 1 else o.optInt("기본세트", 1)), o.optInt("기준", 3),
         )
     }
 
