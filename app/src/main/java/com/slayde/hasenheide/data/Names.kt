@@ -89,4 +89,32 @@ object 이름추천 {
         }.sortedWith(compareBy({ it.second }, { it.third })).map { it.first }.take(최대)
         return if (결과.size == 1 && 자모(결과[0]) == q) emptyList() else 결과
     }
+
+    // ─────────────── 이름으로 부위 · 장비 추측 (08 시안 2절) ───────────────
+
+    /** 이름에 이 말이 들어 있으면 이 부위 — 앞에 있는 것이 먼저 (예: '레그레이즈'는 하체가 아니라 복근) */
+    private val 부위말 = listOf(
+        "레그레이즈" to "복근", "크런치" to "복근", "플랭크" to "복근", "싯업" to "복근",
+        "벤치" to "가슴", "체스트" to "가슴", "플라이" to "가슴", "크로스오버" to "가슴", "딥스" to "가슴", "푸시업" to "가슴", "펙덱" to "가슴",
+        "레터럴" to "어깨", "숄더" to "어깨", "오버헤드" to "어깨", "페이스" to "어깨", "밀리터리" to "어깨", "리어델트" to "어깨",
+        "컬" to "팔", "트라이셉스" to "팔", "푸시다운" to "팔", "킥백" to "팔", "스컬" to "팔",
+        "로우" to "등", "풀다운" to "등", "풀업" to "등", "친업" to "등", "데드" to "등", "풀오버" to "등",
+        "스쿼트" to "하체", "레그" to "하체", "런지" to "하체", "카프" to "하체", "힙" to "하체",
+    )
+    /** 이름에 장비가 없을 때 고를 만한 장비 */
+    private val 장비말 = listOf(
+        "벤치" to listOf("바벨", "머신", "스미스"), "스쿼트" to listOf("바벨", "스미스", "머신"),
+        "로우" to listOf("바벨", "덤벨", "케이블", "머신"), "컬" to listOf("덤벨", "바벨", "케이블"),
+        "프레스" to listOf("바벨", "덤벨", "머신"), "레이즈" to listOf("덤벨", "케이블"),
+        "플라이" to listOf("덤벨", "머신", "케이블"), "풀다운" to listOf("머신", "케이블"),
+        "풀오버" to listOf("덤벨", "케이블"), "레그" to listOf("머신"),
+    )
+    data class 추측(val 부위: String?, val 장비: String?, val 장비후보: List<String>)
+
+    fun 추측하기(이름: String): 추측 {
+        val t = 이름.replace(Regex("\\s"), "")
+        val p = 부위말.firstOrNull { t.contains(it.first) }?.second
+        val e = 장비목록.firstOrNull { t.contains(it) }
+        return 추측(p, e, if (e != null) emptyList() else 장비말.firstOrNull { t.contains(it.first) }?.second ?: emptyList())
+    }
 }

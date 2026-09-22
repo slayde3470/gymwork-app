@@ -64,23 +64,23 @@ fun 종목화면(상태: 앱상태) {
 
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 간격.넓게)) {
-            제목글("종목", Modifier.padding(top = 14.dp, bottom = 10.dp))
+            제목글("종목", Modifier.padding(top = 16.dp, bottom = 12.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 칩줄(listOf("전체") + d.카테고리, 부위, { 부위 = it }, Modifier.weight(1f))
-                Box(Modifier.width(6.dp))
+                Box(Modifier.width(8.dp))
                 아이콘버튼(아이콘.설정, "카테고리 관리", { 카테고리시트 = true })
             }
-            Box(Modifier.height(10.dp))
+            Box(Modifier.height(12.dp))
             val 목록 = d.종목표.filter { 부위 == "전체" || it.부위 == 부위 }
             카드(안쪽 = 0.dp) {
                 if (목록.isEmpty()) 글(if (d.종목표.isEmpty()) "아직 종목이 없습니다 · 아래에서 만들어 주세요" else "이 부위에 종목이 없습니다",
-                    Modifier.padding(14.dp), 크기값 = 크기.조금작게, 색 = c.옅음)
+                    Modifier.padding(16.dp), 크기값 = 크기.조금작게, 색 = c.옅음)
                 목록.forEachIndexed { i, e ->
                     if (i > 0) 구분선()
                     종목한줄(상태, e, 열린 == e.이름) { 열린 = if (열린 == e.이름) null else e.이름 }
                 }
             }
-            Box(Modifier.height(10.dp))
+            Box(Modifier.height(12.dp))
             if (추가중) 새종목칸(상태, if (부위 == "전체") d.카테고리.firstOrNull() ?: "" else 부위) { 추가중 = false }
             else 버튼("종목 추가", { 추가중 = true }, Modifier.fillMaxWidth(), 그림 = 아이콘.더하기)
             Box(Modifier.height(16.dp))   // 끝에 빈 공간을 두지 않는다 (09-21 메모)
@@ -96,10 +96,10 @@ private fun 종목한줄(상태: 앱상태, e: 종목, 열림: Boolean, on열기
     val 지표 = d.종목지표(e.이름, 상태.오늘)
     val 볼pct = if (지표 != null && 지표.과거 != null) 퍼센트(지표.지금.볼륨, 지표.과거.볼륨) else null
     Column(Modifier.fillMaxWidth()) {
-        Row(Modifier.fillMaxWidth().눌림(on열기).padding(start = 14.dp, end = 6.dp, top = 11.dp, bottom = 11.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.fillMaxWidth().눌림(on열기).padding(start = 16.dp, end = 8.dp, top = 12.dp, bottom = 12.dp), verticalAlignment = Alignment.CenterVertically) {
             Row(Modifier.weight(1f), verticalAlignment = Alignment.Bottom) {
                 글(e.이름, Modifier.weight(1f, fill = false), 굵기 = FontWeight.Medium)
-                Box(Modifier.width(6.dp))
+                Box(Modifier.width(8.dp))
                 글(listOf(e.부위, e.장비).filter { it.isNotBlank() }.joinToString("·"), 크기값 = 크기.작게, 색 = c.옅음)
             }
             if (볼pct != null) 글(
@@ -108,18 +108,18 @@ private fun 종목한줄(상태: 앱상태, e: 종목, 열림: Boolean, on열기
             )
             펼침단추(열림, on열기)
         }
-        if (열림) Column(Modifier.padding(start = 14.dp, end = 14.dp, bottom = 14.dp)) {
+        if (열림) Column(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp)) {
             if (지표 == null) 글("아직 기록이 없습니다", 크기값 = 크기.조금작게, 색 = c.옅음)
             else {
                 val 과 = 지표.과거
-                Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(모서리.작게)).background(c.면2).padding(10.dp)) {
+                Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(모서리.작게)).background(c.면2).padding(12.dp)) {
                     지표줄("지표", "지금", "이전", "늘어난 값", 머리 = true)
                     지표줄("최대 1RM", "%.1f".format(지표.지금.rm), 과?.let { "%.1f".format(it.rm) } ?: "—", 증감(지표.지금.rm, 과?.rm))
                     지표줄("단일세트 최고", "${무게글(지표.지금.최고.w)}×${지표.지금.최고.r}", 과?.let { "${무게글(it.최고.w)}×${it.최고.r}" } ?: "—",
                         증감(지표.지금.최고.w * 지표.지금.최고.r, 과?.let { it.최고.w * it.최고.r }))
                     지표줄("한 세션 볼륨", 콤마(지표.지금.볼륨), 과?.let { 콤마(it.볼륨) } ?: "—", 증감(지표.지금.볼륨, 과?.볼륨))
                 }
-                글(if (과 != null) "${과.날}과 견준 값" else "견줄 이전 기록이 없습니다", Modifier.padding(top = 6.dp), 크기값 = 크기.작게, 색 = c.옅음)
+                글(if (과 != null) "${과.날}과 견준 값" else "견줄 이전 기록이 없습니다", Modifier.padding(top = 8.dp), 크기값 = 크기.작게, 색 = c.옅음)
             }
             Box(Modifier.height(12.dp))
             var 이름 by remember(e.이름) { mutableStateOf(e.이름) }
@@ -129,20 +129,20 @@ private fun 종목한줄(상태: 앱상태, e: 종목, 열림: Boolean, on열기
             입력칸(이름, { 이름 = it }, Modifier.fillMaxWidth().padding(top = 4.dp), onDone = {
                 상태.바꿈 { it.종목이름바꿈(e.이름, 이름.trim()) }
             })
-            Box(Modifier.height(10.dp))
+            Box(Modifier.height(12.dp))
             이름표("달력 표시 이름")
             입력칸(달력, { 달력 = it }, Modifier.fillMaxWidth().padding(top = 4.dp), 안내 = "비워두면 종목 이름을 따라갑니다", onDone = {
                 상태.바꿈 { d -> d.copy(종목표 = d.종목표.map { if (it.이름 == e.이름) it.copy(달력이름 = 달력.trim().ifEmpty { null }) else it }) }
             })
             글("달력 칸에만 쓰는 짧은 이름", Modifier.padding(top = 2.dp), 크기값 = 크기.작게, 색 = c.옅음)
-            Box(Modifier.height(10.dp))
+            Box(Modifier.height(12.dp))
             이름표("부위")
             칩줄(d.카테고리, e.부위, { p -> 상태.바꿈 { d -> d.copy(종목표 = d.종목표.map { if (it.이름 == e.이름) it.copy(부위 = p) else it }) } }, Modifier.padding(top = 4.dp))
-            Box(Modifier.height(10.dp))
+            Box(Modifier.height(12.dp))
             이름표("장비")
             Box(Modifier.height(4.dp))
             장비고르기(상태, e.장비, { v -> 장비 = v; 상태.바꿈 { d -> d.copy(종목표 = d.종목표.map { if (it.이름 == e.이름) it.copy(장비 = v.trim()) else it }) } })
-            글("이름은 고친 뒤 자판의 '완료'를 누르면 저장됩니다", Modifier.padding(top = 6.dp), 크기값 = 크기.작게, 색 = c.옅음)
+            글("이름은 고친 뒤 자판의 '완료'를 누르면 저장됩니다", Modifier.padding(top = 8.dp), 크기값 = 크기.작게, 색 = c.옅음)
             Box(Modifier.height(12.dp))
             버튼("이 종목 지우기", {
                 val 쓰는곳 = d.루틴들.filter { r -> r.종목.any { it.이름 == e.이름 } }.map { it.이름 }
@@ -164,7 +164,7 @@ private fun 증감(지금: Double, 과거: Double?): 증감글? = 과거?.let { 
 private fun 지표줄(이름: String, 지금: String, 이전: String, 증: Any?, 머리: Boolean = false) {
     val c = Local색.current
     val 작은 = if (머리) 크기.아주작게 else 크기.버튼
-    Row(Modifier.fillMaxWidth().padding(vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
         글(이름, Modifier.weight(1.3f), 크기값 = if (머리) 크기.아주작게 else 크기.조금작게, 색 = if (머리) c.옅음 else c.흐림, 굵기 = FontWeight.Bold)
         글(지금, Modifier.weight(1f), 크기값 = 작은, 색 = if (머리) c.옅음 else c.글, 굵기 = FontWeight.Bold)
         글(이전, Modifier.weight(1f), 크기값 = if (머리) 크기.아주작게 else 크기.조금작게, 색 = c.옅음)
@@ -187,19 +187,28 @@ fun 새종목칸(상태: 앱상태, 처음부위: String, 닫기: () -> Unit) {
     var 이름 by remember { mutableStateOf("") }
     var 부위 by remember { mutableStateOf(처음부위) }
     var 장비 by remember { mutableStateOf("") }
+    var 부위손댐 by remember { mutableStateOf(false) }
+    var 장비손댐 by remember { mutableStateOf(false) }
+    val 짐작 = 이름추천.추측하기(이름)
     카드 {
         이름표("새 종목")
-        Box(Modifier.height(6.dp))
-        종목이름칸(상태, 이름, { 이름 = it }, 있는것도 = false) { n, 부, 장 ->
+        Box(Modifier.height(8.dp))
+        // 이름을 치면 부위 · 장비를 짐작해 채운다. 직접 고른 뒤에는 건드리지 않는다 (08 시안 2절)
+        종목이름칸(상태, 이름, { t ->
+            이름 = t
+            val g = 이름추천.추측하기(t)
+            if (!부위손댐 && g.부위 != null && g.부위 in d.카테고리) 부위 = g.부위
+            if (!장비손댐) 장비 = g.장비 ?: ""
+        }, 있는것도 = false) { n, 부, 장 ->
             이름 = n
             if (부 in d.카테고리) 부위 = 부
             if (장.isNotBlank()) 장비 = 장
         }
         Box(Modifier.height(8.dp))
-        부위고르기(상태, 부위, { 부위 = it })
+        부위고르기(상태, 부위, { 부위 = it; 부위손댐 = true })
         Box(Modifier.height(8.dp))
-        장비고르기(상태, 장비, { 장비 = it })
-        Box(Modifier.height(10.dp))
+        장비고르기(상태, 장비, { 장비 = it; 장비손댐 = true }, 짐작.장비후보)
+        Box(Modifier.height(12.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             버튼("취소", 닫기, Modifier.weight(1f), 작게 = true)
             버튼("만들기", {
@@ -211,7 +220,7 @@ fun 새종목칸(상태: 앱상태, 처음부위: String, 닫기: () -> Unit) {
             }, Modifier.weight(1f), 작게 = true, 주요 = true)
         }
         if (이름.trim().isNotEmpty() && d.종목표.any { it.이름 == 이름.trim() })
-            글("같은 이름의 종목이 이미 있습니다", Modifier.padding(top = 6.dp), 크기값 = 크기.작게, 색 = Local색.current.나쁨)
+            글("같은 이름의 종목이 이미 있습니다", Modifier.padding(top = 8.dp), 크기값 = 크기.작게, 색 = Local색.current.나쁨)
     }
 }
 
@@ -223,7 +232,7 @@ private fun 카테고리관리(상태: 앱상태, 닫기: () -> Unit) {
         글("루틴의 종목 고르기에도 그대로 나옵니다", 크기값 = 크기.조금작게, 색 = c.옅음)
         상태.d.카테고리.forEach { p ->
             val 수 = 상태.d.종목표.count { it.부위 == p }
-            Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                 글(p, Modifier.weight(1f))
                 글(if (수 > 0) "종목 ${수}개" else "", 크기값 = 크기.작게, 색 = c.옅음)
                 아이콘버튼(아이콘.지우기, "카테고리 지우기", {
@@ -232,10 +241,10 @@ private fun 카테고리관리(상태: 앱상태, 닫기: () -> Unit) {
             }
             구분선()
         }
-        Box(Modifier.height(10.dp))
+        Box(Modifier.height(12.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             입력칸(새, { 새 = it }, Modifier.weight(1f), 안내 = "새 카테고리 (예: 전완)")
-            Box(Modifier.width(6.dp))
+            Box(Modifier.width(8.dp))
             버튼("추가", {
                 val n = 새.trim()
                 if (n.isNotEmpty() && n !in 상태.d.카테고리) 상태.바꿈 { it.copy(카테고리 = it.카테고리 + n) }
@@ -255,7 +264,7 @@ fun 부위고르기(상태: 앱상태, 선택: String, on선택: (String) -> Uni
     var 더하는중 by remember { mutableStateOf(false) }
     var 지우는중 by remember { mutableStateOf(false) }
     var 새 by remember { mutableStateOf("") }
-    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
         상태.d.카테고리.forEach { p ->
             val 켬 = p == 선택 && !지우는중
             Row(
@@ -285,9 +294,9 @@ fun 부위고르기(상태: 앱상태, 선택: String, on선택: (String) -> Uni
             if (n.isNotEmpty()) on선택(n)
             새 = ""; 더하는중 = false
         }
-        Row(Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             입력칸(새, { 새 = it }, Modifier.weight(1f), 안내 = "새 부위 (예: 전완)", onDone = 넣기)
-            Box(Modifier.width(6.dp))
+            Box(Modifier.width(8.dp))
             버튼("추가", 넣기, 작게 = true, 주요 = true)
         }
     }
@@ -316,9 +325,9 @@ fun 종목이름칸(상태: 앱상태, 이름: String, on이름: (String) -> Uni
             추천.forEachIndexed { i, n ->
                 if (i > 0) 구분선()
                 val (부, 장) = 정보.getValue(n)
-                Row(Modifier.fillMaxWidth().눌림 { on고름(n, 부, 장) }.padding(horizontal = 12.dp, vertical = 9.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.fillMaxWidth().눌림 { on고름(n, 부, 장) }.padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     글(n, Modifier.weight(1f, fill = false), 크기값 = 크기.버튼, 굵기 = FontWeight.Medium)
-                    Box(Modifier.width(6.dp))
+                    Box(Modifier.width(8.dp))
                     글(listOf(부, 장).filter { it.isNotBlank() }.joinToString("·"), Modifier.weight(1f), 크기값 = 크기.작게, 색 = c.옅음)
                     if (표.any { it.이름 == n }) 글("내 종목", 크기값 = 크기.작게, 색 = c.강조)
                 }
@@ -329,16 +338,18 @@ fun 종목이름칸(상태: 앱상태, 이름: String, on이름: (String) -> Uni
 
 /** 장비 고르기 — 선택지 + 전에 쓴 장비 + '직접 입력' (09-21 메모). 고른 것을 다시 누르면 비운다 */
 @Composable
-fun 장비고르기(상태: 앱상태, 선택: String, on선택: (String) -> Unit) {
+fun 장비고르기(상태: 앱상태, 선택: String, on선택: (String) -> Unit, 후보: List<String> = emptyList()) {
     val c = Local색.current
-    val 목록 = (이름추천.장비목록 + 상태.d.종목표.map { it.장비.trim() } + listOf(선택.trim())).filter { it.isNotBlank() }.distinct()
+    // 이름으로 짐작한 후보를 앞에, 테두리로 표시
+    val 목록 = (후보 + 이름추천.장비목록 + 상태.d.종목표.map { it.장비.trim() } + listOf(선택.trim())).filter { it.isNotBlank() }.distinct()
     var 직접 by remember { mutableStateOf(false) }
     var 새 by remember { mutableStateOf("") }
-    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         목록.forEach { p ->
             val 켬 = p == 선택.trim()
             Box(
                 Modifier.height(높이.낮게).clip(CircleShape).background(if (켬) c.강조 else c.면2)
+                    .then(if (!켬 && p in 후보) Modifier.border(1.dp, c.강조, CircleShape) else Modifier)
                     .눌림 { 직접 = false; on선택(if (켬) "" else p) }.padding(horizontal = 12.dp),
                 contentAlignment = Alignment.Center,
             ) { 글(p, 크기값 = 크기.버튼, 색 = if (켬) c.강조글 else c.흐림, 굵기 = FontWeight.Medium) }
@@ -351,9 +362,9 @@ fun 장비고르기(상태: 앱상태, 선택: String, on선택: (String) -> Uni
     }
     if (직접) {
         val 넣기 = { val n = 새.trim(); if (n.isNotEmpty()) on선택(n); 새 = ""; 직접 = false }
-        Row(Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             입력칸(새, { 새 = it }, Modifier.weight(1f), 안내 = "장비 이름", onDone = 넣기)
-            Box(Modifier.width(6.dp))
+            Box(Modifier.width(8.dp))
             버튼("넣기", 넣기, 작게 = true, 주요 = true)
         }
     }

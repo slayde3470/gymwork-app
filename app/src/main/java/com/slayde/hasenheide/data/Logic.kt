@@ -251,7 +251,12 @@ fun 운동세션.정식(): List<세션종목> = 종목들.filter { !it.임시 }
 fun 운동세션.목표세트(): Int = 정식().sumOf { it.계획세트 }
 fun 운동세션.한세트수(): Int = 정식().sumOf { it.찬것().size }
 fun 운동세션.오늘볼륨(): Double = 정식().sumOf { 볼륨(it.찬것()) }
-fun 운동세션.목표볼륨(): Double = 정식().sumOf { it.무게 * it.횟수 * it.계획세트 }
+fun 운동세션.목표볼륨(): Double = 정식().sumOf { it.목표볼륨() }
+/** 한 종목의 목표 볼륨 — 루틴에 정한 세트까지, 세트마다의 목표로 */
+fun 세션종목.목표볼륨(): Double {
+    val n = if (계획세트 > 0) 계획세트 else 세트
+    return (0 until n).sumOf { k -> (예정값.칸(k) ?: 세트(무게, 횟수)).let { it.w * it.r } }
+}
 fun 운동세션.루틴달성도(): Int = 목표세트().let { if (it == 0) 0 else (한세트수() * 100.0 / it).roundToInt() }
 fun 세션종목.달성도(): Int = if (계획세트 == 0) 0 else (찬것().size * 100.0 / 계획세트).roundToInt()
 /** 유효세트 — 계획 세트까지만 (추가한 세트는 향상도에서 뺀다) */
@@ -270,11 +275,35 @@ fun 운동세션.휴식보임(j: Int): Boolean = 식구(j).last() == j
 /** 운동한 시간(초) — 마무리 화면에 들어오면 멈춘다 */
 fun 운동세션.흐른초(지금: Long): Long = ((끝시각 ?: 지금) - 시작시각) / 1000
 
+// ─────────────── 루틴 목표 — 세트마다 따로 (4-2 · 5-5) ───────────────
+
+/** k 번째 세트의 목표 무게 · 횟수 */
+fun 루틴종목.목표(k: Int): 세트 = 세트값.getOrNull(k) ?: 세트(무게, 횟수)
+/** k 번째 세트 뒤의 휴식(초) */
+fun 루틴종목.휴식(k: Int): Int = 휴식값.getOrNull(k) ?: 휴식
+/** 루틴 탭에서 고칠 때는 모든 세트를 한꺼번에 */
+fun 루틴종목.모두무게(w: Double): 루틴종목 = copy(무게 = w, 세트값 = 세트값.map { it.copy(w = w) })
+fun 루틴종목.모두횟수(r: Int): 루틴종목 = copy(횟수 = r, 세트값 = 세트값.map { it.copy(r = r) })
+fun 루틴종목.모두휴식(t: Int): 루틴종목 = copy(휴식 = t, 휴식값 = 휴식값.map { t })
+/** 루틴 줄 요약 — 세트마다 다르면 '60~62.5' 처럼 */
+fun 루틴종목.요약(): String {
+    val 목 = (0 until 세트).map { 목표(it) }
+    val 무 = 목.map { it.w }; val 회 = 목.map { it.r }; val 휴 = (0 until 세트).map { 휴식(it) }
+    fun 폭(a: Double, b: Double) = if (a == b) 무게글(a) else "${무게글(a)}~${무게글(b)}"
+    fun 폭(a: Int, b: Int) = if (a == b) "$a" else "$a~$b"
+    val 무글 = if (무.isEmpty()) 무게글(무게) else 폭(무.min(), 무.max())
+    val 회글 = if (회.isEmpty()) "$횟수" else 폭(회.min(), 회.max())
+    val 휴글 = if (휴.isEmpty() || 휴.min() == 휴.max()) 분초(휴.firstOrNull() ?: 휴식) else "${분초(휴.min())}~${분초(휴.max())}"
+    return "${무글}kg×${회글}회×${세트}세트·$휴글"
+}
+
 fun 운동시작(r: 루틴, 지금: Long): 운동세션? {
     if (r.휴식일 || r.종목.isEmpty()) return null
     val 들 = r.종목.map {
-        세션종목(it.이름, it.세트, it.세트, it.무게, it.횟수, it.휴식,
-            휴식들 = List(it.세트) { _ -> it.휴식 }, 슈퍼 = it.슈퍼)
+        val 첫 = it.목표(0)
+        세션종목(it.이름, it.세트, it.세트, 첫.w, 첫.r, it.휴식,
+            예정값 = if (it.세트값.isEmpty()) emptyList() else List(it.세트) { k -> it.목표(k) },
+            휴식들 = List(it.세트) { k -> it.휴식(k) }, 슈퍼 = it.슈퍼)
     }
     return 운동세션(r.id, r.이름, 지금, 0, 0, 들[0].무게, 들[0].횟수, 들)
 }
@@ -479,11 +508,32 @@ fun 앱데이터.운동저장(오늘: String, 지금: Long): 앱데이터 {
         if (찬.isEmpty()) null else 종목기록(e.이름, 찬, e.임시, S.묶음이름(e))
     }
     val rec = 날기록(S.루틴id, S.루틴이름, S.한세트수() >= S.목표세트(), 들, S.흐른초(지금).toInt())
-    val 새 = copy(기록 = 기록 + (오늘 to rec), 세션 = null)
+    val 새 = copy(기록 = 기록 + (오늘 to rec), 세션 = null, 루틴들 = 루틴들.map { if (it.id == S.루틴id) it.오늘반영(S) else it })
     val i = 루틴들.indexOfFirst { it.id == S.루틴id }
     if (루틴들.isEmpty()) return 새
     val 남김 = 새.예정.filterKeys { it < 오늘 }
     return 새.copy(예정 = 새.예정채움(날더하기(오늘, 1), ((i + 1) % 루틴들.size + 루틴들.size) % 루틴들.size, 남김))
+}
+
+/**
+ * 운동 중 바꾼 값을 다음 루틴에 (기능명세 5-5, 09-22 홍겸 님)
+ *  ① 세트 수 · 오늘만 끼운 종목 → 넘어가지 않는다 (루틴 세트 수 그대로)
+ *  ② 무게 · 횟수 · 휴식 → 넘어간다. 세트마다 따로, 체크한 세트만, 루틴에 있던 세트 번호까지만
+ * 같은 이름이 루틴에 두 번 있으면 나오는 순서대로 짝짓는다.
+ */
+fun 루틴.오늘반영(S: 운동세션): 루틴 {
+    val 정식 = S.종목들.filter { !it.임시 }
+    val 쓴 = mutableMapOf<String, Int>()
+    return copy(종목 = 종목.map { re ->
+        val n = 쓴.getOrDefault(re.이름, 0); 쓴[re.이름] = n + 1
+        val e = 정식.filter { it.이름 == re.이름 }.getOrNull(n) ?: return@map re
+        var 바뀜 = false
+        val 목 = (0 until re.세트).map { k -> e.기록.칸(k)?.also { if (it != re.목표(k)) 바뀜 = true } ?: re.목표(k) }
+        val 휴 = (0 until re.세트).map { k -> if (e.기록.칸(k) != null) e.세트휴식(k).also { if (it != re.휴식(k)) 바뀜 = true } else re.휴식(k) }
+        if (!바뀜) re
+        else re.copy(무게 = 목.firstOrNull()?.w ?: re.무게, 횟수 = 목.firstOrNull()?.r ?: re.횟수, 휴식 = 휴.firstOrNull() ?: re.휴식,
+            세트값 = 목, 휴식값 = 휴)
+    })
 }
 
 // ─────────────── 마무리 화면 — 직전 대비 · 추이 그래프 (09-21 메모) ───────────────

@@ -1,5 +1,8 @@
 package com.slayde.hasenheide.ui
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -132,6 +135,8 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
     var 열린시트 by remember { mutableStateOf<String?>(null) }   // 목록 · 추가 · 마칠까
 
     fun 바꿈(f: (운동세션) -> 운동세션) = 상태.바꿈 { dd -> dd.세션?.let { dd.copy(세션 = f(it)) } ?: dd }
+    // 뒤로가기 — 열어 둔 세트 설정칸을 먼저 닫는다 (09-22 메모)
+    BackHandler(enabled = 열린세트 != null && 열린시트 == null) { 열린세트 = null; 켠칸 = null }
 
     // 화면 시계 — 휴식 끝 알림은 앱 전체 시계(App.kt)가 맡는다. 다른 탭을 봐도 돈다
     LaunchedEffect(Unit) { while (true) { 지금 = System.currentTimeMillis(); delay(250) } }
@@ -167,7 +172,8 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
                     그린.addAll(식구)
                     val 머리 = 식구.first()
                     val 지난것 = 머리 != 지금머리 && (머리 < 지금머리 || 식구.all { S.종목들[it].마감 || !S.종목들[it].덜한가() })
-                    val 접힘 = 지난것 && 펼친[머리] != true
+                    // 지금 종목만 펼친다 — 지난 종목도, 아직 시작 안 한 종목도 접는다 (08 시안 · 홍겸 님 원래 규칙)
+                    val 접힘 = 머리 != 지금머리 && 펼친[머리] != true
                     Column(Modifier.onGloballyPositioned { b ->
                         // 펼쳐 둔 지난 종목이 화면 밖으로 나가면 저절로 접는다
                         if (펼친[머리] == true) {
@@ -177,7 +183,7 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
                     }) {
                         종목묶음(상태, S, 식구, 지금, 열린세트, 켠칸, 접힘, 지난것,
                             on접기 = { if (펼친[머리] == true) 펼친.remove(머리) else 펼친[머리] = true },
-                            on열기 = { key -> 열린세트 = if (열린세트 == key) null else key; 켠칸 = null },
+                            on열기 = { key -> 입력중.취소?.invoke(); 열린세트 = if (열린세트 == key) null else key; 켠칸 = null },
                             on칸 = { key, f -> 열린세트 = key; 켠칸 = if (켠칸 == f) null else f },
                             on지금줄 = { 지금줄 = it },
                             바꿈 = ::바꿈)
@@ -186,7 +192,7 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
                 Box(Modifier.height(16.dp))
             }
             // 아랫줄 — 운동 목록 · 운동 추가 · 다음
-            Row(Modifier.fillMaxWidth().background(c.면).padding(horizontal = 12.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(Modifier.fillMaxWidth().background(c.면).padding(horizontal = 12.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 버튼("운동 목록", { 열린시트 = "목록" }, Modifier.weight(1f), 작게 = true, 그림 = 아이콘.목록)
                 버튼("운동 추가", { 열린시트 = "추가" }, Modifier.weight(1f), 작게 = true, 그림 = 아이콘.더하기)
                 버튼("다음", {
@@ -226,7 +232,7 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
             "마칠까" -> 시트("운동이 완료되지 않았습니다", { 열린시트 = null }) {
                 val e = S.지금종목
                 글("${e.이름} ${e.총칸() - e.찬것().size}세트 남음 · 여기서 마칠까요?", 크기값 = 크기.버튼, 색 = c.흐림)
-                Box(Modifier.height(10.dp))
+                Box(Modifier.height(12.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     버튼("여기까지", { 바꿈 { it.다음종목으로(true, System.currentTimeMillis()) }; 열린시트 = null; 열린세트 = null }, Modifier.weight(1f), 주요 = true)
                     버튼("나중에 더", { 바꿈 { it.다음종목으로(false, System.currentTimeMillis()) }; 열린시트 = null; 열린세트 = null }, Modifier.weight(1f))
@@ -245,7 +251,7 @@ private fun 머리줄(S: 운동세션, 지금: Long, 끝내기: () -> Unit) {
     val c = Local색.current
     val 달 = S.루틴달성도()
     Column(Modifier.fillMaxWidth().background(c.면)) {
-        Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             제목글(S.루틴이름, 크기값 = 크기.버튼)
             글("${S.i + 1}/${S.종목들.size}", 크기값 = 크기.아주작게, 색 = c.흐림)
             글("달성도 ${달}%", 크기값 = 크기.아주작게, 색 = c.강조, 굵기 = FontWeight.Bold)
@@ -282,16 +288,17 @@ private fun 종목묶음(
                 else if (지금묶음) Modifier.border(1.dp, c.강조.copy(alpha = 0.35f), RoundedCornerShape(모서리.작게))
                 else Modifier
             )
-            .padding(horizontal = 6.dp, vertical = 4.dp)
+            .padding(horizontal = 8.dp, vertical = 4.dp)
             .alpha(if (지금묶음) 1f else 0.8f),
     ) {
         // 지난 종목은 머리를 누르면 펼치고 접는다. 나머지는 누르면 그 종목으로 간다
         식구.forEachIndexed { n, j ->
-            종목머리(상태, S, j, if (슈퍼) 글자표(n) else null, if (지난것) (if (접힘) 0 else 1) else -1) {
+            // 지난 종목: 누르면 펼치고 접기 / 아직 안 한 종목: 접힌 채로, 누르면 그 종목으로 간다
+            종목머리(상태, S, j, if (슈퍼) 글자표(n) else null, if (지난것) (if (접힘) 0 else 1) else if (접힘) 0 else -1) {
                 if (지난것) on접기() else 바꿈 { it.종목으로(j) }
             }
         }
-        if (!접힘) {
+        AnimatedVisibility(visible = !접힘) { Column {
             if (슈퍼) 글("슈퍼세트 · 덜 한 종목부터 · 모두 같아지면 휴식", Modifier.padding(start = 4.dp, bottom = 2.dp), 크기값 = 크기.아주작게, 색 = c.휴식)
             val 줄수 = 식구.maxOf { S.종목들[it].총칸() }
             for (k in 0 until 줄수) {
@@ -312,9 +319,9 @@ private fun 종목묶음(
                         contentAlignment = Alignment.Center,
                     ) { Icon(아이콘.더하기, "세트 추가", Modifier.size(20.dp), tint = c.강조) }
                 }
-                if (S.지금종목.마감) 버튼("남은 운동 마저 하기", { 바꿈 { it.마감풀기() } }, Modifier.fillMaxWidth().padding(bottom = 6.dp), 작게 = true)
+                if (S.지금종목.마감) 버튼("남은 운동 마저 하기", { 바꿈 { it.마감풀기() } }, Modifier.fillMaxWidth().padding(bottom = 8.dp), 작게 = true)
             }
-        }
+        } }
     }
 }
 
@@ -331,7 +338,7 @@ private fun 종목머리(상태: 앱상태, S: 운동세션, j: Int, 표: String
     val 지금세트 = e.찬것()
     val 과거rm = 상태.d.기록.values.flatMap { r -> r.종목들.filter { it.이름 == e.이름 }.flatMap { it.세트들 } }.maxOfOrNull { 일RM(it.w, it.r) } ?: 0.0
     val rm = max(과거rm, 지금세트.maxOfOrNull { 일RM(it.w, it.r) } ?: 0.0)
-    val 목표볼 = e.무게 * e.횟수 * (if (e.계획세트 > 0) e.계획세트 else e.세트)
+    val 목표볼 = e.목표볼륨()
     val 뱃지 = listOfNotNull(if (e.임시) "오늘만" else null, if (e.마감) "마침" else null)
     val 지금것 = j == S.i
     Row(
@@ -375,7 +382,7 @@ private fun 세트줄(
             .then(if (지금칸) Modifier.onGloballyPositioned { on지금줄(it.boundsInRoot()) } else Modifier)
             .clip(RoundedCornerShape(모서리.작게))
             .background(if (지금칸) c.강조옅음 else Color.Transparent)
-            .padding(horizontal = 4.dp, vertical = 3.dp)
+            .padding(horizontal = 4.dp, vertical = 4.dp)
             .alpha(if (rec == null && !지금칸 && !쉬는중) 0.55f else 1f),
     ) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -436,7 +443,7 @@ private fun 세트줄(
         // 휴식이 끝나고 '넘어갈까요?'를 묻는 중 (넘어가기 전 확인이 켜져 있을 때)
         if (쉬는중 && h != null && h.물음) {
             val 다음 = h.다음i?.let { S.종목들.getOrNull(it)?.이름 } ?: S.지금종목.이름
-            Row(Modifier.fillMaxWidth().padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(Modifier.fillMaxWidth().padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 글("휴식 끝 · 다음 $다음", Modifier.weight(1f), 크기값 = 크기.버튼, 색 = c.휴식, 굵기 = FontWeight.Bold)
                 버튼("30초 더", { 바꿈 { s -> s.copy(휴식 = s.휴식?.copy(끝시각 = System.currentTimeMillis() + 30_000, 총초 = 30, 물음 = false)) } }, 작게 = true)
                 버튼("시작", { 바꿈 { it.다음으로(System.currentTimeMillis()) } }, 작게 = true, 주요 = true)
@@ -460,7 +467,7 @@ private fun 세트줄(
                     { t -> 초읽기(t)?.let { x -> 바꿈 { it.휴식고치기(j, k, x) } } },
                     휠값.휴식, { 분초(it.toInt()) }, 쉼.toDouble()))
             }
-            숫자버튼줄(칸들, 켠칸, on칸, Modifier.padding(top = 6.dp, bottom = 4.dp))
+            숫자버튼줄(칸들, 켠칸, on칸, Modifier.padding(top = 8.dp, bottom = 4.dp))
         }
     }
 }
@@ -494,7 +501,7 @@ private fun 마무리(상태: 앱상태, S: 운동세션) {
 
     Column(Modifier.fillMaxSize().padding(horizontal = 간격.넓게)) {
         // ── 제목 + 요약 (직전 같은 루틴 대비) ──
-        Row(Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 12.dp), verticalAlignment = Alignment.CenterVertically) {
             제목글("${S.루틴이름} ${if (달성) "달성" else "미달성"}", Modifier.weight(1f), 크기값 = 크기.제목, 색 = if (달성) c.글 else c.나쁨)
             Column(horizontalAlignment = Alignment.End) {
                 val 세트 = S.한세트수()
@@ -516,7 +523,7 @@ private fun 마무리(상태: 앱상태, S: 운동세션) {
         // ── 종목 상자 — 이 안에서만 넘긴다 ──
         카드(Modifier.weight(1f), 안쪽 = 0.dp) {
             // 맨 위: 루틴 정보
-            Column(Modifier.fillMaxWidth().background(c.면2).padding(horizontal = 14.dp, vertical = 10.dp)) {
+            Column(Modifier.fillMaxWidth().background(c.면2).padding(horizontal = 16.dp, vertical = 12.dp)) {
                 성장줄(루틴표시(S.루틴이름), d.루틴성장(S.루틴id, 오늘, S.유효세트()), 기간)
                 글("${S.종목들.count { !it.임시 }}종목 · 달성도 ${S.루틴달성도()}%" + (직전?.let { " · 직전 ${직전세트?.size ?: 0}세트" } ?: ""),
                     크기값 = 크기.작게, 색 = c.옅음)
@@ -525,7 +532,7 @@ private fun 마무리(상태: 앱상태, S: 운동세션) {
             Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
                 S.종목들.filter { it.찬것().isNotEmpty() }.forEach { e ->
                     val 열림 = 열린종목 == e.이름
-                    Row(Modifier.fillMaxWidth().눌림 { 열린종목 = if (열림) null else e.이름 }.padding(start = 14.dp, end = 6.dp, top = 8.dp, bottom = 8.dp),
+                    Row(Modifier.fillMaxWidth().눌림 { 열린종목 = if (열림) null else e.이름 }.padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
                         verticalAlignment = Alignment.CenterVertically) {
                         성장줄(e.이름, d.종목성장(e.이름, 오늘, e.찬것(), S.묶음이름(e)), 기간, Modifier.weight(1f))
                         펼침단추(열림) { 열린종목 = if (열림) null else e.이름 }
@@ -535,7 +542,7 @@ private fun 마무리(상태: 앱상태, S: 운동세션) {
                 }
             }
         }
-        Box(Modifier.height(10.dp))
+        Box(Modifier.height(12.dp))
         버튼("기록 저장하고 끝내기", { 상태.바꿈 { it.운동저장(오늘, System.currentTimeMillis()) } }, Modifier.fillMaxWidth(), 주요 = true)
         Box(Modifier.height(8.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -554,14 +561,14 @@ private fun 종목그래프(d: 앱데이터, e: 세션종목, 오늘: String) {
     var 일rm by remember { mutableStateOf(false) }
     val 점들 = d.종목추이(e.이름, 단위, 일rm, 오늘, e.찬것())
     var 고른 by remember(단위, 일rm) { mutableStateOf(점들.size - 1) }
-    Column(Modifier.fillMaxWidth().padding(start = 14.dp, end = 14.dp, bottom = 12.dp)) {
+    Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 12.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             칩줄(묶기.entries.map { it.이름 } + listOf("볼륨", "1RM"), null, { t ->
                 when (t) { "볼륨" -> 일rm = false; "1RM" -> 일rm = true; else -> 단위 = 묶기.entries.first { it.이름 == t } }
             }, Modifier.weight(1f))
         }
         글("${단위.이름} 단위 · ${if (일rm) "최고 1RM(kg)" else "볼륨 합(kg)"}", Modifier.padding(top = 4.dp), 크기값 = 크기.작게, 색 = c.옅음)
-        if (점들.size < 2) 글("기록이 두 번 이상 쌓이면 선이 그려집니다", Modifier.padding(vertical = 14.dp), 크기값 = 크기.조금작게, 색 = c.옅음)
+        if (점들.size < 2) 글("기록이 두 번 이상 쌓이면 선이 그려집니다", Modifier.padding(vertical = 16.dp), 크기값 = 크기.조금작게, 색 = c.옅음)
         else 선그림(점들.map { it.값 }, 점들.map { it.날 }, 일rm, 고른) { 고른 = it }
     }
 }

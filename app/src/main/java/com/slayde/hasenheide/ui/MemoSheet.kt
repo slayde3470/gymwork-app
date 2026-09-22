@@ -41,9 +41,9 @@ fun 메모시트(상태: 앱상태, 화면: String, 폰: 폰기능, onClose: () 
     시트("수정 메모 · $화면", onClose) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             입력칸(새글, { 새글 = it }, Modifier.weight(1f), 안내 = "고칠 점을 적어 두세요", onDone = 넣기)
-            Box(Modifier.padding(start = 6.dp)) { 버튼("넣기", 넣기, 주요 = true) }
+            Box(Modifier.padding(start = 8.dp)) { 버튼("넣기", 넣기, 주요 = true) }
         }
-        Box(Modifier.height(10.dp))
+        Box(Modifier.height(12.dp))
         val 메모 = 상태.d.메모
         if (메모.isEmpty()) 글("아직 적은 메모가 없습니다", 색 = c.옅음, 크기값 = 크기.버튼)
         메모.reversed().forEach { m ->

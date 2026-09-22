@@ -47,6 +47,8 @@ object 저장소 {
 
     private fun 루틴종목to(e: 루틴종목) = JSONObject().put("이름", e.이름).put("세트", e.세트).put("무게", e.무게)
         .put("횟수", e.횟수).put("휴식", e.휴식).also { if (e.슈퍼 != null) it.put("슈퍼", e.슈퍼) }
+        .also { if (e.세트값.isNotEmpty()) it.put("세트값", 세트들to(e.세트값)) }
+        .also { if (e.휴식값.isNotEmpty()) it.put("휴식값", JSONArray().also { h -> e.휴식값.forEach { h.put(it) } }) }
 
     private fun 루틴to(r: 루틴) = JSONObject().put("id", r.id).put("이름", r.이름).put("휴식일", r.휴식일)
         .put("종목", JSONArray().also { a -> r.종목.forEach { a.put(루틴종목to(it)) } })
@@ -126,7 +128,9 @@ object 저장소 {
         목록(o.optJSONArray("종목")) { a, i ->
             a.getJSONObject(i).let {
                 루틴종목(it.getString("이름"), it.optInt("세트", 3), it.optDouble("무게", 20.0), it.optInt("횟수", 10),
-                    it.optInt("휴식", 90), 글또는널(it, "슈퍼"))
+                    it.optInt("휴식", 90), 글또는널(it, "슈퍼"),
+                    세트들from(it.optJSONArray("세트값")).filterNotNull(),
+                    목록(it.optJSONArray("휴식값")) { h, j -> h.getInt(j) })
             }
         },
     )

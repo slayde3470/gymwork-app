@@ -1,5 +1,7 @@
 package com.slayde.hasenheide.ui
 
+import androidx.activity.compose.BackHandler
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
@@ -69,6 +71,11 @@ import com.slayde.hasenheide.data.지금기준
 import com.slayde.hasenheide.data.초읽기
 import com.slayde.hasenheide.data.총세트
 import com.slayde.hasenheide.data.다음차례
+import com.slayde.hasenheide.data.이름추천
+import com.slayde.hasenheide.data.요약
+import com.slayde.hasenheide.data.모두무게
+import com.slayde.hasenheide.data.모두횟수
+import com.slayde.hasenheide.data.모두휴식
 import com.slayde.hasenheide.ui.theme.Local색
 import com.slayde.hasenheide.ui.theme.간격
 import com.slayde.hasenheide.ui.theme.높이
@@ -101,6 +108,10 @@ fun 루틴화면(상태: 앱상태) {
     val 스크롤 = rememberScrollState()
     val 진동 = LocalHapticFeedback.current
 
+    // 뒤로가기 — 펼친 종목 · 종목 고르기 칸을 먼저 접는다 (09-22 메모)
+    BackHandler(enabled = 열린종목 != null || 고르기 != null) {
+        if (열린종목 != null) { 열린종목 = null; 켠칸 = null } else 고르기 = null
+    }
     // 손가락 아래 줄을 찾아 위 30% · 가운데 · 아래 30% 로 가른다
     val 놓일 = 끌기?.let { g ->
         줄자리.entries.firstOrNull { (k, r) -> k.startsWith(g.rid + "|") && g.y >= r.top && g.y < r.bottom }?.let { (k, r) ->
@@ -142,29 +153,29 @@ fun 루틴화면(상태: 앱상태) {
 
     Box(Modifier.fillMaxSize().onGloballyPositioned { 화면틀 = it.boundsInRoot() }) {
         Column(Modifier.fillMaxSize().verticalScroll(스크롤).padding(horizontal = 간격.넓게)) {
-            제목글("루틴", Modifier.padding(top = 14.dp))
+            제목글("루틴", Modifier.padding(top = 16.dp))
             글("순서대로 돌아갑니다 · 빠진 날은 이어서", Modifier.padding(top = 2.dp, bottom = 12.dp), 크기값 = 크기.조금작게, 색 = c.옅음)
 
             val 다음 = d.다음차례(오늘)
             d.루틴들.forEachIndexed { i, r ->
                 val 열림 = 열린루틴 == r.id
-                카드(Modifier.padding(bottom = 10.dp), 안쪽 = 0.dp) {
+                카드(Modifier.padding(bottom = 12.dp), 안쪽 = 0.dp) {
                     // ── 머리줄 ──
-                    Row(Modifier.fillMaxWidth().padding(start = 12.dp, end = 6.dp, top = 9.dp, bottom = 9.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Row(Modifier.fillMaxWidth().padding(start = 12.dp, end = 8.dp, top = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                         Row(Modifier.weight(1f).눌림 { 열린루틴 = if (열림) null else r.id; 열린종목 = null }, verticalAlignment = Alignment.CenterVertically) {
                             글("${i + 1}", Modifier.width(22.dp), 크기값 = 크기.크게, 색 = c.흐림, 굵기 = FontWeight.Medium)
                             Column(Modifier.weight(1f)) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     제목글(r.이름, Modifier.weight(1f, fill = false), 크기값 = 크기.크게)
-                                    if (다음?.id == r.id) { Box(Modifier.width(6.dp)); 알약("다음", c.좋음) }
+                                    if (다음?.id == r.id) { Box(Modifier.width(8.dp)); 알약("다음", c.좋음) }
                                 }
                                 글(if (r.휴식일) "휴식일" else "${r.종목.size}종목 · ${총세트(r)}세트 · ${시간글(예상초(r))}", 크기값 = 크기.작게, 색 = c.옅음)
                             }
                         }
                         아이콘버튼(아이콘.위로, "앞으로", { 구조바뀜 { dd -> dd.copy(루틴들 = 자리바꿈(dd.루틴들, i, i - 1)) } }, 쓸수있음 = i > 0)
-                        Box(Modifier.width(3.dp))
+                        Box(Modifier.width(4.dp))
                         아이콘버튼(아이콘.아래로, "뒤로", { 구조바뀜 { dd -> dd.copy(루틴들 = 자리바꿈(dd.루틴들, i, i + 1)) } }, 쓸수있음 = i < d.루틴들.size - 1)
-                        Box(Modifier.width(3.dp))
+                        Box(Modifier.width(4.dp))
                         아이콘버튼(아이콘.설정, "루틴 설정", { 이름고침 = if (이름고침 == r.id) null else r.id }, 켬 = 이름고침 == r.id)
                         펼침단추(열림) { 열린루틴 = if (열림) null else r.id; 열린종목 = null }
                     }
@@ -172,7 +183,7 @@ fun 루틴화면(상태: 앱상태) {
                     if (이름고침 == r.id) {
                         var 새이름 by remember(r.id) { mutableStateOf(r.이름) }
                         구분선()
-                        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             입력칸(새이름, { 새이름 = it }, Modifier.weight(1f), 안내 = "루틴 이름")
                             버튼("저장", { 상태.바꿈 { it.루틴바꿈(r.id) { x -> x.copy(이름 = 새이름.trim().ifEmpty { x.이름 }) } }; 이름고침 = null }, 작게 = true, 주요 = true)
                             버튼("지우기", {
@@ -184,10 +195,10 @@ fun 루틴화면(상태: 앱상태) {
                     // ── 몸통 ──
                     if (열림) {
                         구분선()
-                        Column(Modifier.padding(start = 12.dp, end = 12.dp, top = 6.dp, bottom = 12.dp)) {
+                        Column(Modifier.padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 12.dp)) {
                             if (r.휴식일) 글("휴식일 · 순서에서 한 칸 차지", Modifier.padding(vertical = 8.dp), 크기값 = 크기.조금작게, 색 = c.옅음)
                             else {
-                            성장줄(r.이름, d.루틴성장(r.id, 오늘), d.지금기준().기간, Modifier.padding(vertical = 6.dp))
+                            성장줄(r.이름, d.루틴성장(r.id, 오늘), d.지금기준().기간, Modifier.padding(vertical = 8.dp))
                             if (r.종목.isEmpty()) 글("아직 종목이 없습니다", Modifier.padding(vertical = 8.dp), 크기값 = 크기.조금작게, 색 = c.옅음)
                             // 슈퍼세트 묶음은 상자로 모아 그린다
                             var j = 0
@@ -197,7 +208,7 @@ fun 루틴화면(상태: 앱상태) {
                                     val jj = j
                                     종목줄(상태, r, jj, 열린종목 == "${r.id}|$jj", 켠칸,
                                         끌림 = 끌기?.rid == r.id && 끌기?.j == jj, 표시 = 놓일?.takeIf { it.rid == r.id && it.j == jj }?.모드 ?: -1,
-                                        on열기 = { 열린종목 = if (열린종목 == "${r.id}|$jj") null else "${r.id}|$jj"; 켠칸 = null },
+                                        on열기 = { 입력중.취소?.invoke(); 열린종목 = if (열린종목 == "${r.id}|$jj") null else "${r.id}|$jj"; 켠칸 = null },
                                         on칸 = { k -> 열린종목 = "${r.id}|$jj"; 켠칸 = if (켠칸 == k) null else k },
                                         on자리 = { 줄자리["${r.id}|$jj"] = it },
                                         on끌기시작 = { y -> 끌기시작(r.id, jj, r.종목[jj].이름, y) },
@@ -215,7 +226,7 @@ fun 루틴화면(상태: 앱상태) {
                                             .clip(RoundedCornerShape(모서리.작게))
                                             .border(1.dp, c.휴식.copy(alpha = 0.45f), RoundedCornerShape(모서리.작게))
                                             .background(c.휴식옅음.copy(alpha = 0.5f))
-                                            .padding(horizontal = 9.dp, vertical = 4.dp),
+                                            .padding(horizontal = 8.dp, vertical = 4.dp),
                                     ) {
                                         Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                                             글("슈퍼세트 · ${끝 - 시작}종목을 번갈아", Modifier.weight(1f), 크기값 = 크기.작게, 색 = c.휴식, 굵기 = FontWeight.Bold)
@@ -224,7 +235,7 @@ fun 루틴화면(상태: 앱상태) {
                                         for (jj in 시작 until 끝) {
                                         종목줄(상태, r, jj, 열린종목 == "${r.id}|$jj", 켠칸,
                                             끌림 = 끌기?.rid == r.id && 끌기?.j == jj, 표시 = 놓일?.takeIf { it.rid == r.id && it.j == jj }?.모드 ?: -1,
-                                            on열기 = { 열린종목 = if (열린종목 == "${r.id}|$jj") null else "${r.id}|$jj"; 켠칸 = null },
+                                            on열기 = { 입력중.취소?.invoke(); 열린종목 = if (열린종목 == "${r.id}|$jj") null else "${r.id}|$jj"; 켠칸 = null },
                                             on칸 = { k -> 열린종목 = "${r.id}|$jj"; 켠칸 = if (켠칸 == k) null else k },
                                             on자리 = { 줄자리["${r.id}|$jj"] = it },
                                             on끌기시작 = { y -> 끌기시작(r.id, jj, r.종목[jj].이름, y) },
@@ -240,7 +251,7 @@ fun 루틴화면(상태: 앱상태) {
                             if (고르기 == r.id) {
                                 안고르기(상태, r, 방금, { 방금 = it }) { 고르기 = null; 방금 = emptyList() }
                             } else {
-                                Box(Modifier.height(10.dp))
+                                Box(Modifier.height(12.dp))
                                 버튼("종목 추가", { 고르기 = r.id; 방금 = emptyList(); 열린종목 = null }, Modifier.fillMaxWidth(), 작게 = true, 그림 = 아이콘.더하기)
                             }
                             }
@@ -270,7 +281,7 @@ fun 루틴화면(상태: 앱상태) {
                     .padding(start = 40.dp)
                     .clip(CircleShape)
                     .background(c.강조)
-                    .padding(horizontal = 14.dp, vertical = 7.dp),
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
             ) { 글(g.이름, 크기값 = 크기.버튼, 색 = c.강조글, 굵기 = FontWeight.Bold) }
         }
     }
@@ -335,9 +346,9 @@ private fun 종목줄(
             // 이름과 요약을 한 줄에 (09-21 메모) — 이름이 길면 이름 끝만 … 로
             Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
                 글(e.이름, Modifier.weight(1f, fill = false), 굵기 = FontWeight.Medium)
-                Box(Modifier.width(6.dp))
+                Box(Modifier.width(8.dp))
                 Text(
-                    "${무게글(e.무게)}kg×${e.횟수}회×${e.세트}세트·${분초(e.휴식)}",
+                    e.요약(),
                     style = 글꼴.보통(크기.작게), color = c.옅음, maxLines = 1, softWrap = false,
                 )
             }
@@ -352,18 +363,18 @@ private fun 종목줄(
                 listOf(
                     숫자칸("s", "세트", "${e.세트}", "", 입력종류.정수, { 고침 { it.copy(세트 = max(1, it.세트 - 1)) } }, { 고침 { it.copy(세트 = it.세트 + 1) } },
                         { t -> t.toIntOrNull()?.let { v -> 고침 { it.copy(세트 = max(1, v)) } } },
-                        휠값.세트, { "${it.toInt()}" }, e.세트.toDouble()),
-                    숫자칸("w", "무게", 무게글(e.무게), "kg", 입력종류.소수, { 고침 { it.copy(무게 = 무게반올림(max(0.0, it.무게 - 폭))) } }, { 고침 { it.copy(무게 = 무게반올림(it.무게 + 폭)) } },
-                        { t -> t.replace(',', '.').toDoubleOrNull()?.let { v -> 고침 { it.copy(무게 = 무게반올림(max(0.0, v))) } } },
-                        휠값.무게, { 무게글(it) }, e.무게),
-                    숫자칸("r", "횟수", "${e.횟수}", "회", 입력종류.정수, { 고침 { it.copy(횟수 = max(0, it.횟수 - 1)) } }, { 고침 { it.copy(횟수 = it.횟수 + 1) } },
-                        { t -> t.toIntOrNull()?.let { v -> 고침 { it.copy(횟수 = max(0, v)) } } },
-                        휠값.횟수, { "${it.toInt()}" }, e.횟수.toDouble()),
-                    숫자칸("t", "휴식", 분초(e.휴식), "", 입력종류.분초, { 고침 { it.copy(휴식 = max(0, it.휴식 - 5)) } }, { 고침 { it.copy(휴식 = it.휴식 + 5) } },
-                        { t -> 초읽기(t)?.let { v -> 고침 { it.copy(휴식 = v) } } },
-                        휠값.휴식, { 분초(it.toInt()) }, e.휴식.toDouble()),
+                        휠값.세트, { "${it.toInt()}" }, e.세트.toDouble(), 원래 = e, 되돌림 = { o -> (o as? 루틴종목)?.let { 옛 -> 고침 { 옛 } } }),
+                    숫자칸("w", "무게", 무게글(e.무게), "kg", 입력종류.소수, { 고침 { it.모두무게(무게반올림(max(0.0, it.무게 - 폭))) } }, { 고침 { it.모두무게(무게반올림(it.무게 + 폭)) } },
+                        { t -> t.replace(',', '.').toDoubleOrNull()?.let { v -> 고침 { it.모두무게(무게반올림(max(0.0, v))) } } },
+                        휠값.무게, { 무게글(it) }, e.무게, 원래 = e, 되돌림 = { o -> (o as? 루틴종목)?.let { 옛 -> 고침 { 옛 } } }),
+                    숫자칸("r", "횟수", "${e.횟수}", "회", 입력종류.정수, { 고침 { it.모두횟수(max(0, it.횟수 - 1)) } }, { 고침 { it.모두횟수(it.횟수 + 1) } },
+                        { t -> t.toIntOrNull()?.let { v -> 고침 { it.모두횟수(max(0, v)) } } },
+                        휠값.횟수, { "${it.toInt()}" }, e.횟수.toDouble(), 원래 = e, 되돌림 = { o -> (o as? 루틴종목)?.let { 옛 -> 고침 { 옛 } } }),
+                    숫자칸("t", "휴식", 분초(e.휴식), "", 입력종류.분초, { 고침 { it.모두휴식(max(0, it.휴식 - 5)) } }, { 고침 { it.모두휴식(it.휴식 + 5) } },
+                        { t -> 초읽기(t)?.let { v -> 고침 { it.모두휴식(v) } } },
+                        휠값.휴식, { 분초(it.toInt()) }, e.휴식.toDouble(), 원래 = e, 되돌림 = { o -> (o as? 루틴종목)?.let { 옛 -> 고침 { 옛 } } }),
                 ),
-                켠칸, on칸, Modifier.padding(bottom = 6.dp),
+                켠칸, on칸, Modifier.padding(bottom = 8.dp),
             )
         }
         구분선()
@@ -380,14 +391,16 @@ private fun 안고르기(상태: 앱상태, r: 루틴, 방금: List<String>, 방
     var 새이름 by remember { mutableStateOf("") }
     var 새장비 by remember { mutableStateOf("") }
     var 새부위 by remember { mutableStateOf(d.카테고리.firstOrNull() ?: "") }
+    var 새부위손댐 by remember { mutableStateOf(false) }
+    var 새장비손댐 by remember { mutableStateOf(false) }
     val 있음 = r.종목.map { it.이름 }.toSet()
 
     Column(
-        Modifier.fillMaxWidth().padding(top = 10.dp)
+        Modifier.fillMaxWidth().padding(top = 12.dp)
             .clip(RoundedCornerShape(모서리.작게))
             .background(c.면2)
             .border(1.dp, c.선, RoundedCornerShape(모서리.작게))
-            .padding(10.dp),
+            .padding(12.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             글("종목 추가", 굵기 = FontWeight.Bold)
@@ -400,17 +413,22 @@ private fun 안고르기(상태: 앱상태, r: 루틴, 방금: List<String>, 방
         // 새 종목 만들기 — 처음엔 종목이 하나도 없으므로 여기서 바로 만든다
         if (새로) {
             Column(Modifier.padding(vertical = 8.dp)) {
-                종목이름칸(상태, 새이름, { 새이름 = it }) { 이름, 부, 장 ->
+                종목이름칸(상태, 새이름, { t ->
+                    새이름 = t
+                    val g = 이름추천.추측하기(t)
+                    if (!새부위손댐 && g.부위 != null && g.부위 in d.카테고리) 새부위 = g.부위
+                    if (!새장비손댐) 새장비 = g.장비 ?: ""
+                }) { 이름, 부, 장 ->
                     새이름 = 이름
                     if (부 in d.카테고리) 새부위 = 부
                     if (장.isNotBlank()) 새장비 = 장
                 }
-                Box(Modifier.height(6.dp))
-                부위고르기(상태, 새부위, { 새부위 = it })
-                Box(Modifier.height(6.dp))
-                장비고르기(상태, 새장비, { 새장비 = it })
-                Box(Modifier.height(6.dp))
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Box(Modifier.height(8.dp))
+                부위고르기(상태, 새부위, { 새부위 = it; 새부위손댐 = true })
+                Box(Modifier.height(8.dp))
+                장비고르기(상태, 새장비, { 새장비 = it; 새장비손댐 = true }, 이름추천.추측하기(새이름).장비후보)
+                Box(Modifier.height(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     버튼("취소", { 새로 = false; 새이름 = ""; 새장비 = "" }, Modifier.weight(1f), 작게 = true)
                     버튼("만들고 넣기", {
                         val 이름 = 새이름.trim()
@@ -419,7 +437,7 @@ private fun 안고르기(상태: 앱상태, r: 루틴, 방금: List<String>, 방
                                 val 표 = if (dd.종목표.any { it.이름 == 이름 }) dd.종목표 else dd.종목표 + 종목(이름, 새부위, 새장비.trim())
                                 dd.copy(종목표 = 표).루틴바꿈(r.id) { x -> x.copy(종목 = x.종목 + 루틴종목(이름, 세트 = dd.설정.기본세트, 휴식 = dd.설정.기본휴식)) }
                             }
-                            방금바꿈(방금 + 이름); 새이름 = ""; 새장비 = ""; 새로 = false
+                            방금바꿈(방금 + 이름); 새이름 = ""; 새장비 = ""; 새로 = false; 새부위손댐 = false; 새장비손댐 = false
                         }
                     }, Modifier.weight(1.4f), 작게 = true, 주요 = true)
                 }
@@ -428,7 +446,7 @@ private fun 안고르기(상태: 앱상태, r: 루틴, 방금: List<String>, 방
             고르기줄("새 종목 만들기", null, 아이콘.더하기) { 새로 = true }
         }
         val 목록 = d.종목표.filter { 부위 == "전체" || it.부위 == 부위 }
-        if (목록.isEmpty() && !새로) 글("이 부위에 종목이 없습니다", Modifier.padding(vertical = 10.dp), 크기값 = 크기.조금작게, 색 = c.옅음)
+        if (목록.isEmpty() && !새로) 글("이 부위에 종목이 없습니다", Modifier.padding(vertical = 12.dp), 크기값 = 크기.조금작게, 색 = c.옅음)
         Column(Modifier.heightIn(max = 360.dp).verticalScroll(rememberScrollState())) {
             목록.forEach { e ->
                 val 넣음 = e.이름 in 방금
@@ -449,22 +467,22 @@ private fun 안고르기(상태: 앱상태, r: 루틴, 방금: List<String>, 방
                                 방금바꿈(방금 + e.이름)
                             }
                         })
-                        .padding(vertical = 11.dp),
+                        .padding(vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Row(Modifier.weight(1f), verticalAlignment = Alignment.Bottom) {
                         글(e.이름, Modifier.weight(1f, fill = false), 색 = if (넣음) c.강조 else c.글, 굵기 = if (넣음) FontWeight.Bold else FontWeight.Normal)
-                        Box(Modifier.width(6.dp))
+                        Box(Modifier.width(8.dp))
                         글(listOf(e.부위, e.장비).filter { it.isNotBlank() }.joinToString("·"), 크기값 = 크기.작게, 색 = c.옅음)
                     }
                     when {
                         원래 -> Row(verticalAlignment = Alignment.CenterVertically) {
                             글(if (몇개 > 1) "있음 ×$몇개" else "있음", 크기값 = 크기.작게, 색 = c.옅음)
-                            Box(Modifier.width(6.dp))
+                            Box(Modifier.width(8.dp))
                             Icon(아이콘.더하기, "한 번 더 넣기", Modifier.size(18.dp), tint = c.강조)
                         }
                         넣음 -> Row(verticalAlignment = Alignment.CenterVertically) {
-                            if (몇개 > 1) { 글("×$몇개", 크기값 = 크기.작게, 색 = c.강조); Box(Modifier.width(6.dp)) }
+                            if (몇개 > 1) { 글("×$몇개", 크기값 = 크기.작게, 색 = c.강조); Box(Modifier.width(8.dp)) }
                             Icon(아이콘.체크, "넣음", Modifier.size(18.dp), tint = c.강조)
                         }
                         else -> Icon(아이콘.더하기, "넣기", Modifier.size(18.dp), tint = c.강조)

@@ -65,17 +65,20 @@ val Local색 = staticCompositionLocalOf { 밝은색표 }
 
 // ─────────────────────── 글자 ───────────────────────
 
-/** 글자 크기 — 이 아홉 단계만 쓴다 (1-2) */
+/**
+ * 글자 크기 — 여섯 단계만 쓴다: 11 · 13 · 15 · 18 · 22 · 28 (v0.5, 08 시안 1절. 예전 9단계)
+ * 화면 코드가 쓰는 이름은 그대로 두고, 값만 여섯 단계 중 하나로 모았다.
+ */
 object 크기 {
-    val 아주작게 = 10.sp   // 단위 · 아주 작은 이름표
-    val 작게 = 11.sp       // 설명 · 보조 글
-    val 조금작게 = 12.sp   // 작은 본문 · 칩
-    val 버튼 = 13.sp       // 조작 버튼 · 목록 보조
-    val 본문 = 14.sp       // 본문 · 목록 이름
-    val 크게 = 16.sp       // 카드 · 시트 제목
-    val 제목 = 20.sp       // 화면 제목
-    val 큰숫자 = 24.sp
-    val 아주큰숫자 = 32.sp
+    val 아주작게 = 11.sp   // 설명 · 단위 · 작은 이름표
+    val 작게 = 11.sp
+    val 조금작게 = 13.sp   // 보조 글 · 칩
+    val 버튼 = 13.sp
+    val 본문 = 15.sp       // 본문 · 목록 이름
+    val 크게 = 18.sp       // 카드 · 시트 제목
+    val 제목 = 22.sp       // 화면 제목
+    val 큰숫자 = 22.sp
+    val 아주큰숫자 = 28.sp // 큰 숫자
 }
 
 /** 글자 모양 — 자간은 기본 −0.01em, 제목 −0.02em */
@@ -83,9 +86,9 @@ object 글꼴 {
     fun 보통(크기값: androidx.compose.ui.unit.TextUnit, 굵기: FontWeight = FontWeight.Normal) =
         TextStyle(fontSize = 크기값, fontWeight = 굵기, letterSpacing = (-0.01).em, lineHeight = 크기값 * 1.4f)
     fun 제목(크기값: androidx.compose.ui.unit.TextUnit) =
-        TextStyle(fontSize = 크기값, fontWeight = FontWeight.Bold, letterSpacing = (-0.02).em, lineHeight = 크기값 * 1.2f)
+        TextStyle(fontSize = 크기값, fontWeight = FontWeight.Bold, letterSpacing = (-0.02).em, lineHeight = 크기값 * 1.25f)
     /** 작은 이름표 — 약간 벌린다 */
-    val 이름표 = TextStyle(fontSize = 크기.작게, fontWeight = FontWeight.Bold, letterSpacing = 0.06.em)
+    val 이름표 = TextStyle(fontSize = 크기.작게, fontWeight = FontWeight.Bold, letterSpacing = 0.04.em)
 }
 
 // ───────────────────── 간격 · 높이 · 모서리 ─────────────────────
@@ -98,19 +101,20 @@ object 간격 {
     val 아주넓게 = 24.dp
 }
 
-/** 누르는 것의 높이 — 네 단계 */
+/** 누르는 것의 높이 — 칩 28 · 작은 버튼 32 · 버튼·입력 40 · 목록 줄 44 (아래 탭 52) */
 object 높이 {
     val 아주낮게 = 28.dp
     val 낮게 = 32.dp
     val 보통 = 40.dp
-    val 높게 = 48.dp
+    val 높게 = 44.dp
 }
 
+/** 모서리 — 버튼 8 · 안쪽 상자 12 · 카드 16 (08 시안) */
 object 모서리 {
-    val 아주작게 = 7.dp   // 세트 번호 칸 같은 작은 것
-    val 작게 = 10.dp      // 버튼 · 입력칸
+    val 아주작게 = 8.dp   // 세트 번호 칸 같은 작은 것
+    val 작게 = 8.dp       // 버튼 · 입력칸
     val 보통 = 16.dp      // 카드
-    val 크게 = 24.dp      // 시트
+    val 크게 = 16.dp      // 시트
 }
 
 // ───────────────────────── 적용 ─────────────────────────

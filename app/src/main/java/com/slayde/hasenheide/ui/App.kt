@@ -1,5 +1,9 @@
 package com.slayde.hasenheide.ui
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -128,7 +132,18 @@ fun 앱(상태: 앱상태, 폰: 폰기능) {
     // 자판이 떠 있거나 숫자를 고치는 중이면 아래 탭을 숨긴다 (09-21 메모)
     val 탭숨김 = WindowInsets.isImeVisible || 입력중.수 > 0
 
-    Box(Modifier.fillMaxSize().background(c.바탕)) {
+    // 뒤로가기 (09-22 메모) — 숫자를 고치는 중이면 취소(숫자칸이 먼저 받는다), 시트면 닫기, 펼친 칸이면 접기(각 화면),
+    // 그 밖에는 여기: 운동 중에 다른 탭 → 운동 화면 / 운동 화면 · 다른 탭 → 캘린더 / 캘린더 → 앱 나가기
+    BackHandler(enabled = (세션 != null && !운동보기) || 운동화면중 || 지금탭 != 탭.캘린더) {
+        when {
+            세션 != null && !운동보기 && 지금탭 != 탭.캘린더 -> 운동보기 = true
+            운동화면중 -> { 운동보기 = false; 지금탭 = 탭.캘린더 }
+            else -> 지금탭 = 탭.캘린더
+        }
+    }
+
+    // 빈 곳을 누르면 고치던 숫자칸을 취소한다 (09-22 메모). 버튼 · 칸이 받은 누름은 여기까지 오지 않는다
+    Box(Modifier.fillMaxSize().background(c.바탕).pointerInput(Unit) { detectTapGestures(onTap = { 입력중.취소?.invoke() }) }) {
         Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().imePadding()) {
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 if (운동화면중) 운동화면(상태, 폰)
@@ -153,8 +168,9 @@ fun 앱(상태: 앱상태, 폰: 폰기능) {
                 }
             }
         }
-        상태.되돌림?.let { (글자, _) -> 아래띠(글자, "되돌리기", { 상태.되돌리기() }, 바깥 = Modifier.navigationBarsPadding().padding(bottom = if (탭숨김) 0.dp else 46.dp)) }
         if (메모열림) 메모시트(상태, 화면이름, 폰) { 메모열림 = false }
+        // 되돌리기 띠는 맨 위에 — 메모 시트에서 지워도 보이게 (09-22 메모: 메모를 실수로 지웠는데 되돌릴 길이 안 보였다)
+        상태.되돌림?.let { (글자, _) -> 아래띠(글자, "되돌리기", { 상태.되돌리기() }, 바깥 = Modifier.navigationBarsPadding().padding(bottom = if (탭숨김 || 메모열림) 0.dp else 46.dp)) }
     }
 }
 
@@ -167,7 +183,7 @@ private fun 운동중띠(S: com.slayde.hasenheide.data.운동세션, 돌아가�
     val h = S.휴식
     val 곁 = if (h != null && !h.물음) "휴식 ${분초(max(0L, (h.끝시각 - 지금 + 999) / 1000).toInt())}" else 시분초(S.흐른초(지금))
     Row(
-        Modifier.fillMaxWidth().background(c.강조).눌림(돌아가기).padding(horizontal = 16.dp, vertical = 9.dp),
+        Modifier.fillMaxWidth().background(c.강조).눌림(돌아가기).padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         글("운동 중 · ${S.루틴이름} · $곁", Modifier.weight(1f), 크기값 = 크기.버튼, 색 = c.강조글, 굵기 = FontWeight.Bold)
@@ -180,7 +196,7 @@ private fun 운동중띠(S: com.slayde.hasenheide.data.운동세션, 돌아가�
 private fun androidx.compose.foundation.layout.RowScope.탭단추(이름: String, 그림: ImageVector, 켬: Boolean, onClick: () -> Unit) {
     val c = Local색.current
     Column(
-        Modifier.weight(1f).눌림(onClick).padding(top = 5.dp, bottom = 6.dp),
+        Modifier.weight(1f).눌림(onClick).padding(top = 4.dp, bottom = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Icon(그림, 이름, Modifier.size(18.dp), tint = if (켬) c.강조 else c.흐림)

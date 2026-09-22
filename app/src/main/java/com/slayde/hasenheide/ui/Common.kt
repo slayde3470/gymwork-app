@@ -3,6 +3,9 @@
 package com.slayde.hasenheide.ui
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -221,7 +224,7 @@ fun 칩줄(목록: List<String>, 선택: String?, onSelect: (String) -> Unit, mo
     val c = Local색.current
     Row(
         modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         목록.forEach { p ->
             val 켬 = p == 선택
@@ -248,7 +251,7 @@ fun 스위치(켜짐: Boolean, onChange: (Boolean) -> Unit) {
             .clip(CircleShape)
             .background(if (켜짐) c.강조 else c.선)
             .눌림 { onChange(!켜짐) }
-            .padding(3.dp),
+            .padding(4.dp),
         contentAlignment = if (켜짐) Alignment.CenterEnd else Alignment.CenterStart,
     ) { Box(Modifier.size(22.dp).clip(CircleShape).background(if (켜짐) c.강조글 else c.면)) }
 }
@@ -256,7 +259,7 @@ fun 스위치(켜짐: Boolean, onChange: (Boolean) -> Unit) {
 /** 설정 한 줄 — 이름 · 한 줄 설명 · 오른쪽 조작부 */
 @Composable
 fun 설정줄(이름: String, 설명: String? = null, 오른쪽: @Composable RowScope.() -> Unit) {
-    Row(Modifier.fillMaxWidth().padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.fillMaxWidth().padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
             글(이름, 굵기 = FontWeight.Medium)
             if (설명 != null) 글(설명, 크기값 = 크기.작게, 색 = Local색.current.옅음)
@@ -329,6 +332,9 @@ data class 숫자칸(
     val 휠: List<Double> = emptyList(),
     val 휠글: (Double) -> String = { it.toString() },
     val 지금값: Double = 0.0,
+    /** 취소할 때 되돌릴 원래 모습 — 열 때 기억해 두었다가 되돌림(원래) 을 부른다. 없으면 넣기(열 때 값글) */
+    val 원래: Any? = null,
+    val 되돌림: ((Any?) -> Unit)? = null,
 )
 
 /** 휠 값 목록 — 세트 1–50 · 무게 0–500(5kg) · 횟수 1–50 · 휴식 0–180초(10초) */
@@ -339,12 +345,42 @@ object 휠값 {
     val 휴식 = (0..18).map { it * 10.0 }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun 숫자버튼줄(칸들: List<숫자칸>, 켠: String?, on고름: (String) -> Unit, modifier: Modifier = Modifier) {
     val c = Local색.current
     val 끌어올림 = remember { BringIntoViewRequester() }
     val 켠칸 = 칸들.firstOrNull { it.키 == 켠 }
-    LaunchedEffect(켠) { if (켠 != null) { delay(350); 끌어올림.bringIntoView() } }
+    LaunchedEffect(켠) { if (켠 != null) { 입력중.버림 = false; delay(350); 끌어올림.bringIntoView() } }
+
+    // ── 취소 (09-22 메모) — 뒤로가기 · 빈 곳 누르기 · 자판 내리기 = 열기 전 값으로 되돌리고 닫기 ──
+    val 열때 = remember(켠) { 켠칸?.let { Triple(it.값글, it.원래, it.되돌림) } }
+    val 칸최신 by rememberUpdatedState(켠칸)
+    val 고름최신 by rememberUpdatedState(on고름)
+    fun 닫기() { 켠?.let { 고름최신(it) } }   // 같은 키를 다시 부르면 닫힌다
+    fun 취소() {
+        val k = 칸최신 ?: return
+        val (글0, 원0, 되0) = 열때 ?: return
+        입력중.버림 = true   // 닫히며 초점이 빠질 때 친 글을 넣지 않게
+        if (되0 != null) 되0(원0) else if (k.값글 != 글0) k.넣기(글0)
+        닫기()
+    }
+    val 취소최신 by rememberUpdatedState({ 취소() })
+    BackHandler(enabled = 켠 != null) { 취소최신() }
+    DisposableEffect(켠) {
+        val f = { 취소최신() }
+        if (켠 != null) 입력중.취소 = f
+        onDispose { if (입력중.취소 === f) 입력중.취소 = null }
+    }
+    // 자판의 뒤로 단추로 자판만 내려가도 취소로 본다 — 휠을 만지거나 '완료'를 눌러 내려간 것은 빼고
+    var 휠만짐 by remember(켠) { mutableStateOf(false) }
+    val 자판 = WindowInsets.isImeVisible
+    var 자판있었나 by remember(켠) { mutableStateOf(false) }
+    LaunchedEffect(자판, 켠) {
+        if (자판) 자판있었나 = true
+        else if (자판있었나 && 켠 != null && !휠만짐 && !입력중.완료누름) { 자판있었나 = false; 취소최신() }
+        입력중.완료누름 = false
+    }
     Column(
         modifier
             .fillMaxWidth()
@@ -352,9 +388,9 @@ fun 숫자버튼줄(칸들: List<숫자칸>, 켠: String?, on고름: (String) ->
             .clip(RoundedCornerShape(모서리.작게))
             .background(c.면)
             .border(1.dp, c.선, RoundedCornerShape(모서리.작게))
-            .padding(6.dp),
+            .padding(8.dp),
     ) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             칸들.forEach { k ->
                 if (k.키 == 켠) {
                     Row(
@@ -398,10 +434,13 @@ fun 숫자버튼줄(칸들: List<숫자칸>, 켠: String?, on고름: (String) ->
         // 휠은 누른 칸 바로 아래, 그 칸 폭으로 (09-21 메모)
         if (켠칸 != null && 켠칸.휠.isNotEmpty()) {
             val 초점 = LocalFocusManager.current
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 칸들.forEach { k ->
                     if (k.키 == 켠) Box(Modifier.weight(2.3f)) {
-                        key(k.키) { 숫자휠(k.휠, k.지금값, k.휠글, 손댐 = { 초점.clearFocus() }) { v -> k.넣기(k.휠글(v)) } }
+                        key(k.키) {
+                            // 휠: 돌려도 값은 그대로. 숫자를 눌러야 들어가고, 들어가면 칸이 닫힌다 (09-22 메모)
+                            숫자휠(k.휠, k.지금값, k.휠글, 손댐 = { 휠만짐 = true; 초점.clearFocus() }) { v -> k.넣기(k.휠글(v)); 닫기() }
+                        }
                     } else Box(Modifier.weight(1f))
                 }
             }
@@ -414,6 +453,12 @@ fun 숫자버튼줄(칸들: List<숫자칸>, 켠: String?, on고름: (String) ->
 /** 지금 숫자를 고치는 칸이 몇 개 열려 있나 — 0 이 아니면 아래 탭을 숨긴다 */
 object 입력중 {
     var 수 by mutableIntStateOf(0)
+    /** 지금 열린 숫자칸을 취소하는 길 — 화면의 빈 곳을 누르면 App 이 이것을 부른다 */
+    var 취소 by mutableStateOf<(() -> Unit)?>(null)
+    /** 자판 '완료'로 닫았는지 — 자판이 내려가도 취소로 보지 않게 */
+    var 완료누름 = false
+    /** 취소하는 중 — 칸이 닫히며 초점이 빠져도 친 글을 넣지 않는다 */
+    var 버림 = false
 }
 
 /**
@@ -472,21 +517,23 @@ private fun 숫자입력(키: String, 값글: String, 종류: 입력종류, 넣�
             keyboardType = if (종류 == 입력종류.소수) KeyboardType.Decimal else KeyboardType.Number, imeAction = ImeAction.Done,
         ),
         keyboardActions = KeyboardActions(onDone = {
+            입력중.완료누름 = true
             if (만졌나 && tv.text.isNotBlank()) 넣기(tv.text)
             만졌나 = false; 초점.clearFocus(); 닫기()
         }),
         modifier = Modifier
             .widthIn(max = 64.dp)
             .focusRequester(요청)
-            .onFocusChanged { if (!it.isFocused && 만졌나) { if (tv.text.isNotBlank()) 넣기(tv.text); 만졌나 = false } },
+            .onFocusChanged { if (!it.isFocused && 만졌나) { if (tv.text.isNotBlank() && !입력중.버림) 넣기(tv.text); 만졌나 = false } },
     )
 }
 
 /**
- * 숫자 휠 — 위아래로 끌어서 고른다.
- *  · 위아래 끝에 빈칸이 없다. 고른 값에 색이 칠해진다
- *  · 손을 떼고 멈추면 한가운데에 가장 가까운 값을 고른다. 칸을 눌러도 된다
+ * 숫자 휠 (09-22 메모로 바꿈)
+ *  · 돌려도 값은 바뀌지 않는다. 숫자를 한 번 눌러야 그 값이 들어간다
+ *  · 지금 값에 색이 칠해져 있다. 위아래 끝에 빈칸이 없다
  *  · 휠을 끄는 동안 바깥 화면은 움직이지 않는다
+ *  · 누름은 손을 댄 자리로 판단한다 — 자판이 내려가며 칸이 움직여도 놓치지 않게
  */
 @Composable
 private fun 숫자휠(값들: List<Double>, 지금: Double, 글로: (Double) -> String, 손댐: () -> Unit, 고름: (Double) -> Unit) {
@@ -494,11 +541,10 @@ private fun 숫자휠(값들: List<Double>, 지금: Double, 글로: (Double) -> 
     val 칸 = 34.dp
     val 보일수 = minOf(5, 값들.size)
     val 가까운 = { v: Double -> 값들.indices.minByOrNull { abs(값들[it] - v) } ?: 0 }
-    var 고른 by remember { mutableIntStateOf(가까운(지금)) }
+    val 고른 = 가까운(지금)
     val 목록 = rememberLazyListState(maxOf(0, minOf(고른 - 보일수 / 2, 값들.size - 보일수)))
-    val 범위 = rememberCoroutineScope()
-    var 만짐 by remember { mutableStateOf(false) }
     val 고름최신 by rememberUpdatedState(고름)
+    val 손댐최신 by rememberUpdatedState(손댐)
     // 휠이 끝에 닿아도 바깥 화면으로 스크롤을 넘기지 않는다
     val 가둠 = remember {
         object : NestedScrollConnection {
@@ -506,25 +552,11 @@ private fun 숫자휠(값들: List<Double>, 지금: Double, 글로: (Double) -> 
             override suspend fun onPostFling(consumed: Velocity, available: Velocity) = Velocity(0f, available.y)
         }
     }
-
-    LaunchedEffect(목록) {
-        snapshotFlow { 목록.isScrollInProgress }.collect { 움직임 ->
-            if (!움직임 && 만짐) {
-                val 정보 = 목록.layoutInfo
-                val 가운데 = (정보.viewportStartOffset + 정보.viewportEndOffset) / 2
-                val n = 정보.visibleItemsInfo.minByOrNull { abs(it.offset + it.size / 2 - 가운데) }?.index ?: return@collect
-                if (n != 고른) { 고른 = n; 고름최신(값들[n]) }
-            }
-        }
-    }
-    // − ＋ 나 직접 입력으로 값이 바뀌면 휠도 따라간다
+    // − ＋ 나 직접 입력으로 값이 바뀌면 휠도 그 값이 보이게
     LaunchedEffect(지금) {
         val n = 가까운(지금)
-        if (n != 고른 && !목록.isScrollInProgress) {
-            고른 = n
-            val 보이는 = 목록.layoutInfo.visibleItemsInfo.map { it.index }
-            if (n !in 보이는) 목록.scrollToItem(maxOf(0, minOf(n - 보일수 / 2, 값들.size - 보일수)))
-        }
+        val 보이는 = 목록.layoutInfo.visibleItemsInfo.map { it.index }
+        if (n !in 보이는 && !목록.isScrollInProgress) 목록.scrollToItem(maxOf(0, minOf(n - 보일수 / 2, 값들.size - 보일수)))
     }
 
     LazyColumn(
@@ -537,15 +569,29 @@ private fun 숫자휠(값들: List<Double>, 지금: Double, 글로: (Double) -> 
             .background(c.면2)
             .nestedScroll(가둠)
             .pointerInput(Unit) {
-                awaitEachGesture { awaitFirstDown(requireUnconsumed = false); 만짐 = true; 손댐() }
+                awaitEachGesture {
+                    val 처음 = awaitFirstDown(requireUnconsumed = false)
+                    val 돌던중 = 목록.isScrollInProgress          // 돌아가던 휠을 멈추는 손은 고름이 아니다
+                    // 손을 댄 순간 그 자리에 있던 값을 기억해 둔다
+                    val 그값 = 목록.layoutInfo.visibleItemsInfo
+                        .firstOrNull { 처음.position.y >= it.offset && 처음.position.y < it.offset + it.size }?.index
+                    var 움직임 = false
+                    while (true) {
+                        val e = awaitPointerEvent()
+                        val ch = e.changes.firstOrNull { it.id == 처음.id } ?: break
+                        if (!움직임 && (ch.position - 처음.position).getDistance() > viewConfiguration.touchSlop) { 움직임 = true; 손댐최신() }
+                        if (!ch.pressed) {
+                            if (!움직임 && !돌던중 && 그값 != null) { ch.consume(); 손댐최신(); 고름최신(값들[그값]) }
+                            break
+                        }
+                    }
+                }
             },
     ) {
         items(값들.size) { n ->
             val 켬 = n == 고른
             Box(
-                Modifier.fillMaxWidth().height(칸)
-                    .background(if (켬) c.강조옅음 else Color.Transparent)
-                    .눌림 { 만짐 = true; 손댐(); 고른 = n; 고름(값들[n]) },
+                Modifier.fillMaxWidth().height(칸).background(if (켬) c.강조옅음 else Color.Transparent),
                 contentAlignment = Alignment.Center,
             ) {
                 글(글로(값들[n]), 크기값 = if (켬) 크기.크게 else 크기.버튼, 색 = if (켬) c.강조 else c.흐림,
@@ -581,11 +627,11 @@ private fun 분초입력(키: String, 값글: String, 넣기: (String) -> Unit, 
         val x = if (초만짐) 초.text.toIntOrNull() ?: 0 else 초0
         return 분초((m * 60 + x).coerceIn(0, 휴식최대))
     }
-    fun 넣고치움() { if (분만짐 || 초만짐) { 넣기(합()); 분만짐 = false; 초만짐 = false } }
+    fun 넣고치움() { if ((분만짐 || 초만짐) && !입력중.버림) 넣기(합()); 분만짐 = false; 초만짐 = false }
 
     val 모양 = TextStyle(fontSize = 크기.본문, fontWeight = FontWeight.Bold, color = c.글, textAlign = TextAlign.Center)
     val 자판설정 = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done)
-    val 끝 = KeyboardActions(onDone = { 넣고치움(); 초점.clearFocus(); 닫기() })
+    val 끝 = KeyboardActions(onDone = { 입력중.완료누름 = true; 넣고치움(); 초점.clearFocus(); 닫기() })
     Row(verticalAlignment = Alignment.CenterVertically) {
         BasicTextField(
             value = 분, onValueChange = { v -> if (v.text != 분.text) 분만짐 = true; 분 = v.copy(text = v.text.filter { it.isDigit() }.take(2)) },
@@ -595,7 +641,14 @@ private fun 분초입력(키: String, 값글: String, 넣기: (String) -> Unit, 
         )
         Text(":", style = 모양)
         BasicTextField(
-            value = 초, onValueChange = { v -> if (v.text != 초.text) 초만짐 = true; 초 = v.copy(text = v.text.filter { it.isDigit() }.take(4)) },
+            value = 초, onValueChange = { v ->
+                if (v.text != 초.text) {
+                    // 초 칸에 치기 시작하면 분 칸을 비운다 — 60 을 치는 동안 1:60 이 보이지 않게 (08 시안)
+                    if (!초만짐 && !분만짐) 분 = TextFieldValue("")
+                    초만짐 = true
+                }
+                초 = v.copy(text = v.text.filter { it.isDigit() }.take(4))
+            },
             singleLine = true, textStyle = 모양, cursorBrush = SolidColor(c.강조), keyboardOptions = 자판설정, keyboardActions = 끝,
             modifier = Modifier.width(34.dp).focusRequester(초요청)
                 .onFocusChanged { if (!it.isFocused && 초만짐) 넣고치움() },
@@ -620,13 +673,13 @@ fun 시트(제목: String, onClose: () -> Unit, content: @Composable ColumnScope
                 .눌림 { }
                 .navigationBarsPadding()
                 .imePadding()
-                .padding(horizontal = 간격.넓게, vertical = 14.dp),
+                .padding(horizontal = 간격.넓게, vertical = 16.dp),
         ) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 제목글(제목, Modifier.weight(1f), 크기값 = 크기.크게)
                 아이콘버튼(아이콘.닫기, "닫기", onClose, 크기칸 = 높이.낮게)
             }
-            Column(Modifier.padding(top = 10.dp).verticalScroll(rememberScrollState()), content = content)
+            Column(Modifier.padding(top = 12.dp).verticalScroll(rememberScrollState()), content = content)
         }
     }
 }
@@ -638,16 +691,16 @@ fun BoxScope.아래띠(글자: String, 버튼글: String, on버튼: () -> Unit, 
     Row(
         바깥
             .align(Alignment.BottomCenter)
-            .padding(horizontal = 12.dp, vertical = 10.dp)
+            .padding(horizontal = 12.dp, vertical = 12.dp)
             .fillMaxWidth()
             .clip(RoundedCornerShape(모서리.작게))
             .background(if (어둡게) c.글 else c.면)
             .border(1.dp, if (어둡게) c.글 else c.휴식, RoundedCornerShape(모서리.작게))
-            .padding(horizontal = 14.dp, vertical = 11.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         글(글자, Modifier.weight(1f), 크기값 = 크기.버튼, 색 = if (어둡게) c.면 else c.휴식)
-        Box(Modifier.width(10.dp))
+        Box(Modifier.width(12.dp))
         글(버튼글, Modifier.눌림(on버튼), 크기값 = 크기.버튼, 색 = if (어둡게) c.강조옅음 else c.휴식, 굵기 = FontWeight.Bold)
     }
 }
@@ -662,7 +715,7 @@ fun 고르기줄(이름: String, 곁: String? = null, 오른쪽: ImageVector? = 
     ) {
         Row(Modifier.weight(1f), verticalAlignment = Alignment.Bottom) {
             글(이름, Modifier.weight(1f, fill = false), 색 = if (흐림) c.옅음 else c.글)
-            if (곁 != null) { Box(Modifier.width(6.dp)); 글(곁, 크기값 = 크기.작게, 색 = c.옅음) }
+            if (곁 != null) { Box(Modifier.width(8.dp)); 글(곁, 크기값 = 크기.작게, 색 = c.옅음) }
         }
         if (오른쪽 != null) Icon(오른쪽, null, Modifier.size(18.dp), tint = if (흐림) c.옅음 else c.강조)
     }
