@@ -315,8 +315,10 @@ fun 종목이름칸(상태: 앱상태, 이름: String, on이름: (String) -> Uni
     val 정보 = linkedMapOf<String, Pair<String, String>>()
     if (있는것도) 표.forEach { 정보[it.이름] = it.부위 to it.장비 }
     이름추천.기본.forEach { b -> if (b.이름 !in 정보 && 표.none { it.이름 == b.이름 }) 정보[b.이름] = b.부위 to b.장비 }
-    val 추천 = 이름추천.찾기(이름, 정보.keys.toList())
-    입력칸(이름, on이름, Modifier.fillMaxWidth(), 안내 = "종목 이름 (예: 벤치프레스)")
+    // 추천에서 하나를 고르면 목록을 닫는다 — 이름을 다시 고치면 또 뜬다 (09-24 메모)
+    var 고른것 by remember { mutableStateOf<String?>(null) }
+    val 추천 = if (이름.isNotBlank() && 이름 == 고른것) emptyList() else 이름추천.찾기(이름, 정보.keys.toList())
+    입력칸(이름, { t -> if (t != 이름) 고른것 = null; on이름(t) }, Modifier.fillMaxWidth(), 안내 = "종목 이름 (예: 벤치프레스)")
     if (추천.isNotEmpty()) {
         Column(
             Modifier.fillMaxWidth().padding(top = 4.dp).clip(RoundedCornerShape(모서리.작게))
@@ -325,7 +327,7 @@ fun 종목이름칸(상태: 앱상태, 이름: String, on이름: (String) -> Uni
             추천.forEachIndexed { i, n ->
                 if (i > 0) 구분선()
                 val (부, 장) = 정보.getValue(n)
-                Row(Modifier.fillMaxWidth().눌림 { on고름(n, 부, 장) }.padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.fillMaxWidth().눌림 { 고른것 = n; on고름(n, 부, 장) }.padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     글(n, Modifier.weight(1f, fill = false), 크기값 = 크기.버튼, 굵기 = FontWeight.Medium)
                     Box(Modifier.width(8.dp))
                     글(listOf(부, 장).filter { it.isNotBlank() }.joinToString("·"), Modifier.weight(1f), 크기값 = 크기.작게, 색 = c.옅음)

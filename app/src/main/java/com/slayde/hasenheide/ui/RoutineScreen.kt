@@ -215,8 +215,8 @@ fun 루틴화면(상태: 앱상태) {
                                     val jj = j
                                     종목줄(상태, r, jj, 열린종목 == "${r.id}|$jj", 켠칸,
                                         끌림 = 끌기?.rid == r.id && 끌기?.j == jj, 표시 = 놓일?.takeIf { it.rid == r.id && it.j == jj }?.모드 ?: -1,
-                                        on열기 = { 입력중.취소?.invoke(); 열린종목 = if (열린종목 == "${r.id}|$jj") null else "${r.id}|$jj"; 켠칸 = null },
-                                        on칸 = { k -> 열린종목 = "${r.id}|$jj"; 켠칸 = if (켠칸 == k) null else k },
+                                        on열기 = { 입력중.취소?.invoke(); 고르기 = null; 열린종목 = if (열린종목 == "${r.id}|$jj") null else "${r.id}|$jj"; 켠칸 = null },
+                                        on칸 = { k -> 고르기 = null; 열린종목 = "${r.id}|$jj"; 켠칸 = if (켠칸 == k) null else k },
                                         on자리 = { 줄자리["${r.id}|$jj"] = it },
                                         on끌기시작 = { y -> 끌기시작(r.id, jj, r.종목[jj].이름, y) },
                                         on끌기 = { dy -> 끌기 = 끌기?.let { it.copy(y = it.y + dy) } },
@@ -242,8 +242,8 @@ fun 루틴화면(상태: 앱상태) {
                                         for (jj in 시작 until 끝) {
                                         종목줄(상태, r, jj, 열린종목 == "${r.id}|$jj", 켠칸,
                                             끌림 = 끌기?.rid == r.id && 끌기?.j == jj, 표시 = 놓일?.takeIf { it.rid == r.id && it.j == jj }?.모드 ?: -1,
-                                            on열기 = { 입력중.취소?.invoke(); 열린종목 = if (열린종목 == "${r.id}|$jj") null else "${r.id}|$jj"; 켠칸 = null },
-                                            on칸 = { k -> 열린종목 = "${r.id}|$jj"; 켠칸 = if (켠칸 == k) null else k },
+                                            on열기 = { 입력중.취소?.invoke(); 고르기 = null; 열린종목 = if (열린종목 == "${r.id}|$jj") null else "${r.id}|$jj"; 켠칸 = null },
+                                            on칸 = { k -> 고르기 = null; 열린종목 = "${r.id}|$jj"; 켠칸 = if (켠칸 == k) null else k },
                                             on자리 = { 줄자리["${r.id}|$jj"] = it },
                                             on끌기시작 = { y -> 끌기시작(r.id, jj, r.종목[jj].이름, y) },
                                             on끌기 = { dy -> 끌기 = 끌기?.let { it.copy(y = it.y + dy) } },
@@ -259,7 +259,7 @@ fun 루틴화면(상태: 앱상태) {
                                 안고르기(상태, r, 방금, { 방금 = it }) { 고르기 = null; 방금 = emptyList() }
                             } else {
                                 Box(Modifier.height(12.dp))
-                                버튼("종목 추가", { 고르기 = r.id; 방금 = emptyList(); 열린종목 = null }, Modifier.fillMaxWidth(), 작게 = true, 그림 = 아이콘.더하기)
+                                버튼("종목 추가", { 입력중.취소?.invoke(); 고르기 = r.id; 방금 = emptyList(); 열린종목 = null; 켠칸 = null }, Modifier.fillMaxWidth(), 작게 = true, 그림 = 아이콘.더하기)
                             }
                             }
                         }

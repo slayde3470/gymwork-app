@@ -155,10 +155,11 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
             var 지금줄 by remember { mutableStateOf<Rect?>(null) }
             // 펼쳐 둔 '지난 종목' 묶음 (묶음 첫 종목 번호). 지금 종목이 바뀌면 다시 다 접는다 (09-21 메모)
             val 펼친 = remember { mutableStateMapOf<Int, Boolean>() }
-            LaunchedEffect(S.i) { 펼친.clear() }
+            // 종목이 바뀌거나, 세트를 체크하면 펼쳐 둔 지난 종목을 다시 접는다 (09-24 메모)
+            LaunchedEffect(S.i, S.한세트수()) { 펼친.clear() }
             // 체크 · 휴식 · 종목 이동마다 지금 세트 줄로 화면을 옮긴다 — 화면 위 1/3 쯤에 오게
             LaunchedEffect(S.i, S.s, S.한세트수(), S.휴식?.k) {
-                delay(60)
+                delay(140)   // 접힘 애니메이션이 자리를 잡은 뒤에 (09-24)
                 val 줄 = 지금줄 ?: return@LaunchedEffect
                 if (화면틀.height <= 0f) return@LaunchedEffect
                 스크롤.animateScrollBy(줄.top - (화면틀.top + 화면틀.height * 0.33f))

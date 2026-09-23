@@ -101,14 +101,15 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
     // 스크롤 없이 한 화면 (09-21 메모) — 달력이 남는 높이를 다 쓰고, 아래 판은 자기 안에서만 넘긴다
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().padding(horizontal = 간격.보통).padding(top = 8.dp, bottom = 8.dp)) {
-            카드(Modifier.weight(1f), 안쪽 = 8.dp) {
+            // 달력은 보여 줄 것까지만 높이를 쓴다 (09-24 메모) — 남는 높이는 그냥 둔다
+            카드(Modifier.weight(1f, fill = false), 안쪽 = 8.dp) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     아이콘버튼(아이콘.왼쪽, "이전 달", { 보는달 = 보는달.minusMonths(1) })
                     제목글("${보는달.year}년 ${보는달.monthValue}월", Modifier.weight(1f).padding(start = 12.dp), 크기값 = 크기.크게)
                     아이콘버튼(아이콘.오른쪽, "다음 달", { 보는달 = 보는달.plusMonths(1) })
                 }
                 Box(Modifier.height(4.dp))
-                달력(d, 오늘, 보는달, 고른날, Modifier.weight(1f), on고름 = { 고른날 = it }, on두번 = { 고른날 = it; 열린시트 = "시작" })
+                달력(d, 오늘, 보는달, 고른날, Modifier, on고름 = { 고른날 = it }, on두번 = { 고른날 = it; 열린시트 = "시작" })
             }
             Box(Modifier.height(8.dp))
             Box(Modifier.fillMaxWidth().heightIn(max = 190.dp)) {
@@ -174,11 +175,22 @@ private fun 달력(d: 앱데이터, 오늘: String, 달: YearMonth, 고른날: S
         if (YearMonth.from(g) == 달) (앞빈칸 + g.dayOfMonth - 1) / 7 else -1
     }
     val 두번가능 = 오늘시작루틴(d, 오늘) != null
-    // 줄마다 높이를 나눠 가진다 — 펼친 줄(누른 날이 있는 줄)이 더 크게 (2-1)
+    /** 그 줄에서 가장 많은 종목 수 — 펼친 줄의 높이를 여기에 맞춘다 (09-24 메모) */
+    fun 종목수(줄: Int): Int = (0 until 7).maxOf { 칸 ->
+        val n = 줄 * 7 + 칸 - 앞빈칸 + 1
+        if (n < 1 || n > 달.lengthOfMonth()) 0
+        else {
+            val k = 달.atDay(n).toString()
+            d.기록[k]?.종목들?.size ?: (if (k >= 오늘) d.예정루틴(k)?.종목?.size ?: 0 else 0)
+        }
+    }
+    // 줄 높이 — 접힌 줄은 날짜 + 루틴 칩, 펼친 줄은 거기에 종목 이름만큼만 더한다 (09-24 메모: 최대치까지 늘리지 않는다)
+    val 접힌높이 = 50.dp
     Column(modifier.fillMaxWidth()) {
         for (줄 in 0 until 줄수) {
             val 펼침 = 줄 == 고른줄
-            Row(Modifier.fillMaxWidth().weight(if (펼침) 3f else 1f).padding(top = 2.dp)) {
+            val 높이값 = if (펼침) 접힌높이 + (종목수(줄) * 15).dp else 접힌높이
+            Row(Modifier.fillMaxWidth().height(높이값).padding(top = 2.dp)) {
                 for (칸 in 0 until 7) {
                     val n = 줄 * 7 + 칸 - 앞빈칸 + 1
                     if (n < 1 || n > 달.lengthOfMonth()) { Box(Modifier.weight(1f)); continue }
