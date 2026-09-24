@@ -283,28 +283,30 @@ fun 입력칸(
     안내: String = "",
     숫자: Boolean = false,
     onDone: (() -> Unit)? = null,
+    여러줄: Boolean = false,   // 긴 글을 고칠 때 — 줄을 바꿔 가며 전부 보인다 (09-24 메모: 한 줄이라 가로로 찾아야 했다)
 ) {
     val c = Local색.current
     val 초점 = LocalFocusManager.current
     Box(
         modifier
-            .height(높이.높게)
+            .then(if (여러줄) Modifier.heightIn(min = 높이.높게) else Modifier.height(높이.높게))
             .clip(RoundedCornerShape(모서리.작게))
             .background(c.면)
             .border(1.dp, c.선, RoundedCornerShape(모서리.작게))
-            .padding(horizontal = 12.dp),
-        contentAlignment = Alignment.CenterStart,
+            .padding(horizontal = 12.dp, vertical = if (여러줄) 10.dp else 0.dp),
+        contentAlignment = if (여러줄) Alignment.TopStart else Alignment.CenterStart,
     ) {
         if (값.isEmpty()) 글(안내, 색 = c.옅음)
         BasicTextField(
-            value = 값, onValueChange = onChange, singleLine = true,
+            value = 값, onValueChange = onChange, singleLine = !여러줄,
             textStyle = 글꼴.보통(크기.본문).copy(color = c.글),
             cursorBrush = SolidColor(c.강조),
             keyboardOptions = KeyboardOptions(
-                keyboardType = if (숫자) KeyboardType.Decimal else KeyboardType.Text, imeAction = ImeAction.Done,
+                keyboardType = if (숫자) KeyboardType.Decimal else KeyboardType.Text,
+                imeAction = if (여러줄) ImeAction.Default else ImeAction.Done,
             ),
             keyboardActions = KeyboardActions(onDone = { onDone?.invoke(); 초점.clearFocus() }),
-            modifier = Modifier.fillMaxWidth(),
+            modifier = if (여러줄) Modifier.fillMaxWidth().heightIn(max = 280.dp) else Modifier.fillMaxWidth(),
         )
     }
 }

@@ -83,8 +83,13 @@ class 앱상태(private val 파일: File) {
     }
 
     /** 백업 — 파일로 내보내고 가져온다 */
-    fun 백업글(): String = 저장소.글로(d)
-    fun 백업넣기(글: String): Boolean = try { val 새 = 저장소.글에서(글); 바꿈 { 새 }; true } catch (_: Exception) { false }
+    //  · 내보낼 때 수정 메모는 뺀다 (09-24 메모: 백업에 메모까지 담을 필요 없다)
+    //  · 그래서 가져올 때 파일에 메모가 없으면 지금 폰의 메모를 그대로 둔다 (가져오기로 메모가 지워지지 않게)
+    fun 백업글(): String = 저장소.글로(d.copy(메모 = emptyList()))
+    fun 백업넣기(글: String): Boolean = try {
+        val 새 = 저장소.글에서(글)
+        바꿈 { 옛 -> if (새.메모.isEmpty()) 새.copy(메모 = 옛.메모) else 새 }; true
+    } catch (_: Exception) { false }
 }
 
 /** 폰이 해 주는 일(진동 · 소리 · 파일)을 화면 쪽에 넘겨주는 통로 */
@@ -107,6 +112,8 @@ fun 앱(상태: 앱상태, 폰: 폰기능) {
     val c = Local색.current
     var 지금탭 by remember { mutableStateOf(탭.캘린더) }
     var 메모열림 by remember { mutableStateOf(false) }
+    // 쓰던 메모는 시트를 닫아도 남는다 — 화면을 확인하고 돌아와 이어 쓴다 (09-24 메모)
+    val 메모초안값 = remember { 메모초안() }
     // 운동 중이어도 다른 탭을 볼 수 있다 — 운동은 그대로 이어지고, 위의 띠로 돌아온다 (09-21 메모)
     var 운동보기 by remember { mutableStateOf(true) }
     val 세션 = 상태.d.세션
@@ -170,7 +177,7 @@ fun 앱(상태: 앱상태, 폰: 폰기능) {
                 }
             }
         }
-        if (메모열림) 메모시트(상태, 화면이름, 폰) { 메모열림 = false }
+        if (메모열림) 메모시트(상태, 화면이름, 폰, 메모초안값) { 메모열림 = false }
         // 되돌리기 띠는 맨 위에 — 메모 시트에서 지워도 보이게 (09-22 메모: 메모를 실수로 지웠는데 되돌릴 길이 안 보였다)
         상태.되돌림?.let { (글자, _) -> 아래띠(글자, "되돌리기", { 상태.되돌리기() }, 바깥 = Modifier.navigationBarsPadding().padding(bottom = if (탭숨김 || 메모열림) 0.dp else 46.dp)) }
     }

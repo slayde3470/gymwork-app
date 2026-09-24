@@ -157,35 +157,54 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
             var 지금줄 by remember { mutableStateOf<Rect?>(null) }
             var 지금틀 by remember { mutableStateOf<Rect?>(null) }   // 지금 종목 상자의 자리 (상단 고정을 켤지 판단)
             val 지금머리 = S.식구(S.i).first()
+            // 띠에 보일 종목 — 슈퍼세트에서 한 바퀴를 끝내고 쉬는 동안은 **다음에 할 종목**을 보인다
+            // (09-24 메모: 체크하면 곧바로 마지막 종목으로 돌아와 띠 이름이 늘 '덤벨 컬' 이었다)
+            val 띠i = S.휴식?.다음i?.takeIf { it in S.식구(S.i) } ?: S.i
             // 펼침을 따로 정해 둔 묶음 (묶음 첫 종목 번호 → 펼침 여부). 정해 두지 않으면 '지금 종목만 펼침'
             val 접기 = remember { mutableStateMapOf<Int, Boolean>() }
             // 종목이 바뀌면 다 되돌린다. 세트를 체크하면 지금 종목 말고는 다시 접는다 (09-24 메모)
-            LaunchedEffect(S.i) { 접기.clear() }
+            LaunchedEffect(지금머리) { 접기.clear() }   // 슈퍼세트 안에서 A↔B 로 오갈 때는 그대로 둔다
             LaunchedEffect(S.한세트수()) {
                 val 남길 = 접기[지금머리]
                 접기.clear()
                 if (남길 != null) 접기[지금머리] = 남길
             }
             var 바높이 by remember { mutableStateOf(0) }   // 고정 띠 높이(px) — 그만큼 위를 비워 둔다
-            // 종목이 바뀌면 그 상자를 고정 띠 바로 아래로 올린다 → 끝낸 종목은 띠 뒤로 가려진다 (09-24 메모)
-            LaunchedEffect(S.i) {
-                delay(180)
-                val t = 지금틀 ?: return@LaunchedEffect
+            var 맞춘머리 by remember { mutableStateOf(-1) }   // 띠 아래로 올려 둔 묶음
+            // 화면 맞추기 — 하나로 합쳤다 (09-24 메모)
+            //  · 옛날엔 '종목이 바뀔 때'와 '세트를 체크할 때' 두 곳이 따로 움직여 서로 부딪쳤고,
+            //    지난 종목이 접히는 애니메이션이 끝나기 전에 자리를 재서 새 상자가 띠 밑으로 파고들었다 (겹침)
+            //  · 슈퍼세트는 A↔B 로 지금 종목이 바뀔 때마다 상자를 다시 맞춰, 세트가 많으면 상자가 아래로 밀렸다
+            // → 접힘이 멈출 때까지 기다린 뒤 한 번만 움직인다.
+            //   **묶음이 바뀌었을 때만** 상자를 띠 바로 아래로 올리고, 같은 묶음 안에서는 지금 세트 줄이
+            //   띠 아래 화면 밖으로 나갈 때만 들어올 만큼 움직인다
+            LaunchedEffect(지금머리, S.s, S.한세트수(), S.휴식?.k) {
+                var 전 = Float.NaN
+                var 같음 = 0
+                var n = 0
+                while (n < 24 && 같음 < 2) {   // 최대 약 1.2초
+                    delay(50); n++
+                    val top = 지금틀?.top ?: continue
+                    if (!전.isNaN() && kotlin.math.abs(top - 전) < 0.5f) 같음++ else 같음 = 0
+                    전 = top
+                }
                 if (화면틀.height <= 0f) return@LaunchedEffect
-                val 밀 = t.top - (화면틀.top + 바높이)
-                if (밀 > 2f || 밀 < -2f) 스크롤.animateScrollBy(밀)
-            }
-            // 세트를 체크할 때는 지금 세트 줄이 **띠 아래 화면 밖으로 나갈 때만** 최소한으로 움직인다
-            LaunchedEffect(S.s, S.한세트수(), S.휴식?.k) {
-                delay(140)   // 접힘 애니메이션이 자리를 잡은 뒤에
-                val 줄 = 지금줄 ?: return@LaunchedEffect
-                if (화면틀.height <= 0f) return@LaunchedEffect
-                val 위 = 화면틀.top + 바높이 + 8f
+                val 위 = 화면틀.top + 바높이
                 val 아래 = 화면틀.bottom - 8f
-                val 밀 = when {
-                    줄.top < 위 -> 줄.top - 위
-                    줄.bottom > 아래 -> minOf(줄.bottom - 아래, 줄.top - 위)
-                    else -> 0f
+                val 줄 = 지금줄
+                var 밀 = 0f
+                if (맞춘머리 != 지금머리) {
+                    맞춘머리 = 지금머리
+                    val t = 지금틀 ?: return@LaunchedEffect
+                    밀 = t.top - 위
+                    // 상자를 올렸는데도 지금 세트가 아래로 벗어나면 그 줄이 보이게
+                    if (줄 != null && 줄.bottom - 밀 > 아래) 밀 = 줄.top - (위 + 8f)
+                } else if (줄 != null) {
+                    밀 = when {
+                        줄.top < 위 + 8f -> 줄.top - (위 + 8f)
+                        줄.bottom > 아래 -> minOf(줄.bottom - 아래, 줄.top - (위 + 8f))
+                        else -> 0f
+                    }
                 }
                 if (밀 > 2f || 밀 < -2f) 스크롤.animateScrollBy(밀)
             }
@@ -211,7 +230,7 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
                             if (보임 < minOf(r.height, 화면틀.height) * 0.5f) 접기[머리] = false
                         }
                     }) {
-                        종목묶음(상태, S, 식구, 지금, 열린세트, 켠칸, 접힘,
+                        종목묶음(상태, S, 식구, 띠i, 지금, 열린세트, 켠칸, 접힘,
                             on접기 = { 접기[머리] = 접힘 },
                             on열기 = { key -> 입력중.취소?.invoke(); 열린세트 = if (열린세트 == key) null else key; 켠칸 = null },
                             on칸 = { key, f -> 열린세트 = key; 켠칸 = if (켠칸 == f) null else f },
@@ -223,7 +242,7 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
             }
             // 지금 하는 종목은 늘 맨 위에 붙어 있다 (09-24 메모)
             고정머리(
-                상태, S, 접기[지금머리] ?: true, { 접기[지금머리] = !(접기[지금머리] ?: true) },
+                상태, S, 띠i, 접기[지금머리] ?: true, { 접기[지금머리] = !(접기[지금머리] ?: true) },
                 Modifier.align(Alignment.TopCenter).onGloballyPositioned { 바높이 = it.size.height },
             )
             }
@@ -326,7 +345,7 @@ private fun 고름줄(글자: String, 켬: Boolean, on누름: () -> Unit) {
  * 그래서 세트가 많아도 손을 크게 움직이거나 스크롤하지 않고 체크할 수 있다.
  */
 @Composable
-private fun 고정머리(상태: 앱상태, S: 운동세션, 펼침: Boolean, on접기: () -> Unit, modifier: Modifier) {
+private fun 고정머리(상태: 앱상태, S: 운동세션, 띠i: Int, 펼침: Boolean, on접기: () -> Unit, modifier: Modifier) {
     val c = Local색.current
     Box(modifier.fillMaxWidth().background(c.바탕).padding(horizontal = 간격.보통, vertical = 4.dp)) {
         Column(
@@ -336,8 +355,10 @@ private fun 고정머리(상태: 앱상태, S: 운동세션, 펼침: Boolean, on
                 .border(1.dp, c.강조.copy(alpha = 0.35f), RoundedCornerShape(모서리.작게))
                 .padding(horizontal = 8.dp, vertical = 2.dp),
         ) {
-            if (S.식구(S.i).size > 1) 글("슈퍼세트", Modifier.padding(start = 4.dp), 크기값 = 크기.작게, 색 = c.휴식, 굵기 = FontWeight.Bold)
-            종목머리(상태, S, S.i, null, 펼침, on누름 = { }, on접기 = on접기)
+            val 식구 = S.식구(띠i)
+            if (식구.size > 1) 글("슈퍼세트", Modifier.padding(start = 4.dp), 크기값 = 크기.작게, 색 = c.휴식, 굵기 = FontWeight.Bold)
+            // 슈퍼세트면 A · B 글자와 함께 — 체크할 때마다 할 종목으로 바뀐다 (09-24 메모)
+            종목머리(상태, S, 띠i, if (식구.size > 1) 글자표(식구.indexOf(띠i)) else null, 펼침, 지금표시 = true, on누름 = { }, on접기 = on접기)
         }
     }
 }
@@ -369,7 +390,7 @@ private fun 머리줄(S: 운동세션, 지금: Long, 끝내기: () -> Unit) {
 /** 종목 하나, 또는 슈퍼세트 묶음 하나 — 머리 + 세트 줄들 */
 @Composable
 private fun 종목묶음(
-    상태: 앱상태, S: 운동세션, 식구: List<Int>, 지금: Long, 열린세트: String?, 켠칸: String?,
+    상태: 앱상태, S: 운동세션, 식구: List<Int>, 띠i: Int, 지금: Long, 열린세트: String?, 켠칸: String?,
     접힘: Boolean, on접기: () -> Unit,
     on열기: (String) -> Unit, on칸: (String, String) -> Unit, on지금줄: (Rect) -> Unit, 바꿈: ((운동세션) -> 운동세션) -> Unit,
 ) {
@@ -394,7 +415,7 @@ private fun 종목묶음(
         }
         // 이름을 누르면 그 종목으로. 지금 하는 종목의 머리는 화면 위 고정 띠가 대신 보여 준다
         식구.forEachIndexed { n, j ->
-            if (지금묶음 && j == S.i) return@forEachIndexed
+            if (지금묶음 && j == 띠i) return@forEachIndexed
             종목머리(상태, S, j, if (슈퍼) 글자표(n) else null, !접힘, 접기칸 = !슈퍼,
                 on누름 = { 발자취.적기("${S.종목들[j].이름} 로 이동"); 바꿈 { it.종목으로(j) } }, on접기 = on접기)
         }
@@ -447,7 +468,7 @@ private fun 접기단추(펼침: Boolean, on접기: () -> Unit) {
  * 이름 쪽을 누르면 그 종목으로 간다.
  */
 @Composable
-private fun 종목머리(상태: 앱상태, S: 운동세션, j: Int, 표: String?, 펼침: Boolean, 접기칸: Boolean = true, on누름: () -> Unit, on접기: () -> Unit) {
+private fun 종목머리(상태: 앱상태, S: 운동세션, j: Int, 표: String?, 펼침: Boolean, 접기칸: Boolean = true, 지금표시: Boolean = false, on누름: () -> Unit, on접기: () -> Unit) {
     val c = Local색.current
     val e = S.종목들[j]
     val 지금세트 = e.찬것()
@@ -455,7 +476,7 @@ private fun 종목머리(상태: 앱상태, S: 운동세션, j: Int, 표: String
     val rm = max(과거rm, 지금세트.maxOfOrNull { 일RM(it.w, it.r) } ?: 0.0)
     val 목표볼 = e.목표볼륨()
     val 뱃지 = listOfNotNull(if (e.임시) "오늘만" else null, if (e.마감) "마침" else null)
-    val 지금것 = j == S.i
+    val 지금것 = 지금표시 || j == S.i
     // 향상도는 오늘 한 세트가 있을 때만 — 아직 시작도 안 한 종목에 지난 기록을 띄우지 않는다
     val 성장 = if (지금세트.isEmpty()) null else 상태.d.종목성장(e.이름, 상태.오늘, 지금세트, S.묶음이름(e))?.볼륨?.pct
     Column(Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 6.dp)) {
