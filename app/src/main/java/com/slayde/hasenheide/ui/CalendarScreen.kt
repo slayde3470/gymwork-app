@@ -275,12 +275,7 @@ private fun 날짜판(상태: 앱상태, k: String, 루틴으로: () -> Unit, �
                 val 앞 = d.기록.filter { it.value.루틴id == rec.루틴id && it.key < k }.keys.maxOrNull()
                 val 결과 = 앞?.let { 대비(세트들, 정식세트(d.기록[it]!!), it) }
                 성장줄(null, 결과, "직전 대비", Modifier.padding(top = 2.dp))
-                rec.종목들.forEach { e ->
-                    Row(Modifier.fillMaxWidth().padding(top = 4.dp)) {
-                        글(e.이름, Modifier.weight(1f), 크기값 = 크기.조금작게)
-                        글(e.세트들.joinToString(" ") { "${com.slayde.hasenheide.data.무게글(it.w)}×${it.r}" }, Modifier.weight(1.4f), 크기값 = 크기.작게, 색 = c.흐림)
-                    }
-                }
+                // 종목마다 세트를 늘어놓던 줄은 뺐다 (09-24 메모: 판이 넘쳐 버튼이 안 보였다. 판은 이름 · 요약 · 향상도 · 버튼만)
                 Box(Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     버튼("이 날 기록 지우기", {
