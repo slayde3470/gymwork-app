@@ -389,7 +389,7 @@ fun 숫자버튼줄(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         // − ＋ 가 빈자리를 나눠 갖는다 — 누를 수 있는 범위를 넓게 (09-24 시안)
-                        Box(Modifier.weight(1f).fillMaxHeight().눌림(k.빼기), contentAlignment = Alignment.Center) {
+                        Box(Modifier.weight(1f).fillMaxHeight().눌림 { 발자취.적기("${k.라벨} −"); k.빼기() }, contentAlignment = Alignment.Center) {
                             Icon(아이콘.빼기, "${k.라벨} 빼기", Modifier.size(18.dp), tint = c.강조)
                         }
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -400,7 +400,7 @@ fun 숫자버튼줄(
                                 else -> 숫자입력(k.키, k.값글, k.종류, k.넣기) { on고름(k.키) }
                             }
                         }
-                        Box(Modifier.weight(1f).fillMaxHeight().눌림(k.더하기), contentAlignment = Alignment.Center) {
+                        Box(Modifier.weight(1f).fillMaxHeight().눌림 { 발자취.적기("${k.라벨} ＋"); k.더하기() }, contentAlignment = Alignment.Center) {
                             Icon(아이콘.더하기, "${k.라벨} 더하기", Modifier.size(18.dp), tint = c.강조)
                         }
                     }
@@ -411,7 +411,7 @@ fun 숫자버튼줄(
                             .height(높이.보통)
                             .clip(RoundedCornerShape(모서리.작게))
                             .background(c.면2)
-                            .눌림 { on고름(k.키) },
+                            .눌림 { 발자취.적기("${k.라벨} 칸 누름"); on고름(k.키) },
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center,
                     ) {
@@ -430,7 +430,7 @@ fun 숫자버튼줄(
                     if (k.키 == 켠) Box(Modifier.weight(k.폭열림)) {
                         key(k.키) {
                             // 휠: 돌려도 값은 그대로. 숫자를 눌러야 들어가고, 들어가면 칸이 닫힌다 (09-22 메모)
-                            숫자휠(k.휠, k.지금값, k.휠글, 손댐 = { 초점.clearFocus() }) { v -> k.넣기(k.휠글(v)); 닫기() }
+                            숫자휠(k.휠, k.지금값, k.휠글, 손댐 = { 초점.clearFocus() }) { v -> 발자취.적기("${k.라벨} 휠 ${k.휠글(v)}"); k.넣기(k.휠글(v)); 닫기() }
                         }
                     } else Box(Modifier.weight(k.폭))
                 }
@@ -440,6 +440,22 @@ fun 숫자버튼줄(
     }
     // 입력하는 동안은 아래 탭을 숨긴다 (09-21 메모)
     if (이줄) DisposableEffect(Unit) { 입력중.수++; onDispose { 입력중.수-- } }
+}
+
+/**
+ * 발자취 — 방금 한 동작 20가지를 담아 둔다 (09-24 메모).
+ * 메모를 적으면 **직전 10가지가 메모에 함께 저장**돼, 무엇을 하다 적었는지 알 수 있다.
+ * 폰 안에만 있고, 메모에 붙은 것만 남는다. 자판처럼 이어지는 동작은 한 번으로 친다.
+ */
+object 발자취 {
+    private val 것 = ArrayDeque<String>()
+    fun 적기(글: String) {
+        if (것.lastOrNull()?.substringAfter(' ') == 글) return   // 같은 동작이 잇따르면 한 번으로
+        val t = java.time.LocalTime.now()
+        것.addLast("%02d:%02d:%02d %s".format(t.hour, t.minute, t.second, 글))
+        while (것.size > 20) 것.removeFirst()
+    }
+    fun 최근(n: Int = 10): List<String> = 것.toList().takeLast(n)
 }
 
 /** 지금 숫자를 고치는 칸이 몇 개 열려 있나 — 0 이 아니면 아래 탭을 숨긴다 */
@@ -508,13 +524,13 @@ private fun 숫자입력(키: String, 값글: String, 종류: 입력종류, 넣�
         ),
         keyboardActions = KeyboardActions(onDone = {
             입력중.완료누름 = true
-            if (만졌나 && tv.text.isNotBlank()) 넣기(tv.text)
+            if (만졌나 && tv.text.isNotBlank()) { 발자취.적기("자판 입력 ${tv.text}"); 넣기(tv.text) }
             만졌나 = false; 초점.clearFocus(); 닫기()
         }),
         modifier = Modifier
             .widthIn(max = 64.dp)
             .focusRequester(요청)
-            .onFocusChanged { if (!it.isFocused && 만졌나) { if (tv.text.isNotBlank()) 넣기(tv.text); 만졌나 = false } },
+            .onFocusChanged { if (!it.isFocused && 만졌나) { if (tv.text.isNotBlank()) { 발자취.적기("자판 입력 ${tv.text}"); 넣기(tv.text) }; 만졌나 = false } },
     )
 }
 
@@ -617,7 +633,7 @@ private fun 분초입력(키: String, 값글: String, 넣기: (String) -> Unit, 
         val x = if (초만짐) 초.text.toIntOrNull() ?: 0 else 초0
         return 분초((m * 60 + x).coerceIn(0, 휴식최대))
     }
-    fun 넣고치움() { if (분만짐 || 초만짐) 넣기(합()); 분만짐 = false; 초만짐 = false }
+    fun 넣고치움() { if (분만짐 || 초만짐) { 발자취.적기("휴식 자판 입력 ${합()}"); 넣기(합()) }; 분만짐 = false; 초만짐 = false }
 
     val 모양 = TextStyle(fontSize = 크기.본문, fontWeight = FontWeight.Bold, color = c.글, textAlign = TextAlign.Center)
     val 자판설정 = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done)

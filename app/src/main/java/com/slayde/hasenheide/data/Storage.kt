@@ -37,7 +37,12 @@ object 저장소 {
         o.put("예정", JSONObject().also { m -> d.예정.forEach { (k, v) -> m.put(k, v) } })
         o.put("일정", JSONObject().also { m -> d.일정.forEach { (k, v) -> m.put(k, JSONArray().also { a -> v.forEach { a.put(it) } }) } })
         o.put("설정", 설정to(d.설정))
-        o.put("메모", JSONArray().also { a -> d.메모.forEach { a.put(JSONObject().put("시각", it.시각).put("화면", it.화면).put("글", it.글)) } })
+        o.put("메모", JSONArray().also { a ->
+            d.메모.forEach { m ->
+                a.put(JSONObject().put("시각", m.시각).put("화면", m.화면).put("글", m.글)
+                    .also { o2 -> if (m.흔적.isNotEmpty()) o2.put("흔적", JSONArray().also { x -> m.흔적.forEach { x.put(it) } }) })
+            }
+        })
         d.세션?.let { o.put("세션", 세션to(it)) }
         return o.toString(1)
     }
@@ -110,7 +115,12 @@ object 저장소 {
             예정 = 사전(o.optJSONObject("예정")) { m, k -> m.getString(k) },
             일정 = 사전(o.optJSONObject("일정")) { m, k -> 목록(m.optJSONArray(k)) { a, i -> a.getString(i) } },
             설정 = o.optJSONObject("설정")?.let { 설정from(it, 판) } ?: 설정값(),
-            메모 = 목록(o.optJSONArray("메모")) { a, i -> a.getJSONObject(i).let { 수정메모(it.optLong("시각"), it.optString("화면"), it.optString("글")) } },
+            메모 = 목록(o.optJSONArray("메모")) { a, i ->
+                a.getJSONObject(i).let { m ->
+                    수정메모(m.optLong("시각"), m.optString("화면"), m.optString("글"),
+                        목록(m.optJSONArray("흔적")) { x, j -> x.getString(j) })
+                }
+            },
             세션 = o.optJSONObject("세션")?.let { 세션from(it) },
         )
     }

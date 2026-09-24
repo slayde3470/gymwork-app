@@ -97,7 +97,13 @@ data class 설정값(
 )
 
 /** 써보면서 적는 수정 메모 — 어느 화면에서 적었는지 함께 남긴다 */
-data class 수정메모(val 시각: Long, val 화면: String, val 글: String)
+data class 수정메모(
+    val 시각: Long,
+    val 화면: String,
+    val 글: String,
+    /** 메모를 적기 바로 전에 한 동작들 (09-24 메모) — 무엇을 하다 적었는지 알 수 있게 */
+    val 흔적: List<String> = emptyList(),
+)
 
 // ─────────────── 운동 중 ───────────────
 
@@ -171,7 +177,7 @@ data class 앱데이터(
 ) {
     companion object {
         /** 자료 구조가 바뀌면 올린다 — 옛 백업 파일을 읽을 때 구분하려고 */
-        const val 스키마 = 4
+        const val 스키마 = 5
         val 기본카테고리 = listOf("가슴", "등", "하체", "어깨", "팔", "복근")
     }
 }

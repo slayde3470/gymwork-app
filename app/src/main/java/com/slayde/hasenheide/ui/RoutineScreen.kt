@@ -276,7 +276,7 @@ fun 루틴화면(상태: 앱상태, 폰: 폰기능) {
                                 안고르기(상태, r, 방금, { 방금 = it }) { 고르기 = null; 방금 = emptyList() }
                             } else {
                                 Box(Modifier.height(12.dp))
-                                버튼("종목 추가", { 입력중.취소?.invoke(); 고르기 = r.id; 방금 = emptyList(); 열린종목 = null; 켠칸 = null }, Modifier.fillMaxWidth(), 작게 = true, 그림 = 아이콘.더하기)
+                                버튼("종목 추가", { 발자취.적기("종목 추가 칸 열기"); 입력중.취소?.invoke(); 고르기 = r.id; 방금 = emptyList(); 열린종목 = null; 켠칸 = null }, Modifier.fillMaxWidth(), 작게 = true, 그림 = 아이콘.더하기)
                             }
                             }
                         }
@@ -361,7 +361,7 @@ private fun 종목줄(
     val 폭 = 상태.d.설정.무게폭
     fun 고침바로(f: (루틴종목) -> 루틴종목) = 상태.바꿈 { d -> d.루틴바꿈(r.id) { x -> x.copy(종목 = x.종목.mapIndexed { k, y -> if (k == j) f(y) else y }) } }
     // 마지막 한 세트를 빼려 하면 종목을 뺄지 묻는다 (09-24 메모)
-    fun 세트빼기(k: Int) { if (e.세트 <= 1) on마지막세트() else 고침바로 { it.세트빼기(k) } }
+    fun 세트빼기(k: Int) { 발자취.적기("${e.이름} ${k + 1}세트 빼기"); if (e.세트 <= 1) on마지막세트() else 고침바로 { it.세트빼기(k) } }
     var 줄틀 by remember { mutableStateOf(Rect.Zero) }
     // 누르는 동안 바뀌는 값은 최신 것을 쓴다 — pointerInput 을 다시 시작하지 않으려고 (4. 조심할 것)
     val 열기 by rememberUpdatedState(on열기)

@@ -48,6 +48,7 @@ import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.draw.rotate
 import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -165,12 +166,21 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
                 접기.clear()
                 if (남길 != null) 접기[지금머리] = 남길
             }
-            // 지금 세트 줄이 **화면 밖에 있을 때만** 최소한으로 움직인다 (09-24 메모: 화면이 왔다갔다해서 피로하다)
-            LaunchedEffect(S.i, S.s, S.한세트수(), S.휴식?.k) {
+            var 바높이 by remember { mutableStateOf(0) }   // 고정 띠 높이(px) — 그만큼 위를 비워 둔다
+            // 종목이 바뀌면 그 상자를 고정 띠 바로 아래로 올린다 → 끝낸 종목은 띠 뒤로 가려진다 (09-24 메모)
+            LaunchedEffect(S.i) {
+                delay(180)
+                val t = 지금틀 ?: return@LaunchedEffect
+                if (화면틀.height <= 0f) return@LaunchedEffect
+                val 밀 = t.top - (화면틀.top + 바높이)
+                if (밀 > 2f || 밀 < -2f) 스크롤.animateScrollBy(밀)
+            }
+            // 세트를 체크할 때는 지금 세트 줄이 **띠 아래 화면 밖으로 나갈 때만** 최소한으로 움직인다
+            LaunchedEffect(S.s, S.한세트수(), S.휴식?.k) {
                 delay(140)   // 접힘 애니메이션이 자리를 잡은 뒤에
                 val 줄 = 지금줄 ?: return@LaunchedEffect
                 if (화면틀.height <= 0f) return@LaunchedEffect
-                val 위 = 화면틀.top + 8f
+                val 위 = 화면틀.top + 바높이 + 8f
                 val 아래 = 화면틀.bottom - 8f
                 val 밀 = when {
                     줄.top < 위 -> 줄.top - 위
@@ -180,7 +190,11 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
                 if (밀 > 2f || 밀 < -2f) 스크롤.animateScrollBy(밀)
             }
             Box(Modifier.weight(1f)) {
-            Column(Modifier.fillMaxSize().onGloballyPositioned { 화면틀 = it.boundsInRoot() }.verticalScroll(스크롤).padding(horizontal = 간격.보통)) {
+            Column(
+                Modifier.fillMaxSize().onGloballyPositioned { 화면틀 = it.boundsInRoot() }.verticalScroll(스크롤)
+                    .padding(horizontal = 간격.보통)
+                    .padding(top = with(LocalDensity.current) { 바높이.toDp() }),
+            ) {
                 val 그린 = mutableSetOf<Int>()
                 S.종목들.indices.forEach { j ->
                     if (j in 그린) return@forEach
@@ -191,8 +205,11 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
                     Column(Modifier.onGloballyPositioned { b ->
                         val r = b.boundsInRoot()
                         if (머리 == 지금머리) 지금틀 = r
-                        // 지금 종목이 아닌데 펼쳐 둔 것이 화면 밖으로 나가면 저절로 접는다 (09-24 메모)
-                        else if (접기[머리] == true && (r.bottom < 화면틀.top || r.top > 화면틀.bottom)) 접기[머리] = false
+                        // 지금 종목이 아닌데 펼쳐 둔 것이 **절반쯤 벗어나면** 저절로 접는다 (09-24 메모)
+                        else if (접기[머리] == true && 화면틀.height > 0f) {
+                            val 보임 = minOf(r.bottom, 화면틀.bottom) - maxOf(r.top, 화면틀.top + 바높이)
+                            if (보임 < minOf(r.height, 화면틀.height) * 0.5f) 접기[머리] = false
+                        }
                     }) {
                         종목묶음(상태, S, 식구, 지금, 열린세트, 켠칸, 접힘,
                             on접기 = { 접기[머리] = 접힘 },
@@ -204,15 +221,18 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
                 }
                 Box(Modifier.height(16.dp))
             }
-            // 지금 종목의 머리가 위로 밀려 사라지면 그 자리에 붙여 둔다 (09-24 홍겸 님 제안)
-            val 고정 = 지금틀?.let { it.top < 화면틀.top - 2f && 화면틀.height > 0f } == true
-            if (고정) 고정머리(S, Modifier.align(Alignment.TopCenter))
+            // 지금 하는 종목은 늘 맨 위에 붙어 있다 (09-24 메모)
+            고정머리(
+                상태, S, 접기[지금머리] ?: true, { 접기[지금머리] = !(접기[지금머리] ?: true) },
+                Modifier.align(Alignment.TopCenter).onGloballyPositioned { 바높이 = it.size.height },
+            )
             }
             // 아랫줄 — 운동 목록 · 운동 추가 · 다음
             Row(Modifier.fillMaxWidth().background(c.면).padding(horizontal = 12.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 버튼("운동 목록", { 열린시트 = "목록" }, Modifier.weight(1f), 작게 = true, 그림 = 아이콘.목록)
                 버튼("운동 추가", { 열린시트 = "추가" }, Modifier.weight(1f), 작게 = true, 그림 = 아이콘.더하기)
                 버튼("다음", {
+                    발자취.적기("다음 누름")
                     if (S.지금종목.덜한가()) 열린시트 = "마칠까" else { 바꿈 { it.다음종목으로(false, System.currentTimeMillis()) }; 열린세트 = null }
                 }, Modifier.weight(1f), 작게 = true, 그림 = 아이콘.오른쪽)
             }
@@ -225,7 +245,7 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
                 S.종목들.forEachIndexed { j, e ->
                     고르기줄(e.이름, "${e.찬것().size}/${e.총칸()}세트" + (if (e.마감) " · 마침" else "") + (if (e.임시) " · 오늘만" else ""),
                         if (j == S.i) 아이콘.체크 else 아이콘.오른쪽, 흐림 = e.마감) {
-                        바꿈 { it.종목으로(j) }; 열린세트 = null; 열린시트 = null
+                        발자취.적기("목록에서 ${e.이름} 로 이동"); 바꿈 { it.종목으로(j) }; 열린세트 = null; 열린시트 = null
                     }
                 }
             }
@@ -301,24 +321,24 @@ private fun 고름줄(글자: String, 켬: Boolean, on누름: () -> Unit) {
 }
 
 /**
- * 지금 하는 종목의 머리가 위로 사라졌을 때, 화면 맨 위에 붙여 두는 띠 (09-24 홍겸 님 제안).
- * 세트 번호만 위로 흘러가고 '무슨 종목을 하고 있는지'는 늘 보인다.
+ * 지금 하는 종목을 **화면 맨 위에 늘 붙여 두는 띠** (09-24 홍겸 님 제안).
+ * 끝낸 세트와 끝낸 종목은 이 띠 뒤로 밀려 올라가 가려진다 —
+ * 그래서 세트가 많아도 손을 크게 움직이거나 스크롤하지 않고 체크할 수 있다.
  */
 @Composable
-private fun 고정머리(S: 운동세션, modifier: Modifier) {
+private fun 고정머리(상태: 앱상태, S: 운동세션, 펼침: Boolean, on접기: () -> Unit, modifier: Modifier) {
     val c = Local색.current
-    val e = S.지금종목
-    Row(
-        modifier.fillMaxWidth().padding(horizontal = 간격.보통, vertical = 4.dp)
-            .clip(RoundedCornerShape(모서리.작게))
-            .background(c.면)
-            .border(1.dp, c.강조.copy(alpha = 0.35f), RoundedCornerShape(모서리.작게))
-            .padding(horizontal = 10.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        제목글(e.이름, Modifier.weight(1f), 크기값 = 크기.본문)
-        글("${e.찬것().size}/${e.총칸()}세트", 크기값 = 크기.작게, 색 = c.흐림)
-        글("${e.달성도()}%", 크기값 = 크기.작게, 색 = c.강조, 굵기 = FontWeight.Bold)
+    Box(modifier.fillMaxWidth().background(c.바탕).padding(horizontal = 간격.보통, vertical = 4.dp)) {
+        Column(
+            Modifier.fillMaxWidth()
+                .clip(RoundedCornerShape(모서리.작게))
+                .background(c.면)
+                .border(1.dp, c.강조.copy(alpha = 0.35f), RoundedCornerShape(모서리.작게))
+                .padding(horizontal = 8.dp, vertical = 2.dp),
+        ) {
+            if (S.식구(S.i).size > 1) 글("슈퍼세트", Modifier.padding(start = 4.dp), 크기값 = 크기.작게, 색 = c.휴식, 굵기 = FontWeight.Bold)
+            종목머리(상태, S, S.i, null, 펼침, on누름 = { }, on접기 = on접기)
+        }
     }
 }
 
@@ -367,13 +387,18 @@ private fun 종목묶음(
             .padding(horizontal = 8.dp, vertical = 4.dp)
             .alpha(if (지금묶음) 1f else 0.8f),
     ) {
-        // 이름을 누르면 그 종목으로, ∨ 를 누르면 펼치고 접는다 (09-24 메모)
+        // 슈퍼세트는 묶음에 '슈퍼세트' 한 줄과 접기 단추 하나만 (09-24 메모)
+        if (슈퍼) Row(Modifier.fillMaxWidth().padding(start = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            글("슈퍼세트", Modifier.weight(1f), 크기값 = 크기.작게, 색 = c.휴식, 굵기 = FontWeight.Bold)
+            접기단추(!접힘, on접기)
+        }
+        // 이름을 누르면 그 종목으로. 지금 하는 종목의 머리는 화면 위 고정 띠가 대신 보여 준다
         식구.forEachIndexed { n, j ->
-            종목머리(상태, S, j, if (슈퍼) 글자표(n) else null, !접힘,
-                on누름 = { if (j != S.i) 바꿈 { it.종목으로(j) } }, on접기 = on접기)
+            if (지금묶음 && j == S.i) return@forEachIndexed
+            종목머리(상태, S, j, if (슈퍼) 글자표(n) else null, !접힘, 접기칸 = !슈퍼,
+                on누름 = { 발자취.적기("${S.종목들[j].이름} 로 이동"); 바꿈 { it.종목으로(j) } }, on접기 = on접기)
         }
         AnimatedVisibility(visible = !접힘) { Column {
-            if (슈퍼) 글("슈퍼세트 · 덜 한 종목부터 · 모두 같아지면 휴식", Modifier.padding(start = 4.dp, bottom = 2.dp), 크기값 = 크기.아주작게, 색 = c.휴식)
             val 줄수 = 식구.maxOf { S.종목들[it].총칸() }
             for (k in 0 until 줄수) {
                 식구.forEachIndexed { n, j ->
@@ -389,7 +414,7 @@ private fun 종목묶음(
                 // ＋ — 맨 아래 세트를 베낀다 (슈퍼세트면 묶인 종목 전부에)
                 Box(Modifier.fillMaxWidth().padding(vertical = 8.dp), contentAlignment = Alignment.Center) {
                     Box(
-                        Modifier.size(높이.보통).clip(CircleShape).background(c.면).border(1.dp, c.선, CircleShape).눌림 { 바꿈 { it.세트추가(it.i) } },
+                        Modifier.size(높이.보통).clip(CircleShape).background(c.면).border(1.dp, c.선, CircleShape).눌림 { 발자취.적기("세트 추가"); 바꿈 { it.세트추가(it.i) } },
                         contentAlignment = Alignment.Center,
                     ) { Icon(아이콘.더하기, "세트 추가", Modifier.size(20.dp), tint = c.강조) }
                 }
@@ -407,13 +432,22 @@ private fun 글자표(n: Int): String = ('A' + n).toString()
 /** ▲7% · ▼2% (09-24) */
 private fun 성장짧게(p: Int): String = (if (p >= 0) "▲" else "▼") + "${kotlin.math.abs(p)}%"
 
+/** 펼치고 접는 단추 — 묶음마다 하나 (09-24 메모) */
+@Composable
+private fun 접기단추(펼침: Boolean, on접기: () -> Unit) {
+    val c = Local색.current
+    Box(Modifier.size(높이.낮게).눌림 { 발자취.적기(if (펼침) "종목 접기" else "종목 펼치기"); on접기() }, contentAlignment = Alignment.Center) {
+        Icon(아이콘.아래, if (펼침) "접기" else "펼치기", Modifier.size(16.dp).rotate(if (펼침) 180f else 0f), tint = c.옅음)
+    }
+}
+
 /**
  * 종목 머리 — 첫 줄은 이름, **둘째 줄에 정보** (09-24 메모: 한 줄에 같이 두면 종목 이름이 잘린다).
  * 오른쪽 ∨ 는 펼치기 · 접기. 어느 종목이든 언제나 있다 (09-24 메모: 열기만 있고 접기가 없었다).
  * 이름 쪽을 누르면 그 종목으로 간다.
  */
 @Composable
-private fun 종목머리(상태: 앱상태, S: 운동세션, j: Int, 표: String?, 펼침: Boolean, on누름: () -> Unit, on접기: () -> Unit) {
+private fun 종목머리(상태: 앱상태, S: 운동세션, j: Int, 표: String?, 펼침: Boolean, 접기칸: Boolean = true, on누름: () -> Unit, on접기: () -> Unit) {
     val c = Local색.current
     val e = S.종목들[j]
     val 지금세트 = e.찬것()
@@ -432,9 +466,7 @@ private fun 종목머리(상태: 앱상태, S: 운동세션, j: Int, 표: String
                 제목글(e.이름, Modifier.weight(1f, fill = false), 크기값 = 크기.본문, 색 = if (지금것) c.글 else c.흐림)
                 뱃지.forEach { b -> Box(Modifier.width(4.dp)); 알약(b, c.휴식) }
             }
-            Box(Modifier.size(높이.낮게).눌림(on접기), contentAlignment = Alignment.Center) {
-                Icon(아이콘.아래, if (펼침) "접기" else "펼치기", Modifier.size(16.dp).rotate(if (펼침) 180f else 0f), tint = c.옅음)
-            }
+            if (접기칸) 접기단추(펼침, on접기) else Box(Modifier.size(높이.낮게))
         }
         Row(
             Modifier.fillMaxWidth().눌림(on누름).padding(top = 1.dp),
@@ -481,7 +513,7 @@ private fun 세트줄(
                 Modifier.size(높이.아주낮게).clip(CircleShape)
                     .background(if (rec != null) c.강조 else c.면2)
                     .border(1.dp, if (rec != null) c.강조 else c.선, CircleShape)
-                    .눌림 { 바꿈 { it.체크(j, k, System.currentTimeMillis()) } },
+                    .눌림 { 발자취.적기("${e.이름} $번호 세트 ${if (rec != null) "체크 풀기" else "체크"}"); 바꿈 { it.체크(j, k, System.currentTimeMillis()) } },
                 contentAlignment = Alignment.Center,
             ) { Icon(아이콘.체크, "$번호 세트 완료", Modifier.size(15.dp), tint = if (rec != null) c.강조글 else c.면) }
             // 몇 번째 세트
@@ -516,7 +548,7 @@ private fun 세트줄(
                 Box(
                     Modifier.height(높이.아주낮게).clip(RoundedCornerShape(모서리.아주작게)).background(c.면2)
                         .border(1.dp, c.선, RoundedCornerShape(모서리.아주작게))
-                        .눌림 { 바꿈 { it.다음으로(System.currentTimeMillis()) } }.padding(horizontal = 8.dp),
+                        .눌림 { 발자취.적기("휴식 건너뛰기"); 바꿈 { it.다음으로(System.currentTimeMillis()) } }.padding(horizontal = 8.dp),
                     contentAlignment = Alignment.Center,
                 ) { 글("건너뛰기", 크기값 = 크기.작게, 색 = c.흐림, 굵기 = FontWeight.Bold) }
             } else {
@@ -526,7 +558,7 @@ private fun 세트줄(
                         글(분초(쉼), 크기값 = 크기.버튼, 색 = c.옅음)
                     }
                 }
-                아이콘버튼(아이콘.지우기, "$번호 세트 지우기", { 바꿈 { it.세트삭제(j, k) } }, 칠함 = false, 크기칸 = 높이.아주낮게)
+                아이콘버튼(아이콘.지우기, "$번호 세트 지우기", { 발자취.적기("$번호 세트 지우기"); 바꿈 { it.세트삭제(j, k) } }, 칠함 = false, 크기칸 = 높이.아주낮게)
                 펼침단추(열림, on열기)
             }
         }

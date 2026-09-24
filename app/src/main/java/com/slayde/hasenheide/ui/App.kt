@@ -164,7 +164,7 @@ fun 앱(상태: 앱상태, 폰: 폰기능) {
                     horizontalArrangement = Arrangement.SpaceEvenly,
                 ) {
                     탭.entries.forEach { t ->
-                        탭단추(t.이름, t.그림, !운동화면중 && 지금탭 == t) { 지금탭 = t; 운동보기 = false }
+                        탭단추(t.이름, t.그림, !운동화면중 && 지금탭 == t) { 발자취.적기("${t.이름} 탭"); 지금탭 = t; 운동보기 = false }
                     }
                     탭단추("메모", 아이콘.연필, 메모열림) { 메모열림 = true }
                 }
