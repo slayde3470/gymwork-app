@@ -1,5 +1,7 @@
 package com.slayde.hasenheide
 
+import android.content.Intent
+import android.net.Uri
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.media.AudioManager
@@ -55,6 +57,10 @@ class MainActivity : ComponentActivity() {
             알림 = { 휴식끝알림() },
             내보내기 = { 내보내기창.launch("하젠하이데-백업-${LocalDate.now()}.json") },
             가져오기 = { 가져오기창.launch(arrayOf("application/json", "text/plain", "*/*")) },
+            링크열기 = { 주소 ->
+                val u = 주소.trim().let { if (it.startsWith("http")) it else "https://$it" }
+                try { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(u))) } catch (e: Exception) { 알림글("이 링크를 열지 못했습니다") }
+            },
             복사 = { 글 ->
                 val 판 = getSystemService(ClipboardManager::class.java)
                 판?.setPrimaryClip(ClipData.newPlainText("수정 메모", 글))

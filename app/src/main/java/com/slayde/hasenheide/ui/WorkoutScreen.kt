@@ -87,6 +87,7 @@ import com.slayde.hasenheide.data.일RM
 import com.slayde.hasenheide.data.재개
 import com.slayde.hasenheide.data.정식세트
 import com.slayde.hasenheide.data.종목성장
+import com.slayde.hasenheide.data.타이트하게
 import com.slayde.hasenheide.data.종목으로
 import com.slayde.hasenheide.data.종목추이
 import com.slayde.hasenheide.data.지금기준
@@ -195,7 +196,7 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
             // 아랫줄 — 운동 목록 · 운동 추가 · 다음
             Row(Modifier.fillMaxWidth().background(c.면).padding(horizontal = 12.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 버튼("운동 목록", { 열린시트 = "목록" }, Modifier.weight(1f), 작게 = true, 그림 = 아이콘.목록)
-                버튼("운동 추가", { 열린시트 = "추가" }, Modifier.weight(1f), 작게 = true, 그림 = 아이콘.더하기)
+                버튼("타이트", { 열린시트 = "타이트" }, Modifier.weight(0.9f), 작게 = true)
                 버튼("다음", {
                     if (S.지금종목.덜한가()) 열린시트 = "마칠까" else { 바꿈 { it.다음종목으로(false, System.currentTimeMillis()) }; 열린세트 = null }
                 }, Modifier.weight(1f), 작게 = true, 그림 = 아이콘.오른쪽)
@@ -230,6 +231,27 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
                     }
                 }
             }
+            // 오늘만 타이트하게 (09-24 메모 · 업데이트 예정 ⑱) — 오늘 기록에만 적용, 루틴 원본은 그대로
+            "타이트" -> {
+                var 세트줄이기 by remember { mutableStateOf(true) }
+                var 휴식줄이기 by remember { mutableStateOf(true) }
+                시트("오늘만 타이트하게", { 열린시트 = null }) {
+                    글("오늘 기록에만 적용 · 루틴 원본은 그대로", 크기값 = 크기.조금작게, 색 = c.옅음)
+                    Box(Modifier.height(8.dp))
+                    고름줄("덜 한 종목마다 마지막 세트 빼기", 세트줄이기) { 세트줄이기 = !세트줄이기 }
+                    고름줄("남은 휴식 15초씩 줄이기", 휴식줄이기) { 휴식줄이기 = !휴식줄이기 }
+                    val 뺄세트 = if (세트줄이기) S.종목들.count { it.덜한가() && it.총칸() > it.찬것().size + 0 } else 0
+                    글("세트 ${S.종목들.sumOf { it.총칸() }} → ${S.종목들.sumOf { it.총칸() } - 뺄세트}", Modifier.padding(top = 8.dp), 크기값 = 크기.버튼, 색 = c.흐림)
+                    Box(Modifier.height(8.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
+                        버튼("취소", { 열린시트 = null }, Modifier.weight(1f), 작게 = true)
+                        버튼("오늘만 적용", {
+                            바꿈 { it.타이트하게(세트줄이기, if (휴식줄이기) 15 else 0) }
+                            열린시트 = null
+                        }, Modifier.weight(1f), 작게 = true, 주요 = true)
+                    }
+                }
+            }
             "마칠까" -> 시트("운동이 완료되지 않았습니다", { 열린시트 = null }) {
                 val e = S.지금종목
                 글("${e.이름} ${e.총칸() - e.찬것().size}세트 남음 · 여기서 마칠까요?", 크기값 = 크기.버튼, 색 = c.흐림)
@@ -241,6 +263,23 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
                 글("나중에 더 → 목록에 그대로 남습니다", Modifier.padding(top = 8.dp), 크기값 = 크기.작게, 색 = c.옅음)
             }
         }
+    }
+}
+
+/** 고르는 줄 — 네모와 글씨 (09-24 타이트하게 시트) */
+@Composable
+private fun 고름줄(글자: String, 켬: Boolean, on누름: () -> Unit) {
+    val c = Local색.current
+    Row(
+        Modifier.fillMaxWidth().height(높이.높게).눌림(on누름),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.좁게),
+    ) {
+        Box(
+            Modifier.size(20.dp).clip(RoundedCornerShape(6.dp))
+                .background(if (켬) c.강조 else c.면2).border(1.dp, if (켬) c.강조 else c.선, RoundedCornerShape(6.dp)),
+            contentAlignment = Alignment.Center,
+        ) { if (켬) Icon(아이콘.체크, null, Modifier.size(14.dp), tint = c.강조글) }
+        글(글자, 크기값 = 크기.버튼)
     }
 }
 
@@ -331,6 +370,9 @@ fun 루틴표시(이름: String): String = if (이름.contains("루틴")) 이름
 
 private fun 글자표(n: Int): String = ('A' + n).toString()
 
+/** ▲7% · ▼2% (09-24) */
+private fun 성장짧게(p: Int): String = (if (p >= 0) "▲" else "▼") + "${kotlin.math.abs(p)}%"
+
 /** 접기표시: -1 = 없음, 0 = 접힘, 1 = 펼침 */
 @Composable
 private fun 종목머리(상태: 앱상태, S: 운동세션, j: Int, 표: String?, 접기표시: Int, on누름: () -> Unit) {
@@ -352,11 +394,22 @@ private fun 종목머리(상태: 앱상태, S: 운동세션, j: Int, 표: String
             제목글(e.이름, Modifier.weight(1f, fill = false), 크기값 = 크기.본문, 색 = if (지금것) c.글 else c.흐림)
             뱃지.forEach { b -> Box(Modifier.width(4.dp)); 알약(b, c.휴식) }
         }
-        글("${e.달성도()}%", 크기값 = 크기.작게, 색 = c.강조, 굵기 = FontWeight.Bold)
-        if (접기표시 == 0) 글("${e.찬것().size}/${e.총칸()}세트", 크기값 = 크기.작게, 색 = c.흐림)
-        else {
-            글("1RM ${if (rm > 0) "%.1f".format(rm) else "—"}", 크기값 = 크기.작게, 색 = c.흐림)
-            글("${콤마(볼륨(지금세트))}/${콤마(목표볼)}", 크기값 = 크기.작게, 색 = c.흐림)
+        // 지금 하는 종목만 자세히 (09-24 메모)
+        //  · 지금 종목 — 달성도 · 1RM · 볼륨 · 향상도   · 끝낸 종목 — 늘어난 만큼만   · 아직 안 한 종목 — 세트 수만
+        val 끝냄 = !지금것 && (e.마감 || !e.덜한가())
+        when {
+            지금것 || 접기표시 == 1 -> {
+                글("${e.달성도()}%", 크기값 = 크기.작게, 색 = c.강조, 굵기 = FontWeight.Bold)
+                글("1RM ${if (rm > 0) "%.1f".format(rm) else "—"}", 크기값 = 크기.작게, 색 = c.흐림)
+                글("${콤마(볼륨(지금세트))}/${콤마(목표볼)}", 크기값 = 크기.작게, 색 = c.흐림)
+                상태.d.종목성장(e.이름, 상태.오늘, 지금세트, S.묶음이름(e))?.볼륨?.pct?.let { p ->
+                    글(성장짧게(p), 크기값 = 크기.작게, 색 = if (p >= 0) c.오름 else c.내림, 굵기 = FontWeight.Bold)
+                }
+            }
+            끝냄 -> 상태.d.종목성장(e.이름, 상태.오늘, 지금세트, S.묶음이름(e))?.볼륨?.pct?.let { p ->
+                글(성장짧게(p), 크기값 = 크기.작게, 색 = if (p >= 0) c.오름 else c.내림, 굵기 = FontWeight.Bold)
+            } ?: 글("${지금세트.size}세트", 크기값 = 크기.작게, 색 = c.흐림)
+            else -> 글("${e.총칸()}세트", 크기값 = 크기.작게, 색 = c.흐림)
         }
         if (접기표시 >= 0) Icon(아이콘.아래, if (접기표시 == 0) "펼치기" else "접기", Modifier.size(16.dp).rotate(if (접기표시 == 1) 180f else 0f), tint = c.옅음)
     }

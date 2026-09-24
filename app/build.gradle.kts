@@ -18,8 +18,8 @@ android {
 
         minSdk = 26        // 안드로이드 8.0 이상에서 동작
         targetSdk = 35
-        versionCode = 7    // 새 APK를 낼 때마다 1씩 올린다 (덮어쓰기 설치에 필요)
-        versionName = "0.5.2"
+        versionCode = 8    // 새 APK를 낼 때마다 1씩 올린다 (덮어쓰기 설치에 필요)
+        versionName = "0.6.0"
     }
 
     buildTypes {

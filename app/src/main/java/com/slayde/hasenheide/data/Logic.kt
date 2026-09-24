@@ -298,6 +298,36 @@ fun 루틴종목.세트고침(k: Int, w: Double? = null, r: Int? = null, t: Int?
     )
     return 새.copy(무게 = 새.세트값[0].w, 횟수 = 새.세트값[0].r, 휴식 = 새.휴식값[0])
 }
+/** ＋ — 누른 줄을 베껴 **바로 아래에** 끼운다. 뒤 번호는 한 칸씩 밀린다 (09-24 메모) */
+fun 루틴종목.세트끼우기(k: Int): 루틴종목 {
+    val e = 펼친()
+    val i = k.coerceIn(0, 세트 - 1)
+    return e.copy(
+        세트 = 세트 + 1,
+        세트값 = e.세트값.toMutableList().also { it.add(i + 1, e.세트값[i]) },
+        휴식값 = e.휴식값.toMutableList().also { it.add(i + 1, e.휴식값[i]) },
+    )
+}
+/** − · 휴지통 — 그 줄을 뺀다 (09-24 메모) */
+fun 루틴종목.세트빼기(k: Int): 루틴종목 {
+    if (세트 <= 1) return this
+    val e = 펼친()
+    val i = k.coerceIn(0, 세트 - 1)
+    return e.copy(
+        세트 = 세트 - 1,
+        세트값 = e.세트값.toMutableList().also { it.removeAt(i) },
+        휴식값 = e.휴식값.toMutableList().also { it.removeAt(i) },
+    )
+}
+/** 루틴에 정해둔 볼륨 (무게 × 횟수 합) */
+fun 루틴종목.볼륨(): Double = (0 until 세트).sumOf { 목표(it).let { v -> v.w * v.r } }
+/** 이 종목의 1RM — 지난 기록 중 가장 높은 값 (없으면 루틴 목표로) */
+fun 앱데이터.종목1RM(이름: String, 지금: 루틴종목? = null): Double {
+    val 과거 = 기록.values.flatMap { r -> r.종목들.filter { it.이름 == 이름 }.flatMap { it.세트들 } }.maxOfOrNull { 일RM(it.w, it.r) } ?: 0.0
+    val 계획 = 지금?.let { e -> (0 until e.세트).maxOfOrNull { k -> e.목표(k).let { 일RM(it.w, it.r) } } } ?: 0.0
+    return max(과거, 계획)
+}
+
 /** ＋ — 맨 아래 세트의 무게 · 횟수 · 휴식을 베껴 한 세트 늘린다 (다른 앱들처럼) */
 fun 루틴종목.세트더하기(): 루틴종목 {
     val e = 펼친()
@@ -522,6 +552,32 @@ fun 운동세션.불러오기(이름: String, 기본휴식: Int, 세트수: Int 
     return copy(종목들 = 종목들.toMutableList().also { it.add(뒤, 새) })
 }
 
+/**
+ * 오늘만 타이트하게 (09-24 메모 · 업데이트 예정 ⑱)
+ *  · 세트빼기 = 아직 덜 한 종목마다 **아직 하지 않은 마지막 세트**를 하나 뺀다 (이미 한 세트는 건드리지 않는다)
+ *  · 휴식줄임 = 아직 남은 세트의 휴식을 그만큼 줄인다 (0초 아래로는 안 내려간다)
+ * 오늘 기록에만 적용된다 — 루틴 원본은 그대로 (명세 5-5 ①)
+ */
+fun 운동세션.타이트하게(세트빼기: Boolean, 휴식줄임: Int): 운동세션 {
+    var S = this
+    if (세트빼기) {
+        S.종목들.indices.reversed().forEach { j ->
+            val e = S.종목들[j]
+            val 끝칸 = e.총칸() - 1
+            if (e.덜한가() && 끝칸 >= 1 && e.기록.칸(끝칸) == null) S = S.세트삭제(j, 끝칸)
+        }
+    }
+    if (휴식줄임 > 0) {
+        S = S.copy(종목들 = S.종목들.mapIndexed { j, e ->
+            e.copy(휴식들 = (0 until e.총칸()).map { k ->
+                val 지금쉼 = e.휴식들.칸(k) ?: e.휴식
+                if (e.기록.칸(k) != null) 지금쉼 else max(0, 지금쉼 - 휴식줄임)
+            })
+        })
+    }
+    return S
+}
+
 fun 운동세션.마감풀기(): 운동세션 = 종목바꿈(i) { it.copy(마감 = false) }
 
 /** 기록 저장 — 오늘 기록을 남기고, 내일부터 다음 차례로 다시 깐다 */
@@ -532,11 +588,45 @@ fun 앱데이터.운동저장(오늘: String, 지금: Long): 앱데이터 {
         if (찬.isEmpty()) null else 종목기록(e.이름, 찬, e.임시, S.묶음이름(e))
     }
     val rec = 날기록(S.루틴id, S.루틴이름, S.한세트수() >= S.목표세트(), 들, S.흐른초(지금).toInt())
-    val 새 = copy(기록 = 기록 + (오늘 to rec), 세션 = null, 루틴들 = 루틴들.map { if (it.id == S.루틴id) it.오늘반영(S) else it })
+    // 루틴 반영(5-5) 뒤에, 설정이 켜져 있으면 볼륨을 한 번 더 올린다 (09-24)
+    val 올릴까 = 설정.볼륨켬 && (설정.볼륨언제 == "항상" || rec.달성)
+    val 새 = copy(
+        기록 = 기록 + (오늘 to rec), 세션 = null,
+        루틴들 = 루틴들.map { if (it.id == S.루틴id) it.오늘반영(S).let { r -> if (올릴까) r.볼륨올리기(설정) else r } else it },
+    )
     val i = 루틴들.indexOfFirst { it.id == S.루틴id }
     if (루틴들.isEmpty()) return 새
     val 남김 = 새.예정.filterKeys { it < 오늘 }
     return 새.copy(예정 = 새.예정채움(날더하기(오늘, 1), ((i + 1) % 루틴들.size + 루틴들.size) % 루틴들.size, 남김))
+}
+
+/**
+ * 볼륨 자동 올리기 (09-24 · 업데이트 예정 ⑲ — 써보면서 다듬는다)
+ *  · 언제: 설정이 "성공" 이면 그 날 계획한 세트를 다 끝냈을 때만, "항상" 이면 저장할 때마다
+ *  · 얼마나: % 또는 kg
+ *  · 어디에: "무게" = 세트마다 무게를 올린다 / "횟수" = 횟수를 1회씩 올리다 상한을 넘으면 무게로 넘기고 횟수를 되돌린다
+ */
+fun 루틴.볼륨올리기(s: 설정값): 루틴 {
+    if (!s.볼륨켬) return this
+    return copy(종목 = 종목.map { e ->
+        val 목 = (0 until e.세트).map { e.목표(it) }
+        if (목.isEmpty()) return@map e
+        val 새목 = when (s.볼륨배분) {
+            "무게" -> 목.map { v ->
+                val 더할 = if (s.볼륨방식 == "%") v.w * s.볼륨값 / 100.0 else s.볼륨값
+                세트(무게반올림(v.w + 더할), v.r)
+            }
+            else -> {
+                // 횟수에 붙인다 — 한 세트라도 상한 아래면 모두 1회씩, 모두 상한이면 무게로 넘긴다
+                if (목.any { it.r < s.횟수상한 }) 목.map { 세트(it.w, min(s.횟수상한, it.r + 1)) }
+                else 목.map { v ->
+                    val 더할 = if (s.볼륨방식 == "%") v.w * s.볼륨값 / 100.0 else s.볼륨값
+                    세트(무게반올림(v.w + max(더할, 0.5)), max(1, s.횟수상한 - 2))
+                }
+            }
+        }
+        e.copy(무게 = 새목[0].w, 횟수 = 새목[0].r, 세트값 = 새목, 휴식값 = (0 until e.세트).map { e.휴식(it) })
+    })
 }
 
 /**

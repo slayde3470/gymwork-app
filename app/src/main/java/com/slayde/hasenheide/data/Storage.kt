@@ -44,6 +44,8 @@ object 저장소 {
 
     private fun 종목to(e: 종목) = JSONObject().put("이름", e.이름).put("부위", e.부위).put("장비", e.장비)
         .also { if (e.달력이름 != null) it.put("달력이름", e.달력이름) }
+        .also { if (e.참고url != null) it.put("참고url", e.참고url) }
+        .also { if (e.참고글 != null) it.put("참고글", e.참고글) }
 
     private fun 루틴종목to(e: 루틴종목) = JSONObject().put("이름", e.이름).put("세트", e.세트).put("무게", e.무게)
         .put("횟수", e.횟수).put("휴식", e.휴식).also { if (e.슈퍼 != null) it.put("슈퍼", e.슈퍼) }
@@ -69,6 +71,8 @@ object 저장소 {
     private fun 설정to(s: 설정값) = JSONObject().put("자동진행", s.자동진행).put("넘어가기전확인", s.넘어가기전확인)
         .put("소리진동", s.소리진동).put("화면유지", s.화면유지).put("무게폭", s.무게폭)
         .put("기본휴식", s.기본휴식).put("기준", s.기준).put("기본세트", s.기본세트)
+        .put("볼륨켬", s.볼륨켬).put("볼륨방식", s.볼륨방식).put("볼륨값", s.볼륨값)
+        .put("볼륨언제", s.볼륨언제).put("볼륨배분", s.볼륨배분).put("횟수상한", s.횟수상한)
 
     private fun 세션to(S: 운동세션) = JSONObject().put("루틴id", S.루틴id).put("루틴이름", S.루틴이름)
         .put("시작시각", S.시작시각).put("i", S.i).put("s", S.s).put("무게", S.무게).put("횟수", S.횟수)
@@ -97,7 +101,9 @@ object 저장소 {
         val o = JSONObject(글)
         val 판 = o.optInt("스키마", 1)
         return 앱데이터(
-            종목표 = 목록(o.optJSONArray("종목표")) { a, i -> a.getJSONObject(i).let { 종목(it.getString("이름"), it.optString("부위"), it.optString("장비"), 글또는널(it, "달력이름")) } },
+            종목표 = 목록(o.optJSONArray("종목표")) { a, i ->
+                a.getJSONObject(i).let { 종목(it.getString("이름"), it.optString("부위"), it.optString("장비"), 글또는널(it, "참고글"), 글또는널(it, "참고url"), 글또는널(it, "달력이름")) }
+            },
             카테고리 = if (o.has("카테고리")) 목록(o.optJSONArray("카테고리")) { a, i -> a.getString(i) } else 앱데이터.기본카테고리,
             루틴들 = 목록(o.optJSONArray("루틴들")) { a, i -> 루틴from(a.getJSONObject(i)) },
             기록 = 사전(o.optJSONObject("기록")) { m, k -> 날기록from(m.getJSONObject(k)) },
@@ -154,8 +160,18 @@ object 저장소 {
     private fun 설정from(o: JSONObject, 판: Int): 설정값 {
         val 폭 = o.optDouble("무게폭", 1.0).let { if (판 < 2 && it == 2.5) 1.0 else it }
         return 설정값(
-            o.optBoolean("자동진행", true), o.optBoolean("넘어가기전확인", false), o.optBoolean("소리진동", true),
-            o.optBoolean("화면유지", true), 폭, o.optInt("기본휴식", 90), (if (판 < 3) 1 else o.optInt("기본세트", 1)), o.optInt("기준", 3),
+            자동진행 = o.optBoolean("자동진행", true), 넘어가기전확인 = o.optBoolean("넘어가기전확인", false),
+            소리진동 = o.optBoolean("소리진동", true), 화면유지 = o.optBoolean("화면유지", true), 무게폭 = 폭,
+            // 09-24: 기본 휴식은 1분으로. 옛 판의 90초는 60초로 옮긴다
+            기본휴식 = if (판 < 4) 60 else o.optInt("기본휴식", 60),
+            기본세트 = if (판 < 3) 1 else o.optInt("기본세트", 1),
+            볼륨켬 = o.optBoolean("볼륨켬", false),
+            볼륨방식 = o.optString("볼륨방식", "%").ifBlank { "%" },
+            볼륨값 = o.optDouble("볼륨값", 2.5),
+            볼륨언제 = o.optString("볼륨언제", "성공").ifBlank { "성공" },
+            볼륨배분 = o.optString("볼륨배분", "횟수").ifBlank { "횟수" },
+            횟수상한 = o.optInt("횟수상한", 12),
+            기준 = o.optInt("기준", 3),
         )
     }
 

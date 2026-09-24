@@ -424,8 +424,8 @@ fun 숫자버튼줄(칸들: List<숫자칸>, 켠: String?, on고름: (String) ->
                 }
             }
         }
-        // 휠은 누른 칸 바로 아래, 그 칸 폭으로 (09-21 메모)
-        if (켠칸 != null && 켠칸.휠.isNotEmpty()) {
+        // 휠은 누른 칸 바로 아래, 그 칸 폭으로 (09-21 메모). '버튼' 칸(세트)은 휠이 없다
+        if (켠칸 != null && 켠칸.휠.isNotEmpty() && 켠칸.종류 != 입력종류.버튼) {
             val 초점 = LocalFocusManager.current
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 칸들.forEach { k ->
@@ -673,6 +673,31 @@ fun 시트(제목: String, onClose: () -> Unit, content: @Composable ColumnScope
                 아이콘버튼(아이콘.닫기, "닫기", onClose, 크기칸 = 높이.낮게)
             }
             Column(Modifier.padding(top = 12.dp).verticalScroll(rememberScrollState()), content = content)
+        }
+    }
+}
+
+/**
+ * 고르는 물음 — 화면 **가운데**에, 좌우 여백을 두고 (09-24 메모).
+ * 팝업은 '고르는 일'에만 쓴다 (1-1).
+ */
+@Composable
+fun 물음창(제목: String, 설명: String? = null, 예: String, on예: () -> Unit, on아니오: () -> Unit) {
+    val c = Local색.current
+    BackHandler(onBack = on아니오)
+    Box(
+        Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.35f)).눌림(on아니오),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            Modifier.fillMaxWidth(0.62f).clip(RoundedCornerShape(모서리.보통)).background(c.면).눌림 { }.padding(간격.넓게),
+        ) {
+            제목글(제목, 크기값 = 크기.크게)
+            if (설명 != null) 글(설명, Modifier.padding(top = 4.dp), 크기값 = 크기.버튼, 색 = c.흐림, 줄 = 2)
+            Row(Modifier.padding(top = 간격.넓게), horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
+                버튼("아니오", on아니오, Modifier.weight(1f), 작게 = true)
+                버튼(예, on예, Modifier.weight(1f), 작게 = true, 주요 = true)
+            }
         }
     }
 }
