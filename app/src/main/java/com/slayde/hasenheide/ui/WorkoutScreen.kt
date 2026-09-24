@@ -45,10 +45,12 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.draw.rotate
 import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.SpanStyle
@@ -155,7 +157,9 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
             머리줄(S, 지금) { 바꿈 { it.끝냄(System.currentTimeMillis()) } }
             val 스크롤 = rememberScrollState()
             var 화면틀 by remember { mutableStateOf(Rect.Zero) }
-            var 지금줄 by remember { mutableStateOf<Rect?>(null) }
+            // 화면 맞추기에 쓰는 좌표 — 상태가 아니라 그냥 들고 있는다 (바뀔 때마다 화면을 다시 그리지 않게)
+            val 좌표 = remember { 맞춤좌표() }
+            var 여분 by remember { mutableStateOf(0) }   // 목록 끝 빈자리(px)
             var 지금틀 by remember { mutableStateOf<Rect?>(null) }   // 지금 종목 상자의 자리 (상단 고정을 켤지 판단)
             val 지금머리 = S.식구(S.i).first()
             // 띠에 보일 종목 — 슈퍼세트에서 한 바퀴를 끝내고 쉬는 동안은 **다음에 할 종목**을 보인다
@@ -171,7 +175,6 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
                 if (남길 != null) 접기[지금머리] = 남길
             }
             var 바높이 by remember { mutableStateOf(0) }   // 고정 띠 높이(px) — 그만큼 위를 비워 둔다
-            var 끝틀 by remember { mutableStateOf<Rect?>(null) }   // 목록 끝 표시 — 아래 빈자리 계산용
             // 기준 줄 — 쉬는 중이면 방금 끝낸(휴식이 도는) 줄, 아니면 지금 할 세트 줄 (09-24 메모)
             val h0 = S.휴식
             val 앵커j = if (h0 != null && h0.종목 >= 0) h0.종목 else S.i
@@ -180,28 +183,51 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
             // 화면 맞추기 (09-24 메모 · 홍겸 님 설계)
             //  · 체크 · 휴식 · 종목 이동이 있을 때마다 **기준 줄을 고정 띠 바로 아래로** 올린다.
             //    끝낸 세트와 끝낸 종목은 띠 뒤로 올라가 잘리고, 아래 세트 줄이 따라 올라온다.
-            //  · 예전(v0.6.1~0.6.3)엔 '화면 밖으로 나갈 때만' 움직여 끝낸 줄이 계속 보였고,
-            //    목록 끝이 짧으면 더 올라갈 자리가 없어 끝낸 종목이 띠 아래에 남았다 → 아래에 빈자리를 둔다
-            //  · 접힘 애니메이션이 멈춘 뒤(자리가 두 번 연속 같을 때) 한 번만 움직인다
+            //  · 목록 끝이 짧아도 올릴 수 있게 아래에 빈자리를 둔다 (필요한 만큼만)
+            //  · (v0.6.5) v0.6.4 는 '화면 위 자리(root 좌표)'를 자리가 바뀔 때 알려 주는 값에 기대서 쟀다.
+            //    폰에서 스크롤이 한 번도 일어나지 않았다 (09-24 사진 두 장 — 목록이 맨 위 그대로).
+            //    어느 단계에서 끊겼는지는 폰 없이 확인하지 못했다 → 방식을 바꿨다:
+            //    기준 줄이 **목록 안 몇 번째 픽셀에 있는지**를 그때그때 직접 재고(스크롤과 무관한 값),
+            //    스크롤을 **그 값으로** 옮긴다(얼마만큼 '더' 가 아니라 '어디로'). 접힘이 끝날 때까지 되풀이한다
             LaunchedEffect(S.i, S.s, S.한세트수(), 앵커j, 앵커k, h0 != null) {
-                var 전 = Float.NaN
-                var 같음 = 0
+                val 키 = "$앵커j|$앵커k"
+                var 조용 = 0
                 var n = 0
-                while (n < 24 && 같음 < 2) {   // 최대 약 1.2초
-                    delay(50); n++
-                    val top = 지금줄?.top ?: continue
-                    if (!전.isNaN() && kotlin.math.abs(top - 전) < 0.5f) 같음++ else 같음 = 0
-                    전 = top
+                var 처음 = true
+                while (n < 40 && 조용 < 3) {   // 최대 약 1.6초, 제자리에 세 번 연속 있으면 끝
+                    delay(40); n++
+                    if (접기[지금머리] == false) return@LaunchedEffect   // 지금 묶음을 접어 두었으면 기준 줄이 없다
+                    val 내 = 좌표.내용; val 줄 = 좌표.줄; val 끝 = 좌표.끝
+                    if (내 == null || 줄 == null || 끝 == null || 좌표.줄키 != 키) continue
+                    if (!내.isAttached || !줄.isAttached || !끝.isAttached || 좌표.화면높이 <= 0) continue
+                    val y = 내.localPositionOf(줄, Offset.Zero).y                      // 목록 안에서 기준 줄의 위
+                    val 끝y = 내.localPositionOf(끝, Offset.Zero).y + 끝.size.height    // 목록 끝(빈자리 앞)
+                    val 상자 = 좌표.상자
+                    if (상자 == null || !상자.isAttached || 좌표.상자키 != 지금머리) continue
+                    val 상자y = 내.localPositionOf(상자, Offset.Zero).y           // 지금 묶음 상자 (위 8dp 여백 포함)
+                    val 상자끝 = 상자y + 상자.size.height
+                    // 어디로 올릴까 (09-24 메모)
+                    //  · 상자 위 테두리가 띠 바로 아래(6dp)에 오는 자리가 기본 — 테두리가 잘리지 않게
+                    //  · 세트가 모두 화면 안에 들어오면 **거기서 움직이지 않는다** (체크할 때마다 올라갈 필요 없다)
+                    //  · 상자가 화면보다 길 때만, 기준 줄이 띠 아래(4dp)에 오도록 따라 올린다.
+                    //    단 상자 아래 끝이 화면 아래에 닿으면 더 올리지 않는다 (다음 종목을 괜히 끌어올리지 않게)
+                    val 기본 = 상자y + 8f * 밀도 - 바높이 - 6f * 밀도
+                    val 따라감 = minOf(y - 바높이 - 4f * 밀도, 상자끝 - 좌표.화면높이)
+                    val 목표0 = maxOf(기본, 따라감).coerceAtLeast(0f)
+                    // 빈자리: 목표까지 올릴 수 있을 만큼만 목록 아래에 둔다
+                    val 필요 = maxOf(0, (목표0 + 좌표.화면높이 - 끝y).toInt())
+                    if (kotlin.math.abs(필요 - 여분) > 2) { 여분 = 필요; 조용 = 0; continue }   // 빈자리를 먼저 맞추고 다음 차례에
+                    val 목표 = 목표0.toInt().coerceIn(0, 스크롤.maxValue)
+                    if (kotlin.math.abs(목표 - 스크롤.value) > 2) {
+                        조용 = 0
+                        if (처음) { 처음 = false; 스크롤.animateScrollTo(목표) } else 스크롤.scrollTo(목표)
+                    } else 조용++
                 }
-                if (화면틀.height <= 0f) return@LaunchedEffect
-                if (접기[지금머리] == false) return@LaunchedEffect   // 지금 묶음을 접어 두었으면 기준 줄이 없다
-                val 줄 = 지금줄 ?: return@LaunchedEffect
-                val 밀 = 줄.top - (화면틀.top + 바높이 + 4f * 밀도)
-                if (밀 > 2f || 밀 < -2f) 스크롤.animateScrollBy(밀)
             }
             Box(Modifier.weight(1f)) {
             Column(
-                Modifier.fillMaxSize().onGloballyPositioned { 화면틀 = it.boundsInRoot() }.verticalScroll(스크롤)
+                Modifier.fillMaxSize().onGloballyPositioned { 화면틀 = it.boundsInRoot(); 좌표.화면높이 = it.size.height }.verticalScroll(스크롤)
+                    .onGloballyPositioned { 좌표.내용 = it }
                     .padding(horizontal = 간격.보통)
                     .padding(top = with(LocalDensity.current) { 바높이.toDp() }),
             ) {
@@ -214,7 +240,7 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
                     val 접힘 = !(접기[머리] ?: (머리 == 지금머리))
                     Column(Modifier.onGloballyPositioned { b ->
                         val r = b.boundsInRoot()
-                        if (머리 == 지금머리) 지금틀 = r
+                        if (머리 == 지금머리) { 지금틀 = r; 좌표.상자 = b; 좌표.상자키 = 머리 }
                         // 지금 종목이 아닌데 펼쳐 둔 것이 **절반쯤 벗어나면** 저절로 접는다 (09-24 메모)
                         else if (접기[머리] == true && 화면틀.height > 0f) {
                             val 보임 = minOf(r.bottom, 화면틀.bottom) - maxOf(r.top, 화면틀.top + 바높이)
@@ -225,18 +251,12 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
                             on접기 = { 접기[머리] = 접힘 },
                             on열기 = { key -> 입력중.취소?.invoke(); 열린세트 = if (열린세트 == key) null else key; 켠칸 = null },
                             on칸 = { key, f -> 열린세트 = key; 켠칸 = if (켠칸 == f) null else f },
-                            on지금줄 = { 지금줄 = it }, 앵커j = 앵커j, 앵커k = 앵커k,
+                            on지금줄 = { 좌표.줄 = it; 좌표.줄키 = "$앵커j|$앵커k" }, 앵커j = 앵커j, 앵커k = 앵커k,
                             바꿈 = ::바꿈)
                     }
                 }
-                Box(Modifier.height(16.dp).onGloballyPositioned { 끝틀 = it.boundsInRoot() })
+                Box(Modifier.height(16.dp).onGloballyPositioned { 좌표.끝 = it })
                 // 아래 빈자리 — 마지막 종목이어도 기준 줄을 띠 바로 아래까지 올릴 수 있을 만큼만
-                //  (스크롤할 때마다 다시 그리지 않게 — 값이 바뀔 때만 다시 잰다)
-                val 여분 by remember { derivedStateOf {
-                    val 줄0 = 지금줄; val 끝0 = 끝틀
-                    if (줄0 == null || 끝0 == null || 화면틀.height <= 0f) 0
-                    else maxOf(0f, (화면틀.height - 바높이 - 4f * 밀도) - (끝0.bottom - 줄0.top)).toInt()
-                } }
                 if (여분 > 0) Box(Modifier.height((여분 / 밀도).dp))
             }
             // 지금 하는 종목은 늘 맨 위에 붙어 있다 (09-24 메모)
@@ -390,7 +410,7 @@ private fun 머리줄(S: 운동세션, 지금: Long, 끝내기: () -> Unit) {
 private fun 종목묶음(
     상태: 앱상태, S: 운동세션, 식구: List<Int>, 띠i: Int, 지금: Long, 열린세트: String?, 켠칸: String?,
     접힘: Boolean, on접기: () -> Unit,
-    on열기: (String) -> Unit, on칸: (String, String) -> Unit, on지금줄: (Rect) -> Unit, 앵커j: Int, 앵커k: Int, 바꿈: ((운동세션) -> 운동세션) -> Unit,
+    on열기: (String) -> Unit, on칸: (String, String) -> Unit, on지금줄: (LayoutCoordinates) -> Unit, 앵커j: Int, 앵커k: Int, 바꿈: ((운동세션) -> 운동세션) -> Unit,
 ) {
     val c = Local색.current
     val 지금묶음 = S.i in 식구
@@ -507,7 +527,7 @@ private fun 종목머리(상태: 앱상태, S: 운동세션, j: Int, 표: String
 private fun 세트줄(
     상태: 앱상태, S: 운동세션, j: Int, k: Int, 번호: String, 휴식보임: Boolean, 지금: Long,
     열림: Boolean, 켠칸: String?,
-    on열기: () -> Unit, on칸: (String) -> Unit, on지금줄: (Rect) -> Unit, 앵커: Boolean,
+    on열기: () -> Unit, on칸: (String) -> Unit, on지금줄: (LayoutCoordinates) -> Unit, 앵커: Boolean,
     바꿈: ((운동세션) -> 운동세션) -> Unit,
 ) {
     val c = Local색.current
@@ -521,7 +541,7 @@ private fun 세트줄(
     val h = S.휴식
     Column(
         Modifier.fillMaxWidth().padding(vertical = 2.dp)
-            .then(if (앵커) Modifier.onGloballyPositioned { on지금줄(it.boundsInRoot()) } else Modifier)
+            .then(if (앵커) Modifier.onGloballyPositioned { on지금줄(it) } else Modifier)
             .clip(RoundedCornerShape(모서리.작게))
             .background(if (지금칸) c.강조옅음 else Color.Transparent)
             .padding(horizontal = 4.dp, vertical = 4.dp)
@@ -752,4 +772,15 @@ private fun 선그림(값: List<Double>, 날들: List<String>, 일rm: Boolean, �
             글("  첫 점 대비", 크기값 = 크기.작게, 색 = c.옅음)
         }
     }
+}
+
+/** 화면 맞추기에 쓰는 좌표 모음 — 목록 안(내용) · 기준 줄 · 목록 끝 · 보이는 높이 (v0.6.5) */
+private class 맞춤좌표 {
+    var 내용: LayoutCoordinates? = null
+    var 줄: LayoutCoordinates? = null
+    var 줄키: String = ""
+    var 끝: LayoutCoordinates? = null
+    var 상자: LayoutCoordinates? = null   // 지금 묶음 상자
+    var 상자키: Int = -1
+    var 화면높이: Int = 0
 }
