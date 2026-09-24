@@ -311,7 +311,7 @@ fun 입력칸(
 
 // ─────────────── 숫자 버튼 줄 (1-3 · 4-4-1 · 09-21 메모) ───────────────
 
-enum class 입력종류 { 정수, 소수, 분초 }
+enum class 입력종류 { 정수, 소수, 분초, 버튼 }   // 버튼 = 자판도 휠도 없이 − ＋ 만 (09-24)
 
 /**
  * 버튼 한 칸 — 평소엔 [이름표/값], 누르면 [− 값 ＋] + 아래에 숫자 휠.
@@ -332,6 +332,9 @@ data class 숫자칸(
     val 휠: List<Double> = emptyList(),
     val 휠글: (Double) -> String = { it.toString() },
     val 지금값: Double = 0.0,
+    /** 칸 너비 — 닫혔을 때 · 열렸을 때 (09-24 시안에서 정한 값) */
+    val 폭: Float = 1f,
+    val 폭열림: Float = 1.69f,
     /** 취소할 때 되돌릴 원래 모습 — 열 때 기억해 두었다가 되돌림(원래) 을 부른다. 없으면 넣기(열 때 값글) */
     val 원래: Any? = null,
     val 되돌림: ((Any?) -> Unit)? = null,
@@ -347,7 +350,14 @@ object 휠값 {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun 숫자버튼줄(칸들: List<숫자칸>, 켠: String?, on고름: (String) -> Unit, modifier: Modifier = Modifier) {
+fun 숫자버튼줄(
+    칸들: List<숫자칸>,
+    켠: String?,
+    on고름: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    /** 줄 오른쪽 끝에 붙일 것 (휴지통 등) */
+    오른쪽: (@Composable () -> Unit)? = null,
+) {
     val c = Local색.current
     val 끌어올림 = remember { BringIntoViewRequester() }
     val 켠칸 = 칸들.firstOrNull { it.키 == 켠 }
@@ -374,43 +384,40 @@ fun 숫자버튼줄(칸들: List<숫자칸>, 켠: String?, on고름: (String) ->
     }
     // ◁ 를 처음 누르면 안드로이드가 자판만 내린다 (칸 · 휠은 그대로). 한 번 더 누르면 위의 BackHandler 가 취소 (09-22 홍겸 님)
     var 휠만짐 by remember(켠) { mutableStateOf(false) }
-    Column(
-        modifier
-            .fillMaxWidth()
-            .bringIntoViewRequester(끌어올림)
-            .clip(RoundedCornerShape(모서리.작게))
-            .background(c.면)
-            .border(1.dp, c.선, RoundedCornerShape(모서리.작게))
-            .padding(8.dp),
-    ) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+    // 테두리를 두르지 않는다 — 줄이 화면 기준선에 그대로 맞도록 (명세 1-2-1)
+    Column(modifier.fillMaxWidth().bringIntoViewRequester(끌어올림)) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(2.dp), verticalAlignment = Alignment.CenterVertically) {
             칸들.forEach { k ->
                 if (k.키 == 켠) {
                     Row(
                         Modifier
-                            .weight(2.3f)
+                            .weight(k.폭열림)
                             .height(높이.보통)
                             .clip(RoundedCornerShape(모서리.작게))
                             .background(c.면)
                             .border(1.5.dp, c.강조, RoundedCornerShape(모서리.작게)),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Box(Modifier.width(30.dp).fillMaxHeight().눌림(k.빼기), contentAlignment = Alignment.Center) {
+                        // − ＋ 가 빈자리를 나눠 갖는다 — 누를 수 있는 범위를 넓게 (09-24 시안)
+                        Box(Modifier.weight(1f).fillMaxHeight().눌림(k.빼기), contentAlignment = Alignment.Center) {
                             Icon(아이콘.빼기, "${k.라벨} 빼기", Modifier.size(18.dp), tint = c.강조)
                         }
-                        Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             글(k.라벨, 크기값 = 크기.아주작게, 색 = c.옅음)
-                            if (k.종류 == 입력종류.분초) 분초입력(k.키, k.값글, k.넣기) { on고름(k.키) }
-                            else 숫자입력(k.키, k.값글, k.종류, k.넣기) { on고름(k.키) }
+                            when (k.종류) {
+                                입력종류.분초 -> 분초입력(k.키, k.값글, k.넣기) { on고름(k.키) }
+                                입력종류.버튼 -> 글(k.값글, 크기값 = 크기.본문, 굵기 = FontWeight.Bold)
+                                else -> 숫자입력(k.키, k.값글, k.종류, k.넣기) { on고름(k.키) }
+                            }
                         }
-                        Box(Modifier.width(30.dp).fillMaxHeight().눌림(k.더하기), contentAlignment = Alignment.Center) {
+                        Box(Modifier.weight(1f).fillMaxHeight().눌림(k.더하기), contentAlignment = Alignment.Center) {
                             Icon(아이콘.더하기, "${k.라벨} 더하기", Modifier.size(18.dp), tint = c.강조)
                         }
                     }
                 } else {
                     Column(
                         Modifier
-                            .weight(1f)
+                            .weight(k.폭)
                             .height(높이.보통)
                             .clip(RoundedCornerShape(모서리.작게))
                             .background(c.면2)
@@ -423,19 +430,21 @@ fun 숫자버튼줄(칸들: List<숫자칸>, 켠: String?, on고름: (String) ->
                     }
                 }
             }
+            오른쪽?.invoke()
         }
         // 휠은 누른 칸 바로 아래, 그 칸 폭으로 (09-21 메모). '버튼' 칸(세트)은 휠이 없다
         if (켠칸 != null && 켠칸.휠.isNotEmpty() && 켠칸.종류 != 입력종류.버튼) {
             val 초점 = LocalFocusManager.current
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
                 칸들.forEach { k ->
-                    if (k.키 == 켠) Box(Modifier.weight(2.3f)) {
+                    if (k.키 == 켠) Box(Modifier.weight(k.폭열림)) {
                         key(k.키) {
                             // 휠: 돌려도 값은 그대로. 숫자를 눌러야 들어가고, 들어가면 칸이 닫힌다 (09-22 메모)
                             숫자휠(k.휠, k.지금값, k.휠글, 손댐 = { 휠만짐 = true; 초점.clearFocus() }) { v -> k.넣기(k.휠글(v)); 닫기() }
                         }
-                    } else Box(Modifier.weight(1f))
+                    } else Box(Modifier.weight(k.폭))
                 }
+                if (오른쪽 != null) Box(Modifier.width(14.dp))
             }
         }
     }

@@ -196,7 +196,7 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
             // 아랫줄 — 운동 목록 · 운동 추가 · 다음
             Row(Modifier.fillMaxWidth().background(c.면).padding(horizontal = 12.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 버튼("운동 목록", { 열린시트 = "목록" }, Modifier.weight(1f), 작게 = true, 그림 = 아이콘.목록)
-                버튼("타이트", { 열린시트 = "타이트" }, Modifier.weight(0.9f), 작게 = true)
+                버튼("운동 추가", { 열린시트 = "추가" }, Modifier.weight(1f), 작게 = true, 그림 = 아이콘.더하기)
                 버튼("다음", {
                     if (S.지금종목.덜한가()) 열린시트 = "마칠까" else { 바꿈 { it.다음종목으로(false, System.currentTimeMillis()) }; 열린세트 = null }
                 }, Modifier.weight(1f), 작게 = true, 그림 = 아이콘.오른쪽)
@@ -205,6 +205,8 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
         when (열린시트) {
             "목록" -> 시트("오늘 운동 목록", { 열린시트 = null }) {
                 글("누르면 이동 · 하던 자리는 그대로", 크기값 = 크기.조금작게, 색 = c.옅음)
+                // 오늘만 타이트하게 — 아랫줄을 늘리지 않으려고 여기에 둔다 (09-24)
+                버튼("오늘만 타이트하게", { 열린시트 = "타이트" }, Modifier.fillMaxWidth().padding(top = 8.dp), 작게 = true)
                 S.종목들.forEachIndexed { j, e ->
                     고르기줄(e.이름, "${e.찬것().size}/${e.총칸()}세트" + (if (e.마감) " · 마침" else "") + (if (e.임시) " · 오늘만" else ""),
                         if (j == S.i) 아이콘.체크 else 아이콘.오른쪽, 흐림 = e.마감) {
