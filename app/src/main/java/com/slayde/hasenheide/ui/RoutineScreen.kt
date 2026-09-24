@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+
 package com.slayde.hasenheide.ui
 
 import androidx.activity.compose.BackHandler
@@ -9,6 +11,8 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.scrollBy
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.layout.offset
 import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
@@ -406,7 +410,6 @@ private fun 종목줄(
         if (참고열림) 참고칸(상태, 폰, e.이름) { on참고() }
         if (열림) {
             fun 고침(f: (루틴종목) -> 루틴종목) = 상태.바꿈 { d -> d.루틴바꿈(r.id) { x -> x.copy(종목 = x.종목.mapIndexed { k, y -> if (k == j) f(y) else y }) } }
-            val 되돌림: (Any?) -> Unit = { o -> (o as? 루틴종목)?.let { 옛 -> 고침 { 옛 } } }
             // 세트 줄 — 세트마다 [세트 n][무게][횟수][휴식] + 휴지통 (09-24 시안)
             Column(Modifier.fillMaxWidth().padding(bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
                 for (k in 0 until e.세트) {
@@ -421,15 +424,15 @@ private fun 종목줄(
                             숫자칸("$k|w", "무게", 무게글(v.w), "kg", 입력종류.소수,
                                 { 고침 { it.세트고침(k, w = 무게반올림(max(0.0, it.목표(k).w - 폭))) } }, { 고침 { it.세트고침(k, w = 무게반올림(it.목표(k).w + 폭)) } },
                                 { s -> s.replace(',', '.').toDoubleOrNull()?.let { x -> 고침 { it.세트고침(k, w = 무게반올림(max(0.0, x))) } } },
-                                휠값.무게, { 무게글(it) }, v.w, 원래 = e, 되돌림 = 되돌림, 폭 = 1f, 폭열림 = 1.69f),
+                                휠값.무게, { 무게글(it) }, v.w, 폭 = 1f, 폭열림 = 1.69f),
                             숫자칸("$k|r", "횟수", "${v.r}", "회", 입력종류.정수,
                                 { 고침 { it.세트고침(k, r = max(1, it.목표(k).r - 1)) } }, { 고침 { it.세트고침(k, r = it.목표(k).r + 1) } },
                                 { s -> s.toIntOrNull()?.let { x -> 고침 { it.세트고침(k, r = max(1, x)) } } },
-                                휠값.횟수, { "${it.toInt()}" }, v.r.toDouble(), 원래 = e, 되돌림 = 되돌림, 폭 = 0.85f, 폭열림 = 1.6f),
+                                휠값.횟수, { "${it.toInt()}" }, v.r.toDouble(), 폭 = 0.85f, 폭열림 = 1.6f),
                             숫자칸("$k|t", "휴식", 분초(t), "", 입력종류.분초,
                                 { 고침 { it.세트고침(k, t = max(0, it.휴식(k) - 5)) } }, { 고침 { it.세트고침(k, t = it.휴식(k) + 5) } },
                                 { s -> 초읽기(s)?.let { x -> 고침 { it.세트고침(k, t = x) } } },
-                                휠값.휴식, { 분초(it.toInt()) }, t.toDouble(), 원래 = e, 되돌림 = 되돌림, 폭 = 1f, 폭열림 = 1.51f),
+                                휠값.휴식, { 분초(it.toInt()) }, t.toDouble(), 폭 = 1f, 폭열림 = 1.51f),
                         ),
                         켠칸, on칸,
                         오른쪽 = {
@@ -527,9 +530,13 @@ private fun 안고르기(상태: 앱상태, r: 루틴, 방금: List<String>, 방
     var 새부위손댐 by remember { mutableStateOf(false) }
     var 새장비손댐 by remember { mutableStateOf(false) }
     val 있음 = r.종목.map { it.이름 }.toSet()
+    // 자판이 올라오면 이 칸이 가려진다 → 열릴 때 · 새 종목 칸을 열 때 화면 위로 끌어올린다 (09-24 메모)
+    val 끌어올림 = remember { BringIntoViewRequester() }
+    LaunchedEffect(새로) { delay(if (새로) 350L else 120L); 끌어올림.bringIntoView() }
 
     Column(
         Modifier.fillMaxWidth().padding(top = 12.dp)
+            .bringIntoViewRequester(끌어올림)
             .clip(RoundedCornerShape(모서리.작게))
             .background(c.면2)
             .border(1.dp, c.선, RoundedCornerShape(모서리.작게))

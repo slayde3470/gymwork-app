@@ -335,9 +335,6 @@ data class 숫자칸(
     /** 칸 너비 — 닫혔을 때 · 열렸을 때 (09-24 시안에서 정한 값) */
     val 폭: Float = 1f,
     val 폭열림: Float = 1.69f,
-    /** 취소할 때 되돌릴 원래 모습 — 열 때 기억해 두었다가 되돌림(원래) 을 부른다. 없으면 넣기(열 때 값글) */
-    val 원래: Any? = null,
-    val 되돌림: ((Any?) -> Unit)? = null,
 )
 
 /** 휠 값 목록 — 세트 1–50 · 무게 0–500(5kg) · 횟수 1–50 · 휴식 0–180초(10초) */
@@ -361,29 +358,22 @@ fun 숫자버튼줄(
     val c = Local색.current
     val 끌어올림 = remember { BringIntoViewRequester() }
     val 켠칸 = 칸들.firstOrNull { it.키 == 켠 }
-    LaunchedEffect(켠) { if (켠 != null) { 입력중.버림 = false; delay(350); 끌어올림.bringIntoView() } }
+    val 이줄 = 켠칸 != null   // 이 줄에 실제로 열린 칸이 있을 때만 움직인다 (09-24: 모든 세트줄이 함께 끌려 올라왔다)
+    LaunchedEffect(켠칸?.키) { if (이줄) { delay(350); 끌어올림.bringIntoView() } }
 
-    // ── 취소 (09-22 메모) — 뒤로가기 · 빈 곳 누르기 · 자판 내리기 = 열기 전 값으로 되돌리고 닫기 ──
-    val 열때 = remember(켠) { 켠칸?.let { Triple(it.값글, it.원래, it.되돌림) } }
-    val 칸최신 by rememberUpdatedState(켠칸)
+    // ── 닫기 (09-24 메모) — 빈 곳 누르기 · 뒤로가기 = '지금 값 그대로' 확정하고 닫는다 ──
+    //  · − ＋ 로 바꾼 값은 누른 순간 이미 확정된 것이다 (되돌리지 않는다)
+    //  · 자판으로 친 글은 '완료'를 누르지 않아도, 칸이 닫히며 초점이 빠질 때 들어간다
+    //  · 휠은 숫자를 직접 눌러야만 들어간다 (그대로)
     val 고름최신 by rememberUpdatedState(on고름)
     fun 닫기() { 켠?.let { 고름최신(it) } }   // 같은 키를 다시 부르면 닫힌다
-    fun 취소() {
-        val k = 칸최신 ?: return
-        val (글0, 원0, 되0) = 열때 ?: return
-        입력중.버림 = true   // 닫히며 초점이 빠질 때 친 글을 넣지 않게
-        if (되0 != null) 되0(원0) else if (k.값글 != 글0) k.넣기(글0)
-        닫기()
-    }
-    val 취소최신 by rememberUpdatedState({ 취소() })
-    BackHandler(enabled = 켠 != null) { 취소최신() }
-    DisposableEffect(켠) {
-        val f = { 취소최신() }
-        if (켠 != null) 입력중.취소 = f
+    val 닫기최신 by rememberUpdatedState({ 닫기() })
+    BackHandler(enabled = 이줄) { 닫기최신() }
+    DisposableEffect(켠칸?.키) {
+        val f = { 닫기최신() }
+        if (이줄) 입력중.취소 = f
         onDispose { if (입력중.취소 === f) 입력중.취소 = null }
     }
-    // ◁ 를 처음 누르면 안드로이드가 자판만 내린다 (칸 · 휠은 그대로). 한 번 더 누르면 위의 BackHandler 가 취소 (09-22 홍겸 님)
-    var 휠만짐 by remember(켠) { mutableStateOf(false) }
     // 테두리를 두르지 않는다 — 줄이 화면 기준선에 그대로 맞도록 (명세 1-2-1)
     Column(modifier.fillMaxWidth().bringIntoViewRequester(끌어올림)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(2.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -440,7 +430,7 @@ fun 숫자버튼줄(
                     if (k.키 == 켠) Box(Modifier.weight(k.폭열림)) {
                         key(k.키) {
                             // 휠: 돌려도 값은 그대로. 숫자를 눌러야 들어가고, 들어가면 칸이 닫힌다 (09-22 메모)
-                            숫자휠(k.휠, k.지금값, k.휠글, 손댐 = { 휠만짐 = true; 초점.clearFocus() }) { v -> k.넣기(k.휠글(v)); 닫기() }
+                            숫자휠(k.휠, k.지금값, k.휠글, 손댐 = { 초점.clearFocus() }) { v -> k.넣기(k.휠글(v)); 닫기() }
                         }
                     } else Box(Modifier.weight(k.폭))
                 }
@@ -449,7 +439,7 @@ fun 숫자버튼줄(
         }
     }
     // 입력하는 동안은 아래 탭을 숨긴다 (09-21 메모)
-    if (켠 != null) DisposableEffect(Unit) { 입력중.수++; onDispose { 입력중.수-- } }
+    if (이줄) DisposableEffect(Unit) { 입력중.수++; onDispose { 입력중.수-- } }
 }
 
 /** 지금 숫자를 고치는 칸이 몇 개 열려 있나 — 0 이 아니면 아래 탭을 숨긴다 */
@@ -459,8 +449,6 @@ object 입력중 {
     var 취소 by mutableStateOf<(() -> Unit)?>(null)
     /** 자판 '완료'로 닫았는지 — 자판이 내려가도 취소로 보지 않게 */
     var 완료누름 = false
-    /** 취소하는 중 — 칸이 닫히며 초점이 빠져도 친 글을 넣지 않는다 */
-    var 버림 = false
 }
 
 /**
@@ -526,7 +514,7 @@ private fun 숫자입력(키: String, 값글: String, 종류: 입력종류, 넣�
         modifier = Modifier
             .widthIn(max = 64.dp)
             .focusRequester(요청)
-            .onFocusChanged { if (!it.isFocused && 만졌나) { if (tv.text.isNotBlank() && !입력중.버림) 넣기(tv.text); 만졌나 = false } },
+            .onFocusChanged { if (!it.isFocused && 만졌나) { if (tv.text.isNotBlank()) 넣기(tv.text); 만졌나 = false } },
     )
 }
 
@@ -629,7 +617,7 @@ private fun 분초입력(키: String, 값글: String, 넣기: (String) -> Unit, 
         val x = if (초만짐) 초.text.toIntOrNull() ?: 0 else 초0
         return 분초((m * 60 + x).coerceIn(0, 휴식최대))
     }
-    fun 넣고치움() { if ((분만짐 || 초만짐) && !입력중.버림) 넣기(합()); 분만짐 = false; 초만짐 = false }
+    fun 넣고치움() { if (분만짐 || 초만짐) 넣기(합()); 분만짐 = false; 초만짐 = false }
 
     val 모양 = TextStyle(fontSize = 크기.본문, fontWeight = FontWeight.Bold, color = c.글, textAlign = TextAlign.Center)
     val 자판설정 = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done)

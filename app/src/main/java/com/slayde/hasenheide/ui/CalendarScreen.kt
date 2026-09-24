@@ -170,33 +170,18 @@ private fun 달력(d: 앱데이터, 오늘: String, 달: YearMonth, 고른날: S
     val 앞빈칸 = 첫.dayOfWeek.value % 7          // 일요일 = 0
     val 칸수 = 앞빈칸 + 달.lengthOfMonth()
     val 줄수 = (칸수 + 6) / 7
-    val 고른줄 = run {
-        val g = LocalDate.parse(고른날)
-        if (YearMonth.from(g) == 달) (앞빈칸 + g.dayOfMonth - 1) / 7 else -1
-    }
     val 두번가능 = 오늘시작루틴(d, 오늘) != null
-    /** 그 줄에서 가장 많은 종목 수 — 펼친 줄의 높이를 여기에 맞춘다 (09-24 메모) */
-    fun 종목수(줄: Int): Int = (0 until 7).maxOf { 칸 ->
-        val n = 줄 * 7 + 칸 - 앞빈칸 + 1
-        if (n < 1 || n > 달.lengthOfMonth()) 0
-        else {
-            val k = 달.atDay(n).toString()
-            d.기록[k]?.종목들?.size ?: (if (k >= 오늘) d.예정루틴(k)?.종목?.size ?: 0 else 0)
-        }
-    }
-    // 줄 높이 — 접힌 줄은 날짜 + 루틴 칩, 펼친 줄은 거기에 종목 이름만큼만 더한다 (09-24 메모: 최대치까지 늘리지 않는다)
-    val 접힌높이 = 50.dp
+    // 줄 높이는 늘 같다 — 날짜를 고른다고 달력이 커졌다 작아졌다 하지 않는다 (09-24 메모)
+    val 줄높이 = 50.dp
     Column(modifier.fillMaxWidth()) {
         for (줄 in 0 until 줄수) {
-            val 펼침 = 줄 == 고른줄
-            val 높이값 = if (펼침) 접힌높이 + (종목수(줄) * 15).dp else 접힌높이
-            Row(Modifier.fillMaxWidth().height(높이값).padding(top = 2.dp)) {
+            Row(Modifier.fillMaxWidth().height(줄높이).padding(top = 2.dp)) {
                 for (칸 in 0 until 7) {
                     val n = 줄 * 7 + 칸 - 앞빈칸 + 1
                     if (n < 1 || n > 달.lengthOfMonth()) { Box(Modifier.weight(1f)); continue }
                     val 날 = 달.atDay(n)
                     val k = 날.toString()
-                    날칸(d, k, 날, 오늘, k == 고른날, 펼침, Modifier.weight(1f).fillMaxHeight(),
+                    날칸(d, k, 날, 오늘, k == 고른날, Modifier.weight(1f).fillMaxHeight(),
                         두번 = if (k == 오늘 && 두번가능) ({ on두번(k) }) else null) { on고름(k) }
                 }
             }
@@ -205,7 +190,7 @@ private fun 달력(d: 앱데이터, 오늘: String, 달: YearMonth, 고른날: S
 }
 
 @Composable
-private fun 날칸(d: 앱데이터, k: String, 날: LocalDate, 오늘: String, 고름: Boolean, 펼침: Boolean, modifier: Modifier, 두번: (() -> Unit)?, onClick: () -> Unit) {
+private fun 날칸(d: 앱데이터, k: String, 날: LocalDate, 오늘: String, 고름: Boolean, modifier: Modifier, 두번: (() -> Unit)?, onClick: () -> Unit) {
     val c = Local색.current
     val rec = d.기록[k]
     val 예 = if (rec == null && k >= 오늘) d.예정루틴(k) else null
@@ -221,9 +206,10 @@ private fun 날칸(d: 앱데이터, k: String, 날: LocalDate, 오늘: String, �
             .padding(1.dp)
             .clip(RoundedCornerShape(모서리.아주작게))
             .then(if (고름) Modifier.border(1.5.dp, c.강조, RoundedCornerShape(모서리.아주작게)) else Modifier)
-            // 칸 전체가 누르는 곳 (09-21 메모: 펼친 줄의 빈 곳이 안 눌렸다). 오늘 칸만 두 번 누르기를 받는다
+            // 칸 전체가 누르는 곳. 오늘 칸만 두 번 누르기를 받는다
+            //  · 두 번 누르기를 기다리느라 한 번 누름이 늦게 들어오던 것 → 손이 닿는 순간 고른다 (09-24 메모)
             .pointerInput(k, 두번 != null) {
-                if (두번누름 != null) detectTapGestures(onTap = { 누름() }, onDoubleTap = { 누름(); 두번누름?.invoke() })
+                if (두번누름 != null) detectTapGestures(onPress = { 누름() }, onDoubleTap = { 두번누름?.invoke() })
                 else detectTapGestures(onTap = { 누름() })
             }
             .padding(2.dp),
@@ -250,13 +236,6 @@ private fun 날칸(d: 앱데이터, k: String, 날: LocalDate, 오늘: String, �
             ) { 글(이름, 크기값 = 크기.아주작게, 색 = 글색, 굵기 = FontWeight.Bold) }
         }
         if (rec != null) 글("${정식세트(rec).size}세트", 크기값 = 크기.아주작게, 색 = c.옅음)
-        if (펼침) {
-            val 종목들 = rec?.종목들?.map { it.이름 } ?: 예?.종목?.map { it.이름 } ?: emptyList()
-            종목들.forEach { 이 ->
-                val 짧게 = d.종목표.firstOrNull { it.이름 == 이 }?.달력이름 ?: 이
-                Text(짧게, style = 글꼴.보통(크기.아주작게), color = c.흐림, maxLines = 1, overflow = TextOverflow.Clip, softWrap = false)
-            }
-        }
         if (d.일정[k]?.isNotEmpty() == true) Box(Modifier.padding(top = 2.dp).width(4.dp).height(4.dp).clip(CircleShape).background(c.휴식))
     }
 }
