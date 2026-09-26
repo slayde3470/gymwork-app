@@ -91,6 +91,8 @@ import com.slayde.hasenheide.data.일RM
 import com.slayde.hasenheide.data.재개
 import com.slayde.hasenheide.data.정식세트
 import com.slayde.hasenheide.data.종목성장
+import com.slayde.hasenheide.data.종목최고대비
+import com.slayde.hasenheide.data.루틴최고대비
 import com.slayde.hasenheide.data.타이트하게
 import com.slayde.hasenheide.data.종목으로
 import com.slayde.hasenheide.data.종목추이
@@ -512,7 +514,8 @@ private fun 종목머리(상태: 앱상태, S: 운동세션, j: Int, 표: String
     val 뱃지 = listOfNotNull(if (e.임시) "오늘만" else null, if (e.마감) "마침" else null)
     val 지금것 = 지금표시 || j == S.i
     // 향상도는 오늘 한 세트가 있을 때만 — 아직 시작도 안 한 종목에 지난 기록을 띄우지 않는다
-    val 성장 = if (지금세트.isEmpty()) null else 상태.d.종목성장(e.이름, 상태.오늘, 지금세트, S.묶음이름(e))?.볼륨?.pct
+    // 09-26: 지난 기록 중 **최고**와 견준다 — 1RM 옆 · 볼륨 옆에 각각 ▲▼
+    val 최고 = if (지금세트.isEmpty()) null else 상태.d.종목최고대비(e.이름, 지금세트)
     Column(Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 6.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Row(Modifier.weight(1f).눌림(on누름), verticalAlignment = Alignment.CenterVertically) {
@@ -530,10 +533,15 @@ private fun 종목머리(상태: 앱상태, S: 운동세션, j: Int, 표: String
             if (!펼침) 글("${지금세트.size}/${e.총칸()}세트", 크기값 = 크기.작게, 색 = c.흐림)
             else {
                 글("${e.달성도()}%", 크기값 = 크기.작게, 색 = c.강조, 굵기 = FontWeight.Bold)
-                글("1RM ${if (rm > 0) "%.1f".format(rm) else "—"}", 크기값 = 크기.작게, 색 = c.흐림)
-                글("${콤마(볼륨(지금세트))}/${콤마(목표볼)}", 크기값 = 크기.작게, 색 = c.흐림)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    글("1RM ${if (rm > 0) "%.1f".format(rm) else "—"}", 크기값 = 크기.작게, 색 = c.흐림)
+                    최고?.rm?.pct?.let { p -> 글(성장짧게(p), 크기값 = 크기.작게, 색 = if (p >= 0) c.오름 else c.내림, 굵기 = FontWeight.Bold) }
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    글("${콤마(볼륨(지금세트))}/${콤마(목표볼)}", 크기값 = 크기.작게, 색 = c.흐림)
+                    최고?.볼륨?.pct?.let { p -> 글(성장짧게(p), 크기값 = 크기.작게, 색 = if (p >= 0) c.오름 else c.내림, 굵기 = FontWeight.Bold) }
+                }
             }
-            if (성장 != null) 글(성장짧게(성장), 크기값 = 크기.작게, 색 = if (성장 >= 0) c.오름 else c.내림, 굵기 = FontWeight.Bold)
         }
     }
 }
@@ -703,7 +711,7 @@ private fun 마무리(상태: 앱상태, S: 운동세션) {
         카드(Modifier.weight(1f), 안쪽 = 0.dp) {
             // 맨 위: 루틴 정보
             Column(Modifier.fillMaxWidth().background(c.면2).padding(horizontal = 16.dp, vertical = 12.dp)) {
-                성장줄(루틴표시(S.루틴이름), d.루틴성장(S.루틴id, 오늘, S.유효세트()), 기간)
+                최고줄(루틴표시(S.루틴이름), null, d.루틴최고대비(S.루틴id, S.유효세트()))
                 글("${S.종목들.count { !it.임시 }}종목 · 달성도 ${S.루틴달성도()}%" + (직전?.let { " · 직전 ${직전세트?.size ?: 0}세트" } ?: ""),
                     크기값 = 크기.작게, 색 = c.옅음)
             }
@@ -713,7 +721,8 @@ private fun 마무리(상태: 앱상태, S: 운동세션) {
                     val 열림 = 열린종목 == e.이름
                     Row(Modifier.fillMaxWidth().눌림 { 열린종목 = if (열림) null else e.이름 }.padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
                         verticalAlignment = Alignment.CenterVertically) {
-                        성장줄(e.이름, d.종목성장(e.이름, 오늘, e.찬것(), S.묶음이름(e)), 기간, Modifier.weight(1f))
+                        val 최 = d.종목최고대비(e.이름, e.찬것())
+                        최고줄(e.이름, 최?.rm, 최?.볼륨, Modifier.weight(1f))
                         펼침단추(열림) { 열린종목 = if (열림) null else e.이름 }
                     }
                     if (열림) 종목그래프(d, e, 오늘)

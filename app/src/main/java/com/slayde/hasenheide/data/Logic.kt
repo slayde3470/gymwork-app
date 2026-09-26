@@ -14,7 +14,23 @@ import kotlin.math.roundToInt
 
 // ─────────────── 날짜 ───────────────
 
-fun 날(k: String): LocalDate = LocalDate.parse(k)
+fun 날(k: String): LocalDate = LocalDate.parse(날짜만(k))
+
+/**
+ * 기록 열쇠 — 보통은 날짜("2026-09-26"). 같은 날 '한 번 더' 운동하면 "2026-09-26~2", "~3" … (09-26 메모)
+ * 글자 순서로 견줘도 그 날 첫 기록 뒤 · 다음 날 앞에 온다
+ */
+fun 날짜만(k: String): String = k.substringBefore('~')
+/** 그 날의 새 기록 열쇠 — 비어 있으면 날짜, 있으면 ~2, ~3 … */
+fun 앱데이터.새기록열쇠(날: String): String {
+    if (!기록.containsKey(날)) return 날
+    var n = 2
+    while (기록.containsKey("$날~$n")) n++
+    return "$날~$n"
+}
+/** 그 날의 '한 번 더' 기록들 (첫 기록은 빼고) */
+fun 앱데이터.한번더기록(날: String): List<Pair<String, 날기록>> =
+    기록.filterKeys { it.startsWith("$날~") }.toList().sortedBy { it.first.substringAfter('~').toIntOrNull() ?: 0 }
 fun 키(d: LocalDate): String = d.toString()
 fun 날더하기(k: String, n: Int): String = 키(날(k).plusDays(n.toLong()))
 fun 개월전(오늘: String, n: Int): String = 키(날(오늘).minusMonths(n.toLong()))
@@ -165,6 +181,20 @@ fun 앱데이터.꽂기(rid: String, D: String, 오늘: String): 앱데이터 {
     return copy(예정 = 예정채움(D, idx, 남김))
 }
 
+/**
+ * 달력에서 꾹 눌러 옮기기 (2-3, 09-26 메모) — 원 날의 루틴을 D 로.
+ * 자동생성 루틴: D 부터 순서를 다시 깐다(꽂기). 원 날이 D 보다 앞이면 원 날은 비운다.
+ * 꺼진 루틴: 원 날에서 빼고 D 에만 넣는다. 기록이 있는 날 · 지난 날은 건드리지 않는다.
+ */
+fun 앱데이터.예정옮기기(원: String, D: String, 오늘: String): 앱데이터 {
+    if (원 == D || 원 < 오늘 || D < 오늘 || 기록.containsKey(원) || 기록.containsKey(D)) return this
+    val rid = 예정[원] ?: return this
+    val 자동 = 루틴(rid)?.자동생성 == true
+    if (!자동) return copy(예정 = 예정 - 원 + (D to rid))
+    val 옮김 = 꽂기(rid, D, 오늘)
+    return if (원 < D) 옮김.copy(예정 = 옮김.예정 - 원) else 옮김
+}
+
 /** 오늘 쉬기 — push: 오늘 루틴을 내일로 / skip: 오늘 루틴을 건너뛰기 (2-5) */
 fun 앱데이터.오늘휴식(미루기: Boolean, 오늘: String): 앱데이터 {
     val idx = 순번.indexOfFirst { it.id == 예정[오늘] }
@@ -250,13 +280,53 @@ fun 앱데이터.종목지표(이름: String, 오늘: String): 지표비교? {
     val 들 = 기록.keys.sorted().mapNotNull { k ->
         val 세트들 = 기록[k]!!.종목들.filter { it.이름 == 이름 }.flatMap { it.세트들 }
         if (세트들.isEmpty()) null else 세션지표(
-            k, 세트들.maxOf { 일RM(it.w, it.r) }, 세트들.maxBy { it.w * it.r }, 볼륨(세트들),
+            날짜만(k), 세트들.maxOf { 일RM(it.w, it.r) }, 세트들.maxBy { it.w * it.r }, 볼륨(세트들),
         )
     }
     val 최근 = 들.lastOrNull() ?: return null
     val 기준일 = 기준날(오늘)
     val 과거 = 들.lastOrNull { it.날 <= 기준일 && it.날 != 최근.날 }
     return 지표비교(최근, 과거)
+}
+
+/**
+ * 최고 대비 (09-26 홍겸 님: 향상도는 지난 기록 중 **최고**와, **1RM 과 전체 볼륨**으로 견준다)
+ *  · 1RM — 지금 세트들의 최고 1RM ↔ 지난 기록 전부의 최고 1RM
+ *  · 볼륨 — 지금 세트들의 볼륨 ↔ 지난 날마다 '같은 세트 수까지' 자른 볼륨 중 최고 (왜곡 방지 ①, 하던 중이어도 공정하게)
+ *  · [이전] 보다 앞선 기록만 본다 (글자 비교). 운동 중이면 "~" 를 넣어 모든 기록을 본다
+ */
+data class 최고대비(val rm: 비교?, val 볼륨: 비교?)
+
+fun 앱데이터.종목최고대비(이름: String, 지금: List<세트>, 이전: String = "~"): 최고대비? {
+    if (지금.isEmpty()) return null
+    val 과거 = 기록.filterKeys { it < 이전 }.values
+        .map { r -> r.종목들.filter { it.이름 == 이름 }.flatMap { it.세트들 } }.filter { it.isNotEmpty() }
+    if (과거.isEmpty()) return null
+    val rm지금 = 지금.maxOf { 일RM(it.w, it.r) }
+    val rm과거 = 과거.maxOf { l -> l.maxOf { 일RM(it.w, it.r) } }
+    val n = 지금.size
+    val 볼지금 = 볼륨(지금)
+    val 볼과거 = 과거.maxOf { 볼륨(it.take(n)) }
+    return 최고대비(
+        if (rm과거 > 0) 비교(rm지금, rm과거, 퍼센트(rm지금, rm과거), rm지금 - rm과거) else null,
+        if (볼과거 > 0) 비교(볼지금, 볼과거, 퍼센트(볼지금, 볼과거), 볼지금 - 볼과거) else null,
+    )
+}
+
+/** 루틴 차원 — 전체 볼륨만 (불러온 종목 뺌). 같은 루틴의 지난 기록 중 최고 */
+fun 앱데이터.루틴최고대비(rid: String, 지금: List<세트>, 이전: String = "~"): 비교? {
+    if (지금.isEmpty()) return null
+    val n = 지금.size
+    val 과거 = 기록.filter { it.key < 이전 && it.value.루틴id == rid }.values.map { 정식세트(it) }.filter { it.isNotEmpty() }
+    if (과거.isEmpty()) return null
+    val a = 볼륨(지금); val b = 과거.maxOf { 볼륨(it.take(n)) }
+    return if (b > 0) 비교(a, b, 퍼센트(a, b), a - b) else null
+}
+
+/** 루틴의 가장 최근 기록을 그 앞의 최고와 견준다 — 달력 · 루틴 탭 */
+fun 앱데이터.루틴최근최고대비(rid: String): 비교? {
+    val k = 기록.filter { it.value.루틴id == rid }.keys.maxOrNull() ?: return null
+    return 루틴최고대비(rid, 정식세트(기록[k]!!), k)
 }
 
 fun 퍼센트(지금: Double, 과거: Double): Int? = if (과거 != 0.0) ((지금 - 과거) / 과거 * 100).roundToInt() else null
@@ -626,8 +696,10 @@ fun 앱데이터.운동저장(오늘: String, 지금: Long): 앱데이터 {
     val rec = 날기록(S.루틴id, S.루틴이름, S.한세트수() >= S.목표세트(), 들, S.흐른초(지금).toInt())
     // 루틴 반영(5-5) 뒤에, 설정이 켜져 있으면 볼륨을 한 번 더 올린다 (09-24)
     val 올릴까 = 설정.볼륨켬 && (설정.볼륨언제 == "항상" || rec.달성)
+    // 오늘 이미 기록이 있으면 '한 번 더' 기록으로 따로 남긴다 (09-26 메모)
+    val 열쇠 = 새기록열쇠(오늘)
     val 새 = copy(
-        기록 = 기록 + (오늘 to rec), 세션 = null,
+        기록 = 기록 + (열쇠 to rec), 세션 = null,
         루틴들 = 루틴들.map { if (it.id == S.루틴id) it.오늘반영(S).let { r -> if (올릴까) r.볼륨올리기(설정) else r } else it },
     )
     val 줄 = 순번
@@ -642,7 +714,7 @@ fun 앱데이터.운동저장(오늘: String, 지금: Long): 앱데이터 {
  * 오래 손대지 않은 운동은 저절로 끝낸다 (09-25 메모: 어제 시작한 운동이 다음 날까지 돌고 있었다)
  *  · 마지막으로 손댄 뒤 [한계] 가 지나면 끝낸다 (기본 3시간)
  *  · 체크한 세트가 있으면 **운동을 시작한 날**의 기록으로 저장한다 (루틴 반영 · 다음 차례도 저장과 같게)
- *    그 날에 이미 기록이 있으면 덮어쓰지 않고 이 운동은 버린다
+ *    그 날에 이미 기록이 있으면 '한 번 더' 기록으로 남긴다 (09-26)
  *  · 체크한 세트가 없으면 그냥 버린다
  */
 fun 앱데이터.오래된운동정리(지금: Long, 한계: Long = 3 * 60 * 60 * 1000L): 앱데이터 {
@@ -651,8 +723,7 @@ fun 앱데이터.오래된운동정리(지금: Long, 한계: Long = 3 * 60 * 60 
     if (지금 - 마지막 < 한계) return this
     if (S.한세트수() == 0) return copy(세션 = null)
     val 날 = java.time.Instant.ofEpochMilli(S.시작시각).atZone(java.time.ZoneId.systemDefault()).toLocalDate().toString()
-    if (기록.containsKey(날)) return copy(세션 = null)
-    return 운동저장(날, S.끝시각 ?: 마지막)
+    return 운동저장(날, S.끝시각 ?: 마지막)   // 그 날 기록이 있으면 '한 번 더' 로 남는다
 }
 
 /**
@@ -724,9 +795,10 @@ fun 앱데이터.종목추이(이름: String, 단위: 묶기, 일RM으로: Boole
         val s = rec.종목들.filter { it.이름 == 이름 }.flatMap { it.세트들 }
         if (s.isNotEmpty()) 날별[k] = s
     }
-    if (오늘세트.isNotEmpty()) 날별[오늘] = 오늘세트
+    // 오늘 이미 기록이 있으면('한 번 더') 그 뒤에 붙인다 — 덮어쓰지 않게. '~~' 는 '~2' 보다 뒤로 정렬된다
+    if (오늘세트.isNotEmpty()) 날별[if (날별.containsKey(오늘)) "$오늘~~" else 오늘] = 오늘세트
     fun 기간(k: String): String = when (단위) {
-        묶기.일 -> k
+        묶기.일 -> 날짜만(k)      // 같은 날 '한 번 더' 는 그 날 하나로 (볼륨은 합, 1RM 은 최고)
         묶기.주 -> 키(날(k).minusDays((날(k).dayOfWeek.value - 1).toLong()))
         묶기.월 -> k.substring(0, 7)
     }

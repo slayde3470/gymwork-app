@@ -7,6 +7,10 @@
 
     <!-- 휴식이 끝나면 진동으로 알린다 -->
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- 화면이 꺼져 있어도 휴식 끝을 알린다 (09-26) — 알림 · 제시각 알람 -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" android:maxSdkVersion="32" />
 
     <application
         android:allowBackup="true"
@@ -32,5 +36,8 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- 휴식 끝 알람을 받는 곳 — 앱이 꺼져 있어도 폰이 깨워 부른다 -->
+        <receiver android:name=".RestAlarmReceiver" android:exported="false" />
     </application>
 </manifest>

@@ -6,6 +6,9 @@ import android.content.res.Configuration
 import android.media.AudioAttributes
 import android.util.Rational
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.LaunchedEffect
+import android.Manifest
+import android.content.pm.PackageManager
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
@@ -63,12 +66,36 @@ class MainActivity : ComponentActivity() {
         알림글(if (됐나) "백업을 불러왔습니다" else "이 파일을 읽지 못했습니다")
     }
 
+    /** 알림 권한 (안드로이드 13 이상) — 첫 휴식 때 한 번 묻는다. 거절해도 진동 · 소리는 난다 */
+    private var 권한물음 = false
+    /** 지금 걸어 둔 휴식 알람의 끝 시각 */
+    private var 걸린끝: Long? = null
+    private val 알림권한창 = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
+    private fun 알림권한묻기() {
+        if (권한물음 || Build.VERSION.SDK_INT < 33) return
+        권한물음 = true
+        if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
+            알림권한창.launch(Manifest.permission.POST_NOTIFICATIONS)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        휴식알람.앞에있음 = true
+        휴식알람.알림치움(this)
+    }
+
+    override fun onPause() {
+        휴식알람.앞에있음 = false
+        super.onPause()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // 화면 가장자리(상태바·내비게이션바)까지 앱이 그려지게 한다
         enableEdgeToEdge()
         val 폰 = 폰기능(
-            알림 = { 휴식끝알림() },
+            // 앱이 앞에 있을 때만 여기서 울린다 — 뒤에 있거나 화면이 꺼져 있으면 휴식알람이 울린다 (두 번 울리지 않게)
+            알림 = { if (휴식알람.앞에있음) 휴식끝알림() },
             내보내기 = { 내보내기창.launch("하젠하이데-백업-${LocalDate.now()}.json") },
             가져오기 = { 가져오기창.launch(arrayOf("application/json", "text/plain", "*/*")) },
             링크열기 = { 주소 ->
@@ -83,6 +110,21 @@ class MainActivity : ComponentActivity() {
             },
         )
         setContent {
+            // 쉬기 시작하면 끝 시각에 알람을 걸고, 휴식이 끝나거나 운동을 마치면 푼다 (09-26 메모: 화면이 꺼져 있어도)
+            val h = 상태.d.세션?.휴식
+            val 알람끝 = if (h != null && !h.물음 && 상태.d.설정.소리진동) h.끝시각 else null
+            LaunchedEffect(알람끝) {
+                if (알람끝 != null && 알람끝 > System.currentTimeMillis()) {
+                    알림권한묻기()
+                    휴식알람.맞춤(this@MainActivity, 알람끝, 상태.d.설정.진동세기, 상태.d.설정.진동시간)
+                    걸린끝 = 알람끝
+                } else {
+                    // 휴식을 일찍 끝냈을 때만 푼다 — 제시각에 끝난 것이면 알람이 울리게 둔다
+                    val 전 = 걸린끝
+                    if (전 != null && System.currentTimeMillis() < 전 - 1000) 휴식알람.끔(this@MainActivity)
+                    걸린끝 = null
+                }
+            }
             하젠하이데테마 {
                 // 작은 창일 때도 앱은 그대로 살아 있어야 휴식 시계 · 알림이 돈다 → 앱 위에 작은 창 화면을 덮는다
                 CompositionLocalProvider(Local번호 provides 상태.d.설정.번호보기) {
