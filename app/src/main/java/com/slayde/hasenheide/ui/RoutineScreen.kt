@@ -61,7 +61,7 @@ import androidx.compose.ui.unit.dp
 import com.slayde.hasenheide.data.루틴
 import com.slayde.hasenheide.data.루틴바꿈
 import com.slayde.hasenheide.data.루틴합치기
-import com.slayde.hasenheide.data.루틴최근최고대비
+import com.slayde.hasenheide.data.루틴최근향상
 import com.slayde.hasenheide.data.루틴옮기기
 import com.slayde.hasenheide.data.루틴성장
 import com.slayde.hasenheide.data.루틴종목
@@ -276,7 +276,8 @@ fun 루틴화면(상태: 앱상태, 폰: 폰기능) {
                         Column(Modifier.padding(start = 간격.좁게, end = 간격.좁게, top = 간격.좁게, bottom = 간격.보통)) {
                             if (r.휴식일) 글("휴식일 · 순서에서 한 칸 차지", Modifier.padding(vertical = 8.dp), 크기값 = 크기.조금작게, 색 = c.옅음)
                             else {
-                            최고줄("${r.이름} 지난번", null, d.루틴최근최고대비(r.id), Modifier.padding(vertical = 8.dp))
+                            val 지난 = d.루틴최근향상(r.id)
+                            향상줄(if (지난 != null) "지난번 볼륨 ${콤마(지난.지금)}kg" else "지난번 기록 없음", 지난, Modifier.padding(vertical = 8.dp))
                             if (r.종목.isEmpty()) 글("아직 종목이 없습니다", Modifier.padding(vertical = 8.dp), 크기값 = 크기.조금작게, 색 = c.옅음)
                             // 슈퍼세트 묶음은 상자로 모아 그린다
                             var j = 0

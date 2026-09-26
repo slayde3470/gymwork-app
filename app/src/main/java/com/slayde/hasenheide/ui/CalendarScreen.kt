@@ -49,8 +49,11 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.slayde.hasenheide.data.대비결과
 import com.slayde.hasenheide.data.비교
-import com.slayde.hasenheide.data.루틴최고대비
-import com.slayde.hasenheide.data.루틴최근최고대비
+import com.slayde.hasenheide.data.루틴향상
+import com.slayde.hasenheide.data.루틴최근향상
+import com.slayde.hasenheide.data.두대비
+import com.slayde.hasenheide.data.kg글
+import com.slayde.hasenheide.data.날짜만
 import com.slayde.hasenheide.data.한번더기록
 import com.slayde.hasenheide.data.루틴
 import com.slayde.hasenheide.data.루틴성장
@@ -99,27 +102,35 @@ fun 성장줄(대상: String?, 결과: 대비결과?, 기간: String, modifier: 
 }
 
 /**
- * 최고 대비 한 줄 (09-26 홍겸 님: 향상도는 지난 기록 중 최고와, 1RM · 전체 볼륨으로)
- * "벤치프레스 · 최고 대비 1RM ▲3% · 볼륨 ▼5%" — 오르면 빨강 ▲, 내리면 파랑 ▼ (6-3)
+ * 향상도 한 줄 (09-26 시안 ①) — "1RM 95kg [1주 ▲5kg] [최고 ▼5kg]"
+ * 왼쪽 = 1주(지난 7일 중 가장 좋은 날), 오른쪽 = 최고(지난 기록 전부). 차이는 kg. 오르면 빨강 ▲, 내리면 파랑 ▼ (6-3)
  */
 @Composable
-fun 최고줄(대상: String?, rm: 비교?, 볼: 비교?, modifier: Modifier = Modifier) {
+fun 향상줄(앞글: String, 값: 두대비?, modifier: Modifier = Modifier) {
     val c = Local색.current
-    val 글자 = buildAnnotatedString {
-        if (대상 != null) { withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = c.글)) { append(대상) }; append(" · ") }
-        if (rm?.pct == null && 볼?.pct == null) { append("견줄 지난 기록 없음"); return@buildAnnotatedString }
-        append("최고 대비")
-        fun 한칸(이름: String, p: Int?) {
-            if (p == null) return
-            append(" $이름 ")
-            val 색 = if (p > 0) c.오름 else if (p < 0) c.내림 else c.흐림
-            withStyle(SpanStyle(color = 색, fontWeight = FontWeight.Bold)) { append(if (p > 0) "▲$p%" else if (p < 0) "▼${-p}%" else "같음") }
-        }
-        한칸("1RM", rm?.pct)
-        if (rm?.pct != null && 볼?.pct != null) append(" ·")
-        한칸("볼륨", 볼?.pct)
+    Row(modifier, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(앞글, Modifier.weight(1f, fill = false), style = 글꼴.보통(크기.작게), color = c.흐림, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        대비칩("1주", 값?.주)
+        대비칩("최고", 값?.최고)
     }
-    Text(글자, modifier, style = 글꼴.보통(크기.버튼), color = c.흐림, maxLines = 1, overflow = TextOverflow.Ellipsis)
+}
+
+@Composable
+private fun 대비칩(이름: String, v: 비교?) {
+    val c = Local색.current
+    Row(
+        Modifier.border(1.dp, c.선, RoundedCornerShape(4.dp)).padding(horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        글(이름, 크기값 = 크기.아주작게, 색 = c.옅음)
+        Box(Modifier.width(3.dp))
+        when {
+            v == null -> 글("—", 크기값 = 크기.아주작게, 색 = c.옅음)
+            v.diff > 0.05 -> 글("▲${kg글(v.diff)}kg", 크기값 = 크기.아주작게, 색 = c.오름, 굵기 = FontWeight.Bold)
+            v.diff < -0.05 -> 글("▼${kg글(v.diff)}kg", 크기값 = 크기.아주작게, 색 = c.내림, 굵기 = FontWeight.Bold)
+            else -> 글("같음", 크기값 = 크기.아주작게, 색 = c.흐림, 굵기 = FontWeight.Bold)
+        }
+    }
 }
 
 /** 오늘 칸을 두 번 누르면 시작할 수 있는 루틴 (예정돼 있고, 종목이 있고, 오늘 기록이 없을 때) */
@@ -384,7 +395,7 @@ private fun 날짜판(상태: 앱상태, k: String, 루틴으로: () -> Unit, �
                     Box(Modifier.width(8.dp))
                     글("${세트들.size}세트 · ${콤마(볼륨(세트들))}kg · ${시분초(rec.걸린초.toLong())}", Modifier.weight(1f), 크기값 = 크기.작게, 색 = c.흐림)
                 }
-                최고줄(null, null, d.루틴최고대비(rec.루틴id, 세트들, k), Modifier.padding(top = 2.dp))
+                향상줄("볼륨", d.루틴향상(rec.루틴id, 세트들, 날짜만(k), k), Modifier.padding(top = 2.dp))
                 // 같은 날 '한 번 더' 한 운동 (09-26)
                 d.한번더기록(k).forEach { (_, r2) ->
                     val s2 = 정식세트(r2)
@@ -426,7 +437,8 @@ private fun 날짜판(상태: 앱상태, k: String, 루틴으로: () -> Unit, �
                             Box(Modifier.width(8.dp))
                             글("${r.종목.size}종목 · ${총세트(r)}세트 · 약 ${시간글(예상초(r))}", 크기값 = 크기.작게, 색 = c.흐림)
                         }
-                        최고줄("지난번", null, d.루틴최근최고대비(r.id), Modifier.padding(top = 1.dp))
+                        val 지난 = d.루틴최근향상(r.id)
+                        향상줄(if (지난 != null) "지난번 볼륨 ${콤마(지난.지금)}kg" else "지난번 기록 없음", 지난, Modifier.padding(top = 1.dp))
                     }
                 }
                 Box(Modifier.height(8.dp))

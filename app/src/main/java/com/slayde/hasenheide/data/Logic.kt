@@ -290,43 +290,52 @@ fun 앱데이터.종목지표(이름: String, 오늘: String): 지표비교? {
 }
 
 /**
- * 최고 대비 (09-26 홍겸 님: 향상도는 지난 기록 중 **최고**와, **1RM 과 전체 볼륨**으로 견준다)
- *  · 1RM — 지금 세트들의 최고 1RM ↔ 지난 기록 전부의 최고 1RM
- *  · 볼륨 — 지금 세트들의 볼륨 ↔ 지난 날마다 '같은 세트 수까지' 자른 볼륨 중 최고 (왜곡 방지 ①, 하던 중이어도 공정하게)
+ * 향상도 — **1주 · 최고** 나란히 (09-26 홍겸 님 · 시안 ①)
+ *  · 1RM — 지금 세트의 최고 1RM ↔ (1주) 지난 7일 중 가장 좋은 날 / (최고) 지난 기록 전부 중 최고
+ *  · 볼륨 — 지금 볼륨 ↔ 날마다 '같은 세트 수까지' 자른 볼륨 중 가장 큰 것 (왜곡 방지 ①, 하던 중이어도 공정하게)
+ *  · 1주 = 기준날 7일 전 ~ 전날 (기준날 당일은 뺀다)
  *  · [이전] 보다 앞선 기록만 본다 (글자 비교). 운동 중이면 "~" 를 넣어 모든 기록을 본다
  */
-data class 최고대비(val rm: 비교?, val 볼륨: 비교?)
+data class 두대비(val 지금: Double, val 주: 비교?, val 최고: 비교?)
+data class 종목향상(val rm: 두대비, val 볼륨: 두대비)
 
-fun 앱데이터.종목최고대비(이름: String, 지금: List<세트>, 이전: String = "~"): 최고대비? {
+private fun 견줌(a: Double, b: Double?): 비교? = if (b == null || b <= 0.0) null else 비교(a, b, 퍼센트(a, b), a - b)
+private fun 한주안(k: String, 기준날: String): Boolean { val d = 날짜만(k); return d >= 날더하기(기준날, -7) && d < 기준날 }
+
+fun 앱데이터.종목향상(이름: String, 지금: List<세트>, 기준날: String, 이전: String = "~"): 종목향상? {
     if (지금.isEmpty()) return null
-    val 과거 = 기록.filterKeys { it < 이전 }.values
-        .map { r -> r.종목들.filter { it.이름 == 이름 }.flatMap { it.세트들 } }.filter { it.isNotEmpty() }
-    if (과거.isEmpty()) return null
-    val rm지금 = 지금.maxOf { 일RM(it.w, it.r) }
-    val rm과거 = 과거.maxOf { l -> l.maxOf { 일RM(it.w, it.r) } }
+    val 과거 = 기록.filterKeys { it < 이전 }
+        .map { (k, r) -> k to r.종목들.filter { it.이름 == 이름 }.flatMap { it.세트들 } }.filter { it.second.isNotEmpty() }
+    val 주 = 과거.filter { 한주안(it.first, 기준날) }
     val n = 지금.size
-    val 볼지금 = 볼륨(지금)
-    val 볼과거 = 과거.maxOf { 볼륨(it.take(n)) }
-    return 최고대비(
-        if (rm과거 > 0) 비교(rm지금, rm과거, 퍼센트(rm지금, rm과거), rm지금 - rm과거) else null,
-        if (볼과거 > 0) 비교(볼지금, 볼과거, 퍼센트(볼지금, 볼과거), 볼지금 - 볼과거) else null,
+    fun rm(l: List<세트>) = l.maxOf { 일RM(it.w, it.r) }
+    val rm지금 = rm(지금); val 볼지금 = 볼륨(지금)
+    return 종목향상(
+        두대비(rm지금, 견줌(rm지금, 주.maxOfOrNull { rm(it.second) }), 견줌(rm지금, 과거.maxOfOrNull { rm(it.second) })),
+        두대비(볼지금, 견줌(볼지금, 주.maxOfOrNull { 볼륨(it.second.take(n)) }), 견줌(볼지금, 과거.maxOfOrNull { 볼륨(it.second.take(n)) })),
     )
 }
 
-/** 루틴 차원 — 전체 볼륨만 (불러온 종목 뺌). 같은 루틴의 지난 기록 중 최고 */
-fun 앱데이터.루틴최고대비(rid: String, 지금: List<세트>, 이전: String = "~"): 비교? {
+/** 루틴 차원 — 전체 볼륨만 (불러온 종목 뺌). 같은 루틴의 지난 기록과 */
+fun 앱데이터.루틴향상(rid: String, 지금: List<세트>, 기준날: String, 이전: String = "~"): 두대비? {
     if (지금.isEmpty()) return null
     val n = 지금.size
-    val 과거 = 기록.filter { it.key < 이전 && it.value.루틴id == rid }.values.map { 정식세트(it) }.filter { it.isNotEmpty() }
-    if (과거.isEmpty()) return null
-    val a = 볼륨(지금); val b = 과거.maxOf { 볼륨(it.take(n)) }
-    return if (b > 0) 비교(a, b, 퍼센트(a, b), a - b) else null
+    val 과거 = 기록.filter { it.key < 이전 && it.value.루틴id == rid }.map { it.key to 정식세트(it.value) }.filter { it.second.isNotEmpty() }
+    val a = 볼륨(지금)
+    return 두대비(a, 견줌(a, 과거.filter { 한주안(it.first, 기준날) }.maxOfOrNull { 볼륨(it.second.take(n)) }),
+        견줌(a, 과거.maxOfOrNull { 볼륨(it.second.take(n)) }))
 }
 
-/** 루틴의 가장 최근 기록을 그 앞의 최고와 견준다 — 달력 · 루틴 탭 */
-fun 앱데이터.루틴최근최고대비(rid: String): 비교? {
+/** 루틴의 가장 최근 기록을 그 앞의 기록과 견준다 — 달력 예정 판 · 루틴 탭 */
+fun 앱데이터.루틴최근향상(rid: String): 두대비? {
     val k = 기록.filter { it.value.루틴id == rid }.keys.maxOrNull() ?: return null
-    return 루틴최고대비(rid, 정식세트(기록[k]!!), k)
+    return 루틴향상(rid, 정식세트(기록[k]!!), 날짜만(k), k)
+}
+
+/** 차이를 kg 로 — 100 이상이면 콤마 정수, 아니면 소수 한 자리까지 (0 은 떼고) */
+fun kg글(x: Double): String {
+    val a = kotlin.math.abs(x)
+    return if (a >= 100 || a == Math.rint(a)) 콤마(a) else "%.1f".format(a)
 }
 
 fun 퍼센트(지금: Double, 과거: Double): Int? = if (과거 != 0.0) ((지금 - 과거) / 과거 * 100).roundToInt() else null

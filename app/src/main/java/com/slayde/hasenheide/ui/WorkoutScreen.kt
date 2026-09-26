@@ -91,8 +91,9 @@ import com.slayde.hasenheide.data.일RM
 import com.slayde.hasenheide.data.재개
 import com.slayde.hasenheide.data.정식세트
 import com.slayde.hasenheide.data.종목성장
-import com.slayde.hasenheide.data.종목최고대비
-import com.slayde.hasenheide.data.루틴최고대비
+import com.slayde.hasenheide.data.종목향상
+import com.slayde.hasenheide.data.루틴향상
+import com.slayde.hasenheide.data.kg글
 import com.slayde.hasenheide.data.타이트하게
 import com.slayde.hasenheide.data.종목으로
 import com.slayde.hasenheide.data.종목추이
@@ -486,8 +487,6 @@ fun 루틴표시(이름: String): String = if (이름.contains("루틴")) 이름
 
 private fun 글자표(n: Int): String = ('A' + n).toString()
 
-/** ▲7% · ▼2% (09-24) */
-private fun 성장짧게(p: Int): String = (if (p >= 0) "▲" else "▼") + "${kotlin.math.abs(p)}%"
 
 /** 펼치고 접는 단추 — 묶음마다 하나 (09-24 메모) */
 @Composable
@@ -508,14 +507,12 @@ private fun 종목머리(상태: 앱상태, S: 운동세션, j: Int, 표: String
     val c = Local색.current
     val e = S.종목들[j]
     val 지금세트 = e.찬것()
-    val 과거rm = 상태.d.기록.values.flatMap { r -> r.종목들.filter { it.이름 == e.이름 }.flatMap { it.세트들 } }.maxOfOrNull { 일RM(it.w, it.r) } ?: 0.0
-    val rm = max(과거rm, 지금세트.maxOfOrNull { 일RM(it.w, it.r) } ?: 0.0)
     val 목표볼 = e.목표볼륨()
     val 뱃지 = listOfNotNull(if (e.임시) "오늘만" else null, if (e.마감) "마침" else null)
     val 지금것 = 지금표시 || j == S.i
     // 향상도는 오늘 한 세트가 있을 때만 — 아직 시작도 안 한 종목에 지난 기록을 띄우지 않는다
-    // 09-26: 지난 기록 중 **최고**와 견준다 — 1RM 옆 · 볼륨 옆에 각각 ▲▼
-    val 최고 = if (지금세트.isEmpty()) null else 상태.d.종목최고대비(e.이름, 지금세트)
+    // 09-26 시안 ①: 1RM 줄 · 볼륨 줄에 각각 [1주] [최고] (kg)
+    val 향 = if (지금세트.isEmpty()) null else 상태.d.종목향상(e.이름, 지금세트, 상태.오늘)
     Column(Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 6.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Row(Modifier.weight(1f).눌림(on누름), verticalAlignment = Alignment.CenterVertically) {
@@ -523,25 +520,22 @@ private fun 종목머리(상태: 앱상태, S: 운동세션, j: Int, 표: String
                 Box(Modifier.width(4.dp))
                 제목글(e.이름, Modifier.weight(1f, fill = false), 크기값 = 크기.본문, 색 = if (지금것) c.글 else c.흐림)
                 뱃지.forEach { b -> Box(Modifier.width(4.dp)); 알약(b, c.휴식) }
+                // 펼친 종목은 세트 수 · 달성도를 이름 줄에 (09-26 시안 ①: 아래 두 줄은 1RM · 볼륨)
+                if (펼침) { Box(Modifier.width(6.dp)); 글("${지금세트.size}/${e.총칸()}세트 · ${e.달성도()}%", 크기값 = 크기.작게, 색 = c.강조, 굵기 = FontWeight.Bold) }
             }
             if (접기칸) 접기단추(펼침, on접기) else Box(Modifier.size(높이.낮게))
         }
-        Row(
+        if (!펼침) Row(
             Modifier.fillMaxWidth().눌림(on누름).padding(top = 1.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            if (!펼침) 글("${지금세트.size}/${e.총칸()}세트", 크기값 = 크기.작게, 색 = c.흐림)
-            else {
-                글("${e.달성도()}%", 크기값 = 크기.작게, 색 = c.강조, 굵기 = FontWeight.Bold)
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    글("1RM ${if (rm > 0) "%.1f".format(rm) else "—"}", 크기값 = 크기.작게, 색 = c.흐림)
-                    최고?.rm?.pct?.let { p -> 글(성장짧게(p), 크기값 = 크기.작게, 색 = if (p >= 0) c.오름 else c.내림, 굵기 = FontWeight.Bold) }
-                }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    글("${콤마(볼륨(지금세트))}/${콤마(목표볼)}", 크기값 = 크기.작게, 색 = c.흐림)
-                    최고?.볼륨?.pct?.let { p -> 글(성장짧게(p), 크기값 = 크기.작게, 색 = if (p >= 0) c.오름 else c.내림, 굵기 = FontWeight.Bold) }
-                }
-            }
+            글("${지금세트.size}/${e.총칸()}세트", 크기값 = 크기.작게, 색 = c.흐림)
+        }
+        // 펼친 종목: 1RM 줄 · 볼륨 줄 — 오늘 한 것 기준, 옆에 [1주] [최고] (09-26 시안 ①)
+        if (펼침) {
+            val 오늘rm = 지금세트.maxOfOrNull { 일RM(it.w, it.r) }
+            향상줄("1RM ${if (오늘rm != null) kg글(오늘rm) + "kg" else "—"}", 향?.rm, Modifier.눌림(on누름).padding(top = 2.dp))
+            향상줄("볼륨 ${콤마(볼륨(지금세트))}/${콤마(목표볼)}kg", 향?.볼륨, Modifier.눌림(on누름).padding(top = 2.dp))
         }
     }
 }
@@ -711,7 +705,9 @@ private fun 마무리(상태: 앱상태, S: 운동세션) {
         카드(Modifier.weight(1f), 안쪽 = 0.dp) {
             // 맨 위: 루틴 정보
             Column(Modifier.fillMaxWidth().background(c.면2).padding(horizontal = 16.dp, vertical = 12.dp)) {
-                최고줄(루틴표시(S.루틴이름), null, d.루틴최고대비(S.루틴id, S.유효세트()))
+                제목글(루틴표시(S.루틴이름), 크기값 = 크기.본문)
+                val 루향 = d.루틴향상(S.루틴id, S.유효세트(), 오늘)
+                향상줄("볼륨 ${콤마(볼륨(S.유효세트()))}kg", 루향, Modifier.padding(top = 2.dp))
                 글("${S.종목들.count { !it.임시 }}종목 · 달성도 ${S.루틴달성도()}%" + (직전?.let { " · 직전 ${직전세트?.size ?: 0}세트" } ?: ""),
                     크기값 = 크기.작게, 색 = c.옅음)
             }
@@ -721,8 +717,13 @@ private fun 마무리(상태: 앱상태, S: 운동세션) {
                     val 열림 = 열린종목 == e.이름
                     Row(Modifier.fillMaxWidth().눌림 { 열린종목 = if (열림) null else e.이름 }.padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
                         verticalAlignment = Alignment.CenterVertically) {
-                        val 최 = d.종목최고대비(e.이름, e.찬것())
-                        최고줄(e.이름, 최?.rm, 최?.볼륨, Modifier.weight(1f))
+                        val 찬 = e.찬것()
+                        val 향 = d.종목향상(e.이름, 찬, 오늘)
+                        Column(Modifier.weight(1f)) {
+                            제목글(e.이름, 크기값 = 크기.조금작게)
+                            향상줄("1RM ${kg글(찬.maxOf { 일RM(it.w, it.r) })}kg", 향?.rm, Modifier.padding(top = 2.dp))
+                            향상줄("볼륨 ${콤마(볼륨(찬))}kg", 향?.볼륨, Modifier.padding(top = 2.dp))
+                        }
                         펼침단추(열림) { 열린종목 = if (열림) null else e.이름 }
                     }
                     if (열림) 종목그래프(d, e, 오늘)
