@@ -36,6 +36,23 @@ fun 분초(초: Int): String = "${초 / 60}:${(초 % 60).toString().padStart(2, 
 /** 휴식 최대 — 99분 59초 (분 칸에 60 을 치면 60분이 되도록, 09-21 메모) */
 const val 휴식최대 = 5999
 
+/**
+ * 휴식 남은 초 — 화면에 보일 값 (09-25 메모: 1:00 으로 정했는데 1:01 부터 줄었다)
+ * 화면 시계는 0.25초마다 바뀌어서, 체크한 직후엔 시계가 체크 시각보다 조금 앞선 값을 들고 있다.
+ * 그래서 올림 계산이 한 칸 크게 나왔다 → 처음 정한 길이를 넘지 않게 자른다
+ */
+fun 휴식중.남은초(지금: Long): Int {
+    val 초 = max(0L, (끝시각 - 지금 + 999) / 1000).toInt()
+    return if (총초 > 0) minOf(초, 총초) else 초
+}
+
+// ─────────────── 설정에서 고를 수 있는 값 (09-25 메모) ───────────────
+val 무게폭목록 = listOf(0.1, 0.5, 1.0, 2.5, 5.0)          // 기본 1
+val 기본휴식목록 = listOf(30, 60, 90, 120, 180)           // 기본 60초
+val 기본세트목록 = (1..5).toList()                         // 기본 1
+val 진동세기목록 = listOf(1 to "약", 2 to "중", 3 to "강")  // 기본 중
+val 진동시간목록 = listOf(500, 1000, 2000, 3000)           // 기본 1초
+
 /** "3:00" 또는 "180" → 초 */
 fun 초읽기(글: String): Int? {
     val t = 글.trim()
@@ -83,25 +100,35 @@ fun 앱데이터.예정루틴(k: String): 루틴? = 루틴(예정[k])
 
 const val 회차 = 2
 
+/**
+ * 캘린더에 깔리는 순서 — **자동생성을 켠 루틴만** (09-25 메모).
+ * 꺼 둔 루틴은 달력에 저절로 깔리지 않고, '다른 루틴' 으로 그 날에만 넣을 수 있다.
+ */
+val 앱데이터.순번: List<루틴> get() = 루틴들.filter { it.자동생성 }
+
 private fun 앱데이터.예정채움(시작날: String, 시작idx: Int, 바탕: Map<String, String>): Map<String, String> {
-    val n = 루틴들.size
+    val 줄 = 순번
+    val n = 줄.size
     if (n == 0) return 바탕
     val m = 바탕.toMutableMap()
-    for (i in 0 until n * 회차) m[날더하기(시작날, i)] = 루틴들[((시작idx + i) % n + n) % n].id
+    for (i in 0 until n * 회차) m[날더하기(시작날, i)] = 줄[((시작idx + i) % n + n) % n].id
     return m
 }
 
-/** 마지막으로 한 운동의 '다음'부터 다시 깐다 */
+/** 마지막으로 한 운동의 '다음'부터 다시 깐다 (자동생성 루틴으로 한 마지막 운동 기준) */
 fun 앱데이터.예정초기화(오늘: String): 앱데이터 {
-    if (루틴들.isEmpty()) return copy(예정 = emptyMap())
-    val 마지막 = 기록.keys.maxOrNull()
+    val 줄 = 순번
+    // 자동생성이 꺼진 루틴을 '다른 루틴' 으로 넣어 둔 날(오늘 이후)은 지키고 그 위에 다시 깐다
+    val 수동 = 예정.filter { it.key >= 오늘 && 루틴(it.value)?.자동생성 == false }
+    if (줄.isEmpty()) return copy(예정 = 수동)
+    val 마지막 = 기록.keys.filter { k -> 줄.any { it.id == 기록[k]!!.루틴id } }.maxOrNull()
     var idx = 0
     if (마지막 != null) {
-        val i = 루틴들.indexOfFirst { it.id == 기록[마지막]!!.루틴id }
-        idx = if (i < 0) 0 else (i + 1) % 루틴들.size
+        val i = 줄.indexOfFirst { it.id == 기록[마지막]!!.루틴id }
+        idx = if (i < 0) 0 else (i + 1) % 줄.size
     }
     val 시작 = if (기록.containsKey(오늘)) 날더하기(오늘, 1) else 오늘
-    return copy(예정 = 예정채움(시작, idx, emptyMap()))
+    return copy(예정 = 예정채움(시작, idx, emptyMap()) + 수동)
 }
 
 /**
@@ -112,48 +139,53 @@ fun 앱데이터.예정초기화(오늘: String): 앱데이터 {
  *  · 빠진 날이 없고 앞으로의 예정도 있으면 그대로 둔다 (옮겨 둔 것을 지키기 위해)
  */
 fun 앱데이터.예정맞추기(오늘: String): 앱데이터 {
-    if (루틴들.isEmpty()) return copy(예정 = emptyMap())
-    val 빠진 = 예정.filter { it.key < 오늘 && !기록.containsKey(it.key) }.toSortedMap()
-    val 앞으로 = 예정.keys.any { it >= 오늘 }
+    val 줄 = 순번
+    if (줄.isEmpty()) return this
+    // 빠진 날은 자동생성 루틴이 깔려 있던 날만 본다
+    val 빠진 = 예정.filter { it.key < 오늘 && !기록.containsKey(it.key) && 루틴(it.value)?.자동생성 == true }.toSortedMap()
+    val 앞으로 = 예정.any { it.key >= 오늘 && 루틴(it.value)?.자동생성 == true }
     if (빠진.isEmpty()) return if (앞으로) copy(예정 = 예정.filterKeys { it >= 오늘 }) else 예정초기화(오늘)
     val 운동날 = 빠진.values.firstOrNull { rid -> 루틴(rid)?.휴식일 == false }
-    val n = 루틴들.size
-    val 시작idx = if (운동날 != null) 루틴들.indexOfFirst { it.id == 운동날 }
-                  else (루틴들.indexOfFirst { it.id == 빠진.values.last() } + 1) % n
+    val n = 줄.size
+    val 시작idx = if (운동날 != null) 줄.indexOfFirst { it.id == 운동날 }
+                  else (줄.indexOfFirst { it.id == 빠진.values.last() } + 1) % n
     if (시작idx < 0) return 예정초기화(오늘)
     val 시작 = if (기록.containsKey(오늘)) 날더하기(오늘, 1) else 오늘
-    return copy(예정 = 예정채움(시작, 시작idx, emptyMap()))
+    val 수동 = 예정.filter { it.key >= 오늘 && 루틴(it.value)?.자동생성 == false }
+    return copy(예정 = 예정채움(시작, 시작idx, emptyMap()) + 수동)
 }
 
 /** 날짜 D 에 루틴을 꽂고 그 날부터 순서를 다시 깐다. 앞선 날은 건드리지 않는다 (2-3) */
 fun 앱데이터.꽂기(rid: String, D: String, 오늘: String): 앱데이터 {
     if (D < 오늘) return this
-    val idx = 루틴들.indexOfFirst { it.id == rid }
-    if (idx < 0) return this
+    val idx = 순번.indexOfFirst { it.id == rid }
+    // 자동생성이 꺼진 루틴은 그 날에만 넣고 나머지 예정은 그대로 둔다
+    if (idx < 0) return if (루틴(rid) != null) copy(예정 = 예정 + (D to rid)) else this
     val 남김 = 예정.filterKeys { it < D }
     return copy(예정 = 예정채움(D, idx, 남김))
 }
 
 /** 오늘 쉬기 — push: 오늘 루틴을 내일로 / skip: 오늘 루틴을 건너뛰기 (2-5) */
 fun 앱데이터.오늘휴식(미루기: Boolean, 오늘: String): 앱데이터 {
-    val idx = 루틴들.indexOfFirst { it.id == 예정[오늘] }
+    val idx = 순번.indexOfFirst { it.id == 예정[오늘] }
     if (idx < 0) return this
     val 남김 = 예정.filterKeys { it < 오늘 }
-    val 시작 = if (미루기) idx else (idx + 1) % 루틴들.size
+    val 시작 = if (미루기) idx else (idx + 1) % 순번.size
     return copy(예정 = 예정채움(날더하기(오늘, 1), 시작, 남김))
 }
 /** 휴식 물음에 보여줄 '앞으로 사흘' */
 fun 앱데이터.사흘미리(미루기: Boolean, 오늘: String): List<String> {
-    val idx = 루틴들.indexOfFirst { it.id == 예정[오늘] }
-    if (idx < 0 || 루틴들.isEmpty()) return emptyList()
+    val 줄 = 순번
+    val idx = 줄.indexOfFirst { it.id == 예정[오늘] }
+    if (idx < 0 || 줄.isEmpty()) return emptyList()
     val 시작 = if (미루기) idx else idx + 1
-    val n = 루틴들.size
-    return (0 until 3).map { 루틴들[((시작 + it) % n + n) % n].이름 }
+    val n = 줄.size
+    return (0 until 3).map { 줄[((시작 + it) % n + n) % n].이름 }
 }
 
 fun 앱데이터.다음차례(오늘: String): 루틴? {
     val k = 예정.keys.filter { it >= 오늘 }.minOrNull()
-    return if (k != null) 예정루틴(k) else 루틴들.firstOrNull()
+    return if (k != null) 예정루틴(k) else 순번.firstOrNull()
 }
 
 // ─────────────── 향상도 (6-2) ───────────────
@@ -531,12 +563,16 @@ fun 운동세션.값고치기(j: Int, k: Int, 새무게: Double? = null, 새횟�
     val w = 새무게?.let { 무게반올림(max(0.0, it)) }
     val r = 새횟수?.let { max(0, it) }
     val rec = e.기록.칸(k)
+    // 09-26 메모: 운동 중 무게 · 횟수를 바꿔도 화면이 안 바뀌었다.
+    // 지금 세트는 '입력 중인 값(무게·횟수)'만 바꾸고 있었는데, 화면은 루틴에서 가져온 '세트별 값(예정값)'을 먼저 보여 줬다.
+    // → 지금 세트도 예정값에 같이 적는다 (화면 · 체크 모두 같은 값)
     return when {
         rec != null -> 종목바꿈(j) { it.copy(기록 = it.기록.칸바꿈(k, 세트(w ?: rec.w, r ?: rec.r))) }
-        j == i && k == s -> copy(무게 = w ?: 무게, 횟수 = r ?: 횟수)
         else -> {
             val 이제 = 세트값(e, k)
-            종목바꿈(j) { it.copy(예정값 = it.예정값.칸바꿈(k, 세트(w ?: 이제.w, r ?: 이제.r))) }
+            val 새 = 세트(w ?: 이제.w, r ?: 이제.r)
+            val T = 종목바꿈(j) { it.copy(예정값 = it.예정값.칸바꿈(k, 새)) }
+            if (j == i && k == s) T.copy(무게 = 새.w, 횟수 = 새.r) else T
         }
     }
 }
@@ -594,10 +630,29 @@ fun 앱데이터.운동저장(오늘: String, 지금: Long): 앱데이터 {
         기록 = 기록 + (오늘 to rec), 세션 = null,
         루틴들 = 루틴들.map { if (it.id == S.루틴id) it.오늘반영(S).let { r -> if (올릴까) r.볼륨올리기(설정) else r } else it },
     )
-    val i = 루틴들.indexOfFirst { it.id == S.루틴id }
-    if (루틴들.isEmpty()) return 새
+    val 줄 = 순번
+    val i = 줄.indexOfFirst { it.id == S.루틴id }
+    // 자동생성이 꺼진 루틴으로 운동했으면 순서는 건드리지 않는다
+    if (줄.isEmpty() || i < 0) return 새
     val 남김 = 새.예정.filterKeys { it < 오늘 }
-    return 새.copy(예정 = 새.예정채움(날더하기(오늘, 1), ((i + 1) % 루틴들.size + 루틴들.size) % 루틴들.size, 남김))
+    return 새.copy(예정 = 새.예정채움(날더하기(오늘, 1), (i + 1) % 줄.size, 남김))
+}
+
+/**
+ * 오래 손대지 않은 운동은 저절로 끝낸다 (09-25 메모: 어제 시작한 운동이 다음 날까지 돌고 있었다)
+ *  · 마지막으로 손댄 뒤 [한계] 가 지나면 끝낸다 (기본 3시간)
+ *  · 체크한 세트가 있으면 **운동을 시작한 날**의 기록으로 저장한다 (루틴 반영 · 다음 차례도 저장과 같게)
+ *    그 날에 이미 기록이 있으면 덮어쓰지 않고 이 운동은 버린다
+ *  · 체크한 세트가 없으면 그냥 버린다
+ */
+fun 앱데이터.오래된운동정리(지금: Long, 한계: Long = 3 * 60 * 60 * 1000L): 앱데이터 {
+    val S = 세션 ?: return this
+    val 마지막 = if (S.마지막 > 0) S.마지막 else S.시작시각
+    if (지금 - 마지막 < 한계) return this
+    if (S.한세트수() == 0) return copy(세션 = null)
+    val 날 = java.time.Instant.ofEpochMilli(S.시작시각).atZone(java.time.ZoneId.systemDefault()).toLocalDate().toString()
+    if (기록.containsKey(날)) return copy(세션 = null)
+    return 운동저장(날, S.끝시각 ?: 마지막)
 }
 
 /**
@@ -698,6 +753,33 @@ fun 앱데이터.카테고리지우기(p: String): 앱데이터 {
 
 fun 앱데이터.루틴바꿈(id: String, f: (루틴) -> 루틴): 앱데이터 =
     copy(루틴들 = 루틴들.map { if (it.id == id) f(it) else it })
+
+/**
+ * 루틴 합치기 (09-25 메모 · 09-26 답) — 두 루틴은 그대로 두고 **새 루틴을 하나 만든다**.
+ *  · 위id 의 종목이 먼저, 아래id 의 종목이 뒤에
+ *  · 같은 종목이 두 루틴에 다 있으면 **둘 다 넣는다** (09-26 홍겸 님)
+ *  · 슈퍼세트 묶음은 그대로 옮긴다. 두 루틴의 묶음 이름이 겹치지 않게 새 이름을 붙인다
+ *  · 새 루틴은 맨 아래, 자동생성 꺼짐. 휴식일은 합치지 않는다
+ */
+fun 앱데이터.루틴합치기(위id: String, 아래id: String, 새id: String): 앱데이터 {
+    val a = 루틴(위id) ?: return this
+    val b = 루틴(아래id) ?: return this
+    if (위id == 아래id || a.휴식일 || b.휴식일) return this
+    fun 옮김(r: 루틴, 표: String) = r.종목.map { e -> e.copy(슈퍼 = e.슈퍼?.let { "$새id-$표-$it" }) }
+    val 새 = 루틴(새id, "${a.이름} + ${b.이름}", 종목 = 옮김(a, "a") + 옮김(b, "b"), 자동생성 = false)
+    return copy(루틴들 = 루틴들 + 새)
+}
+
+/** 루틴 순서 옮기기 — 끌어서 다른 루틴의 위 · 아래 끝에 놓았을 때 (09-26) */
+fun 앱데이터.루틴옮기기(집은id: String, 대상id: String, 뒤에: Boolean): 앱데이터 {
+    if (집은id == 대상id) return this
+    val 집은 = 루틴(집은id) ?: return this
+    val 남은 = 루틴들.filter { it.id != 집은id }.toMutableList()
+    val t = 남은.indexOfFirst { it.id == 대상id }
+    if (t < 0) return this
+    남은.add(if (뒤에) t + 1 else t, 집은)
+    return copy(루틴들 = 남은)
+}
 
 /** 순서 옮기기 — 묶음이면 통째로. 모드: 앞(before) / 뒤(after) */
 fun 루틴.종목옮기기(from: Int, to: Int, 뒤에: Boolean): 루틴 {

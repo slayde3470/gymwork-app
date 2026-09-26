@@ -57,7 +57,7 @@ object 저장소 {
         .also { if (e.세트값.isNotEmpty()) it.put("세트값", 세트들to(e.세트값)) }
         .also { if (e.휴식값.isNotEmpty()) it.put("휴식값", JSONArray().also { h -> e.휴식값.forEach { h.put(it) } }) }
 
-    private fun 루틴to(r: 루틴) = JSONObject().put("id", r.id).put("이름", r.이름).put("휴식일", r.휴식일)
+    private fun 루틴to(r: 루틴) = JSONObject().put("id", r.id).put("이름", r.이름).put("휴식일", r.휴식일).put("자동생성", r.자동생성)
         .put("종목", JSONArray().also { a -> r.종목.forEach { a.put(루틴종목to(it)) } })
 
     private fun 세트to(s: 세트) = JSONArray().put(s.w).put(s.r)
@@ -78,10 +78,11 @@ object 저장소 {
         .put("기본휴식", s.기본휴식).put("기준", s.기준).put("기본세트", s.기본세트)
         .put("볼륨켬", s.볼륨켬).put("볼륨방식", s.볼륨방식).put("볼륨값", s.볼륨값)
         .put("볼륨언제", s.볼륨언제).put("볼륨배분", s.볼륨배분).put("횟수상한", s.횟수상한)
+        .put("진동세기", s.진동세기).put("진동시간", s.진동시간).put("번호보기", s.번호보기)
 
     private fun 세션to(S: 운동세션) = JSONObject().put("루틴id", S.루틴id).put("루틴이름", S.루틴이름)
         .put("시작시각", S.시작시각).put("i", S.i).put("s", S.s).put("무게", S.무게).put("횟수", S.횟수)
-        .put("끝화면", S.끝화면)
+        .put("끝화면", S.끝화면).put("마지막", S.마지막)
         .also { o -> if (S.끝시각 != null) o.put("끝시각", S.끝시각) }
         .put("종목들", JSONArray().also { a ->
             S.종목들.forEach { e ->
@@ -149,6 +150,8 @@ object 저장소 {
                     목록(it.optJSONArray("휴식값")) { h, j -> h.getInt(j) })
             }
         },
+        // 스키마 5 까지는 모든 루틴이 캘린더에 깔렸다 → 옛 루틴은 켜진 채로 옮긴다 (달력이 갑자기 비지 않게)
+        자동생성 = o.optBoolean("자동생성", true),
     )
 
     private fun 세트from(a: JSONArray) = 세트(a.getDouble(0), a.getInt(1))
@@ -168,13 +171,14 @@ object 저장소 {
 
     /** 스키마 1(v0.2) 의 무게폭 2.5 는 고른 값이 아니라 기본값이었다 → 새 기본값 1 로 (09-21 메모) */
     private fun 설정from(o: JSONObject, 판: Int): 설정값 {
-        val 폭 = o.optDouble("무게폭", 1.0).let { if (판 < 2 && it == 2.5) 1.0 else it }
+        // 09-25 메모: 고를 수 있는 값이 바뀌었다 — 목록에 없는 값(1.25 등)은 기본값으로
+        val 폭 = o.optDouble("무게폭", 1.0).let { if (판 < 2 && it == 2.5) 1.0 else it }.let { if (it in 무게폭목록) it else 1.0 }
         return 설정값(
             자동진행 = o.optBoolean("자동진행", true), 넘어가기전확인 = o.optBoolean("넘어가기전확인", false),
             소리진동 = o.optBoolean("소리진동", true), 화면유지 = o.optBoolean("화면유지", true), 무게폭 = 폭,
             // 09-24: 기본 휴식은 1분으로. 옛 판의 90초는 60초로 옮긴다
-            기본휴식 = if (판 < 4) 60 else o.optInt("기본휴식", 60),
-            기본세트 = if (판 < 3) 1 else o.optInt("기본세트", 1),
+            기본휴식 = (if (판 < 4) 60 else o.optInt("기본휴식", 60)).let { if (it in 기본휴식목록) it else 60 },
+            기본세트 = (if (판 < 3) 1 else o.optInt("기본세트", 1)).coerceIn(1, 5),
             볼륨켬 = o.optBoolean("볼륨켬", false),
             볼륨방식 = o.optString("볼륨방식", "%").ifBlank { "%" },
             볼륨값 = o.optDouble("볼륨값", 2.5),
@@ -182,6 +186,9 @@ object 저장소 {
             볼륨배분 = o.optString("볼륨배분", "횟수").ifBlank { "횟수" },
             횟수상한 = o.optInt("횟수상한", 12),
             기준 = o.optInt("기준", 3),
+            진동세기 = o.optInt("진동세기", 2).coerceIn(1, 3),
+            진동시간 = o.optInt("진동시간", 1000).let { if (it in 진동시간목록) it else 1000 },
+            번호보기 = o.optBoolean("번호보기", true),
         )
     }
 
@@ -201,5 +208,6 @@ object 저장소 {
         o.optJSONObject("휴식")?.let { h -> 휴식중(h.getInt("k"), h.getLong("끝시각"), h.optBoolean("물음"), 수또는널(h, "다음i"), 수또는널(h, "다음s"), h.optInt("총초", 0), h.optInt("종목", -1)) },
         o.optBoolean("끝화면"),
         if (o.has("끝시각") && !o.isNull("끝시각")) o.getLong("끝시각") else null,
+        o.optLong("마지막", 0L),
     )
 }

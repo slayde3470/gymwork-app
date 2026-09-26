@@ -103,13 +103,13 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
         Column(Modifier.fillMaxSize().padding(horizontal = 간격.보통).padding(top = 8.dp, bottom = 8.dp)) {
             // 달력은 보여 줄 것까지만 높이를 쓴다 (09-24 메모) — 남는 높이는 그냥 둔다
             카드(Modifier.weight(1f, fill = false), 안쪽 = 8.dp) {
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.fillMaxWidth().번호("캘1"), verticalAlignment = Alignment.CenterVertically) {
                     아이콘버튼(아이콘.왼쪽, "이전 달", { 보는달 = 보는달.minusMonths(1) })
                     제목글("${보는달.year}년 ${보는달.monthValue}월", Modifier.weight(1f).padding(start = 12.dp), 크기값 = 크기.크게)
                     아이콘버튼(아이콘.오른쪽, "다음 달", { 보는달 = 보는달.plusMonths(1) })
                 }
                 Box(Modifier.height(4.dp))
-                달력(d, 오늘, 보는달, 고른날, Modifier, on고름 = { 고른날 = it }, on두번 = { 고른날 = it; 열린시트 = "시작" })
+                달력(d, 오늘, 보는달, 고른날, Modifier.번호("캘2"), on고름 = { 고른날 = it }, on두번 = { 고른날 = it; 열린시트 = "시작" })
             }
             Box(Modifier.height(8.dp))
             Box(Modifier.fillMaxWidth().heightIn(max = 190.dp)) {
@@ -252,7 +252,7 @@ private fun 날짜판(상태: 앱상태, k: String, 루틴으로: () -> Unit, �
     val 날 = LocalDate.parse(k)
     var 일정적기 by remember(k) { mutableStateOf(false) }
     val 일정버튼: @Composable RowScope.() -> Unit = { 버튼("일정", { 일정적기 = !일정적기 }, Modifier.weight(0.8f), 낮게 = true, 그림 = 아이콘.더하기) }
-    카드(안쪽 = 10.dp) {
+    카드(Modifier.번호("캘3"), 안쪽 = 10.dp) {
         val rec = d.기록[k]
         when {
             d.루틴들.isEmpty() -> {

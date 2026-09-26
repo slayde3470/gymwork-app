@@ -2,6 +2,12 @@
 
 package com.slayde.hasenheide.ui
 
+import androidx.compose.ui.composed
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.unit.sp
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
@@ -754,3 +760,30 @@ fun 고르기줄(이름: String, 곁: String? = null, 오른쪽: ImageVector? = 
     }
     구분선()
 }
+
+// ─────────────── 화면 번호 (09-26 · 시험 기간용) ───────────────
+
+/** 번호를 보일까 — 설정 → '화면 번호 보기'. 앱(App.kt)에서 내려준다 */
+val Local번호 = androidx.compose.runtime.compositionLocalOf { false }
+
+/**
+ * 칸의 왼쪽 위에 작은 파란 번호 (운4 · 캘2 …) — "운4 좀 고쳐줘" 처럼 말할 수 있게 (09-26 홍겸 님: 시안 A, 파랑, 25% 작게).
+ * 번호 목록은 문서/동작방식.md 부록 · 시안 https://claude.ai/artifact/9gY53qR5CN92q6cVYgWocn
+ * 칸의 모양이나 자리를 바꾸지 않는다 — 다 그린 뒤 위에 덧그리기만 한다
+ */
+fun Modifier.번호(표: String): Modifier = this.composed {
+    if (!Local번호.current) return@composed Modifier
+    val 측정 = androidx.compose.ui.text.rememberTextMeasurer()
+    Modifier.drawWithContent {
+        drawContent()
+        val 글 = 측정.measure(
+            표,
+            androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 8.sp, fontWeight = FontWeight.SemiBold),
+        )
+        val h = 13.5.dp.toPx()
+        val w = kotlin.math.max(h, 글.size.width + 6.dp.toPx())
+        drawRoundRect(번호색, topLeft = Offset.Zero, size = Size(w, h), cornerRadius = CornerRadius(h / 2))
+        drawText(글, topLeft = Offset((w - 글.size.width) / 2, (h - 글.size.height) / 2))
+    }
+}
+private val 번호색 = Color(0xFF1E6FD9)

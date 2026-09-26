@@ -21,6 +21,10 @@
             android:exported="true"
             android:label="@string/app_name"
             android:windowSoftInputMode="adjustResize"
+            android:supportsPictureInPicture="true"
+            android:resizeableActivity="true"
+            android:launchMode="singleTask"
+            android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation|keyboardHidden"
             android:theme="@style/Theme.Hasenheide">
             <!-- 이 줄들이 "앱 서랍의 아이콘을 누르면 이 화면부터 시작" 이라는 뜻 -->
             <intent-filter>

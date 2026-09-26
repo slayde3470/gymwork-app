@@ -60,6 +60,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.slayde.hasenheide.data.루틴
 import com.slayde.hasenheide.data.루틴바꿈
+import com.slayde.hasenheide.data.루틴합치기
+import com.slayde.hasenheide.data.루틴옮기기
 import com.slayde.hasenheide.data.루틴성장
 import com.slayde.hasenheide.data.루틴종목
 import com.slayde.hasenheide.data.무게글
@@ -120,10 +122,15 @@ fun 루틴화면(상태: 앱상태, 폰: 폰기능) {
     var 고르기 by remember { mutableStateOf<String?>(null) }     // 종목 추가 칸이 열린 루틴
     var 방금 by remember { mutableStateOf(listOf<String>()) }
     var 끌기 by remember { mutableStateOf<끄는것?>(null) }
+    // 루틴 카드 끌기 — 다른 루틴 가운데에 놓으면 합치기, 위 · 아래 끝이면 순서 옮기기 (09-25 메모 · 09-26 시안)
+    var 루틴끌기 by remember { mutableStateOf<끄는것?>(null) }
+    val 머리자리 = remember { mutableStateMapOf<String, Rect>() }   // rid → 루틴 머리줄 위치
+    var 합칠 by remember { mutableStateOf<Pair<String, String>?>(null) }   // 집은 루틴 · 놓은 루틴
     val 줄자리 = remember { mutableStateMapOf<String, Rect>() }   // "rid|j" → 화면 기준 위치
     var 화면틀 by remember { mutableStateOf(Rect.Zero) }
     val 스크롤 = rememberScrollState()
     val 진동 = LocalHapticFeedback.current
+    fun 구조바뀜0(f: (com.slayde.hasenheide.data.앱데이터) -> com.slayde.hasenheide.data.앱데이터) = 상태.바꿈 { f(it).예정초기화(오늘) }
 
     // 뒤로가기 — 펼친 종목 · 종목 고르기 칸을 먼저 접는다 (09-22 메모)
     BackHandler(enabled = 열린종목 != null || 고르기 != null) {
@@ -137,10 +144,28 @@ fun 루틴화면(상태: 앱상태, 폰: 폰기능) {
             if (j == g.j) null else 놓을곳(g.rid, j, if (비율 < 0.3f) 0 else if (비율 > 0.7f) 2 else 1)
         }
     }
+    // 루틴을 놓을 곳 — 손가락 아래 머리줄. 위 30% 앞 / 가운데 합치기 / 아래 30% 뒤 (모드 0 · 1 · 2)
+    fun 루틴대상(g: 끄는것): Pair<String, Int>? =
+        머리자리.entries.firstOrNull { (k, r) -> k != g.rid && g.y >= r.top && g.y < r.bottom }?.let { (k, r) ->
+            val 비율 = (g.y - r.top) / max(1f, r.height)
+            k to (if (비율 < 0.3f) 0 else if (비율 > 0.7f) 2 else 1)
+        }
+    val 루틴놓일 = 루틴끌기?.let { 루틴대상(it) }
+    fun 루틴끌기끝() {
+        val g = 루틴끌기 ?: return
+        val t = 루틴대상(g)
+        루틴끌기 = null
+        if (t == null) return
+        when (t.second) {
+            0 -> 구조바뀜0 { it.루틴옮기기(g.rid, t.first, false) }
+            2 -> 구조바뀜0 { it.루틴옮기기(g.rid, t.first, true) }
+            else -> 합칠 = g.rid to t.first
+        }
+    }
     // 화면 끝 가까이 끌면 저절로 스크롤
-    LaunchedEffect(끌기 != null) {
-        while (끌기 != null) {
-            val y = 끌기?.y ?: break
+    LaunchedEffect(끌기 != null || 루틴끌기 != null) {
+        while (끌기 != null || 루틴끌기 != null) {
+            val y = (끌기 ?: 루틴끌기)?.y ?: break
             if (y < 화면틀.top + 70f) 스크롤.scrollBy(-14f) else if (y > 화면틀.bottom - 70f) 스크롤.scrollBy(14f)
             delay(16)
         }
@@ -171,23 +196,51 @@ fun 루틴화면(상태: 앱상태, 폰: 폰기능) {
     Box(Modifier.fillMaxSize().onGloballyPositioned { 화면틀 = it.boundsInRoot() }) {
         // 좌우 기준선 하나 — 화면 글씨 · 카드 안 내용 · 버튼이 같은 선에서 시작한다 (명세 1-2-1)
         Column(Modifier.fillMaxSize().verticalScroll(스크롤).padding(horizontal = 간격.좁게)) {
-            제목글("루틴", Modifier.padding(start = 간격.좁게, top = 16.dp))
-            글("순서대로 돌아갑니다 · 빠진 날은 이어서", Modifier.padding(start = 간격.좁게, top = 4.dp, bottom = 12.dp), 크기값 = 크기.조금작게, 색 = c.옅음)
+            제목글("루틴", Modifier.번호("루1").padding(start = 간격.좁게, top = 16.dp))
+            글("자동생성 루틴만 순서대로 달력에 깔립니다", Modifier.padding(start = 간격.좁게, top = 4.dp, bottom = 12.dp), 크기값 = 크기.조금작게, 색 = c.옅음)
 
             val 다음 = d.다음차례(오늘)
             d.루틴들.forEachIndexed { i, r ->
                 val 열림 = 열린루틴 == r.id
-                카드(Modifier.padding(bottom = 12.dp), 안쪽 = 0.dp) {
-                    // ── 머리줄 ──
-                    Row(Modifier.fillMaxWidth().padding(horizontal = 간격.좁게, vertical = 간격.좁게), verticalAlignment = Alignment.CenterVertically) {
-                        Row(Modifier.weight(1f).눌림 { 열린루틴 = if (열림) null else r.id; 열린종목 = null }, verticalAlignment = Alignment.CenterVertically) {
+                val 표시 = 루틴놓일?.takeIf { it.first == r.id }?.second ?: -1
+                카드(Modifier.padding(bottom = 12.dp).alpha(if (루틴끌기?.rid == r.id) 0.35f else 1f), 안쪽 = 0.dp) {
+                    // ── 머리줄 ── 꾹 눌러 끌면 루틴 옮기기 · 합치기 (09-26)
+                    Row(
+                        Modifier.fillMaxWidth()
+                            .onGloballyPositioned { 머리자리[r.id] = it.boundsInRoot() }
+                            .번호("루2")
+                            .then(if (표시 == 1) Modifier.border(2.dp, c.강조, RoundedCornerShape(모서리.작게)) else Modifier)
+                            .drawBehind {
+                                if (표시 == 0) drawRect(c.강조, topLeft = Offset(0f, 0f), size = Size(size.width, 3.dp.toPx()))
+                                if (표시 == 2) drawRect(c.강조, topLeft = Offset(0f, size.height - 3.dp.toPx()), size = Size(size.width, 3.dp.toPx()))
+                            }
+                            .padding(horizontal = 간격.좁게, vertical = 간격.좁게),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Row(
+                            Modifier.weight(1f).눌림 { 열린루틴 = if (열림) null else r.id; 열린종목 = null }
+                                .pointerInput(r.id) {
+                                    detectDragGesturesAfterLongPress(
+                                        onDragStart = { p ->
+                                            진동.performHapticFeedback(HapticFeedbackType.LongPress)
+                                            val 위 = 머리자리[r.id]?.top ?: 0f
+                                            루틴끌기 = 끄는것(r.id, -1, r.이름, 위 + p.y)
+                                        },
+                                        onDrag = { change, 양 -> change.consume(); 루틴끌기 = 루틴끌기?.let { it.copy(y = it.y + 양.y) } },
+                                        onDragEnd = { 루틴끌기끝() },
+                                        onDragCancel = { 루틴끌기 = null },
+                                    )
+                                },
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
                             글("${i + 1}", Modifier.width(22.dp), 크기값 = 크기.크게, 색 = c.흐림, 굵기 = FontWeight.Medium)
                             Column(Modifier.weight(1f)) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     제목글(r.이름, Modifier.weight(1f, fill = false), 크기값 = 크기.크게)
                                     if (다음?.id == r.id) { Box(Modifier.width(8.dp)); 알약("다음", c.좋음) }
                                 }
-                                글(if (r.휴식일) "휴식일" else "${r.종목.size}종목 · ${총세트(r)}세트 · ${시간글(예상초(r))}", 크기값 = 크기.작게, 색 = c.옅음)
+                                글((if (r.휴식일) "휴식일" else "${r.종목.size}종목 · ${총세트(r)}세트 · ${시간글(예상초(r))}") + (if (r.자동생성) " · 자동생성" else ""),
+                                    크기값 = 크기.작게, 색 = if (r.자동생성) c.강조 else c.옅음)
                             }
                         }
                         아이콘버튼(아이콘.위로, "앞으로", { 구조바뀜 { dd -> dd.copy(루틴들 = 자리바꿈(dd.루틴들, i, i - 1)) } }, 쓸수있음 = i > 0)
@@ -208,6 +261,12 @@ fun 루틴화면(상태: 앱상태, 폰: 폰기능) {
                                 이름고침 = null
                                 상태.지우고알림("${r.이름}을(를) 지웠습니다") { dd -> dd.copy(루틴들 = dd.루틴들.filter { it.id != r.id }).예정초기화(오늘) }
                             }, 작게 = true, 글색 = c.나쁨)
+                        }
+                        // 자동생성 — 켜면 캘린더에 순서대로 저절로 깔린다 (09-25 메모 · 새 루틴은 꺼져 있다)
+                        Box(Modifier.padding(start = 간격.좁게, end = 간격.좁게, bottom = 간격.좁게)) {
+                            설정줄("자동생성", "켜면 캘린더에 순서대로 깔립니다") {
+                                스위치(r.자동생성) { v -> 구조바뀜 { it.루틴바꿈(r.id) { x -> x.copy(자동생성 = v) } } }
+                            }
                         }
                     }
                     // ── 몸통 ──
@@ -276,14 +335,14 @@ fun 루틴화면(상태: 앱상태, 폰: 폰기능) {
                                 안고르기(상태, r, 방금, { 방금 = it }) { 고르기 = null; 방금 = emptyList() }
                             } else {
                                 Box(Modifier.height(12.dp))
-                                버튼("종목 추가", { 발자취.적기("종목 추가 칸 열기"); 입력중.취소?.invoke(); 고르기 = r.id; 방금 = emptyList(); 열린종목 = null; 켠칸 = null }, Modifier.fillMaxWidth(), 작게 = true, 그림 = 아이콘.더하기)
+                                버튼("종목 추가", { 발자취.적기("종목 추가 칸 열기"); 입력중.취소?.invoke(); 고르기 = r.id; 방금 = emptyList(); 열린종목 = null; 켠칸 = null }, Modifier.fillMaxWidth().번호("루4"), 작게 = true, 그림 = 아이콘.더하기)
                             }
                             }
                         }
                     }
                 }
             }
-            Row(Modifier.fillMaxWidth().padding(start = 간격.좁게, end = 간격.좁게, top = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(Modifier.fillMaxWidth().번호("루5").padding(start = 간격.좁게, end = 간격.좁게, top = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 버튼("루틴 추가", {
                     val id = "r" + System.currentTimeMillis()
                     val 번호 = d.루틴들.count { !it.휴식일 } + 1
@@ -297,7 +356,7 @@ fun 루틴화면(상태: 앱상태, 폰: 폰기능) {
             Box(Modifier.height(16.dp))   // 끝에 빈 공간을 두지 않는다 (09-21 메모)
         }
         // 끄는 동안 손가락을 따라오는 초록 알약 (1-3 '끌 때 이름표')
-        끌기?.let { g ->
+        (끌기 ?: 루틴끌기)?.let { g ->
             val 밀도 = LocalDensity.current
             Box(
                 Modifier
@@ -307,6 +366,19 @@ fun 루틴화면(상태: 앱상태, 폰: 폰기능) {
                     .background(c.강조)
                     .padding(horizontal = 16.dp, vertical = 8.dp),
             ) { 글(g.이름, 크기값 = 크기.버튼, 색 = c.강조글, 굵기 = FontWeight.Bold) }
+        }
+        // 루틴 합치기 — 어느 쪽을 위로 둘지 고른다 (09-26 시안 · 가운데 창은 고르는 일)
+        합칠?.let { (집은, 놓은) ->
+            val a = d.루틴(집은); val b = d.루틴(놓은)
+            if (a == null || b == null) 합칠 = null
+            else 합치기창(a.이름, b.이름, "${a.종목.size + b.종목.size}종목",
+                on고름 = { 앞이집은것 ->
+                    합칠 = null
+                    val 새id = "r" + System.currentTimeMillis()
+                    구조바뀜0 { it.루틴합치기(if (앞이집은것) 집은 else 놓은, if (앞이집은것) 놓은 else 집은, 새id) }
+                    열린루틴 = 새id
+                },
+                on취소 = { 합칠 = null })
         }
         // 마지막 한 세트에서 − · 휴지통 → 종목을 뺄까요? (09-24 메모, 화면 가운데)
         물음?.let { (rid, j) ->
@@ -370,7 +442,7 @@ private fun 종목줄(
     val 끝 by rememberUpdatedState(on끌기끝)
     val 취소 by rememberUpdatedState(on끌기취소)
     val 틀 by rememberUpdatedState(줄틀)
-    Column(Modifier.fillMaxWidth().alpha(if (끌림) 0.35f else 1f)) {
+    Column(Modifier.fillMaxWidth().번호("루3").alpha(if (끌림) 0.35f else 1f)) {
         Row(
             Modifier
                 .fillMaxWidth()
@@ -629,6 +701,29 @@ private fun 안고르기(상태: 앱상태, r: 루틴, 방금: List<String>, 방
                     }
                 }
                 구분선()
+            }
+        }
+    }
+}
+
+/** 루틴 합치기 창 — 화면 가운데. 어느 루틴을 위로 둘지 고른다 (09-26) */
+@Composable
+private fun 합치기창(가: String, 나: String, 요약: String, on고름: (Boolean) -> Unit, on취소: () -> Unit) {
+    val c = Local색.current
+    BackHandler(onBack = on취소)
+    Box(
+        Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.35f)).눌림(on취소),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            Modifier.fillMaxWidth(0.72f).clip(RoundedCornerShape(모서리.보통)).background(c.면).눌림 { }.padding(간격.넓게),
+        ) {
+            제목글("새 루틴 만들기", 크기값 = 크기.크게)
+            글("$가 + $나 · $요약 · 어느 쪽을 위로?", Modifier.padding(top = 4.dp), 크기값 = 크기.버튼, 색 = c.흐림, 줄 = 2)
+            Column(Modifier.padding(top = 간격.넓게), verticalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
+                버튼("$가 먼저", { on고름(true) }, Modifier.fillMaxWidth(), 작게 = true, 주요 = true)
+                버튼("$나 먼저", { on고름(false) }, Modifier.fillMaxWidth(), 작게 = true)
+                버튼("취소", on취소, Modifier.fillMaxWidth(), 작게 = true)
             }
         }
     }

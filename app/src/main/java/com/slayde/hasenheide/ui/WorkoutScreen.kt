@@ -110,6 +110,7 @@ import com.slayde.hasenheide.data.휴식고치기
 import com.slayde.hasenheide.data.휴식끝
 import com.slayde.hasenheide.data.휴식보임
 import com.slayde.hasenheide.data.휴식자리
+import com.slayde.hasenheide.data.남은초
 import com.slayde.hasenheide.data.끝냄
 import com.slayde.hasenheide.ui.theme.Local색
 import com.slayde.hasenheide.ui.theme.간격
@@ -139,7 +140,8 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
     var 켠칸 by remember { mutableStateOf<String?>(null) }
     var 열린시트 by remember { mutableStateOf<String?>(null) }   // 목록 · 추가 · 마칠까
 
-    fun 바꿈(f: (운동세션) -> 운동세션) = 상태.바꿈 { dd -> dd.세션?.let { dd.copy(세션 = f(it)) } ?: dd }
+    // 손댈 때마다 '마지막 손댄 시각' 을 남긴다 — 오래 손대지 않으면 저절로 끝낸다 (09-25 메모)
+    fun 바꿈(f: (운동세션) -> 운동세션) = 상태.바꿈 { dd -> dd.세션?.let { dd.copy(세션 = f(it).copy(마지막 = System.currentTimeMillis())) } ?: dd }
     // 뒤로가기 — 열어 둔 세트 설정칸을 먼저 닫는다 (09-22 메모)
     BackHandler(enabled = 열린세트 != null && 열린시트 == null) { 열린세트 = null; 켠칸 = null }
 
@@ -154,7 +156,7 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
 
     Box(Modifier.fillMaxSize()) {
         if (S.끝화면) 마무리(상태, S) else Column(Modifier.fillMaxSize()) {
-            머리줄(S, 지금) { 바꿈 { it.끝냄(System.currentTimeMillis()) } }
+            Box(Modifier.번호("운1")) { 머리줄(S, 지금) { 바꿈 { it.끝냄(System.currentTimeMillis()) } } }
             val 스크롤 = rememberScrollState()
             var 화면틀 by remember { mutableStateOf(Rect.Zero) }
             // 화면 맞추기에 쓰는 좌표 — 상태가 아니라 그냥 들고 있는다 (바뀔 때마다 화면을 다시 그리지 않게)
@@ -189,11 +191,17 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
             //    어느 단계에서 끊겼는지는 폰 없이 확인하지 못했다 → 방식을 바꿨다:
             //    기준 줄이 **목록 안 몇 번째 픽셀에 있는지**를 그때그때 직접 재고(스크롤과 무관한 값),
             //    스크롤을 **그 값으로** 옮긴다(얼마만큼 '더' 가 아니라 '어디로'). 접힘이 끝날 때까지 되풀이한다
-            LaunchedEffect(S.i, S.s, S.한세트수(), 앵커j, 앵커k, h0 != null) {
+            //  · (v0.6.6) 세트를 ＋ 로 더해도 다시 맞춘다 (09-25 메모: 새 세트를 따라 내려가지 않았다)
+            //  · (v0.6.6) 지난 종목이 다 접히기 전에 한 번 크게 움직였다가 되돌아와 흔들려 보였다 (09-25 동영상)
+            //    → 자리가 **두 번 연속 같아진 뒤** 한 번만 부드럽게 옮기고, 그 뒤엔 남은 오차만 고친다
+            val 묶음세트 = S.식구(S.i).sumOf { S.종목들[it].총칸() }
+            LaunchedEffect(S.i, S.s, S.한세트수(), 앵커j, 앵커k, h0 != null, 묶음세트) {
                 val 키 = "$앵커j|$앵커k"
                 var 조용 = 0
                 var n = 0
                 var 처음 = true
+                var 전목표 = -100000
+                var 같음 = 0
                 while (n < 40 && 조용 < 3) {   // 최대 약 1.6초, 제자리에 세 번 연속 있으면 끝
                     delay(40); n++
                     if (접기[지금머리] == false) return@LaunchedEffect   // 지금 묶음을 접어 두었으면 기준 줄이 없다
@@ -218,6 +226,12 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
                     val 필요 = maxOf(0, (목표0 + 좌표.화면높이 - 끝y).toInt())
                     if (kotlin.math.abs(필요 - 여분) > 2) { 여분 = 필요; 조용 = 0; continue }   // 빈자리를 먼저 맞추고 다음 차례에
                     val 목표 = 목표0.toInt().coerceIn(0, 스크롤.maxValue)
+                    // 접힘 · 펼침이 멈출 때까지 기다린다 (목표가 두 번 연속 같을 때까지)
+                    if (처음) {
+                        if (kotlin.math.abs(목표 - 전목표) <= 2) 같음++ else 같음 = 0
+                        전목표 = 목표
+                        if (같음 < 2) continue
+                    }
                     if (kotlin.math.abs(목표 - 스크롤.value) > 2) {
                         조용 = 0
                         if (처음) { 처음 = false; 스크롤.animateScrollTo(목표) } else 스크롤.scrollTo(목표)
@@ -238,7 +252,8 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
                     그린.addAll(식구)
                     val 머리 = 식구.first()
                     val 접힘 = !(접기[머리] ?: (머리 == 지금머리))
-                    Column(Modifier.onGloballyPositioned { b ->
+                    // 화면 번호 (09-26) — 앞의 끝낸 묶음 운3 · 지금 묶음 운4 · 뒤에 남은 묶음 운5
+                    Column(Modifier.번호(if (머리 == 지금머리) "운4" else if (머리 < 지금머리) "운3" else "운5").onGloballyPositioned { b ->
                         val r = b.boundsInRoot()
                         if (머리 == 지금머리) { 지금틀 = r; 좌표.상자 = b; 좌표.상자키 = 머리 }
                         // 지금 종목이 아닌데 펼쳐 둔 것이 **절반쯤 벗어나면** 저절로 접는다 (09-24 메모)
@@ -262,11 +277,11 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
             // 지금 하는 종목은 늘 맨 위에 붙어 있다 (09-24 메모)
             고정머리(
                 상태, S, 띠i, 접기[지금머리] ?: true, { 접기[지금머리] = !(접기[지금머리] ?: true) },
-                Modifier.align(Alignment.TopCenter).onGloballyPositioned { 바높이 = it.size.height },
+                Modifier.align(Alignment.TopCenter).onGloballyPositioned { 바높이 = it.size.height }.번호("운2"),
             )
             }
             // 아랫줄 — 운동 목록 · 운동 추가 · 다음
-            Row(Modifier.fillMaxWidth().background(c.면).padding(horizontal = 12.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(Modifier.fillMaxWidth().background(c.면).번호("운6").padding(horizontal = 12.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 버튼("운동 목록", { 열린시트 = "목록" }, Modifier.weight(1f), 작게 = true, 그림 = 아이콘.목록)
                 버튼("운동 추가", { 열린시트 = "추가" }, Modifier.weight(1f), 작게 = true, 그림 = 아이콘.더하기)
                 버튼("다음", {
@@ -533,7 +548,9 @@ private fun 세트줄(
     val c = Local색.current
     val e = S.종목들[j]
     val rec = e.기록.칸(k)
-    val 지금칸 = j == S.i && k == S.s
+    // 쉬는 동안은 **쉬고 나서 할 줄**을 칠한다 (09-25 메모: 슈퍼세트 1A·1B 뒤 쉬는 동안 2B 가 칠해져 2B→2A 순서처럼 보였다)
+    val 할자리 = S.휴식?.let { h -> if (h.다음i != null && h.다음s != null) h.다음i to h.다음s else null } ?: (S.i to S.s)
+    val 지금칸 = j == 할자리.first && k == 할자리.second
     val v = S.세트값(e, k)
     val 쉼 = e.세트휴식(k)
     val 폭 = 상태.d.설정.무게폭
@@ -572,7 +589,7 @@ private fun 세트줄(
             }
             // 휴식 칸 — 쉬는 동안 여기서 줄어든다. 초록 → 절반 이하 파랑 → 5초 이하 빨강 굵게 (09-21 메모)
             if (쉬는중 && h != null && !h.물음) {
-                val 남은초 = max(0L, (h.끝시각 - 지금 + 999) / 1000).toInt()
+                val 남은초 = h.남은초(지금)
                 val 총 = if (h.총초 > 0) h.총초 else 쉼
                 val 색 = when {
                     남은초 <= 5 -> c.나쁨

@@ -1,6 +1,14 @@
 package com.slayde.hasenheide
 
+import android.app.PictureInPictureParams
 import android.content.Intent
+import android.content.res.Configuration
+import android.media.AudioAttributes
+import android.util.Rational
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.Modifier
 import android.net.Uri
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -16,6 +24,9 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import com.slayde.hasenheide.ui.앱
+import com.slayde.hasenheide.ui.작은창
+import com.slayde.hasenheide.ui.Local번호
+import androidx.compose.runtime.CompositionLocalProvider
 import com.slayde.hasenheide.ui.앱상태
 import com.slayde.hasenheide.ui.폰기능
 import com.slayde.hasenheide.ui.theme.하젠하이데테마
@@ -31,6 +42,9 @@ import java.time.LocalDate
 class MainActivity : ComponentActivity() {
 
     private val 상태 by lazy { 앱상태(File(filesDir, "hasenheide.json")) }
+
+    /** 작은 창(PiP)으로 떠 있는 중인가 (09-25 메모) */
+    private val 작은창중 = mutableStateOf(false)
 
     /** 백업 내보내기 — 저장할 곳을 고르면 그 파일에 쓴다 */
     private val 내보내기창 = registerForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
@@ -61,6 +75,7 @@ class MainActivity : ComponentActivity() {
                 val u = 주소.trim().let { if (it.startsWith("http")) it else "https://$it" }
                 try { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(u))) } catch (e: Exception) { 알림글("이 링크를 열지 못했습니다") }
             },
+            진동미리 = { 진동(상태.d.설정.진동세기, 상태.d.설정.진동시간) },
             복사 = { 글 ->
                 val 판 = getSystemService(ClipboardManager::class.java)
                 판?.setPrimaryClip(ClipData.newPlainText("수정 메모", 글))
@@ -68,22 +83,61 @@ class MainActivity : ComponentActivity() {
             },
         )
         setContent {
-            하젠하이데테마 { 앱(상태, 폰) }
+            하젠하이데테마 {
+                // 작은 창일 때도 앱은 그대로 살아 있어야 휴식 시계 · 알림이 돈다 → 앱 위에 작은 창 화면을 덮는다
+                CompositionLocalProvider(Local번호 provides 상태.d.설정.번호보기) {
+                    Box(Modifier.fillMaxSize()) {
+                        앱(상태, 폰)
+                        if (작은창중.value) 작은창(상태)
+                    }
+                }
+            }
         }
+    }
+
+    /**
+     * 홈 버튼 등으로 앱을 벗어날 때 — 운동 중이면 작은 창(PiP)으로 띄운다 (09-25 메모)
+     * 쉬는 중이면 남은 휴식이, 아니면 '운동 중' 과 지금 종목이 보인다. 창을 누르면 앱으로 돌아온다
+     */
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        val S = 상태.d.세션 ?: return
+        if (S.끝화면 || Build.VERSION.SDK_INT < 26) return
+        try {
+            enterPictureInPictureMode(PictureInPictureParams.Builder().setAspectRatio(Rational(16, 9)).build())
+        } catch (_: Exception) { }
+    }
+
+    override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean, newConfig: Configuration) {
+        super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
+        작은창중.value = isInPictureInPictureMode
     }
 
     /** 휴식이 끝났을 때 — 진동 + 짧은 소리 */
     private fun 휴식끝알림() {
-        try {
-            val 진동 = getSystemService(Vibrator::class.java)
-            if (진동 != null && 진동.hasVibrator()) {
-                if (Build.VERSION.SDK_INT >= 26) 진동.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 300, 150, 300), -1))
-            }
-        } catch (_: Exception) { }
+        진동(상태.d.설정.진동세기, 상태.d.설정.진동시간)
         try {
             val 소리 = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 80)
             소리.startTone(ToneGenerator.TONE_PROP_BEEP2, 400)
             window.decorView.postDelayed({ 소리.release() }, 800)
+        } catch (_: Exception) { }
+    }
+
+    /**
+     * 진동 — 세기(1 약 · 2 중 · 3 강) · 길이(ms) (09-25 메모)
+     * '알람' 용도로 울린다 — 앱이 뒤에 있을 때 일반 진동은 폰이 막는 경우가 있어서 (09-25 메모: 화면 밖에서 안 울렸다)
+     * 세기를 조절하지 못하는 폰이면 길이만 바뀐다
+     */
+    private fun 진동(세기: Int, 길이: Int) {
+        try {
+            val v = getSystemService(Vibrator::class.java) ?: return
+            if (!v.hasVibrator() || Build.VERSION.SDK_INT < 26) return
+            val 크기 = if (v.hasAmplitudeControl()) when (세기) { 1 -> 70; 3 -> 255; else -> 160 } else VibrationEffect.DEFAULT_AMPLITUDE
+            val 효과 = VibrationEffect.createOneShot(길이.toLong().coerceIn(100, 5000), 크기)
+            val 용도 = AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ALARM)
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build()
+            @Suppress("DEPRECATION")
+            v.vibrate(효과, 용도)
         } catch (_: Exception) { }
     }
 

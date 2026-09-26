@@ -40,6 +40,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.slayde.hasenheide.data.앱데이터
 import com.slayde.hasenheide.data.예정맞추기
+import com.slayde.hasenheide.data.남은초
+import com.slayde.hasenheide.data.오래된운동정리
 import com.slayde.hasenheide.data.저장소
 import com.slayde.hasenheide.ui.theme.Local색
 import com.slayde.hasenheide.ui.theme.크기
@@ -79,7 +81,8 @@ class 앱상태(private val 파일: File) {
     fun 날짜확인() {
         val 지금 = LocalDate.now().toString()
         if (지금 != 오늘 || d.예정.isEmpty()) { 오늘 = 지금 }
-        바꿈 { it.예정맞추기(오늘) }
+        // 오래 손대지 않은 운동은 끝낸다 (09-25 메모) — 켤 때 한 번, 그 뒤 1분마다
+        바꿈 { it.오래된운동정리(System.currentTimeMillis()).예정맞추기(오늘) }
     }
 
     /** 백업 — 파일로 내보내고 가져온다 */
@@ -100,6 +103,8 @@ class 폰기능(
     val 복사: (String) -> Unit,
     /** 참고 링크 열기 (09-24) */
     val 링크열기: (String) -> Unit,
+    /** 설정에서 진동 세기 · 길이를 고를 때 한 번 울려 보기 (09-25) */
+    val 진동미리: () -> Unit = {},
 )
 
 enum class 탭(val 이름: String, val 그림: ImageVector) {
@@ -190,7 +195,7 @@ private fun 운동중띠(S: com.slayde.hasenheide.data.운동세션, 돌아가�
     var 지금 by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(Unit) { while (true) { 지금 = System.currentTimeMillis(); delay(1000) } }
     val h = S.휴식
-    val 곁 = if (h != null && !h.물음) "휴식 ${분초(max(0L, (h.끝시각 - 지금 + 999) / 1000).toInt())}" else 시분초(S.흐른초(지금))
+    val 곁 = if (h != null && !h.물음) "휴식 ${분초(h.남은초(지금))}" else 시분초(S.흐른초(지금))
     Row(
         Modifier.fillMaxWidth().background(c.강조).눌림(돌아가기).padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
