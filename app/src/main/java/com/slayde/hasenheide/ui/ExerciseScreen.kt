@@ -136,6 +136,8 @@ private fun 종목한줄(상태: 앱상태, e: 종목, 열림: Boolean, on열기
             })
             글("달력 칸에만 쓰는 짧은 이름", Modifier.padding(top = 2.dp), 크기값 = 크기.작게, 색 = c.옅음)
             Box(Modifier.height(12.dp))
+            목표칸(상태, e.이름)
+            Box(Modifier.height(12.dp))
             이름표("부위")
             칩줄(d.카테고리, e.부위, { p -> 상태.바꿈 { d -> d.copy(종목표 = d.종목표.map { if (it.이름 == e.이름) it.copy(부위 = p) else it }) } }, Modifier.padding(top = 4.dp))
             Box(Modifier.height(12.dp))
@@ -154,6 +156,30 @@ private fun 종목한줄(상태: 앱상태, e: 종목, 열림: Boolean, on열기
                 }
             }, Modifier.fillMaxWidth(), 작게 = true, 글색 = c.나쁨)
         }
+    }
+}
+
+/**
+ * 1RM 목표 적기 (09-27) — 종목 탭 · 루틴의 종목 설정 두 곳에서 같은 칸. 종목표에 저장한다.
+ * 비우면 목표 없음. 캘린더 판에 지금 속도 · 도달 예상이 보인다
+ */
+@Composable
+fun 목표칸(상태: 앱상태, 종목이름: String) {
+    val 것 = 상태.d.종목표.firstOrNull { it.이름 == 종목이름 }
+    var 값 by remember(종목이름, 것?.목표1RM) { mutableStateOf(것?.목표1RM?.let { 무게글(it) } ?: "") }
+    fun 저장() {
+        val v = 값.replace(',', '.').toDoubleOrNull()?.takeIf { it > 0 }
+        상태.바꿈 { d ->
+            val 있나 = d.종목표.any { it.이름 == 종목이름 }
+            d.copy(종목표 = if (있나) d.종목표.map { if (it.이름 == 종목이름) it.copy(목표1RM = v) else it }
+                         else d.종목표 + 종목(종목이름, d.카테고리.firstOrNull() ?: "", 목표1RM = v))
+        }
+    }
+    이름표("1RM 목표")
+    Row(Modifier.fillMaxWidth().padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+        입력칸(값, { 값 = it }, Modifier.weight(1f), 안내 = "비워두면 목표 없음", 숫자 = true, onDone = { 저장() })
+        글("kg", Modifier.padding(horizontal = 8.dp), 크기값 = 크기.버튼, 색 = Local색.current.옅음)
+        버튼("저장", { 저장() }, 작게 = true)
     }
 }
 
@@ -322,7 +348,7 @@ fun 종목이름칸(상태: 앱상태, 이름: String, on이름: (String) -> Uni
     if (추천.isNotEmpty()) {
         Column(
             Modifier.fillMaxWidth().padding(top = 4.dp).clip(RoundedCornerShape(모서리.작게))
-                .background(c.면).border(1.dp, c.선, RoundedCornerShape(모서리.작게)),
+                .background(c.면).border(1.dp, c.속선, RoundedCornerShape(모서리.작게)),
         ) {
             추천.forEachIndexed { i, n ->
                 if (i > 0) 구분선()
@@ -357,7 +383,7 @@ fun 장비고르기(상태: 앱상태, 선택: String, on선택: (String) -> Uni
             ) { 글(p, 크기값 = 크기.버튼, 색 = if (켬) c.강조글 else c.흐림, 굵기 = FontWeight.Medium) }
         }
         Box(
-            Modifier.height(높이.낮게).clip(CircleShape).border(1.dp, if (직접) c.강조 else c.선, CircleShape)
+            Modifier.height(높이.낮게).clip(CircleShape).border(1.dp, if (직접) c.강조 else c.속선, CircleShape)
                 .눌림 { 직접 = !직접 }.padding(horizontal = 12.dp),
             contentAlignment = Alignment.Center,
         ) { 글("직접 입력", 크기값 = 크기.버튼, 색 = if (직접) c.강조 else c.흐림, 굵기 = FontWeight.Medium) }

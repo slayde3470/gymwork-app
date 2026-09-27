@@ -31,34 +31,43 @@ data class 색표(
     val 면: Color,        // 카드
     val 면2: Color,       // 버튼 · 칩 바탕
     val 선: Color,        // 구분선 · 테두리
+    val 속선: Color,      // 박스 안의 박스 테두리 (09-27: 큰 박스 = 굵은 중심색, 안쪽 박스 = 이 색)
     val 글: Color,        // 본문 글자
     val 흐림: Color,      // 보조 글자
     val 옅음: Color,      // 설명 글자
-    val 강조: Color,      // 주요 버튼 · 선택
+    val 강조: Color,      // 주요 버튼 · 선택 · 중심색 (예일 블루 #084B83)
     val 강조글: Color,    // 강조색 위의 글자
     val 강조옅음: Color,  // 지금 할 세트 줄 바탕
     val 좋음: Color,      // 달성
+    val 좋음옅음: Color,  // 달성 알약 바탕
     val 나쁨: Color,      // 미달성 · 지우기
-    val 휴식: Color,      // 휴식 띠 · 슈퍼세트
+    val 휴식: Color,      // 휴식 · 슈퍼세트 — 09-27: 주황을 뺐다 → 중심색과 같다
     val 휴식옅음: Color,
     val 오름: Color,      // 향상도 오름 = 빨강 (주식처럼)
-    val 내림: Color,      // 향상도 내림 = 파랑
+    val 내림: Color,      // 향상도 내림 = 중심색 (09-27)
 )
 
+/**
+ * 09-27 색 정돈 (시안 https://claude.ai/artifact/VSVZ8T9ucZjEvK1JCwiNne)
+ *  · 가족 넷: 남(중심색 #084B83) · 먹(남을 어둡게) · 빨강 #B3261E · 초록(연두 쪽)
+ *  · 옅은 색은 모두 제 가족 색을 흰색에 섞은 것. 주황은 뺐다
+ */
 val 밝은색표 = 색표(
-    바탕 = Color(0xFFF7F8F7), 면 = Color(0xFFFFFFFF), 면2 = Color(0xFFF0F2F1), 선 = Color(0xFFDDE2E0),
-    글 = Color(0xFF1A1C1B), 흐림 = Color(0xFF6B7F76), 옅음 = Color(0xFF9AA8A2),
-    강조 = Color(0xFF2E5E4E), 강조글 = Color(0xFFFFFFFF), 강조옅음 = Color(0xFFE2EEE8),
-    좋음 = Color(0xFF2E7D57), 나쁨 = Color(0xFFB3261E), 휴식 = Color(0xFFB06A1F), 휴식옅음 = Color(0xFFFBEEDD),
-    오름 = Color(0xFFD92D20), 내림 = Color(0xFF1668DC),
+    바탕 = Color(0xFFF8FAFB), 면 = Color(0xFFFFFFFF), 면2 = Color(0xFFF0F4F8), 선 = Color(0xFFD3DFE9), 속선 = Color(0xFFB5C9DA),
+    글 = Color(0xFF000000), 흐림 = Color(0xFF35495B), 옅음 = Color(0xFF5E6B77),
+    강조 = Color(0xFF084B83), 강조글 = Color(0xFFFFFFFF), 강조옅음 = Color(0xFFE1E9F0),
+    좋음 = Color(0xFF4C9A1F), 좋음옅음 = Color(0xFFEAF3E4), 나쁨 = Color(0xFFB3261E),
+    휴식 = Color(0xFF084B83), 휴식옅음 = Color(0xFFE1E9F0),
+    오름 = Color(0xFFB3261E), 내림 = Color(0xFF084B83),
 )
 
 val 어두운색표 = 색표(
-    바탕 = Color(0xFF121413), 면 = Color(0xFF1E211F), 면2 = Color(0xFF272B29), 선 = Color(0xFF343936),
-    글 = Color(0xFFE2E3E1), 흐림 = Color(0xFF9FB2A9), 옅음 = Color(0xFF6F7F78),
-    강조 = Color(0xFF8FD0B8), 강조글 = Color(0xFF00382A), 강조옅음 = Color(0xFF213029),
-    좋음 = Color(0xFF8FD0B8), 나쁨 = Color(0xFFF2B8B5), 휴식 = Color(0xFFE8B87A), 휴식옅음 = Color(0xFF302819),
-    오름 = Color(0xFFFF7A6B), 내림 = Color(0xFF66B0FF),
+    바탕 = Color(0xFF07121E), 면 = Color(0xFF111F2E), 면2 = Color(0xFF172738), 선 = Color(0xFF253A50), 속선 = Color(0xFF37526E),
+    글 = Color(0xFFE5F0FA), 흐림 = Color(0xFFC5D1DB), 옅음 = Color(0xFF9BA7B3),
+    강조 = Color(0xFF7FB3E6), 강조글 = Color(0xFF04213D), 강조옅음 = Color(0xFF1F3246),
+    좋음 = Color(0xFF9BE06B), 좋음옅음 = Color(0xFF243A22), 나쁨 = Color(0xFFE57368),
+    휴식 = Color(0xFF7FB3E6), 휴식옅음 = Color(0xFF1F3246),
+    오름 = Color(0xFFE57368), 내림 = Color(0xFF7FB3E6),
 )
 
 val Local색 = staticCompositionLocalOf { 밝은색표 }

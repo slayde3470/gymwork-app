@@ -44,6 +44,8 @@ object 저장소 {
             }
         })
         d.세션?.let { o.put("세션", 세션to(it)) }
+        o.put("미실시", JSONObject().also { m -> d.미실시.forEach { (k, v) -> m.put(k, v) } })
+        o.put("조절", JSONObject().also { m -> d.조절.forEach { (k, v) -> m.put(k, JSONObject().put("볼륨", v.볼륨).put("무게", v.무게).put("세트", v.세트)) } })
         return o.toString(1)
     }
 
@@ -51,6 +53,7 @@ object 저장소 {
         .also { if (e.달력이름 != null) it.put("달력이름", e.달력이름) }
         .also { if (e.참고url != null) it.put("참고url", e.참고url) }
         .also { if (e.참고글 != null) it.put("참고글", e.참고글) }
+        .also { if (e.목표1RM != null) it.put("목표1RM", e.목표1RM) }
 
     private fun 루틴종목to(e: 루틴종목) = JSONObject().put("이름", e.이름).put("세트", e.세트).put("무게", e.무게)
         .put("횟수", e.횟수).put("휴식", e.휴식).also { if (e.슈퍼 != null) it.put("슈퍼", e.슈퍼) }
@@ -66,6 +69,7 @@ object 저장소 {
 
     private fun 날기록to(r: 날기록) = JSONObject().put("루틴id", r.루틴id).put("루틴이름", r.루틴이름).put("달성", r.달성)
         .put("걸린초", r.걸린초)
+        .also { if (r.시작시각 > 0) it.put("시작시각", r.시작시각).put("끝시각", r.끝시각) }
         .put("종목들", JSONArray().also { a ->
             r.종목들.forEach { e ->
                 a.put(JSONObject().put("이름", e.이름).put("세트들", 세트들to(e.세트들)).put("임시", e.임시)
@@ -82,7 +86,7 @@ object 저장소 {
 
     private fun 세션to(S: 운동세션) = JSONObject().put("루틴id", S.루틴id).put("루틴이름", S.루틴이름)
         .put("시작시각", S.시작시각).put("i", S.i).put("s", S.s).put("무게", S.무게).put("횟수", S.횟수)
-        .put("끝화면", S.끝화면).put("마지막", S.마지막)
+        .put("끝화면", S.끝화면).put("마지막", S.마지막).put("조절됨", S.조절됨)
         .also { o -> if (S.끝시각 != null) o.put("끝시각", S.끝시각) }
         .put("종목들", JSONArray().also { a ->
             S.종목들.forEach { e ->
@@ -108,7 +112,8 @@ object 저장소 {
         val 판 = o.optInt("스키마", 1)
         return 앱데이터(
             종목표 = 목록(o.optJSONArray("종목표")) { a, i ->
-                a.getJSONObject(i).let { 종목(it.getString("이름"), it.optString("부위"), it.optString("장비"), 글또는널(it, "참고글"), 글또는널(it, "참고url"), 글또는널(it, "달력이름")) }
+                a.getJSONObject(i).let { 종목(it.getString("이름"), it.optString("부위"), it.optString("장비"), 글또는널(it, "참고글"), 글또는널(it, "참고url"), 글또는널(it, "달력이름"),
+                    if (it.has("목표1RM") && !it.isNull("목표1RM")) it.getDouble("목표1RM") else null) }
             },
             카테고리 = if (o.has("카테고리")) 목록(o.optJSONArray("카테고리")) { a, i -> a.getString(i) } else 앱데이터.기본카테고리,
             루틴들 = 목록(o.optJSONArray("루틴들")) { a, i -> 루틴from(a.getJSONObject(i)) },
@@ -123,6 +128,8 @@ object 저장소 {
                 }
             },
             세션 = o.optJSONObject("세션")?.let { 세션from(it) },
+            미실시 = 사전(o.optJSONObject("미실시")) { m, k -> m.getString(k) },
+            조절 = 사전(o.optJSONObject("조절")) { m, k -> m.getJSONObject(k).let { j -> 오늘조절(j.optInt("볼륨", 100), j.optDouble("무게", 0.0), j.optInt("세트", 0)) } },
         )
     }
 
@@ -167,6 +174,7 @@ object 저장소 {
             }
         },
         o.optInt("걸린초"),
+        o.optLong("시작시각", 0L), o.optLong("끝시각", 0L),
     )
 
     /** 스키마 1(v0.2) 의 무게폭 2.5 는 고른 값이 아니라 기본값이었다 → 새 기본값 1 로 (09-21 메모) */
@@ -209,5 +217,6 @@ object 저장소 {
         o.optBoolean("끝화면"),
         if (o.has("끝시각") && !o.isNull("끝시각")) o.getLong("끝시각") else null,
         o.optLong("마지막", 0L),
+        o.optBoolean("조절됨", false),
     )
 }

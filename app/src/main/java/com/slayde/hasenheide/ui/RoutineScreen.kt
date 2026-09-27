@@ -516,6 +516,8 @@ private fun 종목줄(
                         },
                     )
                 }
+                // 1RM 목표 (09-27) — 종목 탭과 같은 칸
+                Box(Modifier.padding(top = 4.dp)) { Column { 목표칸(상태, e.이름) } }
             }
         }
         구분선()
@@ -554,11 +556,15 @@ private fun 참고칸(상태: 앱상태, 폰: 폰기능, 종목이름: String, �
                 }, Modifier.weight(1f), 작게 = true, 주요 = true)
             }
         } else {
+            // 유튜브면 왼쪽에 작은 그림 (09-27)
+            val 유튜브 = 유튜브번호(url) != null
             Row(
-                Modifier.fillMaxWidth().height(높이.보통).clip(RoundedCornerShape(모서리.작게)).background(c.면2)
-                    .눌림 { 폰.링크열기(url) }.padding(horizontal = 8.dp),
+                Modifier.fillMaxWidth().then(if (유튜브) Modifier.heightIn(min = 높이.보통) else Modifier.height(높이.보통))
+                    .clip(RoundedCornerShape(모서리.작게)).background(c.면2)
+                    .눌림 { 폰.링크열기(url) }.padding(horizontal = 8.dp, vertical = if (유튜브) 6.dp else 0.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                if (유튜브) { 유튜브썸네일(url, Modifier.width(112.dp).height(63.dp)); Box(Modifier.width(8.dp)) }
                 Icon(아이콘.링크, null, Modifier.size(16.dp), tint = c.강조)
                 Box(Modifier.width(8.dp))
                 글(것.참고글 ?: url, Modifier.weight(1f), 크기값 = 크기.버튼, 색 = c.강조, 굵기 = FontWeight.Medium)
@@ -613,7 +619,7 @@ private fun 안고르기(상태: 앱상태, r: 루틴, 방금: List<String>, 방
             .bringIntoViewRequester(끌어올림)
             .clip(RoundedCornerShape(모서리.작게))
             .background(c.면2)
-            .border(1.dp, c.선, RoundedCornerShape(모서리.작게))
+            .border(1.dp, c.속선, RoundedCornerShape(모서리.작게))
             .padding(12.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {

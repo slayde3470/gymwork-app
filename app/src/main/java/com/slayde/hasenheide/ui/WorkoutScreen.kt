@@ -123,6 +123,8 @@ import com.slayde.hasenheide.ui.theme.모서리
 import com.slayde.hasenheide.ui.theme.크기
 import kotlinx.coroutines.delay
 import kotlin.math.max
+import kotlin.math.roundToInt
+import kotlin.math.roundToLong
 
 /**
  * 운동 실행 화면 (기능명세 5).
@@ -369,7 +371,7 @@ private fun 고름줄(글자: String, 켬: Boolean, on누름: () -> Unit) {
     ) {
         Box(
             Modifier.size(20.dp).clip(RoundedCornerShape(6.dp))
-                .background(if (켬) c.강조 else c.면2).border(1.dp, if (켬) c.강조 else c.선, RoundedCornerShape(6.dp)),
+                .background(if (켬) c.강조 else c.면2).border(1.dp, if (켬) c.강조 else c.속선, RoundedCornerShape(6.dp)),
             contentAlignment = Alignment.Center,
         ) { if (켬) Icon(아이콘.체크, null, Modifier.size(14.dp), tint = c.강조글) }
         글(글자, 크기값 = 크기.버튼)
@@ -380,21 +382,39 @@ private fun 고름줄(글자: String, 켬: Boolean, on누름: () -> Unit) {
  * 지금 하는 종목을 **화면 맨 위에 늘 붙여 두는 띠** (09-24 홍겸 님 제안).
  * 끝낸 세트와 끝낸 종목은 이 띠 뒤로 밀려 올라가 가려진다 —
  * 그래서 세트가 많아도 손을 크게 움직이거나 스크롤하지 않고 체크할 수 있다.
+ *
+ * 09-27 띠 B — 이름 줄만 중심색으로 채우고(흰 글자 18 굵게), 1RM · 볼륨 줄은 흰 바탕. 테두리는 굵은 중심색.
+ * 바뀌는 숫자(세트 · 달성도 · 1RM · 볼륨 · ▲▼)는 옛 값 → 새 값으로 움직인다 (자릿수 시간 − 0.5초)
  */
 @Composable
 private fun 고정머리(상태: 앱상태, S: 운동세션, 띠i: Int, 펼침: Boolean, on접기: () -> Unit, modifier: Modifier) {
     val c = Local색.current
+    val 모양 = RoundedCornerShape(12.dp)
     Box(modifier.fillMaxWidth().background(c.바탕).padding(horizontal = 간격.보통, vertical = 4.dp)) {
-        Column(
-            Modifier.fillMaxWidth()
-                .clip(RoundedCornerShape(모서리.작게))
-                .background(c.면)
-                .border(1.dp, c.강조.copy(alpha = 0.35f), RoundedCornerShape(모서리.작게))
-                .padding(horizontal = 8.dp, vertical = 2.dp),
-        ) {
+        Column(Modifier.fillMaxWidth().clip(모양).background(c.면).border(2.dp, c.강조, 모양)) {
             val 식구 = S.식구(띠i)
-            // 슈퍼세트면 한 줄로 `슈퍼세트 A 해머 컬` — 체크할 때마다 할 종목으로 바뀐다. 두 종목을 함께 늘어놓지 않는다 (09-24 메모)
-            종목머리(상태, S, 띠i, if (식구.size > 1) "슈퍼세트 " + 글자표(식구.indexOf(띠i)) else null, 펼침, 지금표시 = true, on누름 = { }, on접기 = on접기)
+            val e = S.종목들[띠i]
+            val 찬 = e.찬것()
+            // 슈퍼세트면 `슈퍼세트 A 해머 컬` — 체크할 때마다 할 종목으로 바뀐다 (09-24 메모)
+            val 표 = if (식구.size > 1) "슈퍼세트 " + 글자표(식구.indexOf(띠i)) else null
+            val 한 = 움직수(찬.size.toDouble(), 영부터 = false, 빠르게 = true)
+            val 달 = 움직수(e.달성도().toDouble(), 영부터 = false, 빠르게 = true)
+            띠 {
+                if (표 != null) 글(표, 크기값 = 크기.조금작게, 색 = c.강조글, 굵기 = FontWeight.Bold)
+                띠글(e.이름, Modifier.weight(1f, fill = false))
+                listOfNotNull(if (e.임시) "오늘만" else null, if (e.마감) "마침" else null).forEach { b -> 글(b, 크기값 = 크기.작게, 색 = c.강조글, 굵기 = FontWeight.Bold) }
+                글("${한.roundToInt()}/${e.총칸()}세트 · ${달.roundToInt()}%", 크기값 = 크기.작게, 색 = c.강조글.copy(alpha = 0.9f), 굵기 = FontWeight.Bold)
+                Box(Modifier.weight(1f))
+                접기단추(펼침, on접기, c.강조글)
+            }
+            if (펼침) Column(Modifier.fillMaxWidth().padding(start = 10.dp, end = 10.dp, top = 3.dp, bottom = 7.dp)) {
+                val 향 = if (찬.isEmpty()) null else 상태.d.종목향상(e.이름, 찬, 상태.오늘)
+                val rm = 찬.maxOfOrNull { 일RM(it.w, it.r) }
+                val rm움 = 움직수(rm ?: 0.0, 영부터 = false, 빠르게 = true)
+                val 볼움 = 움직수(볼륨(찬), 영부터 = false, 빠르게 = true)
+                향상줄("1RM ${if (rm != null) kg글(rm움) + "kg" else "—"}", 향?.rm, 빠르게 = true)
+                향상줄("볼륨 ${콤마(볼움)}/${콤마(e.목표볼륨())}kg", 향?.볼륨, Modifier.padding(top = 3.dp), 빠르게 = true)
+            }
         }
     }
 }
@@ -403,16 +423,19 @@ private fun 고정머리(상태: 앱상태, S: 운동세션, 띠i: Int, 펼침: 
 private fun 머리줄(S: 운동세션, 지금: Long, 끝내기: () -> Unit) {
     val c = Local색.current
     val 달 = S.루틴달성도()
+    // 09-27: 바뀌는 숫자는 옛 값 → 새 값으로 움직인다
+    val 달움 = 움직수(달.toDouble(), 영부터 = false, 빠르게 = true)
+    val 볼움 = 움직수(S.오늘볼륨(), 영부터 = false, 빠르게 = true)
     Column(Modifier.fillMaxWidth().background(c.면)) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             제목글(S.루틴이름, 크기값 = 크기.버튼)
             글("${S.i + 1}/${S.종목들.size}", 크기값 = 크기.아주작게, 색 = c.흐림)
-            글("달성도 ${달}%", 크기값 = 크기.아주작게, 색 = c.강조, 굵기 = FontWeight.Bold)
+            글("달성도 ${달움.roundToInt()}%", 크기값 = 크기.아주작게, 색 = c.강조, 굵기 = FontWeight.Bold)
             글(시분초(S.흐른초(지금)), 크기값 = 크기.아주작게, 색 = c.흐림)
-            글("${콤마(S.오늘볼륨())}/${콤마(S.목표볼륨())}", Modifier.weight(1f), 크기값 = 크기.아주작게, 색 = c.흐림)
+            글("${콤마(볼움)}/${콤마(S.목표볼륨())}", Modifier.weight(1f), 크기값 = 크기.아주작게, 색 = c.흐림)
             Box(
                 Modifier.height(높이.아주낮게).clip(RoundedCornerShape(모서리.아주작게)).background(c.면2)
-                    .border(1.dp, c.선, RoundedCornerShape(모서리.아주작게)).눌림(끝내기).padding(horizontal = 8.dp),
+                    .border(1.dp, c.속선, RoundedCornerShape(모서리.아주작게)).눌림(끝내기).padding(horizontal = 8.dp),
                 contentAlignment = Alignment.Center,
             ) { 글("운동 끝내기", 크기값 = 크기.작게, 색 = c.흐림, 굵기 = FontWeight.Bold) }
         }
@@ -472,7 +495,7 @@ private fun 종목묶음(
                 // ＋ — 맨 아래 세트를 베낀다 (슈퍼세트면 묶인 종목 전부에)
                 Box(Modifier.fillMaxWidth().padding(vertical = 8.dp), contentAlignment = Alignment.Center) {
                     Box(
-                        Modifier.size(높이.보통).clip(CircleShape).background(c.면).border(1.dp, c.선, CircleShape).눌림 { 발자취.적기("세트 추가"); 바꿈 { it.세트추가(it.i) } },
+                        Modifier.size(높이.보통).clip(CircleShape).background(c.면).border(1.dp, c.속선, CircleShape).눌림 { 발자취.적기("세트 추가"); 바꿈 { it.세트추가(it.i) } },
                         contentAlignment = Alignment.Center,
                     ) { Icon(아이콘.더하기, "세트 추가", Modifier.size(20.dp), tint = c.강조) }
                 }
@@ -490,10 +513,10 @@ private fun 글자표(n: Int): String = ('A' + n).toString()
 
 /** 펼치고 접는 단추 — 묶음마다 하나 (09-24 메모) */
 @Composable
-private fun 접기단추(펼침: Boolean, on접기: () -> Unit) {
+private fun 접기단추(펼침: Boolean, on접기: () -> Unit, 색: Color? = null) {
     val c = Local색.current
     Box(Modifier.size(높이.낮게).눌림 { 발자취.적기(if (펼침) "종목 접기" else "종목 펼치기"); on접기() }, contentAlignment = Alignment.Center) {
-        Icon(아이콘.아래, if (펼침) "접기" else "펼치기", Modifier.size(16.dp).rotate(if (펼침) 180f else 0f), tint = c.옅음)
+        Icon(아이콘.아래, if (펼침) "접기" else "펼치기", Modifier.size(16.dp).rotate(if (펼침) 180f else 0f), tint = 색 ?: c.옅음)
     }
 }
 
@@ -571,14 +594,14 @@ private fun 세트줄(
             Box(
                 Modifier.size(높이.아주낮게).clip(CircleShape)
                     .background(if (rec != null) c.강조 else c.면2)
-                    .border(1.dp, if (rec != null) c.강조 else c.선, CircleShape)
+                    .border(1.dp, if (rec != null) c.강조 else c.속선, CircleShape)
                     .눌림 { 발자취.적기("${e.이름} $번호 세트 ${if (rec != null) "체크 풀기" else "체크"}"); 바꿈 { it.체크(j, k, System.currentTimeMillis()) } },
                 contentAlignment = Alignment.Center,
             ) { Icon(아이콘.체크, "$번호 세트 완료", Modifier.size(15.dp), tint = if (rec != null) c.강조글 else c.면) }
             // 몇 번째 세트
             Box(
                 Modifier.size(width = 32.dp, height = 높이.아주낮게).clip(RoundedCornerShape(모서리.아주작게)).background(c.면)
-                    .border(1.dp, c.선, RoundedCornerShape(모서리.아주작게)).눌림(on열기),
+                    .border(1.dp, c.속선, RoundedCornerShape(모서리.아주작게)).눌림(on열기),
                 contentAlignment = Alignment.Center,
             ) { 글(번호, 크기값 = 크기.버튼, 굵기 = FontWeight.Bold) }
             Row(Modifier.weight(1.6f).눌림(on열기), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.Bottom) {
@@ -589,24 +612,16 @@ private fun 세트줄(
                 글("${v.r}", 크기값 = 크기.크게, 색 = if (rec != null) c.글 else c.흐림)
                 글("회", 크기값 = 크기.작게, 색 = c.옅음)
             }
-            // 휴식 칸 — 쉬는 동안 여기서 줄어든다. 초록 → 절반 이하 파랑 → 5초 이하 빨강 굵게 (09-21 메모)
+            // 휴식 칸 (09-27) — 중심색이 꽉 찬 채로 시작해 남은 시간만큼 줄어든다. 단계별 색은 없다
             if (쉬는중 && h != null && !h.물음) {
                 val 남은초 = h.남은초(지금)
                 val 총 = if (h.총초 > 0) h.총초 else 쉼
-                val 색 = when {
-                    남은초 <= 5 -> c.나쁨
-                    총 > 0 && 남은초 * 2 <= 총 -> c.내림
-                    else -> c.좋음
-                }
-                Box(
-                    Modifier.width(62.dp).height(높이.아주낮게).clip(RoundedCornerShape(모서리.아주작게)).background(색.copy(alpha = 0.14f))
-                        .border(1.5.dp, 색, RoundedCornerShape(모서리.아주작게)),
-                    contentAlignment = Alignment.Center,
-                ) { 글(분초(남은초), 크기값 = 크기.크게, 색 = 색, 굵기 = if (남은초 <= 5) FontWeight.ExtraBold else FontWeight.Bold) }
+                val 비율 = if (총 > 0) ((h.끝시각 - 지금).toFloat() / (총 * 1000f)) else 0f
+                휴식칸(비율, 분초(남은초), Modifier.width(62.dp).height(높이.아주낮게))
                 // 건너뛰기만 둔다 (±10초는 뺐다)
                 Box(
                     Modifier.height(높이.아주낮게).clip(RoundedCornerShape(모서리.아주작게)).background(c.면2)
-                        .border(1.dp, c.선, RoundedCornerShape(모서리.아주작게))
+                        .border(1.dp, c.속선, RoundedCornerShape(모서리.아주작게))
                         .눌림 { 발자취.적기("휴식 건너뛰기"); 바꿈 { it.다음으로(System.currentTimeMillis()) } }.padding(horizontal = 8.dp),
                     contentAlignment = Alignment.Center,
                 ) { 글("건너뛰기", 크기값 = 크기.작게, 색 = c.흐림, 굵기 = FontWeight.Bold) }
@@ -681,35 +696,42 @@ private fun 마무리(상태: 앱상태, S: 운동세션) {
     var 열린종목 by remember { mutableStateOf<String?>(null) }
 
     Column(Modifier.fillMaxSize().padding(horizontal = 간격.넓게)) {
-        // ── 제목 + 요약 (직전 같은 루틴 대비) ──
-        Row(Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-            제목글("${S.루틴이름} ${if (달성) "달성" else "미달성"}", Modifier.weight(1f), 크기값 = 크기.제목, 색 = if (달성) c.글 else c.나쁨)
-            Column(horizontalAlignment = Alignment.End) {
-                val 세트 = S.한세트수()
-                Text(buildAnnotatedString {
-                    append("${세트}/${S.목표세트()}세트")
-                    if (직전세트 != null) append(증감표((세트 - 직전세트.size).toDouble(), c.오름, c.내림) { "${it.toInt()}" })
-                    append(" · ${시분초(S.흐른초(System.currentTimeMillis()))}")
-                }, style = 글꼴.보통(크기.작게), color = c.흐림, maxLines = 1)
-                val 볼 = S.오늘볼륨()
-                Text(buildAnnotatedString {
-                    append("볼륨 ${콤마(볼)}kg")
-                    if (직전세트 != null) {
-                        val p = 퍼센트(볼, 볼륨(직전세트))
-                        if (p != null) append(증감표(p.toDouble(), c.오름, c.내림) { "${it.toInt()}%" })
-                    }
-                }, style = 글꼴.보통(크기.작게), color = c.흐림, maxLines = 1)
+        // ── 제목 띠 (09-27) — "가슴 루틴 [달성]" 가운데. 왼쪽부터 드러나며 옅게 → 진하게 ──
+        val 드 = 드러남값()
+        띠(Modifier.padding(top = 12.dp), 모서리값 = RoundedCornerShape(12.dp), 가운데 = true) {
+            Row(Modifier.드러남(드), verticalAlignment = Alignment.CenterVertically) {
+                띠글(루틴표시(S.루틴이름), Modifier.weight(1f, fill = false))
+                Box(Modifier.width(6.dp))
+                달성알약(달성)
+            }
+        }
+        // ── 세트 · 시간 · 볼륨 — 0 부터 올라간다 (자릿수 시간) ──
+        val 세트 = S.한세트수()
+        val 초 = S.흐른초(System.currentTimeMillis())
+        val 볼 = S.오늘볼륨()
+        val 세트움 = 움직수(세트.toDouble(), 영부터 = true)
+        val 초움 = 움직수(초.toDouble(), 영부터 = true)
+        val 볼움 = 움직수(볼, 영부터 = true)
+        Row(Modifier.fillMaxWidth().padding(vertical = 10.dp)) {
+            listOf(
+                "${세트움.roundToInt()}" to "세트",
+                시계글(초움.roundToLong()) to "시간",
+                "${콤마(볼움)}kg" to "볼륨",
+            ).forEach { (v, 이름) ->
+                Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                    글(v, 크기값 = 크기.크게, 굵기 = FontWeight.Bold)
+                    글(이름, 크기값 = 크기.아주작게, 색 = c.흐림)
+                }
             }
         }
         // ── 종목 상자 — 이 안에서만 넘긴다 ──
         카드(Modifier.weight(1f), 안쪽 = 0.dp) {
-            // 맨 위: 루틴 정보
-            Column(Modifier.fillMaxWidth().background(c.면2).padding(horizontal = 16.dp, vertical = 12.dp)) {
-                제목글(루틴표시(S.루틴이름), 크기값 = 크기.본문)
+            // 맨 위: 루틴 정보. 기본 볼륨 · 1RM 은 움직이지 않고, ▲▼ 칩만 0 부터 올라간다 (09-27)
+            Column(Modifier.fillMaxWidth().background(c.면2).padding(horizontal = 12.dp, vertical = 10.dp)) {
+                제목글(루틴표시(S.루틴이름), 크기값 = 크기.버튼)
                 val 루향 = d.루틴향상(S.루틴id, S.유효세트(), 오늘)
-                향상줄("볼륨 ${콤마(볼륨(S.유효세트()))}kg", 루향, Modifier.padding(top = 2.dp))
-                글("${S.종목들.count { !it.임시 }}종목 · 달성도 ${S.루틴달성도()}%" + (직전?.let { " · 직전 ${직전세트?.size ?: 0}세트" } ?: ""),
-                    크기값 = 크기.작게, 색 = c.옅음)
+                향상줄("볼륨 ${콤마(볼륨(S.유효세트()))}kg", 루향, Modifier.padding(top = 3.dp), 영부터 = true)
+                글("${S.종목들.count { !it.임시 }}종목 · 달성도 ${S.루틴달성도()}%", Modifier.padding(top = 2.dp), 크기값 = 크기.작게, 색 = c.옅음)
             }
             구분선()
             Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
@@ -721,8 +743,8 @@ private fun 마무리(상태: 앱상태, S: 운동세션) {
                         val 향 = d.종목향상(e.이름, 찬, 오늘)
                         Column(Modifier.weight(1f)) {
                             제목글(e.이름, 크기값 = 크기.조금작게)
-                            향상줄("1RM ${kg글(찬.maxOf { 일RM(it.w, it.r) })}kg", 향?.rm, Modifier.padding(top = 2.dp))
-                            향상줄("볼륨 ${콤마(볼륨(찬))}kg", 향?.볼륨, Modifier.padding(top = 2.dp))
+                            향상줄("1RM ${kg글(찬.maxOf { 일RM(it.w, it.r) })}kg", 향?.rm, Modifier.padding(top = 2.dp), 영부터 = true)
+                            향상줄("볼륨 ${콤마(볼륨(찬))}kg", 향?.볼륨, Modifier.padding(top = 2.dp), 영부터 = true)
                         }
                         펼침단추(열림) { 열린종목 = if (열림) null else e.이름 }
                     }
@@ -740,6 +762,12 @@ private fun 마무리(상태: 앱상태, S: 운동세션) {
         }
         Box(Modifier.height(12.dp))
     }
+}
+
+/** 운동 시간 — "58:20" / 한 시간 넘으면 "1:02:05" */
+private fun 시계글(초: Long): String {
+    val s = max(0L, 초); val h = s / 3600; val m = (s % 3600) / 60; val x = s % 60
+    return if (h > 0) "$h:${m.toString().padStart(2, '0')}:${x.toString().padStart(2, '0')}" else "$m:${x.toString().padStart(2, '0')}"
 }
 
 /** 종목 변화 그래프 — 일 · 주 · 월, 볼륨 / 1RM. 점을 누르면 그 값 */

@@ -151,7 +151,8 @@ fun 카드(modifier: Modifier = Modifier, 안쪽: Dp = 14.dp, content: @Composab
             .fillMaxWidth()
             .clip(RoundedCornerShape(모서리.보통))
             .background(c.면)
-            .border(1.dp, c.선, RoundedCornerShape(모서리.보통))
+            // 09-27: 큰 박스 = 굵은 중심색 테두리 (안쪽 박스는 가는 속선)
+            .border(2.dp, c.강조, RoundedCornerShape(모서리.보통))
             .padding(안쪽),
         content = content,
     )
@@ -208,8 +209,8 @@ fun 버튼(
         modifier
             .height(if (낮게) 높이.낮게 else if (작게) 높이.보통 else 높이.높게)
             .clip(RoundedCornerShape(모서리.작게))
-            .background(if (주요) c.강조 else c.면2)
-            .then(if (주요) Modifier else Modifier.border(1.dp, c.선, RoundedCornerShape(모서리.작게)))
+            .background(if (주요) c.강조 else c.면)
+            .then(if (주요) Modifier else Modifier.border(1.dp, c.속선, RoundedCornerShape(모서리.작게)))
             .눌림(onClick)
             .padding(horizontal = if (낮게) 8.dp else 12.dp),
         horizontalArrangement = Arrangement.Center,
@@ -238,7 +239,8 @@ fun 칩줄(목록: List<String>, 선택: String?, onSelect: (String) -> Unit, mo
                 Modifier
                     .height(높이.낮게)
                     .clip(CircleShape)
-                    .background(if (켬) c.강조 else c.면2)
+                    .background(if (켬) c.강조 else Color.Transparent)
+                    .then(if (켬) Modifier else Modifier.border(1.dp, c.속선, CircleShape))   // 09-27: 안 고른 칩은 칠하지 않고 속선만
                     .눌림 { onSelect(p) }
                     .padding(horizontal = 13.dp),
                 contentAlignment = Alignment.Center,
@@ -298,7 +300,7 @@ fun 입력칸(
             .then(if (여러줄) Modifier.heightIn(min = 높이.높게) else Modifier.height(높이.높게))
             .clip(RoundedCornerShape(모서리.작게))
             .background(c.면)
-            .border(1.dp, c.선, RoundedCornerShape(모서리.작게))
+            .border(1.dp, c.속선, RoundedCornerShape(모서리.작게))
             .padding(horizontal = 12.dp, vertical = if (여러줄) 10.dp else 0.dp),
         contentAlignment = if (여러줄) Alignment.TopStart else Alignment.CenterStart,
     ) {
