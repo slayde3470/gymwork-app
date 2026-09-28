@@ -46,6 +46,9 @@ object 저장소 {
         d.세션?.let { o.put("세션", 세션to(it)) }
         o.put("미실시", JSONObject().also { m -> d.미실시.forEach { (k, v) -> m.put(k, v) } })
         o.put("조절", JSONObject().also { m -> d.조절.forEach { (k, v) -> m.put(k, JSONObject().put("볼륨", v.볼륨).put("무게", v.무게).put("세트", v.세트)) } })
+        // 운동 플랜 (09-28, 스키마 8)
+        o.put("플랜들", JSONArray().also { a -> d.플랜들.forEach { a.put(플랜to(it)) } })
+        o.put("몸", JSONObject().put("나이", d.몸.나이).put("남", d.몸.남).put("체중", d.몸.체중))
         return o.toString(1)
     }
 
@@ -75,6 +78,12 @@ object 저장소 {
                 a.put(JSONObject().put("이름", e.이름).put("세트들", 세트들to(e.세트들)).put("임시", e.임시)
                     .also { if (e.묶음 != null) it.put("묶음", e.묶음) })
             }
+        })
+
+    private fun 플랜to(p: 플랜) = JSONObject().put("종목", p.종목).put("시작무게", p.시작무게).put("시작횟수", p.시작횟수)
+        .put("속도", p.속도단계.name).put("만든날", p.만든날).put("지금주", p.지금주).put("켬", p.켬)
+        .put("측정들", JSONArray().also { a ->
+            p.측정들.forEach { m -> a.put(JSONObject().put("주", m.주).put("날", m.날).put("무게", m.무게).put("횟수", m.횟수)) }
         })
 
     private fun 설정to(s: 설정값) = JSONObject().put("자동진행", s.자동진행).put("넘어가기전확인", s.넘어가기전확인)
@@ -130,6 +139,9 @@ object 저장소 {
             세션 = o.optJSONObject("세션")?.let { 세션from(it) },
             미실시 = 사전(o.optJSONObject("미실시")) { m, k -> m.getString(k) },
             조절 = 사전(o.optJSONObject("조절")) { m, k -> m.getJSONObject(k).let { j -> 오늘조절(j.optInt("볼륨", 100), j.optDouble("무게", 0.0), j.optInt("세트", 0)) } },
+            // 스키마 8 — 옛 파일에는 없다 → 빈 목록 · 기본 몸조건 (시험으로 확인)
+            플랜들 = 목록(o.optJSONArray("플랜들")) { a, i -> 플랜from(a.getJSONObject(i)) },
+            몸 = o.optJSONObject("몸")?.let { j -> 몸조건(j.optInt("나이", 35), j.optBoolean("남", true), j.optDouble("체중", 70.0)) } ?: 몸조건(),
         )
     }
 
@@ -159,6 +171,16 @@ object 저장소 {
         },
         // 스키마 5 까지는 모든 루틴이 캘린더에 깔렸다 → 옛 루틴은 켜진 채로 옮긴다 (달력이 갑자기 비지 않게)
         자동생성 = o.optBoolean("자동생성", true),
+    )
+
+    private fun 플랜from(o: JSONObject) = 플랜(
+        o.getString("종목"), o.optDouble("시작무게", 20.0), o.optInt("시작횟수", 1),
+        속도.entries.firstOrNull { it.name == o.optString("속도") } ?: 속도.보통,
+        o.optString("만든날"), o.optInt("지금주", 1),
+        목록(o.optJSONArray("측정들")) { a, i ->
+            a.getJSONObject(i).let { 측정(it.optInt("주"), it.optString("날"), it.optDouble("무게"), it.optInt("횟수")) }
+        },
+        o.optBoolean("켬", true),
     )
 
     private fun 세트from(a: JSONArray) = 세트(a.getDouble(0), a.getInt(1))

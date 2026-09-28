@@ -207,10 +207,14 @@ data class 앱데이터(
     val 미실시: Map<String, String> = emptyMap(),
     /** "2026-09-28" → 그 날만 조절 (09-27) */
     val 조절: Map<String, 오늘조절> = emptyMap(),
+    /** 운동 플랜 — 종목마다 하나 (09-28, Plan.kt) */
+    val 플랜들: List<플랜> = emptyList(),
+    /** 플랜 계산에 쓰는 몸 조건 (09-28) */
+    val 몸: 몸조건 = 몸조건(),
 ) {
     companion object {
         /** 자료 구조가 바뀌면 올린다 — 옛 백업 파일을 읽을 때 구분하려고 */
-        const val 스키마 = 7
+        const val 스키마 = 8
         val 기본카테고리 = listOf("가슴", "등", "하체", "어깨", "팔", "복근")
     }
 }
