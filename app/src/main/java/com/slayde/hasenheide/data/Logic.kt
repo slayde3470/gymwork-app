@@ -89,7 +89,14 @@ fun 시분초(초: Long): String {
 
 // ─────────────── 볼륨 · 1RM ───────────────
 
-fun 볼륨(세트들: List<세트>): Double = 세트들.sumOf { it.w * it.r }
+/**
+ * 볼륨(운동량) — **워밍업(종류 1)과 측정 세트(종류 2)는 빼고** 센다 (09-29, 20 문서 B-5).
+ * 볼륨을 세는 곳이 앱 곳곳에 있지만 전부 이 함수를 불러 쓰므로 여기 한 곳만 고치면 된다.
+ */
+fun 볼륨(세트들: List<세트>): Double = 세트들.filter { it.종류 == 세트종류.본운동 }.sumOf { it.w * it.r }
+
+/** 1RM 기록에 쓰는 세트 — 워밍업만 뺀다 (측정 세트는 들어간다) */
+fun 기록세트(세트들: List<세트>): List<세트> = 세트들.filter { it.종류 != 세트종류.워밍업 }
 /**
  * 에플리(Epley) 식 — 무게 × (1 + 횟수/30). 세계에서 가장 널리 쓰는 식 (09-27 홍겸 님)
  * 1회는 그 무게 자체다 (09-27: 100kg 1회가 103.3kg 으로 나왔다). 횟수에 제한은 두지 않는다
@@ -295,9 +302,11 @@ data class 지표비교(val 지금: 세션지표, val 과거: 세션지표?)
 
 fun 앱데이터.종목지표(이름: String, 오늘: String): 지표비교? {
     val 들 = 기록.keys.sorted().mapNotNull { k ->
-        val 세트들 = 기록[k]!!.종목들.filter { it.이름 == 이름 }.flatMap { it.세트들 }
+        // 1RM · 단일세트 최고는 워밍업을 뺀 것으로 센다 (09-29). 볼륨은 볼륨() 이 알아서 뺀다
+        val 전부 = 기록[k]!!.종목들.filter { it.이름 == 이름 }.flatMap { it.세트들 }
+        val 세트들 = 기록세트(전부)
         if (세트들.isEmpty()) null else 세션지표(
-            날짜만(k), 세트들.maxOf { 일RM(it.w, it.r) }, 세트들.maxBy { it.w * it.r }, 볼륨(세트들),
+            날짜만(k), 세트들.maxOf { 일RM(it.w, it.r) }, 세트들.maxBy { it.w * it.r }, 볼륨(전부),
         )
     }
     val 최근 = 들.lastOrNull() ?: return null

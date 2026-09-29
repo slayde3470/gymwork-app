@@ -66,7 +66,8 @@ object 저장소 {
     private fun 루틴to(r: 루틴) = JSONObject().put("id", r.id).put("이름", r.이름).put("휴식일", r.휴식일).put("자동생성", r.자동생성)
         .put("종목", JSONArray().also { a -> r.종목.forEach { a.put(루틴종목to(it)) } })
 
-    private fun 세트to(s: 세트) = JSONArray().put(s.w).put(s.r)
+    // 종류는 본운동(0) 이 아닐 때만 적는다 — 옛 파일과 모양이 같아 읽는 쪽이 안 깨진다
+    private fun 세트to(s: 세트) = JSONArray().put(s.w).put(s.r).also { if (s.종류 != 0) it.put(s.종류) }
 
     private fun 세트들to(l: List<세트?>) = JSONArray().also { a -> l.forEach { a.put(if (it == null) JSONObject.NULL else 세트to(it)) } }
 
@@ -80,10 +81,14 @@ object 저장소 {
             }
         })
 
-    private fun 플랜to(p: 플랜) = JSONObject().put("종목", p.종목).put("시작무게", p.시작무게).put("시작횟수", p.시작횟수)
-        .put("속도", p.속도단계.name).put("만든날", p.만든날).put("지금주", p.지금주).put("켬", p.켬)
+    // 스키마 9 (09-29 재설계) — 회 기준 · 목표 직접 입력 · 훈련 방식
+    private fun 플랜to(p: 플랜) = JSONObject().put("id", p.id).put("이름", p.이름).put("종목", p.종목)
+        .put("시작1RM", p.시작1RM).put("목표방식", p.목표방식.name).put("목표무게", p.목표무게).put("목표횟수", p.목표횟수)
+        .put("주당", p.주당).put("방식", p.방식번호).put("강도", p.강도)
+        .put("만든날", p.만든날).put("한회", p.한회).put("누적볼륨", p.누적볼륨)
+        .put("워밍업수", p.워밍업수).put("켬", p.켬)
         .put("측정들", JSONArray().also { a ->
-            p.측정들.forEach { m -> a.put(JSONObject().put("주", m.주).put("날", m.날).put("무게", m.무게).put("횟수", m.횟수)) }
+            p.측정들.forEach { m -> a.put(JSONObject().put("회", m.회).put("날", m.날).put("무게", m.무게).put("횟수", m.횟수)) }
         })
 
     private fun 설정to(s: 설정값) = JSONObject().put("자동진행", s.자동진행).put("넘어가기전확인", s.넘어가기전확인)
@@ -141,7 +146,8 @@ object 저장소 {
             조절 = 사전(o.optJSONObject("조절")) { m, k -> m.getJSONObject(k).let { j -> 오늘조절(j.optInt("볼륨", 100), j.optDouble("무게", 0.0), j.optInt("세트", 0)) } },
             // 스키마 8 — 옛 파일에는 없다 → 빈 목록 · 기본 몸조건 (시험으로 확인)
             플랜들 = 목록(o.optJSONArray("플랜들")) { a, i -> 플랜from(a.getJSONObject(i)) },
-            몸 = o.optJSONObject("몸")?.let { j -> 몸조건(j.optInt("나이", 35), j.optBoolean("남", true), j.optDouble("체중", 70.0)) } ?: 몸조건(),
+            // 09-29: 기본값을 비워 두었다. 비면 화면이 "설정에서 넣어 주세요" 로 안내한다 (01 ⑳)
+            몸 = o.optJSONObject("몸")?.let { j -> 몸조건(j.optInt("나이", 0), j.optBoolean("남", true), j.optDouble("체중", 0.0)) } ?: 몸조건(),
         )
     }
 
@@ -173,17 +179,45 @@ object 저장소 {
         자동생성 = o.optBoolean("자동생성", true),
     )
 
-    private fun 플랜from(o: JSONObject) = 플랜(
-        o.getString("종목"), o.optDouble("시작무게", 20.0), o.optInt("시작횟수", 1),
-        속도.entries.firstOrNull { it.name == o.optString("속도") } ?: 속도.보통,
-        o.optString("만든날"), o.optInt("지금주", 1),
-        목록(o.optJSONArray("측정들")) { a, i ->
-            a.getJSONObject(i).let { 측정(it.optInt("주"), it.optString("날"), it.optDouble("무게"), it.optInt("횟수")) }
-        },
-        o.optBoolean("켬", true),
+    /**
+     * 스키마 8(주 기준) 의 플랜도 읽는다 — 그때 표에 박혀 있던 목표를 그대로 옮긴다.
+     * 옛 플랜은 목표를 표에서 받았지만 지금은 플랜마다 따로 가지므로, 여기서 한 번 옮겨 준다.
+     */
+    private val 옛목표 = mapOf(
+        "벤치프레스" to (100.0 to 12), "백 스쿼트" to (140.0 to 10), "데드리프트" to (220.0 to 5),
+        "오버헤드 프레스" to (100.0 to 5), "펜들레이 로우" to (140.0 to 5),
     )
 
-    private fun 세트from(a: JSONArray) = 세트(a.getDouble(0), a.getInt(1))
+    private fun 플랜from(o: JSONObject): 플랜 {
+        val 종목이름 = o.getString("종목")
+        val 옛 = !o.has("id")
+        val 옛목 = 옛목표[종목이름] ?: (0.0 to 1)
+        return 플랜(
+            id = o.optString("id", "").ifBlank { "p" + System.nanoTime() + 종목이름.hashCode() },
+            이름 = o.optString("이름", "").ifBlank { 종목이름 },
+            종목 = 종목이름,
+            시작1RM = if (옛) 일RM(o.optDouble("시작무게", 20.0), o.optInt("시작횟수", 1)) else o.optDouble("시작1RM", 0.0),
+            목표방식 = if (옛) 목표형식.무게횟수 else (목표형식.entries.firstOrNull { it.name == o.optString("목표방식") } ?: 목표형식.RM),
+            목표무게 = if (옛) 옛목.first else o.optDouble("목표무게", 0.0),
+            목표횟수 = if (옛) 옛목.second else o.optInt("목표횟수", 1),
+            주당 = o.optInt("주당", 플랜표.표준주당),
+            방식번호 = o.optInt("방식", 1),
+            강도 = o.optInt("강도", 1),
+            만든날 = o.optString("만든날"),
+            한회 = o.optInt("한회", 0),
+            누적볼륨 = o.optDouble("누적볼륨", 0.0),
+            측정들 = 목록(o.optJSONArray("측정들")) { a, i ->
+                a.getJSONObject(i).let {
+                    // 옛 파일은 '주' 로 적혀 있다 — 회로 읽되 주당 횟수를 모르니 그대로 둔다
+                    측정(if (it.has("회")) it.optInt("회") else it.optInt("주"), it.optString("날"), it.optDouble("무게"), it.optInt("횟수"))
+                }
+            },
+            워밍업수 = o.optInt("워밍업수", 0),
+            켬 = o.optBoolean("켬", true),
+        )
+    }
+
+    private fun 세트from(a: JSONArray) = 세트(a.getDouble(0), a.getInt(1), if (a.length() > 2) a.optInt(2, 0) else 0)
 
     private fun 세트들from(a: JSONArray?): List<세트?> =
         목록(a) { x, i -> if (x.isNull(i)) null else 세트from(x.getJSONArray(i)) }

@@ -1,20 +1,26 @@
 package com.slayde.hasenheide.ui
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -22,257 +28,715 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.slayde.hasenheide.data.강도들
 import com.slayde.hasenheide.data.무게글
-import com.slayde.hasenheide.data.기대속도
-import com.slayde.hasenheide.data.남은주
-import com.slayde.hasenheide.data.몸조건
-import com.slayde.hasenheide.data.수준
+import com.slayde.hasenheide.data.목표형식
+import com.slayde.hasenheide.data.방식찾기
+import com.slayde.hasenheide.data.빈도배수
 import com.slayde.hasenheide.data.수준판정
-import com.slayde.hasenheide.data.속도
-import com.slayde.hasenheide.data.주처방내기
-import com.slayde.hasenheide.data.주차
+import com.slayde.hasenheide.data.일RM
+import com.slayde.hasenheide.data.지난주
+import com.slayde.hasenheide.data.운동량글
+import com.slayde.hasenheide.data.처방글
+import com.slayde.hasenheide.data.콤마
 import com.slayde.hasenheide.data.플랜
 import com.slayde.hasenheide.data.플랜종목
 import com.slayde.hasenheide.data.플랜표
+import com.slayde.hasenheide.data.회계획
+import com.slayde.hasenheide.data.회처방
+import com.slayde.hasenheide.data.회표
+import com.slayde.hasenheide.data.훈련방식
+import com.slayde.hasenheide.data.훈련방식들
 import com.slayde.hasenheide.ui.theme.Local색
 import com.slayde.hasenheide.ui.theme.간격
 import com.slayde.hasenheide.ui.theme.높이
 import com.slayde.hasenheide.ui.theme.모서리
 import com.slayde.hasenheide.ui.theme.크기
+import kotlinx.coroutines.delay
 import java.time.LocalDate
 
 /**
- * 플랜 화면 (아래 탭 '플랜', 09-28) — 합의된 다섯 종목의 주차별 처방을 보여 준다.
+ * 플랜 화면 (09-29 재설계 · 20 문서) — **플랜 종목을 하나 만드는 도구**다.
  *
- * ── 무엇을 보여 주나 ──
- *  · 몸 조건 한 줄 (나이 · 성별 · 체중) — 수준 판정과 속도에 쓰인다
- *  · 종목마다: 지금 1RM → 목표 1RM · 수준 알약 · 남은 주와 도달 예상 날짜
- *  · 줄을 누르면 펼침: 시작 측정값 · 속도 5단계 · 이번 주 처방 · 측정일
+ * 종목 고르기 → 나의 수행능력 → 운동 목표 → 훈련 방식 → 계산해 보기 → 결과 → 실행.
+ * 실행하면 종목 탭에 **플랜 종목**이 생긴다. 이 화면에는 만들어 둔 플랜을 두지 않는다.
  *
- * ── 정직하게 ──
- * 예상 기간이 20년을 넘으면 날짜를 지어내지 않고 그렇게 적는다 (09-28 OHP 798주).
- * 숫자는 모두 `Plan.kt` 의 `플랜표` 한곳에서 온다 — 고칠 때는 그 표만.
+ * 숫자는 모두 `Plan.kt` 의 `플랜표` 에서 온다 — 고칠 때는 그 표만.
  */
 @Composable
-fun 플랜화면(상태: 앱상태) {
+fun 플랜화면(상태: 앱상태, 설정으로: () -> Unit, 종목으로: () -> Unit) {
     val c = Local색.current
     val d = 상태.d
     val 몸 = d.몸
-    var 펼친 by remember { mutableStateOf<String?>(null) }
+    val 폭 = d.설정.무게폭
+
+    var 고른 by remember { mutableStateOf<String?>(null) }
+    var 안넣기 by remember { mutableStateOf(false) }
+    var 현형식 by remember { mutableStateOf(목표형식.무게횟수) }
+    var 현w by remember { mutableStateOf("") }
+    var 현r by remember { mutableStateOf("") }
+    var 현rm by remember { mutableStateOf("") }
+    var 목형식 by remember { mutableStateOf(목표형식.RM) }
+    var 목w by remember { mutableStateOf("") }
+    var 목r by remember { mutableStateOf("") }
+    var 목rm by remember { mutableStateOf("") }
+    var 방식번호 by remember { mutableStateOf(1) }
+    var 강도 by remember { mutableStateOf(1) }
+    var 주당 by remember { mutableStateOf(플랜표.표준주당) }
+    var 시트열림 by remember { mutableStateOf<String?>(null) }   // 방식 · 결과 · 이름
+    var 계산중 by remember { mutableStateOf(false) }
+    var 이름값 by remember { mutableStateOf("") }
+
+    val 표 = 고른?.let { 플랜표.찾기(it) }
+    val 수 = { s: String -> s.trim().toDoubleOrNull() ?: 0.0 }
+    val 현재1RM = when {
+        표 == null -> 0.0
+        안넣기 -> 플랜표.기본무게(표.장비, 몸.체중)
+        현형식 == 목표형식.RM -> 수(현rm)
+        else -> if (수(현w) > 0 && 수(현r) >= 1) 일RM(수(현w), 수(현r).toInt()) else 0.0
+    }
+    val 목표1RM = when {
+        목형식 == 목표형식.RM -> 수(목rm)
+        else -> if (수(목w) > 0 && 수(목r) >= 1) 일RM(수(목w), 수(목r).toInt()) else 0.0
+    }
+    val 표들 = remember(표?.이름, 현재1RM, 목표1RM, 주당, 몸) {
+        if (표 != null && 몸.찼나) 회표(표, 현재1RM, 목표1RM, 주당, 몸) else emptyList()
+    }
 
     Column(Modifier.fillMaxSize()) {
-        제목글("플랜", Modifier.번호("플1").padding(start = 간격.보통, top = 16.dp, bottom = 8.dp))
+        제목글("플랜", Modifier.padding(start = 간격.보통, top = 16.dp, bottom = 8.dp))
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(간격.보통)) {
 
-            // ── 몸 조건 ──
-            카드(Modifier.번호("플2")) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    글("몸 조건", Modifier.weight(1f), 크기값 = 크기.크게, 굵기 = FontWeight.Bold)
-                    글("수준 판정 · 속도에 쓰입니다", 크기값 = 크기.아주작게, 색 = c.옅음)
-                }
-                Box(Modifier.height(간격.좁게))
-                Row(horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
-                    작은수(Modifier.weight(1f), "나이", "${몸.나이}", "세",
-                        { 상태.바꿈 { it.copy(몸 = it.몸.copy(나이 = (it.몸.나이 - 1).coerceIn(10, 90))) } },
-                        { 상태.바꿈 { it.copy(몸 = it.몸.copy(나이 = (it.몸.나이 + 1).coerceIn(10, 90))) } })
-                    작은수(Modifier.weight(1f), "체중", 무게글(몸.체중), "kg",
-                        { 상태.바꿈 { it.copy(몸 = it.몸.copy(체중 = (it.몸.체중 - 1).coerceIn(30.0, 250.0))) } },
-                        { 상태.바꿈 { it.copy(몸 = it.몸.copy(체중 = (it.몸.체중 + 1).coerceIn(30.0, 250.0))) } })
-                    버튼(if (몸.남) "남" else "여", { 상태.바꿈 { it.copy(몸 = it.몸.copy(남 = !it.몸.남)) } }, Modifier.width(56.dp), 작게 = true)
-                }
+            // ── 플1 · 종목 고르기 ──
+            카드(Modifier.번호("플1")) {
+                칩줄(플랜표.종목들.map { it.이름 }, 고른, { 이름 -> 고른 = if (고른 == 이름) null else 이름 })
             }
 
-            Box(Modifier.height(간격.보통))
-
-            // ── 합의된 종목들 ──
-            플랜표.종목들.forEach { 표 ->
-                val 플랜값 = d.플랜들.firstOrNull { it.종목 == 표.이름 }
-                종목칸(상태, 표, 플랜값, 몸, 펼친 == 표.이름) { 펼친 = if (펼친 == 표.이름) null else 표.이름 }
-                Box(Modifier.height(간격.좁게))
+            if (표 == null) {
+                Box(Modifier.height(간격.보통))
+                글("아직 플랜을 짤 수 없는 종목: " + 플랜표.예정종목.joinToString(" · "), 크기값 = 크기.아주작게, 색 = c.옅음, 줄 = 4)
+                Box(Modifier.height(높이.높게))
+                return@Column
             }
 
             Box(Modifier.height(간격.좁게))
 
-            // ── 아직 합의하지 않은 종목 ──
+            // ── 신체 정보가 없으면 여기서 막는다 ──
+            if (!몸.찼나) {
+                val 빈 = listOfNotNull(if (몸.나이 > 0) null else "나이", if (몸.체중 > 0) null else "체중").joinToString(" · ")
+                카드(Modifier.번호("플5")) {
+                    글("신체 정보를 먼저 넣어 주세요", 크기값 = 크기.본문, 굵기 = FontWeight.Bold)
+                    글("지금 $빈 이(가) 비어 있습니다", 크기값 = 크기.아주작게, 색 = c.옅음)
+                    Box(Modifier.height(간격.좁게))
+                    버튼("설정에서 입력하기", 설정으로, 주요 = true)
+                }
+                Box(Modifier.height(높이.높게))
+                return@Column
+            }
+
+            // ── 플2 · 나의 수행능력 ──
+            카드(Modifier.번호("플2")) {
+                글("나의 수행능력", 크기값 = 크기.아주작게, 색 = c.옅음)
+                Box(Modifier.height(간격.아주좁게))
+                Row(horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
+                    작은칩("1RM", !안넣기 && 현형식 == 목표형식.RM) { 안넣기 = false; 현형식 = 목표형식.RM }
+                    작은칩("무게 × 횟수", !안넣기 && 현형식 == 목표형식.무게횟수) { 안넣기 = false; 현형식 = 목표형식.무게횟수 }
+                    작은칩("입력하지 않음", 안넣기) { 안넣기 = !안넣기 }
+                }
+                Box(Modifier.height(간격.좁게))
+                Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
+                    Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
+                        if (안넣기) {
+                            글("${표.장비} 기준 ${무게글(플랜표.기본무게(표.장비, 몸.체중))}kg 으로 시작합니다",
+                                Modifier.padding(bottom = 10.dp), 크기값 = 크기.아주작게, 색 = c.옅음, 줄 = 2)
+                        } else if (현형식 == 목표형식.RM) {
+                            글칸("1RM (kg)", 현rm, { 현rm = it }, Modifier.weight(1f))
+                        } else {
+                            글칸("무게 (kg)", 현w, { 현w = it }, Modifier.weight(1f))
+                            글칸("횟수", 현r, { 현r = it }, Modifier.weight(1f))
+                        }
+                    }
+                    곁박스(
+                        if (현재1RM > 0) 수준판정(표, 현재1RM, 몸).이름 else "—",
+                        if (현재1RM > 0) "${무게글(현재1RM)}kg" else "수준",
+                        현재1RM > 0,
+                    )
+                }
+            }
+
+            Box(Modifier.height(간격.좁게))
+
+            // ── 플3 · 운동 목표 ──
+            카드(Modifier.번호("플3")) {
+                글("운동 목표", 크기값 = 크기.아주작게, 색 = c.옅음)
+                Box(Modifier.height(간격.아주좁게))
+                Row(horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
+                    작은칩("1RM", 목형식 == 목표형식.RM) { 목형식 = 목표형식.RM }
+                    작은칩("무게 × 횟수", 목형식 == 목표형식.무게횟수) { 목형식 = 목표형식.무게횟수 }
+                }
+                Box(Modifier.height(간격.좁게))
+                Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
+                    Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
+                        if (목형식 == 목표형식.RM) {
+                            글칸("목표 1RM (kg)", 목rm, { 목rm = it }, Modifier.weight(1f))
+                        } else {
+                            글칸("무게 (kg)", 목w, { 목w = it }, Modifier.weight(1f))
+                            글칸("횟수", 목r, { 목r = it }, Modifier.weight(1f))
+                        }
+                    }
+                    곁박스(
+                        if (표들.isNotEmpty()) "${콤마(표들.last().주)}주" else "—",
+                        "예상", 표들.isNotEmpty(),
+                    )
+                }
+            }
+
+            Box(Modifier.height(간격.좁게))
+
+            // ── 플4 · 훈련 방식 ──
             카드(Modifier.번호("플4")) {
-                글("아직 플랜을 짤 수 없는 종목", 크기값 = 크기.조금작게, 굵기 = FontWeight.Bold, 색 = c.옅음)
-                Box(Modifier.height(간격.아주좁게))
-                글(플랜표.예정종목.joinToString(" · "), 크기값 = 크기.아주작게, 색 = c.옅음)
-                Box(Modifier.height(간격.아주좁게))
-                글("근거를 찾고 합의한 뒤에 하나씩 넣습니다 (업데이트 예정 ㉒)", 크기값 = 크기.아주작게, 색 = c.옅음)
+                글("훈련 방식", 크기값 = 크기.아주작게, 색 = c.옅음)
+                고르기줄(방식찾기(방식번호).이름, 방식찾기(방식번호).수준글) { 시트열림 = "방식" }
+            }
+
+            Box(Modifier.height(간격.좁게))
+
+            // ── 플5 · 신체 정보 ──
+            카드(Modifier.번호("플5")) {
+                글("신체 정보", 크기값 = 크기.아주작게, 색 = c.옅음)
+                고르기줄("${몸.나이}세 · ${if (몸.남) "남" else "여"} · ${무게글(몸.체중)}kg", "설정", onClick = 설정으로)
             }
 
             Box(Modifier.height(간격.보통))
-            글("이것은 가이드라인입니다. 그날 컨디션에 맞춰 조절하세요.", 크기값 = 크기.아주작게, 색 = c.옅음)
+            val 막힘 = when {
+                현재1RM <= 0 -> "수행능력을 넣어 주세요"
+                목표1RM <= 0 -> "목표를 넣어 주세요"
+                목표1RM <= 현재1RM -> "목표가 지금 실력보다 낮습니다"
+                else -> ""
+            }
+            if (막힘.isNotEmpty()) {
+                글(막힘, 크기값 = 크기.아주작게, 색 = c.나쁨)
+                Box(Modifier.height(간격.아주좁게))
+            }
+            버튼("계산해 보기", { if (막힘.isEmpty()) 계산중 = true }, 주요 = true)
+
             Box(Modifier.height(높이.높게))
         }
     }
-}
 
-/** 종목 한 칸 */
-@Composable
-private fun 종목칸(상태: 앱상태, 표: 플랜종목, 플랜값: 플랜?, 몸: 몸조건, 펼침: Boolean, on누름: () -> Unit) {
-    val c = Local색.current
-    val 목표1RM = 표.목표.환산1RM
-
-    if (플랜값 == null) {
-        // 아직 시작 안 한 종목 — 측정값을 넣으면 플랜이 생긴다
-        카드(Modifier.번호("플3")) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                글(표.이름, Modifier.weight(1f), 크기값 = 크기.본문, 굵기 = FontWeight.Bold)
-                버튼("시작", {
-                    상태.바꿈 {
-                        it.copy(플랜들 = it.플랜들 + 플랜(표.이름, 20.0, 1, 속도.보통, LocalDate.now().toString()))
-                    }
-                }, 주요 = true, 작게 = true)
-            }
-            글("목표 ${무게글(표.목표.무게)}kg × ${표.목표.횟수}회 · 환산 1RM ${무게글(목표1RM)}kg", 크기값 = 크기.아주작게, 색 = c.옅음)
-        }
-        return
+    // ── 계산 중 (1.7초) ──
+    if (계산중) {
+        계산중화면()
+        LaunchedEffect(Unit) { delay(1700); 계산중 = false; 시트열림 = "결과" }
     }
 
-    // 측정일 기록이 있으면 그 값으로 (09-29 고침)
-    val 지금1RM = 플랜값.지금1RM
-    val 수준값 = 수준판정(표, 지금1RM, 몸)
-    val 주수 = 남은주(표, 지금1RM, 목표1RM, 플랜값.속도단계, 몸)
-    // 주차는 만든 날로부터 날짜로 센다 — 앱을 며칠 안 켜도 맞는다 (09-29 고침)
-    val 이번주 = 플랜값.주차(상태.오늘)
-    val 처방 = 주처방내기(표, 플랜값, 이번주, 몸, 상태.d.설정.무게폭)
+    // ── 훈련 방식 고르기 ──
+    if (시트열림 == "방식") {
+        방식시트(방식번호, 강도, { 방식번호 = it }, { 강도 = it }) { 시트열림 = null }
+    }
 
-    카드(Modifier.번호("플3")) {
-        Row(Modifier.눌림(on누름), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    글(표.이름, 크기값 = 크기.본문, 굵기 = FontWeight.Bold, 색 = c.강조)
-                    Box(Modifier.width(간격.좁게))
-                    수준알약(수준값)
-                }
-                글("1RM ${무게글(지금1RM)} → ${무게글(목표1RM)}kg", 크기값 = 크기.아주작게, 색 = c.옅음)
-            }
-            Column(horizontalAlignment = Alignment.End) {
-                글(남은주글(주수), 크기값 = 크기.조금작게, 굵기 = FontWeight.Bold)
-                글(도달글(주수), 크기값 = 크기.아주작게, 색 = c.옅음)
-            }
-            Box(Modifier.width(간격.아주좁게))
-            아이콘버튼(if (펼침) 아이콘.아래 else 아이콘.오른쪽, if (펼침) "접기" else "펼치기", on누름, 칠함 = false)
-        }
+    // ── 결과 ──
+    if (시트열림 == "결과" && 표 != null) {
+        결과시트(표, 표들, 현재1RM, 목표1RM, 주당, { 주당 = it },
+            방식번호, 강도, 폭,
+            실행 = { 이름값 = 표.이름; 시트열림 = "이름" }, 닫기 = { 시트열림 = null })
+    }
 
-        if (펼침) {
-            구분선(Modifier.padding(vertical = 간격.좁게))
-
-            // 이번 주 처방
-            Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(모서리.작게)).background(c.강조옅음).padding(간격.좁게),
-                verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    글("${이번주}주차 처방", 크기값 = 크기.아주작게, 색 = c.옅음)
-                    글("${무게글(처방.무게)}kg × ${처방.횟수}회 × ${처방.세트}세트", 크기값 = 크기.본문, 굵기 = FontWeight.Bold)
-                }
-                if (처방.측정일) 알약("측정일", c.강조)
-            }
-
-            Box(Modifier.height(간격.좁게))
-
-            // 시작 측정값
-            val 폭 = 상태.d.설정.무게폭
-            글(if (플랜값.마지막측정 != null) "시작 측정값 (지금은 ${플랜값.마지막측정!!.주}주차 측정값으로 계산합니다)" else "시작 측정값 (이 값으로 계산합니다)", 크기값 = 크기.아주작게, 색 = c.옅음)
+    // ── 이름 정하고 만들기 ──
+    if (시트열림 == "이름" && 표 != null) {
+        시트("플랜 종목 만들기", { 시트열림 = null }) {
+            글("이름", 크기값 = 크기.아주작게, 색 = c.옅음)
             Box(Modifier.height(간격.아주좁게))
-            Row(horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
-                작은수(Modifier.weight(1f), "무게", 무게글(플랜값.시작무게), "kg",
-                    { 고치기(상태, 표.이름) { p -> p.copy(시작무게 = (p.시작무게 - 폭).coerceAtLeast(0.0)) } },
-                    { 고치기(상태, 표.이름) { p -> p.copy(시작무게 = p.시작무게 + 폭) } })
-                작은수(Modifier.weight(1f), "횟수", "${플랜값.시작횟수}", "회",
-                    { 고치기(상태, 표.이름) { p -> p.copy(시작횟수 = (p.시작횟수 - 1).coerceAtLeast(1)) } },
-                    { 고치기(상태, 표.이름) { p -> p.copy(시작횟수 = (p.시작횟수 + 1).coerceAtMost(30)) } })
-            }
-
+            입력칸(이름값, { 이름값 = it }, Modifier.fillMaxWidth(), 안내 = 표.이름)
             Box(Modifier.height(간격.좁게))
-
-            // 속도 5단계
-            글("속도", 크기값 = 크기.아주작게, 색 = c.옅음)
-            Box(Modifier.height(간격.아주좁게))
-            칩줄(속도.entries.map { it.이름 }, 플랜값.속도단계.이름, { 고른 ->
-                속도.entries.firstOrNull { it.이름 == 고른 }?.let { sp -> 고치기(상태, 표.이름) { p -> p.copy(속도단계 = sp) } }
-            })
-
-            Box(Modifier.height(간격.좁게))
-            구분선()
-            Box(Modifier.height(간격.좁게))
-
-            // 근거 · 비고
-            글("4주당 기대 ${"%.2f".format(기대속도(표, 수준값, 플랜값.속도단계, 몸))}% · 측정 주기 ${플랜표.측정주기[수준값]}주 · 합의 문서 ${표.문서}",
-                크기값 = 크기.아주작게, 색 = c.옅음)
-            if (표.비고.isNotEmpty()) {
-                Box(Modifier.height(간격.아주좁게))
-                글(표.비고, 크기값 = 크기.아주작게, 색 = c.옅음)
-            }
-            if (표.다른날.isNotEmpty()) {
-                Box(Modifier.height(간격.아주좁게))
-                글("${표.다른날.joinToString(" · ")} 와 다른 날에", 크기값 = 크기.아주작게, 색 = c.옅음)
-            }
-
-            Box(Modifier.height(간격.아주좁게))
-            // 아직 안 만든 것을 된 것처럼 보이지 않게 적어 둔다 (09-29)
-            글("처방을 루틴에 저절로 넣는 것 · 측정일 입력은 다음 판", 크기값 = 크기.아주작게, 색 = c.나쁨)
-
-            Box(Modifier.height(간격.좁게))
-            Row(horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
-                버튼("플랜 지우기", {
-                    상태.지우고알림("${표.이름} 플랜을 지웠습니다") { it.copy(플랜들 = it.플랜들.filter { p -> p.종목 != 표.이름 }) }
-                }, Modifier.weight(1f), 작게 = true, 글색 = c.나쁨)
-            }
+            글("슈퍼세트·드랍세트로 묶을 수 없고, 무게는 플랜이 정합니다.", 크기값 = 크기.아주작게, 색 = c.옅음, 줄 = 2)
+            Box(Modifier.height(간격.보통))
+            버튼("만들기", {
+                val 새 = 플랜(
+                    id = "p" + System.currentTimeMillis(),
+                    이름 = 이름값.ifBlank { 표.이름 },
+                    종목 = 표.이름,
+                    시작1RM = 현재1RM,
+                    목표방식 = 목형식,
+                    목표무게 = if (목형식 == 목표형식.RM) 수(목rm) else 수(목w),
+                    목표횟수 = if (목형식 == 목표형식.RM) 1 else 수(목r).toInt().coerceAtLeast(1),
+                    주당 = 주당,
+                    방식번호 = 방식번호,
+                    강도 = 강도,
+                    만든날 = LocalDate.now().toString(),
+                )
+                상태.바꿈 { it.copy(플랜들 = listOf(새) + it.플랜들) }
+                시트열림 = null
+                종목으로()
+            }, 주요 = true)
         }
     }
 }
 
-private fun 고치기(상태: 앱상태, 종목이름: String, f: (플랜) -> 플랜) {
-    상태.바꿈 { d -> d.copy(플랜들 = d.플랜들.map { if (it.종목 == 종목이름) f(it) else it }) }
-}
-
-/** 남은 주 — 너무 멀면 지어내지 않는다 */
-private fun 남은주글(주: Int): String = when {
-    주 <= 0 -> "달성"
-    주 >= 플랜표.최대주 -> "20년 이상"
-    주 >= 260 -> "%.1f년".format(주 / 52.0)
-    else -> "${주}주"
-}
-
-private fun 도달글(주: Int): String = when {
-    주 <= 0 -> "목표를 넘었습니다"
-    주 >= 플랜표.최대주 -> "목표를 낮추거나 속도를 올리세요"
-    else -> {
-        val 날 = LocalDate.now().plusWeeks(주.toLong())
-        "${날.year}년 ${날.monthValue}월쯤"
-    }
-}
+// ═══════════════════ 부품 ═══════════════════
 
 @Composable
-private fun 수준알약(s: 수준) {
+private fun 작은칩(글자: String, 켜짐: Boolean, onClick: () -> Unit) {
     val c = Local색.current
     Box(
-        Modifier.clip(RoundedCornerShape(모서리.아주작게)).border(1.dp, c.속선, RoundedCornerShape(모서리.아주작게))
-            .padding(horizontal = 6.dp, vertical = 1.dp),
-    ) { 글(s.이름, 크기값 = 크기.아주작게, 색 = c.강조) }
+        Modifier.clip(RoundedCornerShape(모서리.작게))
+            .then(if (켜짐) Modifier.background(c.강조) else Modifier.border(1.dp, c.속선, RoundedCornerShape(모서리.작게)))
+            .눌림(onClick).padding(horizontal = 9.dp, vertical = 6.dp),
+    ) { 글(글자, 크기값 = 크기.버튼, 굵기 = if (켜짐) FontWeight.Bold else FontWeight.Normal, 색 = if (켜짐) c.강조글 else c.흐림) }
 }
 
-/** 작은 − 값 ＋ 칸 — 플랜 화면에서만 쓰는 단순한 것 (휠·자판 없이) */
+/** 이름표 + 숫자 입력칸 — 비어 있을 때는 '—' 안내 */
 @Composable
-private fun 작은수(modifier: Modifier, 이름: String, 값: String, 단위: String, 빼기: () -> Unit, 더하기: () -> Unit) {
+private fun 글칸(이름: String, 값: String, onChange: (String) -> Unit, modifier: Modifier = Modifier) {
     val c = Local색.current
     Column(modifier) {
         글(이름, 크기값 = 크기.아주작게, 색 = c.옅음)
-        Row(
-            Modifier.fillMaxWidth().height(높이.낮게).clip(RoundedCornerShape(모서리.작게))
-                .border(1.dp, c.속선, RoundedCornerShape(모서리.작게)),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            아이콘버튼(아이콘.빼기, "줄이기", 빼기, Modifier.width(30.dp), 칠함 = false)
-            Row(Modifier.weight(1f), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.Bottom) {
-                글(값, 크기값 = 크기.본문, 굵기 = FontWeight.Bold)
-                글(단위, 크기값 = 크기.아주작게, 색 = c.옅음)
+        입력칸(값, onChange, Modifier.fillMaxWidth(), 안내 = "—", 숫자 = true)
+    }
+}
+
+/** 입력칸 오른쪽에 붙는 판정·예상 박스 */
+@Composable
+private fun 곁박스(큰: String, 작은: String, 참: Boolean) {
+    val c = Local색.current
+    Column(
+        Modifier.width(88.dp).height(높이.높게).clip(RoundedCornerShape(모서리.작게))
+            .background(if (참) c.강조옅음 else c.면2)
+            .border(1.dp, if (참) c.강조 else c.속선, RoundedCornerShape(모서리.작게)),
+        verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        글(큰, 크기값 = 크기.조금작게, 굵기 = FontWeight.Bold, 색 = if (참) c.강조 else c.옅음)
+        글(작은, 크기값 = 크기.아주작게, 색 = c.옅음)
+    }
+}
+
+/** 계산 중 — 파란 화면에 바벨이 좌우로 (홍겸 님 09-29) */
+@Composable
+private fun 계산중화면() {
+    val c = Local색.current
+    var 오른쪽 by remember { mutableStateOf(false) }
+    val x by animateFloatAsState(if (오른쪽) 1f else -1f, tween(900), label = "봉")
+    LaunchedEffect(Unit) { while (true) { 오른쪽 = !오른쪽; delay(900) } }
+    Box(Modifier.fillMaxSize().background(c.강조), contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Canvas(Modifier.width(140.dp).height(46.dp)) {
+                val w = size.width; val h = size.height; val 밀기 = x * w * 0.13f
+                fun 막대(cx: Float, 높이: Float, 너비: Float) =
+                    drawRect(Color.White, Offset(cx + 밀기, (h - 높이) / 2f), Size(너비, 높이))
+                막대(w * 0.06f, h * 0.55f, w * 0.06f)
+                막대(w * 0.16f, h * 0.90f, w * 0.08f)
+                막대(w * 0.25f, h * 0.14f, w * 0.50f)
+                막대(w * 0.76f, h * 0.90f, w * 0.08f)
+                막대(w * 0.88f, h * 0.55f, w * 0.06f)
             }
-            아이콘버튼(아이콘.더하기, "늘리기", 더하기, Modifier.width(30.dp), 칠함 = false)
+            Box(Modifier.height(간격.보통))
+            글("계산 중…", 크기값 = 크기.크게, 굵기 = FontWeight.Bold, 색 = c.강조글)
         }
+    }
+}
+
+// ═══════════════════ 훈련 방식 시트 ═══════════════════
+
+/**
+ * 방식 목록 — 참고 이미지 배치를 중심색으로. 열 줄이 한 화면에 들어간다.
+ * 5×5 를 고르면 그 줄이 **좌우로 갈라지며** 오른쪽에 매드카우가 나타난다 (홍겸 님 09-29).
+ */
+@Composable
+private fun 방식시트(방식번호: Int, 강도: Int, on방식: (Int) -> Unit, on강도: (Int) -> Unit, 닫기: () -> Unit) {
+    val c = Local색.current
+    var 펼친 by remember { mutableStateOf<Int?>(null) }
+    val 딸림방식 = 훈련방식들.firstOrNull { it.딸림임 }
+
+    시트("훈련 방식", 닫기) {
+        훈련방식들.filter { !it.딸림임 }.forEach { m ->
+            val 갈라짐 = m.딸림 != null && (방식번호 == m.번호 || 방식번호 == m.딸림)
+            if (갈라짐 && 딸림방식 != null) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                    방식띠(m, 방식번호 == m.번호, Modifier.weight(1f), 좁게 = true) {
+                        on방식(m.번호); 펼친 = if (펼친 == m.번호) null else m.번호
+                    }
+                    방식띠(딸림방식, 방식번호 == 딸림방식.번호, Modifier.weight(1f), 좁게 = true, 새것 = true) {
+                        on방식(딸림방식.번호); 펼친 = if (펼친 == 딸림방식.번호) null else 딸림방식.번호
+                    }
+                }
+            } else {
+                방식띠(m, 방식번호 == m.번호, Modifier.fillMaxWidth()) {
+                    on방식(m.번호); 펼친 = if (펼친 == m.번호) null else m.번호
+                }
+            }
+            if (펼친 == m.번호) 방식속(m, 강도, on강도)
+            if (갈라짐 && 딸림방식 != null && 펼친 == 딸림방식.번호) 방식속(딸림방식, 강도, on강도)
+            Box(Modifier.height(2.dp))
+        }
+        Box(Modifier.height(간격.좁게))
+        버튼("이 방식으로", 닫기, 주요 = true)
+        Box(Modifier.height(간격.좁게))
+        글("방식을 바꿔도 1RM 궤적은 그대로 이어집니다 — 세트 구성만 갈아 끼웁니다.", 크기값 = 크기.아주작게, 색 = c.옅음, 줄 = 2)
+    }
+}
+
+/** 방식 한 줄 — 중심색 밴드 + 오른쪽으로 흐르는 실루엣 */
+@Composable
+private fun 방식띠(m: 훈련방식, 골름: Boolean, modifier: Modifier, 좁게: Boolean = false, 새것: Boolean = false, onClick: () -> Unit) {
+    val c = Local색.current
+    val 나타남 = 드러남값(m.번호)
+    Box(
+        modifier
+            .heightIn(min = if (좁게) 62.dp else 58.dp)
+            .clip(RoundedCornerShape(모서리.작게))
+            .background(Brush.horizontalGradient(listOf(c.강조, c.강조.copy(alpha = 0.82f))))
+            .then(if (골름) Modifier.border(2.5.dp, Color.White, RoundedCornerShape(모서리.작게)) else Modifier)
+            .눌림(onClick)
+            .then(if (새것) Modifier.드러남(나타남) else Modifier),
+    ) {
+        실루엣(m.번호, Modifier.matchParentSize())
+        Column(Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                글(m.이름, Modifier.weight(1f, fill = false), 크기값 = if (좁게) 크기.본문 else 크기.크게,
+                    굵기 = FontWeight.Bold, 색 = Color.White)
+                Box(Modifier.width(간격.아주좁게))
+                Box(
+                    Modifier.clip(RoundedCornerShape(모서리.아주작게))
+                        .border(1.dp, Color.White.copy(alpha = 0.45f), RoundedCornerShape(모서리.아주작게))
+                        .padding(horizontal = 4.dp),
+                ) { 글(m.수준글, 크기값 = 크기.아주작게, 색 = Color.White.copy(alpha = 0.8f)) }
+            }
+            글(m.특징, 크기값 = 크기.아주작게, 색 = Color.White.copy(alpha = 0.86f), 줄 = if (좁게) 2 else 1)
+        }
+    }
+}
+
+/** 방식 상세 — 글씨가 오른쪽 5dp 에서 제자리로 밀려들며 나타난다 */
+@Composable
+private fun 방식속(m: 훈련방식, 강도: Int, on강도: (Int) -> Unit) {
+    val c = Local색.current
+    val p = 드러남값(m.번호 to "속")
+    Column(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(모서리.작게)).background(c.면2)
+            .padding(10.dp).드러남(p),
+    ) {
+        m.설명.forEach {
+            글(it, 크기값 = 크기.아주작게, 색 = c.흐림, 줄 = 12)
+            Box(Modifier.height(간격.아주좁게))
+        }
+        if (m.강도단계) {
+            글("강도", 크기값 = 크기.아주작게, 색 = c.옅음)
+            Box(Modifier.height(간격.아주좁게))
+            Row(horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
+                강도들.forEachIndexed { i, s ->
+                    작은칩("${s.이름} ${s.세트}×${s.횟수}", 강도 == i) { on강도(i) }
+                }
+            }
+            Box(Modifier.height(간격.좁게))
+        }
+        줄값("권장 기간", m.기간)
+        줄값("자동 증량", m.증량)
+        줄값("주당 편성", "${m.주당글}회")
+        줄값("근거", m.근거.joinToString(" · "))
+    }
+}
+
+@Composable
+private fun 줄값(이름: String, 값: String) {
+    val c = Local색.current
+    글(이름, 크기값 = 크기.아주작게, 색 = c.옅음)
+    글(값, 크기값 = 크기.아주작게, 색 = c.흐림, 줄 = 6)
+    Box(Modifier.height(간격.아주좁게))
+}
+
+/** 방식마다 다른 실루엣 — 사진은 만들 수 없어 도형으로 그렸다 (나중에 바꿀 자리) */
+@Composable
+private fun 실루엣(번호: Int, modifier: Modifier) {
+    Canvas(modifier) {
+        val w = size.width; val h = size.height
+        val 흰 = Color.White.copy(alpha = 0.16f)
+        val 왼 = w * 0.62f
+        fun 네모(x: Float, y: Float, bw: Float, bh: Float) =
+            drawRect(흰, Offset(왼 + x, y), Size(bw, bh))
+        fun 동그라미(x: Float, y: Float, r: Float) = drawCircle(흰, r, Offset(왼 + x, y))
+        val u = w * 0.030f
+        when (번호 % 5) {
+            0 -> { // 원판 셋
+                동그라미(u * 3, h * 0.55f, u * 3.2f); 동그라미(u * 8, h * 0.62f, u * 2.4f); 동그라미(u * 11.6f, h * 0.70f, u * 1.7f)
+            }
+            1 -> { // 바벨 (가로)
+                네모(u * 1, h * 0.46f, u * 11, u * 0.9f)
+                네모(u * 0.4f, h * 0.30f, u * 1.2f, h * 0.38f); 네모(u * 11.2f, h * 0.30f, u * 1.2f, h * 0.38f)
+            }
+            2 -> { // 랙
+                네모(u * 2, h * 0.10f, u * 1.1f, h * 0.80f); 네모(u * 10, h * 0.10f, u * 1.1f, h * 0.80f)
+                네모(u * 1, h * 0.36f, u * 11, u * 0.8f)
+            }
+            3 -> { // 계단
+                네모(u * 1, h * 0.70f, u * 3, h * 0.22f); 네모(u * 4.4f, h * 0.52f, u * 3, h * 0.40f)
+                네모(u * 7.8f, h * 0.32f, u * 3, h * 0.60f)
+            }
+            else -> { // 덤벨
+                네모(u * 3, h * 0.46f, u * 7, u * 1.0f)
+                네모(u * 1.4f, h * 0.28f, u * 1.8f, h * 0.42f); 네모(u * 9.8f, h * 0.28f, u * 1.8f, h * 0.42f)
+            }
+        }
+    }
+}
+
+// ═══════════════════ 결과 시트 ═══════════════════
+
+@Composable
+private fun 결과시트(
+    표: 플랜종목, 표들: List<회계획>, 현재1RM: Double, 목표1RM: Double,
+    주당: Int, on주당: (Int) -> Unit, 방식번호: Int, 강도: Int, 폭: Double,
+    실행: () -> Unit, 닫기: () -> Unit,
+) {
+    val c = Local색.current
+    var 열린블록 by remember { mutableStateOf<Int?>(null) }
+    val 임시플랜 = remember(방식번호, 강도) {
+        플랜(id = "", 이름 = "", 종목 = 표.이름, 시작1RM = 현재1RM, 방식번호 = 방식번호, 강도 = 강도)
+    }
+
+    시트(표.이름, 닫기) {
+        if (표들.isEmpty()) {
+            글("계산할 수 없습니다. 수행능력과 목표를 확인해 주세요.", 크기값 = 크기.조금작게, 색 = c.나쁨)
+            return@시트
+        }
+        val 끝날 = LocalDate.now().plusWeeks(표들.last().주.toLong())
+
+        // 주당 횟수 — 일곱 칸이 한 줄에
+        글("주당 횟수", 크기값 = 크기.아주작게, 색 = c.옅음)
+        Box(Modifier.height(간격.아주좁게))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+            (1..7).forEach { f ->
+                Box(
+                    Modifier.weight(1f).height(32.dp).clip(RoundedCornerShape(모서리.작게))
+                        .then(if (주당 == f) Modifier.background(c.강조) else Modifier.border(1.dp, c.속선, RoundedCornerShape(모서리.작게)))
+                        .눌림 { on주당(f); 열린블록 = null },
+                    contentAlignment = Alignment.Center,
+                ) { 글("${f}회", 크기값 = 크기.아주작게, 굵기 = if (주당 == f) FontWeight.Bold else FontWeight.Normal, 색 = if (주당 == f) c.강조글 else c.흐림) }
+            }
+        }
+
+        val 경고글 = 빈도경고(주당, 표)
+        if (경고글.isNotEmpty()) {
+            Box(Modifier.height(간격.좁게))
+            Box(
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(모서리.작게))
+                    .background(c.면2).border(1.dp, c.속선, RoundedCornerShape(모서리.작게)).padding(9.dp),
+            ) { 글(경고글, 크기값 = 크기.아주작게, 색 = c.흐림, 줄 = 12) }
+        }
+
+        Box(Modifier.height(간격.좁게))
+
+        // 요약
+        Column(
+            Modifier.fillMaxWidth().clip(RoundedCornerShape(모서리.작게)).background(c.강조옅음)
+                .border(2.dp, c.강조, RoundedCornerShape(모서리.작게)).padding(10.dp),
+        ) {
+            요약줄("목표", "${무게글(목표1RM)}kg")
+            요약줄("예상 도달 시간", "${콤마(표들.last().주)}주")
+            글("${끝날.year}년 ${끝날.monthValue}월쯤 · ${"%.1f".format(표들.last().주 / 52.0)}년", 크기값 = 크기.아주작게, 색 = c.옅음)
+            요약줄("필요 운동 횟수", "약 ${콤마(표들.size)}회")
+        }
+
+        Box(Modifier.height(간격.좁게))
+        글("회차 — 측정일로 묶었습니다. 줄을 누르면 그 안이 펼쳐집니다", 크기값 = 크기.아주작게, 색 = c.옅음, 줄 = 2)
+        Box(Modifier.height(간격.아주좁게))
+
+        // 측정일을 경계로 블록
+        val 블록들 = remember(표들) {
+            val out = ArrayList<List<회계획>>(); var 시작 = 0
+            표들.forEachIndexed { i, x -> if (x.측정일 || i == 표들.lastIndex) { out.add(표들.subList(시작, i + 1)); 시작 = i + 1 } }
+            out
+        }
+        블록들.forEachIndexed { i, b ->
+            val 첫 = b.first(); val 끝 = b.last(); val 열림 = 열린블록 == i
+            Row(
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(모서리.아주작게))
+                    .background(if (끝.측정일) c.강조옅음 else c.면2)
+                    .눌림 { 열린블록 = if (열림) null else i }
+                    .padding(horizontal = 8.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                글("${첫.회}~${끝.회}회", 크기값 = 크기.아주작게, 굵기 = if (끝.측정일) FontWeight.Bold else FontWeight.Normal)
+                Box(Modifier.width(간격.아주좁게))
+                글("${첫.주}~${끝.주}주", 크기값 = 크기.아주작게, 색 = c.옅음)
+                Box(Modifier.weight(1f))
+                글("${무게글(첫.목표1RM)} → ${무게글(끝.목표1RM)}kg", 크기값 = 크기.아주작게)
+                Box(Modifier.width(간격.아주좁게))
+                글(끝.수준값.이름, 크기값 = 크기.아주작게, 색 = c.강조)
+            }
+            if (열림) {
+                b.forEach { x ->
+                    Row(
+                        Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 3.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        글("${x.회}회", Modifier.width(40.dp), 크기값 = 크기.아주작게, 색 = c.옅음)
+                        글("${무게글(x.목표1RM)}kg", Modifier.width(56.dp), 크기값 = 크기.아주작게)
+                        글((if (x.측정일) "측정 + " else "") + 처방글(회처방(임시플랜, x.목표1RM, 폭)),
+                            Modifier.weight(1f), 크기값 = 크기.아주작게, 색 = c.흐림)
+                    }
+                }
+            }
+            Box(Modifier.height(1.dp))
+        }
+
+        Box(Modifier.height(간격.좁게))
+        글("처방은 ${방식찾기(방식번호).이름} 기준입니다. 측정일에도 본 운동을 그대로 합니다.", 크기값 = 크기.아주작게, 색 = c.옅음, 줄 = 2)
+        Box(Modifier.height(간격.아주좁게))
+        글("가이드라인입니다. 성공·실패에 따라 목표까지의 회차가 달라집니다.", 크기값 = 크기.아주작게, 색 = c.나쁨, 줄 = 2)
+
+        Box(Modifier.height(간격.보통))
+        버튼("이 플랜으로 실행", 실행, 주요 = true)
+    }
+}
+
+@Composable
+private fun 요약줄(이름: String, 값: String) {
+    val c = Local색.current
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        글(이름, Modifier.weight(1f), 크기값 = 크기.조금작게, 색 = c.흐림)
+        글(값, 크기값 = 크기.크게, 굵기 = FontWeight.Bold)
+    }
+}
+
+/**
+ * 주당 횟수 경고 (홍겸 님 09-29 문안 · 20 문서 A-4).
+ * %는 부위별 빈도 배수에서 바로 계산한다 — 상체와 하체가 다르다.
+ */
+fun 빈도경고(f: Int, 표: 플랜종목): String {
+    fun pp(x: Int): Int = ((빈도배수(x, 표.부위값) - 빈도배수(x - 1, 표.부위값)) * 100).toInt()
+    return when (f) {
+        1 -> "주 1회도 운동 효과가 분명히 있지만, 향상 속도가 절반 정도로 느려질 수 있습니다."
+        3 -> "주 3회는 흔히 권장되는 범위이지만, 휴식과 컨디션 조절에 능숙한 경우에만 권장합니다."
+        4 -> "운동 횟수를 늘리면 근력은 좋아지지만 얻을 수 있는 효율이 줄어듭니다. 운동 횟수를 주 4회로 늘려 얻는 추가적인 이득은 +${pp(4)}% 정도입니다. 휴식과 컨디션 조절에 유의해야 합니다."
+        5 -> "운동 횟수를 주 5회로 늘려 얻는 추가적인 이득이 +${pp(5)}% 정도로 현저히 줄어듭니다. 휴식과 컨디션 조절이 매우 어렵습니다."
+        6 -> "운동 횟수를 주 6회로 늘려 얻는 추가적인 이득이 단 +${pp(6)}% 이며, 회복이 따라오지 못하면 지속적인 피로와 근육통이 나타날 수 있습니다."
+        7 -> "운동 횟수를 주 7회로 늘려 얻는 추가적인 이득은 단 +${pp(7)}% 뿐입니다. 쉬는 날이 하루도 없다는 뜻입니다. 이 정도를 실제로 지켜 낸 사례는 연구에서도 드뭅니다. 회복이 따라오지 못하면 지속적인 피로와 근육통이 먼저 나타나고, 최대근력은 가장 나중에 떨어집니다. 정말 주 7회까지 필요한지 한 번 더 생각해 보세요."
+        else -> ""
+    }
+}
+
+// ═══════════════════ 종목 탭에 보이는 플랜 종목 ═══════════════════
+
+/**
+ * 플랜 종목 줄 (종목 탭 맨 위) — 홍겸 님 09-29 확정.
+ *  · 한 줄 · 기본 접힘 · **게이지는 접어도 보이고 % 가 가운데**
+ *  · 펼치면 가로줄 바로 아래 **시작 – 현재 – 목표** 막대, 그 아래 박스 셋
+ */
+@Composable
+fun 플랜종목칸(상태: 앱상태) {
+    val d = 상태.d
+    if (d.플랜들.isEmpty()) return
+    var 펼친 by remember { mutableStateOf<String?>(null) }
+
+    카드(Modifier.번호("종3"), 안쪽 = 0.dp) {
+        d.플랜들.forEachIndexed { i, p ->
+            if (i > 0) 구분선()
+            플랜한줄(상태, p, 펼친 == p.id) { 펼친 = if (펼친 == p.id) null else p.id }
+        }
+    }
+    Box(Modifier.height(12.dp))
+}
+
+@Composable
+private fun 플랜한줄(상태: 앱상태, p: 플랜, 펼침: Boolean, on누름: () -> Unit) {
+    val c = Local색.current
+    val 몸 = 상태.d.몸
+    val 표 = p.표
+    val 목표 = p.목표1RM
+    val 진행 = if (목표 > p.시작1RM) ((p.지금1RM - p.시작1RM) / (목표 - p.시작1RM)).coerceIn(0.0, 1.0) else 0.0
+    val 전체 = if (표 != null && 몸.찼나) 회표(표, p.시작1RM, 목표, p.주당, 몸) else emptyList()
+    val 총회 = maxOf(전체.size, p.한회)
+    val 남은회 = (총회 - p.한회).coerceAtLeast(0)
+    val 남은주 = if (p.주당 > 0) (남은회 + p.주당 - 1) / p.주당 else 0
+    val 지난주 = p.지난주(상태.오늘)
+    val 다음측정 = 전체.firstOrNull { it.회 > p.한회 && it.측정일 }?.회 ?: 총회
+
+    Column(Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
+        Row(Modifier.눌림(on누름), verticalAlignment = Alignment.CenterVertically) {
+            글(p.이름, Modifier.weight(1f, fill = false), 크기값 = 크기.조금작게, 굵기 = FontWeight.Bold)
+            Box(Modifier.width(4.dp))
+            Box(
+                Modifier.clip(RoundedCornerShape(모서리.아주작게)).background(c.강조).padding(horizontal = 4.dp),
+            ) { 글("목표", 크기값 = 크기.아주작게, 굵기 = FontWeight.Bold, 색 = c.강조글) }
+            Box(Modifier.width(4.dp))
+            글(p.목표글, 크기값 = 크기.아주작게, 색 = c.흐림)
+            Box(Modifier.weight(1f))
+            글("${p.한회}회", 크기값 = 크기.아주작게, 색 = c.강조)
+            Box(Modifier.width(4.dp))
+            글("${지난주}주차", 크기값 = 크기.아주작게, 색 = c.강조)
+            Box(Modifier.width(4.dp))
+            글(if (펼침) "▲" else "▼", 크기값 = 크기.아주작게, 색 = c.강조)
+        }
+
+        // 큰 게이지 — 접어도 보인다
+        Box(Modifier.fillMaxWidth().padding(top = 6.dp).height(20.dp)
+            .clip(RoundedCornerShape(10.dp)).background(c.면2)
+            .border(1.dp, c.속선, RoundedCornerShape(10.dp))) {
+            Box(Modifier.fillMaxWidth(진행.toFloat()).fillMaxHeight().background(c.강조))
+            Box(Modifier.matchParentSize(), contentAlignment = Alignment.Center) {
+                글("${(진행 * 100).toInt()}%", 크기값 = 크기.아주작게, 굵기 = FontWeight.Bold)
+            }
+        }
+
+        if (펼침) {
+            구분선(Modifier.padding(top = 8.dp))
+            // 시작 – 현재 – 목표
+            Box(Modifier.fillMaxWidth().padding(top = 14.dp).height(4.dp)
+                .clip(RoundedCornerShape(2.dp)).background(c.면2)) {
+                Box(Modifier.fillMaxWidth(진행.toFloat()).fillMaxHeight().background(c.강조))
+            }
+            Row(Modifier.fillMaxWidth().padding(top = 3.dp)) {
+                글("시작 ${무게글(p.시작1RM)}kg", 크기값 = 크기.아주작게, 색 = c.옅음)
+                Box(Modifier.weight(1f))
+                글("현재 ${무게글(p.지금1RM)}kg", 크기값 = 크기.아주작게, 굵기 = FontWeight.Bold, 색 = c.강조)
+                Box(Modifier.weight(1f))
+                글("목표 ${무게글(목표)}kg", 크기값 = 크기.아주작게, 색 = c.옅음)
+            }
+
+            // 박스 셋 — 한 줄에
+            Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                칸타일(Modifier.weight(1f), "${p.한회}회차", "${콤마(남은회)}회차 남음",
+                    if (총회 > 0) p.한회.toFloat() / 총회 else 0f)
+                칸타일(Modifier.weight(1f), 운동량글(p.누적볼륨), "누적 운동량",
+                    if (총회 > 0) p.한회.toFloat() / 총회 else 0f)
+                칸타일(Modifier.weight(1f), "${콤마(남은주)}주 남음", "누적 ${지난주}주",
+                    if (지난주 + 남은주 > 0) 지난주.toFloat() / (지난주 + 남은주) else 0f)
+            }
+
+            Row(Modifier.fillMaxWidth().padding(top = 7.dp), verticalAlignment = Alignment.CenterVertically) {
+                글("다음 측정일", Modifier.weight(1f), 크기값 = 크기.아주작게, 색 = c.흐림)
+                글("${(다음측정 - p.한회).coerceAtLeast(0)}회차 후 예정 (${다음측정}회차)", 크기값 = 크기.아주작게, 굵기 = FontWeight.Bold)
+            }
+            글("주 ${p.주당}회 · ${방식찾기(p.방식번호).이름}", Modifier.padding(top = 3.dp), 크기값 = 크기.아주작게, 색 = c.옅음)
+            if (!몸.찼나) 글("신체 정보가 비어 있어 기간을 셀 수 없습니다 (설정 → 신체 정보)", Modifier.padding(top = 3.dp), 크기값 = 크기.아주작게, 색 = c.나쁨, 줄 = 2)
+
+            Box(Modifier.height(간격.좁게))
+            버튼("플랜 지우기", {
+                상태.지우고알림("${p.이름} 플랜을 지웠습니다") { d -> d.copy(플랜들 = d.플랜들.filter { it.id != p.id }) }
+            }, Modifier.fillMaxWidth(), 작게 = true, 글색 = c.나쁨)
+        }
+    }
+}
+
+/** 박스 하나 — 큰 값 · 게이지 · 작은 글 */
+@Composable
+private fun 칸타일(modifier: Modifier, 큰: String, 밑: String, 비: Float) {
+    val c = Local색.current
+    Column(
+        modifier.clip(RoundedCornerShape(모서리.작게)).background(c.면)
+            .border(1.dp, c.속선, RoundedCornerShape(모서리.작게)).padding(6.dp),
+    ) {
+        글(큰, 크기값 = 크기.조금작게, 굵기 = FontWeight.Bold)
+        Box(Modifier.fillMaxWidth().padding(vertical = 3.dp).height(4.dp)
+            .clip(RoundedCornerShape(2.dp)).background(c.면2)) {
+            Box(Modifier.fillMaxWidth(비.coerceIn(0f, 1f)).fillMaxHeight().background(c.강조))
+        }
+        글(밑, 크기값 = 크기.아주작게, 색 = c.옅음)
     }
 }

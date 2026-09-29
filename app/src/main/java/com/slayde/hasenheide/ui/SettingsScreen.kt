@@ -36,6 +36,35 @@ fun 설정화면(상태: 앱상태, 폰: 폰기능) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 간격.넓게)) {
         제목글("설정", Modifier.padding(top = 16.dp, bottom = 12.dp))
 
+        // ── 신체 정보 — 플랜이 이 값으로 수준을 판정한다 (09-29, 20 문서) ──
+        이름표("신체 정보", Modifier.padding(bottom = 8.dp))
+        카드(Modifier.번호("설0"), 안쪽 = 14.dp) {
+            val 몸 = 상태.d.몸
+            Row(horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
+                Column(Modifier.weight(1f)) {
+                    글("나이", 크기값 = 크기.아주작게, 색 = c.옅음)
+                    입력칸(if (몸.나이 > 0) 몸.나이.toString() else "", { v ->
+                        상태.바꿈 { d -> d.copy(몸 = d.몸.copy(나이 = v.trim().toIntOrNull()?.coerceIn(0, 99) ?: 0)) }
+                    }, Modifier.fillMaxWidth(), 안내 = "예: 35", 숫자 = true)
+                }
+                Column(Modifier.weight(1f)) {
+                    글("체중 (kg)", 크기값 = 크기.아주작게, 색 = c.옅음)
+                    입력칸(if (몸.체중 > 0) 무게글(몸.체중) else "", { v ->
+                        상태.바꿈 { d -> d.copy(몸 = d.몸.copy(체중 = v.trim().toDoubleOrNull()?.coerceIn(0.0, 400.0) ?: 0.0)) }
+                    }, Modifier.fillMaxWidth(), 안내 = "예: 109", 숫자 = true)
+                }
+            }
+            Box(Modifier.height(간격.좁게))
+            설정줄("성별") {
+                칩줄(listOf("남", "여"), if (몸.남) "남" else "여", { 고른 ->
+                    상태.바꿈 { d -> d.copy(몸 = d.몸.copy(남 = 고른 == "남")) }
+                })
+            }
+            글("플랜이 수준을 판정하고 기간을 계산할 때 씁니다. 비어 있으면 플랜을 만들 수 없습니다.",
+                크기값 = 크기.아주작게, 색 = c.옅음)
+        }
+
+        Box(Modifier.height(간격.보통))
         이름표("운동 진행", Modifier.padding(bottom = 8.dp))
         카드(Modifier.번호("설1"), 안쪽 = 14.dp) {
             설정줄("자동 진행", "휴식 끝나면 다음 세트로") { 스위치(s.자동진행) { v -> 고침 { it.copy(자동진행 = v) } } }
