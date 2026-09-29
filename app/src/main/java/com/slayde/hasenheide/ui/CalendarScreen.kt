@@ -531,7 +531,13 @@ private fun 날칸(d: 앱데이터, k: String, 날: LocalDate, 오늘: String, �
             .padding(2.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        글("${날.dayOfMonth}", 크기값 = 크기.조금작게, 색 = 숫자색, 굵기 = if (k == 오늘) FontWeight.Bold else FontWeight.Normal)
+        // 09-29 메모: 칸 안의 것이 56dp 를 넘겨 '달성' 이 잘렸다 → 줄 높이를 글자에 딱 맞추고 간격을 1dp 로
+        Text(
+            "${날.dayOfMonth}",
+            style = 글꼴.보통(크기.조금작게, if (k == 오늘) FontWeight.Bold else FontWeight.Normal).copy(lineHeight = 14.sp),
+            color = 숫자색,
+            maxLines = 1,
+        )
         // 루틴 칩 (09-27) — 달력엔 초록을 쓰지 않는다
         //  · 한 날: 옅은 중심색 바탕 + 중심색 글자 · 휴식: 바탕 없이 속선 테두리(같은 크기 · 글자 · 색)
         //  · 예정: 속선 테두리 + 흐린 글자 · 미실시: 테두리만
@@ -547,13 +553,19 @@ private fun 날칸(d: 앱데이터, k: String, 날: LocalDate, 오늘: String, �
             Box(
                 Modifier
                     .fillMaxWidth()
-                    .padding(top = 2.dp)
+                    .padding(top = 1.dp)
                     .clip(RoundedCornerShape(4.dp))
                     .background(바탕)
                     .then(if (테두리) Modifier.border(1.dp, c.속선, RoundedCornerShape(4.dp)) else Modifier)
-                    .padding(horizontal = 2.dp, vertical = 1.dp),
+                    .padding(horizontal = 2.dp),
                 contentAlignment = Alignment.Center,
-            ) { 글(이름, 크기값 = 크기.아주작게, 색 = 글색, 굵기 = FontWeight.Bold) }
+            ) {
+                Text(
+                    이름,
+                    style = 글꼴.보통(크기.아주작게, FontWeight.Bold).copy(lineHeight = 13.sp),
+                    color = 글색, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
         // 루틴 이름 아래 — 달성 · 미달성 · 미실시 (09-27). 휴식은 적지 않는다
         val 상태글: Pair<String, Color>? = when {
@@ -561,8 +573,8 @@ private fun 날칸(d: 앱데이터, k: String, 날: LocalDate, 오늘: String, �
             안함 != null -> "미실시" to c.옅음
             else -> null
         }
-        if (상태글 != null) Text(상태글.first, Modifier.padding(top = 2.dp), style = 글꼴.보통(9.sp, FontWeight.Bold).copy(lineHeight = 10.sp), color = 상태글.second, maxLines = 1)
-        if (d.일정[k]?.isNotEmpty() == true) Box(Modifier.padding(top = 2.dp).width(4.dp).height(4.dp).clip(CircleShape).background(c.휴식))
+        if (상태글 != null) Text(상태글.first, Modifier.padding(top = 1.dp), style = 글꼴.보통(9.sp, FontWeight.Bold).copy(lineHeight = 10.sp), color = 상태글.second, maxLines = 1)
+        if (d.일정[k]?.isNotEmpty() == true) Box(Modifier.padding(top = 1.dp).width(4.dp).height(4.dp).clip(CircleShape).background(c.휴식))
     }
 }
 

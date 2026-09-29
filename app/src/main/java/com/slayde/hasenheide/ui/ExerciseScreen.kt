@@ -64,7 +64,7 @@ fun 종목화면(상태: 앱상태) {
 
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 간격.넓게)) {
-            제목글("종목", Modifier.padding(top = 16.dp, bottom = 12.dp))
+            제목글("종목", Modifier.번호("종1").padding(top = 16.dp, bottom = 12.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 칩줄(listOf("전체") + d.카테고리, 부위, { 부위 = it }, Modifier.weight(1f))
                 Box(Modifier.width(8.dp))
@@ -72,7 +72,7 @@ fun 종목화면(상태: 앱상태) {
             }
             Box(Modifier.height(12.dp))
             val 목록 = d.종목표.filter { 부위 == "전체" || it.부위 == 부위 }
-            카드(안쪽 = 0.dp) {
+            카드(Modifier.번호("종2"), 안쪽 = 0.dp) {
                 if (목록.isEmpty()) 글(if (d.종목표.isEmpty()) "아직 종목이 없습니다 · 아래에서 만들어 주세요" else "이 부위에 종목이 없습니다",
                     Modifier.padding(16.dp), 크기값 = 크기.조금작게, 색 = c.옅음)
                 목록.forEachIndexed { i, e ->

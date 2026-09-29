@@ -29,7 +29,6 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.graphicsLayer
@@ -159,7 +158,7 @@ fun 대비칩(이름: String, v: 비교?, 영부터: Boolean = false, 빠르게:
 /**
  * 휴식 칸 (09-27) — 중심색이 꽉 찬 채로 시작해 남은 시간만큼 줄어든다 (단계별 색 없음).
  *  · 채워진 곳의 글자는 흰색, 빈 곳은 중심색. 경계에서 정확히 갈린다
- *  · 채움 끝 18dp 는 부드럽게 옅어진다. 글자엔 반대색의 얇은 테두리
+ *  · 09-29 메모: **그라데이션을 뺐다.** 경계가 딱 떨어지는 쪽이 남은 시간을 읽기 쉽다
  */
 @Composable
 fun 휴식칸(남은비율: Float, 글자: String, modifier: Modifier = Modifier) {
@@ -171,11 +170,7 @@ fun 휴식칸(남은비율: Float, 글자: String, modifier: Modifier = Modifier
         modifier.clip(모양).background(바탕).clipToBounds()
             .drawBehind {
                 val w = size.width * 비율
-                val 부드럽게 = 18.dp.toPx()
-                if (w > 0f) drawRect(
-                    Brush.horizontalGradient(0f to 강조, ((w - 부드럽게) / w).coerceIn(0f, 1f) to 강조, 1f to 강조.copy(alpha = 0f), startX = 0f, endX = w),
-                    topLeft = Offset.Zero, size = Size(w, size.height),
-                )
+                if (w > 0f) drawRect(강조, topLeft = Offset.Zero, size = Size(w, size.height))
             },
         contentAlignment = Alignment.Center,
     ) {

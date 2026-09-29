@@ -63,11 +63,11 @@ fun 플랜화면(상태: 앱상태) {
     var 펼친 by remember { mutableStateOf<String?>(null) }
 
     Column(Modifier.fillMaxSize()) {
-        제목글("플랜", Modifier.padding(start = 간격.보통, top = 16.dp, bottom = 8.dp))
+        제목글("플랜", Modifier.번호("플1").padding(start = 간격.보통, top = 16.dp, bottom = 8.dp))
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(간격.보통)) {
 
             // ── 몸 조건 ──
-            카드 {
+            카드(Modifier.번호("플2")) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     글("몸 조건", Modifier.weight(1f), 크기값 = 크기.크게, 굵기 = FontWeight.Bold)
                     글("수준 판정 · 속도에 쓰입니다", 크기값 = 크기.아주작게, 색 = c.옅음)
@@ -96,7 +96,7 @@ fun 플랜화면(상태: 앱상태) {
             Box(Modifier.height(간격.좁게))
 
             // ── 아직 합의하지 않은 종목 ──
-            카드 {
+            카드(Modifier.번호("플4")) {
                 글("아직 플랜을 짤 수 없는 종목", 크기값 = 크기.조금작게, 굵기 = FontWeight.Bold, 색 = c.옅음)
                 Box(Modifier.height(간격.아주좁게))
                 글(플랜표.예정종목.joinToString(" · "), 크기값 = 크기.아주작게, 색 = c.옅음)
@@ -119,7 +119,7 @@ private fun 종목칸(상태: 앱상태, 표: 플랜종목, 플랜값: 플랜?, 
 
     if (플랜값 == null) {
         // 아직 시작 안 한 종목 — 측정값을 넣으면 플랜이 생긴다
-        카드 {
+        카드(Modifier.번호("플3")) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 글(표.이름, Modifier.weight(1f), 크기값 = 크기.본문, 굵기 = FontWeight.Bold)
                 버튼("시작", {
@@ -141,7 +141,7 @@ private fun 종목칸(상태: 앱상태, 표: 플랜종목, 플랜값: 플랜?, 
     val 이번주 = 플랜값.주차(상태.오늘)
     val 처방 = 주처방내기(표, 플랜값, 이번주, 몸, 상태.d.설정.무게폭)
 
-    카드 {
+    카드(Modifier.번호("플3")) {
         Row(Modifier.눌림(on누름), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
