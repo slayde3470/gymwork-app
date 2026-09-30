@@ -58,6 +58,14 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.slayde.hasenheide.data.앱데이터
+import com.slayde.hasenheide.data.플랜
+import com.slayde.hasenheide.data.플랜표
+import com.slayde.hasenheide.data.회처방
+import com.slayde.hasenheide.data.회표
+import com.slayde.hasenheide.data.처방글
+import com.slayde.hasenheide.data.세트
+import com.slayde.hasenheide.data.세트종류
 import com.slayde.hasenheide.data.루틴
 import com.slayde.hasenheide.data.루틴바꿈
 import com.slayde.hasenheide.data.루틴합치기
@@ -630,6 +638,53 @@ private fun 안고르기(상태: 앱상태, r: 루틴, 방금: List<String>, 방
         Box(Modifier.height(8.dp))
         칩줄(listOf("전체") + d.카테고리, 부위, { 부위 = it })
         Box(Modifier.height(4.dp))
+
+        // ── ★ 운동 플랜 종목 (09-30) ──
+        // 플랜은 `종목표` 가 아니라 `플랜들` 에 있어서 여기 목록에 아예 나오지 않았다
+        // (홍겸 님: "루틴에 운동플랜종목 넣을수가 없어"). 그래서 위에 따로 줄을 낸다.
+        // 넣으면 **그 회차 처방이 세트값으로 채워진다** — 무게·횟수는 플랜이 정한다
+        val 플랜목록 = d.플랜들.filter { it.켬 }
+        if (플랜목록.isNotEmpty()) {   // 부위로 걸러내지 않는다 — 플랜은 몇 개 안 되고 늘 위에 보이는 게 낫다
+            글("운동 플랜", Modifier.padding(top = 4.dp), 크기값 = 크기.아주작게, 색 = c.옅음)
+            플랜목록.forEach { p ->
+                val 넣음 = p.이름 in 방금
+                val 몇개 = r.종목.count { it.플랜id == p.id }
+                Row(
+                    Modifier.fillMaxWidth()
+                        .then(Modifier.눌림 {
+                            if (넣음) {
+                                상태.바꿈 { dd -> dd.루틴바꿈(r.id) { x ->
+                                    val k = x.종목.indexOfLast { it.플랜id == p.id }
+                                    if (k < 0) x else x.copy(종목 = x.종목.filterIndexed { i, _ -> i != k }).묶음정리()
+                                } }
+                                방금바꿈(방금 - p.이름)
+                            } else {
+                                상태.바꿈 { dd -> dd.루틴바꿈(r.id) { x -> x.copy(종목 = x.종목 + 플랜줄(dd, p)) } }
+                                방금바꿈(방금 + p.이름)
+                            }
+                        })
+                        .padding(vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Row(Modifier.weight(1f), verticalAlignment = Alignment.Bottom) {
+                        글(p.이름, Modifier.weight(1f, fill = false), 색 = if (넣음) c.강조 else c.글,
+                            굵기 = if (넣음) FontWeight.Bold else FontWeight.Normal)
+                        Box(Modifier.width(8.dp))
+                        글(플랜곁글(d, p), 크기값 = 크기.작게, 색 = c.옅음)
+                    }
+                    if (넣음) Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (몇개 > 1) { 글("×$몇개", 크기값 = 크기.작게, 색 = c.강조); Box(Modifier.width(8.dp)) }
+                        Icon(아이콘.체크, "넣음", Modifier.size(18.dp), tint = c.강조)
+                    } else if (몇개 > 0) Row(verticalAlignment = Alignment.CenterVertically) {
+                        글(if (몇개 > 1) "있음 ×$몇개" else "있음", 크기값 = 크기.작게, 색 = c.옅음)
+                        Box(Modifier.width(8.dp))
+                        Icon(아이콘.더하기, "한 번 더 넣기", Modifier.size(18.dp), tint = c.강조)
+                    } else Icon(아이콘.더하기, "넣기", Modifier.size(18.dp), tint = c.강조)
+                }
+                구분선()
+            }
+            Box(Modifier.height(4.dp))
+        }
         // 새 종목 만들기 — 처음엔 종목이 하나도 없으므로 여기서 바로 만든다
         if (새로) {
             Column(Modifier.padding(vertical = 8.dp)) {
@@ -712,6 +767,36 @@ private fun 안고르기(상태: 앱상태, r: 루틴, 방금: List<String>, 방
             }
         }
     }
+}
+
+/**
+ * 플랜 한 줄을 루틴종목으로 바꾼다 (09-30).
+ * 다음 회차의 처방을 그대로 세트값에 채운다 → 운동 화면이 바로 쓸 수 있다.
+ * 맨몸이면 휴식은 2분 (21 문서 6절).
+ */
+private fun 플랜줄(d: 앱데이터, p: 플랜): 루틴종목 {
+    val 계획 = p.회표(d.몸, d.향상기록들).firstOrNull { it.회 > p.한회 }
+    val 처방 = if (계획 == null) emptyList()
+               else 회처방(p, 계획.목표값, d.설정.무게폭, d.몸, 계획.측정일)
+    val 첫 = 처방.firstOrNull()
+    val 세트수 = 처방.sumOf { it.세트 }.coerceAtLeast(1)
+    val 세트값 = 처방.flatMap { x -> List(x.세트) { 세트(x.무게, x.횟수, if (계획?.측정일 == true) 세트종류.측정 else 세트종류.본운동) } }
+    return 루틴종목(
+        이름 = p.이름,
+        세트 = 세트수,
+        무게 = 첫?.무게 ?: 0.0,
+        횟수 = 첫?.횟수 ?: 10,
+        휴식 = if (p.횟수진행) 플랜표.맨몸휴식 else d.설정.기본휴식,
+        세트값 = 세트값,
+        플랜id = p.id,
+    )
+}
+
+/** 플랜 줄 오른쪽에 붙는 작은 글 — 다음 회차 처방 */
+private fun 플랜곁글(d: 앱데이터, p: 플랜): String {
+    val 계획 = p.회표(d.몸, d.향상기록들).firstOrNull { it.회 > p.한회 } ?: return "플랜"
+    val 목 = 회처방(p, 계획.목표값, d.설정.무게폭, d.몸, 계획.측정일)
+    return (if (계획.측정일) "측정 · " else "") + "${계획.회}회차 " + 처방글(목)
 }
 
 /** 루틴 합치기 창 — 화면 가운데. 어느 루틴을 위로 둘지 고른다 (09-26) */

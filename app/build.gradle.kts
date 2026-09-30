@@ -18,8 +18,8 @@ android {
 
         minSdk = 26        // 안드로이드 8.0 이상에서 동작
         targetSdk = 35
-        versionCode = 22    // 새 APK를 낼 때마다 1씩 올린다 (덮어쓰기 설치에 필요)
-        versionName = "0.9.0"
+        versionCode = 23    // 새 APK를 낼 때마다 1씩 올린다 (덮어쓰기 설치에 필요)
+        versionName = "0.10.0"
     }
 
     buildTypes {
@@ -53,4 +53,8 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.ui:ui-tooling-preview")
     debugImplementation("androidx.compose.ui:ui-tooling")
+
+    // 계산 시험 (09-30) — `gradle test` 로 돈다. Plan.kt 는 안드로이드를 안 쓰므로 폰 없이 확인된다
+    testImplementation(kotlin("test"))
+    testImplementation("junit:junit:4.13.2")
 }

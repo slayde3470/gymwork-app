@@ -49,6 +49,8 @@ object 저장소 {
         // 운동 플랜 (09-28, 스키마 8)
         o.put("플랜들", JSONArray().also { a -> d.플랜들.forEach { a.put(플랜to(it)) } })
         o.put("몸", JSONObject().put("나이", d.몸.나이).put("남", d.몸.남).put("체중", d.몸.체중))
+        // 향상 데이터 (09-30, 스키마 10 · 21 문서 5절) — 이 줄들이 있어야 속도표를 다시 짤 수 있다
+        o.put("향상기록들", JSONArray().also { a -> d.향상기록들.forEach { a.put(향상to(it)) } })
         return o.toString(1)
     }
 
@@ -62,6 +64,7 @@ object 저장소 {
         .put("횟수", e.횟수).put("휴식", e.휴식).also { if (e.슈퍼 != null) it.put("슈퍼", e.슈퍼) }
         .also { if (e.세트값.isNotEmpty()) it.put("세트값", 세트들to(e.세트값)) }
         .also { if (e.휴식값.isNotEmpty()) it.put("휴식값", JSONArray().also { h -> e.휴식값.forEach { h.put(it) } }) }
+        .also { if (e.플랜id != null) it.put("플랜id", e.플랜id) }
 
     private fun 루틴to(r: 루틴) = JSONObject().put("id", r.id).put("이름", r.이름).put("휴식일", r.휴식일).put("자동생성", r.자동생성)
         .put("종목", JSONArray().also { a -> r.종목.forEach { a.put(루틴종목to(it)) } })
@@ -85,11 +88,28 @@ object 저장소 {
     private fun 플랜to(p: 플랜) = JSONObject().put("id", p.id).put("이름", p.이름).put("종목", p.종목)
         .put("시작1RM", p.시작1RM).put("목표방식", p.목표방식.name).put("목표무게", p.목표무게).put("목표횟수", p.목표횟수)
         .put("주당", p.주당).put("방식", p.방식번호).put("강도", p.강도)
+        // 홍겸 님 09-30 — 세트·횟수를 직접 정한 값 (0 이면 강도 프리셋)
+        .put("세트수", p.세트수).put("직접횟수", p.직접횟수)
+        // 맨몸 3종 (21 문서)
+        .put("단위", p.단위.name).put("목표개수", p.목표개수).put("시작개수", p.시작개수)
+        .put("보조모드", p.보조모드).put("보조무게", p.보조무게)
         .put("만든날", p.만든날).put("한회", p.한회).put("누적볼륨", p.누적볼륨)
         .put("워밍업수", p.워밍업수).put("켬", p.켬)
         .put("측정들", JSONArray().also { a ->
             p.측정들.forEach { m -> a.put(JSONObject().put("회", m.회).put("날", m.날).put("무게", m.무게).put("횟수", m.횟수)) }
         })
+
+    // 스키마 10 (09-30, 21 문서 5절)
+    private fun 향상to(g: 향상기록) = JSONObject().put("날짜", g.날짜).put("종목", g.종목)
+        .put("측정값", g.측정값).put("체중", g.체중).put("유효부하", g.유효부하)
+        .put("누적횟수", g.누적횟수).put("운동일수", g.운동일수).put("예상값", g.예상값)
+
+    private fun 향상from(o: JSONObject) = 향상기록(
+        날짜 = o.optString("날짜"), 종목 = o.optString("종목"),
+        측정값 = o.optDouble("측정값", 0.0), 체중 = o.optDouble("체중", 0.0),
+        유효부하 = o.optDouble("유효부하", 0.0), 누적횟수 = o.optInt("누적횟수", 0),
+        운동일수 = o.optInt("운동일수", 0), 예상값 = o.optDouble("예상값", 0.0),
+    )
 
     private fun 설정to(s: 설정값) = JSONObject().put("자동진행", s.자동진행).put("넘어가기전확인", s.넘어가기전확인)
         .put("소리진동", s.소리진동).put("화면유지", s.화면유지).put("무게폭", s.무게폭)
@@ -148,6 +168,8 @@ object 저장소 {
             플랜들 = 목록(o.optJSONArray("플랜들")) { a, i -> 플랜from(a.getJSONObject(i)) },
             // 09-29: 기본값을 비워 두었다. 비면 화면이 "설정에서 넣어 주세요" 로 안내한다 (01 ⑳)
             몸 = o.optJSONObject("몸")?.let { j -> 몸조건(j.optInt("나이", 0), j.optBoolean("남", true), j.optDouble("체중", 0.0)) } ?: 몸조건(),
+            // 스키마 10 — 옛 파일에는 없다 → 빈 목록 (기본표를 쓴다)
+            향상기록들 = 목록(o.optJSONArray("향상기록들")) { a, i -> 향상from(a.getJSONObject(i)) },
         )
     }
 
@@ -172,7 +194,8 @@ object 저장소 {
                 루틴종목(it.getString("이름"), it.optInt("세트", 3), it.optDouble("무게", 20.0), it.optInt("횟수", 10),
                     it.optInt("휴식", 90), 글또는널(it, "슈퍼"),
                     세트들from(it.optJSONArray("세트값")).filterNotNull(),
-                    목록(it.optJSONArray("휴식값")) { h, j -> h.getInt(j) })
+                    목록(it.optJSONArray("휴식값")) { h, j -> h.getInt(j) },
+                    글또는널(it, "플랜id"))
             }
         },
         // 스키마 5 까지는 모든 루틴이 캘린더에 깔렸다 → 옛 루틴은 켜진 채로 옮긴다 (달력이 갑자기 비지 않게)
@@ -214,6 +237,16 @@ object 저장소 {
             },
             워밍업수 = o.optInt("워밍업수", 0),
             켬 = o.optBoolean("켬", true),
+            // 홍겸 님 09-30 — 없으면 0 (강도 프리셋을 따른다)
+            세트수 = o.optInt("세트수", 0),
+            직접횟수 = o.optInt("직접횟수", 0),
+            // 맨몸 3종 (21 문서) — 옛 플랜은 무게 종목이다
+            단위 = 목표단위.entries.firstOrNull { it.name == o.optString("단위") }
+                ?: (플랜표.찾기(종목이름)?.기본단위 ?: 목표단위.무게),
+            목표개수 = o.optDouble("목표개수", 0.0),
+            시작개수 = o.optDouble("시작개수", 0.0),
+            보조모드 = o.optInt("보조모드", 0),
+            보조무게 = o.optDouble("보조무게", 0.0),
         )
     }
 
