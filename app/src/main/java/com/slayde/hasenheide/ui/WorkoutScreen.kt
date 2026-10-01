@@ -115,6 +115,7 @@ import com.slayde.hasenheide.data.칸
 import com.slayde.hasenheide.data.콤마
 import com.slayde.hasenheide.data.퍼센트
 import com.slayde.hasenheide.data.한세트수
+import com.slayde.hasenheide.data.찬세트수
 import com.slayde.hasenheide.data.흐른초
 import com.slayde.hasenheide.data.휴식고치기
 import com.slayde.hasenheide.data.휴식끝
@@ -195,7 +196,7 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
             val 접기 = remember { mutableStateMapOf<Int, Boolean>() }
             // 종목이 바뀌면 다 되돌린다. 세트를 체크하면 지금 종목 말고는 다시 접는다 (09-24 메모)
             LaunchedEffect(지금머리) { 접기.clear() }   // 슈퍼세트 안에서 A↔B 로 오갈 때는 그대로 둔다
-            LaunchedEffect(S.한세트수()) {
+            LaunchedEffect(S.찬세트수()) {   // 워밍업을 체크해도 다른 묶음을 다시 접는다
                 val 남길 = 접기[지금머리]
                 접기.clear()
                 if (남길 != null) 접기[지금머리] = 남길
@@ -221,15 +222,19 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
             val 묶음세트 = S.식구(S.i).sumOf { S.종목들[it].총칸() }
             val 지금접힘 = 접기[지금머리] == false
             val 접힘표 = 접기.toMap()   // 10-01: 끝낸 다른 묶음을 펼치거나 접어도 다시 맞춘다
-            LaunchedEffect(S.i, S.s, S.한세트수(), 앵커j, 앵커k, h0 != null, 묶음세트, 지금접힘, 접힘표) {
+            val 전쉼 = remember { mutableStateOf(h0 != null) }   // 지난번 맞출 때 쉬는 중이었나 (그림 칸 높이가 바뀌는 때만 기다리려고)
+            LaunchedEffect(S.i, S.s, S.찬세트수(), 앵커j, 앵커k, h0 != null, 묶음세트, 지금접힘, 접힘표) {
                 val 키 = "$앵커j|$앵커k"
                 var 조용 = 0
                 var n = 0
                 var 처음 = true
                 var 전목표 = -100000
                 var 같음 = 0
-                // 10-02 감시관 (U5-6 애니메이션 중에 재지 않는다): 쉬기 시작/끝에 위쪽 그림 칸 높이가 바뀌는 동안은 기다렸다가 잰다
-                delay(움직임.배너높이.toLong())
+                // 10-02 감시관 (U5-6 애니메이션 중에 재지 않는다): 쉬기 시작/끝에 위쪽 그림 칸 높이가 바뀌는 동안은 기다렸다가 잰다.
+                //   그림 칸이 없거나 쉼이 그대로인 체크 · 이동은 기다리지 않는다
+                val 쉼바뀜 = 전쉼.value != (h0 != null)
+                전쉼.value = h0 != null
+                if (쉼바뀜 && 그림켬 && !그림숨김) delay(움직임.배너높이.toLong())
                 while (n < 40 && 조용 < 3) {   // 최대 약 1.6초, 제자리에 세 번 연속 있으면 끝
                     delay(40); n++
                     // 10-01: 전에는 지금 묶음을 접으면 여기서 멈춰, 끝낸 종목(벤치)이 띠 아래에 그대로 보였다.
@@ -760,7 +765,7 @@ private fun 마무리(상태: 앱상태, S: 운동세션, 저장됨: Boolean = f
             }
         }
         // ── 세트 · 시간 · 볼륨 — 0 부터 올라간다 (자릿수 시간) ──
-        val 세트 = S.한세트수()
+        val 세트 = S.찬세트수()   // 체크한 세트 전부 (워밍업 포함 — 0d495c6 전과 같게)
         val 초 = S.흐른초(System.currentTimeMillis())
         val 볼 = S.오늘볼륨()
         val 세트움 = 움직수(세트.toDouble(), 영부터 = true)

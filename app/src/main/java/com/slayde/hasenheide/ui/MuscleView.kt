@@ -175,11 +175,11 @@ object 사진함 {
 
     /**
      * 남은 파일 치우기 — 앱을 켤 때 한 번 (감시관: 지운 종목 · 되돌리기 기다리다 화면을 떠난 경우 · 넣다가 접은 경우 파일이 남았다).
-     * 어느 종목에도 없는 사진 중 2분보다 오래된 것만 지운다 (방금 넣는 중인 파일은 둔다)
+     * 어느 종목에도 없는 사진 중 [그림칸.정리유예ms] 보다 오래된 것만 지운다 (방금 넣는 중인 파일은 둔다)
      */
     fun 정리(ctx: Context, 쓰는: Set<String>) {
         try {
-            val 기준 = System.currentTimeMillis() - 2 * 60_000L
+            val 기준 = System.currentTimeMillis() - 그림칸.정리유예ms
             File(ctx.filesDir, 폴더이름).listFiles()?.forEach { f -> if (f.name !in 쓰는 && f.lastModified() < 기준) f.delete() }
         } catch (_: Exception) { }
     }
@@ -369,12 +369,12 @@ private fun 그림판(p: 판, 단계: Map<String, Double>, 색표이름: String,
             "사진" -> 사진그림(p.사진 ?: "", 그림칸.쉬는높이 * 2, Modifier.fillMaxSize(), "${p.종목} 사진")
             else -> 글("사진 없음", Modifier.align(Alignment.Center), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)   // 설명 글은 한 줄
         }
-        // 이름 — 지금 종목 이름은 잘리면 안 된다 (U5-8): 두 줄까지 쓴다
+        // 이름 — 지금 종목 이름은 잘리면 안 된다 (U5-8): 말줄임 없이 글자를 줄인다 (10-01 홍겸 님 "짜르지말고 차라리 글자크기를 줄여")
         val 제목 = when (p.종류) { "전신" -> "지금 몸"; "사진" -> "${p.번호 + 1}/${p.수}"; else -> p.종목 }
         Box(
             Modifier.align(Alignment.BottomStart).padding(start = 간격.좁게, bottom = 간격.아주좁게, end = 간격.아주넓게)
                 .clip(RoundedCornerShape(그림칸.모서리)).background(c.면).padding(horizontal = 간격.아주좁게),
-        ) { 글(제목, 크기값 = 크기.아주작게, 색 = c.흐림, 줄 = 2) }
+        ) { 맞춤글(제목, 최대 = 크기.아주작게, 색 = c.흐림) }
         if (더미 > 0) 사진더미(더미)
     }
 }

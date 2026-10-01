@@ -56,6 +56,7 @@ import com.slayde.hasenheide.data.업적갱신
 import com.slayde.hasenheide.data.업적글
 import com.slayde.hasenheide.data.업적살필것
 import com.slayde.hasenheide.data.체중기록시작
+import com.slayde.hasenheide.data.스탯표
 import com.slayde.hasenheide.ui.theme.Local색
 import com.slayde.hasenheide.ui.theme.크기
 import kotlinx.coroutines.delay
@@ -114,9 +115,26 @@ class 앱상태(private val 파일: File) {
     private fun 하루살핌() {
         val 지금 = System.currentTimeMillis()
         바꿈 { dd ->
-            val (x, 번호들) = dd.체중기록시작(지금).스탯기록남김(오늘).업적갱신(오늘, 지금)
-            if (번호들.isNotEmpty()) 새업적 = 새업적 + 번호들
-            x
+            // 10-02 감시관: 판정 · 스탯 계산에서 예외가 나도 켤 때마다 앱이 죽지 않게 (업적살핌과 같게)
+            try {
+                val (x, 번호들) = dd.체중기록시작(지금).스탯기록남김(오늘).업적갱신(오늘, 지금)
+                if (번호들.isNotEmpty()) 새업적 = 새업적 + 번호들
+                x
+            } catch (_: Exception) { dd }
+        }
+    }
+
+    /**
+     * 몸 수치(설정 '신체 정보')를 고친 뒤 — 스탯 하루 한 줄 · 체중 업적 (스탯명세 2-6).
+     * 치는 동안은 부르지 않는다: 앱() 이 마지막으로 고친 뒤 [스탯표.체중묶음ms] 가 지나면 부른다
+     */
+    fun 몸살핌() {
+        바꿈 { dd ->
+            try {
+                val (x, 번호들) = dd.스탯기록남김(오늘).업적갱신(오늘, System.currentTimeMillis(), 업적글.체중업적)
+                if (번호들.isNotEmpty()) 새업적 = 새업적 + 번호들
+                x
+            } catch (_: Exception) { dd }
         }
     }
 
@@ -178,7 +196,7 @@ fun 앱(상태: 앱상태, 폰: 폰기능) {
     // 운동 중이어도 다른 탭을 볼 수 있다 — 운동은 그대로 이어지고, 위의 띠로 돌아온다 (09-21 메모)
     var 운동보기 by remember { mutableStateOf(true) }
     // 10-02: 스탯 · 업적 화면 — 캘린더 맨 위 띠의 칩 · 업적 알림 '보기' 로 연다. 전체를 덮는다
-    var 스탯열림 by remember { mutableStateOf<String?>(null) }
+    var 스탯열림 by remember { mutableStateOf<Pair<String, String?>?>(null) }   // (처음 쪽, 보여 줄 업적 번호)
     val 세션 = 상태.d.세션
     LaunchedEffect(세션?.시작시각) { if (세션 != null) 운동보기 = true }
 
@@ -193,8 +211,13 @@ fun 앱(상태: 앱상태, 폰: 폰기능) {
     }
     // 되돌리기 띠는 5초 뒤 사라진다
     LaunchedEffect(상태.되돌림) { if (상태.되돌림 != null) { delay(5_000); 상태.되돌림치움() } }
-    // 업적 알림 띠도 5초 뒤 (10-02)
-    LaunchedEffect(상태.새업적) { if (상태.새업적.isNotEmpty()) { delay(5_000); 상태.새업적치움() } }
+    // 업적 알림 띠도 5초 뒤 (10-02) — 되돌리기 띠에 가려 있는 동안은 세지 않는다 (감시관: 가린 채로 사라졌다)
+    LaunchedEffect(상태.새업적, 상태.되돌림 == null) { if (상태.새업적.isNotEmpty() && 상태.되돌림 == null) { delay(5_000); 상태.새업적치움() } }
+    // 10-02 감시관: 체중 칸은 글자마다 저장된다 → 치는 동안('109' 를 고치다 '10')은 업적을 보지 않고,
+    //   마지막으로 고친 뒤 [스탯표.체중묶음ms] 가 지나면 본다 (체중기록이 한 줄로 묶이는 시간과 같다)
+    val 몸값 = 상태.d.몸 to 상태.d.체중기록
+    val 처음몸값 = remember { 몸값 }
+    LaunchedEffect(몸값) { if (몸값 != 처음몸값) { delay(스탯표.체중묶음ms); 상태.몸살핌() } }
     // 휴식 시계 — 다른 탭을 보고 있어도 돈다. 끝나면 알리고 다음으로
     LaunchedEffect(Unit) {
         while (true) {
@@ -245,7 +268,7 @@ fun 앱(상태: 앱상태, 폰: 폰기능) {
                         // 10-01: 저장된 운동의 결과를 한 번 보여 준다 (자동 종료 뒤 결과 화면이 안 나왔다)
                         else if (키 == "결과") { if (결과 != null) 결과화면(상태, 결과) }
                         else when (탭.valueOf(키)) {
-                            탭.캘린더 -> 캘린더화면(상태, { 지금탭 = 탭.루틴 }, { 운동보기 = true }, { 스탯열림 = 스탯화면글.스탯 })
+                            탭.캘린더 -> 캘린더화면(상태, { 지금탭 = 탭.루틴 }, { 운동보기 = true }, { 스탯열림 = 스탯화면글.스탯 to null })
                             탭.루틴 -> 루틴화면(상태, 폰)
                             탭.플랜 -> 플랜화면(상태, { 지금탭 = 탭.설정 }, { 지금탭 = 탭.종목 })
                             탭.종목 -> 종목화면(상태)
@@ -277,14 +300,15 @@ fun 앱(상태: 앱상태, 폰: 폰기능) {
                 }
             }
         }
-        스탯열림?.let { 처음 -> 스탯화면(상태, 처음) { 스탯열림 = null } }
+        // key: 이미 열려 있을 때 '보기' 를 눌러도 그 업적 쪽으로 다시 연다 (10-02 감시관)
+        스탯열림?.let { (처음, 볼) -> key(처음, 볼) { 스탯화면(상태, 처음, 볼) { 스탯열림 = null } } }
         if (메모열림) 메모시트(상태, 화면이름, 폰, 메모초안값) { 메모열림 = false }
         // 되돌리기 띠는 맨 위에 — 메모 시트에서 지워도 보이게 (09-22 메모: 메모를 실수로 지웠는데 되돌릴 길이 안 보였다)
         상태.되돌림?.let { (글자, _) -> 아래띠(글자, "되돌리기", { 상태.되돌리기() }, 바깥 = Modifier.navigationBarsPadding().padding(bottom = if (탭숨김 || 메모열림 || 스탯열림 != null) 0.dp else 46.dp)) }
         // 10-02: 업적 달성 알림 — 팝업 대신 아래띠 (U5-3). '보기' 를 누르면 업적 화면
         if (상태.새업적.isNotEmpty() && 상태.되돌림 == null) {
             key(상태.새업적) {
-                아래띠(업적글.알림(상태.새업적), "보기", { 상태.새업적치움(); 스탯열림 = 스탯화면글.업적 },
+                아래띠(업적글.알림(상태.새업적), "보기", { val 첫 = 상태.새업적.firstOrNull(); 상태.새업적치움(); 스탯열림 = 스탯화면글.업적 to 첫 },
                     바깥 = Modifier.navigationBarsPadding().padding(bottom = if (탭숨김 || 메모열림 || 스탯열림 != null) 0.dp else 46.dp))
             }
         }

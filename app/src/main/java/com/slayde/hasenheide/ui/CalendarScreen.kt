@@ -214,8 +214,8 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
                     }
                 }
                 Column(Modifier.graphicsLayer {
-                    translationX = 밀기.value * size.width * 0.25f
-                    alpha = 1f - abs(밀기.value) * 0.6f
+                    translationX = 밀기.value * size.width * 움직임.달밀기
+                    alpha = 1f - abs(밀기.value) * 움직임.달흐림
                 }.padding(start = 6.dp, end = 6.dp, top = 4.dp, bottom = 6.dp)) {
                     달력(d, 오늘, 그달, 고른날, Modifier.번호("캘2"),
                         on고름 = { 날 ->

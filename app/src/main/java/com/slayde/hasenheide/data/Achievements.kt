@@ -74,6 +74,8 @@ fun 반올림0_1(x: Double): Double = Math.round(x * 10) / 10.0
 
 /** 업적 글 · 숫자 — 한곳에 */
 object 업적글 {
+    /** 체중기록으로 보는 업적 — 체중 칸을 다 고친 뒤에만 본다 (업적살필것 · App 몸살핌) */
+    val 체중업적 = listOf("1-47", "1-48", "2-20")
     const val 달성 = "업적 달성"
     const val 숨은이름 = "???"
     const val 준비중 = "준비 중"
@@ -216,9 +218,18 @@ class 판정자료(val d: 앱데이터, val 오늘: String) {
 
     /** 2-26 — i 번 기록의 어떤 종목이 최근 4 기록일(날마다 최고) 에서 잇달아 떨어짐 a1 > a2 > a3 > a4 */
     fun 세번내림(i: Int): Boolean = 날RM[i].keys.any { e ->
-        val 날최고 = LinkedHashMap<String, Double>()
-        종목색인[e].orEmpty().filter { it <= i }.forEach { j -> 날최고[날들[j]] = max(날최고[날들[j]] ?: 0.0, 날RM[j][e] ?: 0.0) }
-        val 끝4 = 날최고.values.toList().takeLast(4)
+        // 10-02 감시관(성능): 처음부터 모으지 않고 i 에서 거꾸로 4 기록일만 모은다 — 기록 1000개에서 판정마다 기록 수의 제곱이 들었다.
+        //   종목색인은 기록 번호 오름차순 · 기록 번호는 날짜 오름차순이라 결과는 같다
+        val 색 = 종목색인[e].orEmpty()
+        val 찾 = 색.binarySearch(i)
+        var p = if (찾 >= 0) 찾 else -찾 - 2
+        val 날최고 = LinkedHashMap<String, Double>()   // 늦은 날부터
+        while (p >= 0) {
+            val j = 색[p]; val 날 = 날들[j]
+            if (날 !in 날최고 && 날최고.size == 4) break
+            날최고[날] = max(날최고[날] ?: 0.0, 날RM[j][e] ?: 0.0); p--
+        }
+        val 끝4 = 날최고.values.toList().asReversed()
         끝4.size == 4 && (0 until 3).all { 끝4[it] > 끝4[it + 1] + 업적글.여유 }
     }
 
@@ -228,16 +239,19 @@ class 판정자료(val d: 앱데이터, val 오늘: String) {
         반올림0_1(v - (날RM[앞][e] ?: 0.0)) == 0.5
     }
 
-    /** 기록 i 에서 종목(정식이름)마다 본운동 세트 (무게, 횟수) 목록 */
-    private fun 본세트들(i: Int): Map<String, List<Pair<Double, Int>>> =
+    /** 기록 i 에서 종목(정식이름)마다 본운동 세트 (무게, 횟수) 목록 — 한 번 만든 것은 기억 (10-02 감시관 성능: 2-40 이 기록마다 다시 만들었다) */
+    private val 본세트표 = arrayOfNulls<Map<String, List<Pair<Double, Int>>>>(열쇠.size)
+    private fun 본세트들(i: Int): Map<String, List<Pair<Double, Int>>> = 본세트표[i] ?: (
         기록들[i].종목들.groupBy { d.정식이름(it) }.mapValues { (_, l) -> l.flatMap { it.세트들 }.filter { it.종류 == 세트종류.본운동 }.map { it.w to it.r } }
-            .filterValues { it.isNotEmpty() }
+            .filterValues { it.isNotEmpty() }).also { 본세트표[i] = it }
 
     /** 2-40 — i 번 기록의 어떤 종목이 앞의 이어진 기록들과 본운동 세트가 모두 같고, [날수] 번 이상 · 첫날~끝날 [일수] 일 이상 */
     fun 같은세트(i: Int, 날수: Int, 일수: Long): Boolean = 본세트들(i).any { (e, l) ->
-        val 앞들 = 종목색인[e].orEmpty().filter { it < i }.reversed()
+        val 색 = 종목색인[e].orEmpty()
+        val 찾 = 색.binarySearch(i)
+        var p = if (찾 >= 0) 찾 - 1 else -찾 - 2   // i 바로 앞부터 거꾸로
         var 수 = 1; var 첫 = 날들[i]
-        for (j in 앞들) { if (본세트들(j)[e] != l) break; 수++; 첫 = 날들[j] }
+        while (p >= 0) { val j = 색[p]; if (본세트들(j)[e] != l) break; 수++; 첫 = 날들[j]; p-- }
         수 >= 날수 && ChronoUnit.DAYS.between(LocalDate.parse(첫), LocalDate.parse(날들[i])) >= 일수
     }
 
@@ -574,12 +588,17 @@ fun 앱데이터.업적갱신(
  * 기록이 바뀌면(운동 저장) 전부. 나머지는 그 칸을 쓰는 업적만
  */
 fun 업적살필것(전: 앱데이터, 새: 앱데이터): Collection<String>? {
-    if (전.기록.keys != 새.기록.keys) return 업적판정법.keys
+    if (전.기록.keys != 새.기록.keys) {
+        // 10-02 감시관: 지우기만 했으면 아무것도 보지 않는다 — 지워서 생긴 빈 날로 '돌아옴'(2-14 · 2-51) 같은 업적이 생겼고
+        //   되돌리기를 눌러도 남았다. 지운 채로 두면 다음에 켤 때(하루살핌) 전부 다시 본다
+        return if (전.기록.keys.containsAll(새.기록.keys)) null else 업적판정법.keys
+    }
     val 볼 = mutableSetOf<String>()
     if (전.세기 != 새.세기) 볼 += listOf("2-17", "2-45", "2-46", "2-47")
     if (전.쉰날 != 새.쉰날) 볼 += "1-38"
     if (전.건너뜀 != 새.건너뜀 || 전.미실시 != 새.미실시) 볼 += listOf("2-11", "1-33")
-    if (전.체중기록 != 새.체중기록) 볼 += listOf("1-47", "1-48", "2-20")
+    // 체중기록은 여기서 보지 않는다 — 설정 체중 칸은 글자마다 저장돼 '109' 를 고치다 '10' 에서 1-47 · 1-48 이 생겼다 (10-02 감시관).
+    //   마지막으로 고친 뒤 [스탯표.체중묶음ms] 가 지나면 App 이 [업적글.체중업적] 만 따로 본다
     if (전.향상기록들 != 새.향상기록들) 볼 += "2-24"
     if (전.루틴들 !== 새.루틴들) 볼 += listOf("2-19", "2-32")
     if (전.세션 !== 새.세션 && 새.세션 != null) 볼 += "2-32"

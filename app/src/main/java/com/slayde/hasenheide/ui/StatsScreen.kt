@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -53,6 +54,7 @@ import com.slayde.hasenheide.ui.theme.높이
 import com.slayde.hasenheide.ui.theme.모서리
 import com.slayde.hasenheide.ui.theme.선굵기
 import com.slayde.hasenheide.ui.theme.스탯치수
+import com.slayde.hasenheide.ui.theme.움직임
 import com.slayde.hasenheide.ui.theme.색표
 import com.slayde.hasenheide.ui.theme.크기
 import kotlinx.coroutines.delay
@@ -69,13 +71,13 @@ import kotlinx.coroutines.delay
  *    풀린 칭호를 누르면 바로 대표 칭호 (다시 누르면 뗀다) — 아래띠로 알린다
  */
 @Composable
-fun 스탯화면(상태: 앱상태, 처음: String = 스탯화면글.스탯, 닫기: () -> Unit) {
+fun 스탯화면(상태: 앱상태, 처음: String = 스탯화면글.스탯, 볼업적: String? = null, 닫기: () -> Unit) {
     val c = Local색.current
     val d = 상태.d
     val 오늘 = 상태.오늘
     var 쪽 by remember { mutableStateOf(처음) }
     var 알림 by remember { mutableStateOf<String?>(null) }
-    LaunchedEffect(알림) { if (알림 != null) { delay(3_000); 알림 = null } }
+    LaunchedEffect(알림) { if (알림 != null) { delay(움직임.짧은띠.toLong()); 알림 = null } }
     BackHandler { 닫기() }
 
     Box(Modifier.fillMaxSize().background(c.바탕).눌림 { }) {
@@ -89,7 +91,7 @@ fun 스탯화면(상태: 앱상태, 처음: String = 스탯화면글.스탯, 닫
             칩줄(listOf(스탯화면글.스탯, 스탯화면글.업적), 쪽, { 쪽 = it })
             Box(Modifier.height(간격.좁게))
             if (쪽 == 스탯화면글.스탯) 스탯판(d, 오늘, Modifier.weight(1f))
-            else 업적판(d, 오늘, Modifier.weight(1f)) { 칭호번호 ->
+            else 업적판(d, 오늘, Modifier.weight(1f), 볼업적) { 칭호번호 ->
                 val 전 = 상태.d.대표칭호
                 상태.바꿈 { it.대표칭호고름(칭호번호) }
                 val 이름 = 업적표.칭호찾기(칭호번호)?.칭호 ?: ""
@@ -154,8 +156,8 @@ private fun 스탯줄(s: 스탯값, 전값: Double?, 큰: Boolean) {
         Box(Modifier.width(스탯치수.증감), contentAlignment = Alignment.CenterEnd) {
             when {
                 차 == null -> {}
-                차 > 0.05 -> 글("▲ +${무게글(무게반올림(차))}", 크기값 = 크기.작게, 색 = c.오름, 굵기 = FontWeight.Bold)
-                차 < -0.05 -> 글("▼ ${무게글(무게반올림(-차))}", 크기값 = 크기.작게, 색 = c.내림, 굵기 = FontWeight.Bold)
+                차 > 스탯표.유지폭 -> 글("▲ +${무게글(무게반올림(차))}", 크기값 = 크기.작게, 색 = c.오름, 굵기 = FontWeight.Bold)
+                차 < -스탯표.유지폭 -> 글("▼ ${무게글(무게반올림(-차))}", 크기값 = 크기.작게, 색 = c.내림, 굵기 = FontWeight.Bold)
                 else -> 글("유지", 크기값 = 크기.작게, 색 = c.흐림)
             }
         }
@@ -165,10 +167,13 @@ private fun 스탯줄(s: 스탯값, 전값: Double?, 큰: Boolean) {
 // ─────────────── 업적 ───────────────
 
 @Composable
-private fun 업적판(d: 앱데이터, 오늘: String, modifier: Modifier, on대표: (String) -> Unit) {
+private fun 업적판(d: 앱데이터, 오늘: String, modifier: Modifier, 볼업적: String? = null, on대표: (String) -> Unit) {
     // 분류 칩 — 전체 · 일반 분류(번호판 순서) · 히든. 처음엔 첫 일반 분류 (107개를 한 화면 분량으로 나눈다)
+    //   알림 띠 '보기' 로 왔으면 방금 얻은 업적의 분류로 열고 그 줄까지 내린다 (10-02 감시관: 늘 '3대 합계' 로 열렸다)
     val 분류들 = remember { listOf(스탯화면글.전체) + 업적표.목록.filter { !it.숨김 }.map { it.분류 }.distinct() + 업적글.히든 }
-    var 고른 by remember { mutableStateOf(분류들[1]) }
+    val 볼 = 업적표.목록.firstOrNull { it.번호 == 볼업적 }
+    var 고른 by remember { mutableStateOf(볼?.let { if (it.숨김) 업적글.히든 else it.분류 } ?: 분류들[1]) }
+    val 줄자리 = rememberLazyListState()
     val 진행 = remember(d, 오늘) { d.업적진행들(오늘) }
     val 목록 = 업적표.목록.filter {
         when (고른) { 스탯화면글.전체 -> true; 업적글.히든 -> it.숨김; else -> !it.숨김 && it.분류 == 고른 }
@@ -181,7 +186,8 @@ private fun 업적판(d: 앱데이터, 오늘: String, modifier: Modifier, on대
         }
         칩줄(분류들, 고른, { 고른 = it })
         Box(Modifier.height(간격.좁게))
-        LazyColumn(Modifier.fillMaxWidth().weight(1f)) {
+        LaunchedEffect(볼) { 볼?.let { a -> 목록.indexOf(a).takeIf { it >= 0 }?.let { 줄자리.scrollToItem(it) } } }
+        LazyColumn(Modifier.fillMaxWidth().weight(1f), state = 줄자리) {
             items(목록, key = { it.번호 }) { a ->
                 업적줄(a, d.업적[a.번호], d.대표칭호 == a.칭호번호, 진행[a.번호]) { on대표(a.칭호번호) }
             }
