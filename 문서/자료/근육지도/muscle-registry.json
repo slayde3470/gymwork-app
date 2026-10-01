@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "stepCount": 20,
+  "groups": [
+    { "id": "chest",     "name": "가슴",   "restHours": 24 },
+    { "id": "back",      "name": "등",     "restHours": 24 },
+    { "id": "shoulders", "name": "어깨",   "restHours": 24 },
+    { "id": "arms",      "name": "팔",     "restHours": 24 },
+    { "id": "core",      "name": "복근",   "restHours": 24 },
+    { "id": "legs",      "name": "하체",   "restHours": 24 }
+  ],
+  "muscles": [
+    { "id": "chest_upper", "name": "가슴 윗부분", "group": "chest" },
+    { "id": "chest_lower", "name": "가슴 아랫부분", "group": "chest" },
+    { "id": "serratus",    "name": "전거근",     "group": "chest" },
+    { "id": "traps",       "name": "승모",       "group": "back" },
+    { "id": "rhomboids",   "name": "능형근",     "group": "back" },
+    { "id": "lats",        "name": "광배",       "group": "back" },
+    { "id": "lower_back",  "name": "척추 기립근", "group": "back" },
+    { "id": "delt_front",  "name": "어깨 앞",    "group": "shoulders" },
+    { "id": "delt_side",   "name": "어깨 옆",    "group": "shoulders" },
+    { "id": "delt_rear",   "name": "어깨 뒤",    "group": "shoulders" },
+    { "id": "biceps",      "name": "이두",       "group": "arms" },
+    { "id": "triceps",     "name": "삼두",       "group": "arms" },
+    { "id": "forearm",     "name": "전완",       "group": "arms" },
+    { "id": "abs",         "name": "복근",       "group": "core" },
+    { "id": "obliques",    "name": "옆구리",     "group": "core" },
+    { "id": "glutes",      "name": "엉덩이",     "group": "legs" },
+    { "id": "quads",       "name": "허벅지 앞",  "group": "legs" },
+    { "id": "hamstrings",  "name": "허벅지 뒤",  "group": "legs" },
+    { "id": "adductors",   "name": "내전근",     "group": "legs" },
+    { "id": "calves",      "name": "종아리",     "group": "legs" }
+  ]
+}

@@ -1,0 +1,689 @@
+<title>하젠하이데 화면 시안</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+/* ── 토큰 — 앱의 Theme.kt 로 그대로 옮길 값 ───────────────────── */
+:root{
+  --바탕:#F6F7F6;--면:#FFFFFF;--면2:#EFF2F0;--선:#DFE4E1;--글:#1A1D1B;--흐림:#5F7169;--옅음:#94A39C;
+  --강조:#2E5E4E;--강조글:#FFFFFF;--강조옅음:#E3EEE8;--묶음:#A8641C;--묶음옅음:#FAF0E3;
+  --오름:#D5322A;--내림:#1D67D0;--좋음:#2E8A5C;--나쁨:#C23A30;--종이:#E6EAE8;--키판:#D3D8DB;--키:#FFFFFF;
+  /* 글자: 11 · 13 · 15 · 18 · 22 · 28 여섯 단계 */
+  --f11:11px;--f13:13px;--f15:15px;--f18:18px;--f22:22px;--f28:28px;
+  /* 간격: 4의 배수 */
+  --s4:4px;--s8:8px;--s12:12px;--s16:16px;--s24:24px;
+  /* 높이: 칩 28 · 작은 버튼 32 · 버튼·입력 40 · 목록 줄 44 · 탭 52 */
+  --h28:28px;--h32:32px;--h40:40px;--h44:44px;
+  --r8:8px;--r12:12px;--r16:16px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --바탕:#111413;--면:#1B1F1D;--면2:#242926;--선:#323936;--글:#E4E7E5;--흐림:#A2B4AB;--옅음:#6E7E77;
+  --강조:#8ED1B7;--강조글:#00372A;--강조옅음:#1F2E28;--묶음:#E6B676;--묶음옅음:#2E271A;
+  --오름:#FF7B6E;--내림:#6AAEFF;--좋음:#8ED1B7;--나쁨:#F2A39D;--종이:#0A0C0B;--키판:#24282A;--키:#383D40;}}
+:root[data-theme="dark"]{
+  --바탕:#111413;--면:#1B1F1D;--면2:#242926;--선:#323936;--글:#E4E7E5;--흐림:#A2B4AB;--옅음:#6E7E77;
+  --강조:#8ED1B7;--강조글:#00372A;--강조옅음:#1F2E28;--묶음:#E6B676;--묶음옅음:#2E271A;
+  --오름:#FF7B6E;--내림:#6AAEFF;--좋음:#8ED1B7;--나쁨:#F2A39D;--종이:#0A0C0B;--키판:#24282A;--키:#383D40;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--종이);color:var(--글);font-family:"Noto Sans KR",system-ui,sans-serif;font-size:var(--f15);line-height:1.4;letter-spacing:-.01em;padding-inline:16px;padding-block:16px 40px;font-variant-numeric:tabular-nums}
+button,input{font:inherit;color:inherit;letter-spacing:inherit}
+button{cursor:pointer}
+.wrap{max-width:940px;margin:0 auto;display:flex;gap:28px;flex-wrap:wrap;justify-content:center;align-items:flex-start}
+
+/* ── 공통 부품 — 같은 역할은 같은 모양 ───────────────────── */
+.phone{width:360px;max-width:100%;height:760px;background:var(--바탕);border:1px solid var(--선);border-radius:28px;overflow:hidden;display:flex;flex-direction:column}
+.view{flex:1;min-height:0;display:flex;flex-direction:column}
+.scroll{flex:1;min-height:0;overflow:auto;padding:var(--s16);display:flex;flex-direction:column;gap:var(--s12)}
+.top{display:flex;align-items:baseline;justify-content:space-between;gap:var(--s8);padding:var(--s16) var(--s16) 0}
+.h1{font-size:var(--f22);font-weight:700;letter-spacing:-.02em;line-height:1.25;margin:0}
+.h2{font-size:var(--f18);font-weight:700;letter-spacing:-.02em;line-height:1.3;margin:0}
+.b{font-size:var(--f15);font-weight:500}
+.s{font-size:var(--f13);color:var(--흐림)}
+.c{font-size:var(--f11);color:var(--옅음)}
+.lab{font-size:var(--f11);font-weight:700;color:var(--옅음);letter-spacing:.04em}
+.up{color:var(--오름)}.down{color:var(--내림)}
+.card{background:var(--면);border:1px solid var(--선);border-radius:var(--r16);overflow:hidden}
+.pad{padding:var(--s12) var(--s16)}
+.row{display:flex;align-items:center;gap:var(--s8);min-height:var(--h44);padding:0 var(--s16)}
+.row+.row{border-top:1px solid var(--선)}
+.grow{flex:1;min-width:0}
+.ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.btn{height:var(--h40);border-radius:var(--r8);border:1px solid var(--선);background:var(--면2);font-size:var(--f13);font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 var(--s12);flex:1}
+.btn.sm{height:var(--h32);font-size:var(--f13)}
+.btn.p{background:var(--강조);border-color:var(--강조);color:var(--강조글)}
+.btn.q{background:none;border-color:transparent;color:var(--흐림)}
+.btn svg{width:16px;height:16px}
+.ib{width:var(--h32);height:var(--h32);border-radius:var(--r8);border:0;background:none;color:var(--흐림);display:grid;place-items:center;flex:none}
+.ib svg{width:18px;height:18px}
+.chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{height:var(--h28);padding:0 12px;border-radius:99px;border:0;background:var(--면2);color:var(--흐림);font-size:var(--f13);font-weight:500;white-space:nowrap;flex:none;display:inline-flex;align-items:center;gap:4px}
+.chip.on{background:var(--강조);color:var(--강조글);font-weight:700}
+.chip.rec{box-shadow:inset 0 0 0 1.5px var(--강조);color:var(--강조);font-weight:700}
+.chip.rec::before{content:"";width:5px;height:5px;border-radius:99px;background:currentColor}
+.chip.ghost{background:none;box-shadow:inset 0 0 0 1px var(--선)}
+.pill{height:20px;padding:0 8px;border-radius:99px;font-size:var(--f11);font-weight:700;display:inline-flex;align-items:center;background:var(--강조옅음);color:var(--강조);flex:none}
+.pill.bad{background:color-mix(in srgb,var(--나쁨) 14%,transparent);color:var(--나쁨)}
+.pill.sup{background:var(--묶음옅음);color:var(--묶음)}
+.plus{width:var(--h28);height:var(--h28);border-radius:99px;display:grid;place-items:center;border:1.5px solid var(--강조);color:var(--강조);flex:none}
+.plus.on{background:var(--강조);color:var(--강조글)}
+.plus svg{width:14px;height:14px}
+.sw{width:44px;height:26px;border-radius:99px;background:var(--선);border:0;position:relative;flex:none}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:99px;background:var(--면);transition:left .15s}
+.sw.on{background:var(--강조)}.sw.on::after{left:21px}
+.tabs{display:flex;background:var(--면);border-top:1px solid var(--선);height:52px;flex:none}
+.tab{flex:1;border:0;background:none;display:grid;place-content:center;justify-items:center;gap:2px;font-size:var(--f11);color:var(--옅음)}
+.tab svg{width:20px;height:20px}
+.tab.on{color:var(--강조);font-weight:700}
+.bar{display:flex;gap:var(--s8);padding:var(--s8) var(--s16);background:var(--면);border-top:1px solid var(--선);flex:none}
+[hidden]{display:none!important}
+
+/* ── 캘린더 ───────────────────── */
+.cal{flex:1;min-height:0;display:flex;flex-direction:column;padding:var(--s8) var(--s12)}
+.calhd{display:flex;align-items:center;gap:var(--s8);padding:0 var(--s4) var(--s4)}
+.dow{display:grid;grid-template-columns:repeat(7,1fr);text-align:center}
+.weeks{flex:1;min-height:0;display:flex;flex-direction:column}
+.wk{display:grid;grid-template-columns:repeat(7,1fr);flex:1 1 0;min-height:36px}
+.wk.open{flex:0 0 auto}
+.d{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 1px;border-radius:var(--r8);min-width:0;overflow:hidden}
+.d .n{font-size:var(--f13);line-height:1.2}
+.d.sel{box-shadow:inset 0 0 0 1.5px var(--강조)}
+.d.today .n{font-weight:700;color:var(--강조)}
+.d .tag{width:100%;font-size:10px;font-weight:700;line-height:16px;border-radius:4px;text-align:center;white-space:nowrap;overflow:hidden}
+.tag.plan{box-shadow:inset 0 0 0 1px var(--선);color:var(--흐림)}
+.tag.done{background:var(--강조옅음);color:var(--좋음)}
+.tag.miss{background:color-mix(in srgb,var(--나쁨) 12%,transparent);color:var(--나쁨)}
+.d .it{font-size:10px;line-height:1.35;color:var(--흐림);white-space:nowrap;overflow:hidden;width:100%;text-align:center}
+.sun{color:var(--나쁨)}.sat{color:var(--내림)}
+.dayp{margin:0 var(--s12) var(--s12);padding:var(--s12)}
+.dayp .brow{display:flex;gap:6px;margin-top:var(--s8)}
+
+/* ── 루틴 ───────────────────── */
+.rhd{display:flex;align-items:center;gap:var(--s8);padding:var(--s12) var(--s8) var(--s12) var(--s16)}
+.rnum{font-size:var(--f18);font-weight:500;color:var(--옅음);width:16px}
+.ex{display:flex;align-items:center;gap:var(--s8);min-height:var(--h44);padding:0 var(--s4) 0 var(--s16);border-top:1px solid var(--선)}
+.ex .nm{font-size:var(--f15);font-weight:500}
+.ex .sm{font-size:var(--f11);color:var(--옅음);white-space:nowrap}
+.ex.open{background:var(--강조옅음)}
+.sup{margin:0 var(--s8) var(--s8);border-radius:var(--r12);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--묶음) 45%,transparent);background:var(--묶음옅음);overflow:hidden}
+.sup .ex{border-top:1px solid color-mix(in srgb,var(--묶음) 20%,transparent)}
+.suph{display:flex;align-items:center;justify-content:space-between;padding:6px var(--s12);font-size:var(--f11);font-weight:700;color:var(--묶음)}
+.set4{display:grid;gap:6px;padding:var(--s8) var(--s16) var(--s12);background:var(--강조옅음)}
+.nb{height:var(--h44);border-radius:var(--r8);border:0;background:var(--면);display:grid;place-content:center;justify-items:center;line-height:1.2}
+.nb .c{font-size:10px}
+.nb .v{font-size:var(--f15);font-weight:700}
+.nb.on{box-shadow:inset 0 0 0 1.5px var(--강조);display:flex;justify-content:space-between;padding:0 4px}
+.nb.on .pm{width:28px;height:36px;border-radius:6px;display:grid;place-items:center;color:var(--강조);font-size:18px;font-weight:700}
+.wheel{height:132px;overflow:auto;border-radius:var(--r8);background:var(--면);scrollbar-width:none;scroll-snap-type:y mandatory}
+.wheel::-webkit-scrollbar{display:none}
+.wheel div{height:44px;display:grid;place-items:center;font-size:var(--f15);color:var(--옅음);scroll-snap-align:center}
+.wheel div.on{background:var(--강조옅음);color:var(--강조);font-weight:700;font-size:var(--f18)}
+.add{margin:var(--s8) var(--s12) var(--s12);border:1.5px solid var(--강조);border-radius:var(--r12);overflow:hidden;background:var(--면)}
+.search{display:flex;align-items:center;gap:var(--s8);height:var(--h44);padding:0 var(--s8) 0 var(--s12);border-bottom:1px solid var(--선)}
+.search input{flex:1;min-width:0;border:0;outline:0;background:none;font-size:var(--f15)}
+.search input::placeholder{color:var(--옅음)}
+.search svg{width:16px;height:16px;color:var(--옅음);flex:none}
+.alist{max-height:220px;overflow:auto}
+.alist .row{padding:0 var(--s12)}
+.new{display:flex;align-items:center;gap:var(--s8);min-height:var(--h44);padding:0 var(--s12);background:var(--강조옅음);color:var(--강조);font-size:var(--f13);font-weight:700;border-top:1px solid var(--선)}
+.new svg{width:14px;height:14px}
+.form{padding:var(--s12);display:grid;gap:var(--s8);background:var(--면2);border-top:1px solid var(--선)}
+.form .chip{background:var(--면)}
+.form .chip.on{background:var(--강조)}
+.form .hint{font-size:var(--f11);font-weight:500;color:var(--강조);letter-spacing:0;margin-left:6px}
+.kbd{background:var(--키판);padding:6px 4px 8px;display:grid;grid-template-columns:repeat(4,1fr);gap:5px;height:220px;flex:none}
+.kbd span{background:var(--키);border-radius:6px;display:grid;place-items:center;font-size:17px}
+
+.nb.on .pm{border:0;background:none}
+.nb.on .mid{display:grid;justify-items:center;line-height:1.2;min-width:0}
+.nb input{border:0;outline:0;background:none;text-align:center;font-size:var(--f15);font-weight:700;padding:0;width:56px}
+.nb input::selection{background:var(--강조옅음)}
+.mmss{display:flex;align-items:center;font-size:var(--f15);font-weight:700}
+.mmss input{width:24px}
+.mmss input#inS{width:34px;border-bottom:1.5px solid var(--강조)}
+.wheel div.mid{box-shadow:inset 0 0 0 1.5px var(--선);color:var(--글)}
+.wheel div{cursor:pointer}
+/* ── 운동 중 ───────────────────── */
+.whd{background:var(--면);border-bottom:1px solid var(--선);flex:none}
+.whd .l1{display:flex;align-items:center;gap:var(--s8);padding:var(--s12) var(--s16) var(--s8)}
+.whd .l2{display:flex;gap:var(--s12);padding:0 var(--s16) var(--s8)}
+.prog{height:3px;background:var(--면2)}.prog i{display:block;height:100%;background:var(--강조)}
+.exh{display:flex;align-items:center;gap:var(--s8);min-height:var(--h44);padding:0 var(--s12)}
+.exh .no{font-size:var(--f13);font-weight:700;color:var(--옅음);width:22px}
+.exh .nm{font-size:var(--f15);font-weight:700}
+.st{display:grid;grid-template-columns:28px 28px 1fr 1fr 64px 28px;align-items:center;gap:6px;min-height:var(--h44);padding:0 var(--s12);border-top:1px solid var(--선)}
+.st.now{background:var(--강조옅음)}
+.st.later{color:var(--옅음)}
+.ck{width:28px;height:28px;border-radius:99px;border:1.5px solid var(--선);background:var(--면);display:grid;place-items:center;color:transparent}
+.ck.on{background:var(--강조);border-color:var(--강조);color:var(--강조글)}
+.ck svg{width:14px;height:14px}
+.sn{font-size:var(--f13);font-weight:700;text-align:center}
+.val{font-size:var(--f18);font-weight:500;text-align:center}
+.val small{font-size:var(--f11);color:var(--옅음);margin-left:2px}
+.rest{height:28px;border-radius:6px;display:grid;place-items:center;font-size:var(--f13);color:var(--옅음)}
+.rest.run{font-size:var(--f15);font-weight:700;box-shadow:inset 0 0 0 1.5px currentColor}
+.folded .exh{color:var(--옅음)}
+.wsup{border:1px solid color-mix(in srgb,var(--묶음) 45%,transparent);background:var(--묶음옅음)}
+.wsup .st{border-color:color-mix(in srgb,var(--묶음) 18%,transparent)}
+.wsup .sn{color:var(--묶음)}
+.addset{display:grid;place-items:center;padding:var(--s8)}
+
+/* ── 사진 ───────────────────── */
+.banner{position:relative;height:120px;background:var(--면);transition:height .45s cubic-bezier(.2,.8,.2,1);border-bottom:1px solid var(--선);overflow:hidden}
+/* 사진 칸 — 보이는 것은 넓게, 아직 안 나온 것은 오른쪽 끝에 얇게 접혀 쌓인다 */
+.slot{position:absolute;top:0;bottom:0;background-size:cover;background-position:center;transition:left .6s cubic-bezier(.2,.8,.2,1),width .6s cubic-bezier(.2,.8,.2,1),filter .6s,opacity .6s;will-change:left,width}
+.slot.fold{filter:brightness(.62) saturate(.7);box-shadow:-1px 0 0 rgba(255,255,255,.35) inset,-3px 0 6px rgba(0,0,0,.25)}
+.slot.muscle{background:var(--면2);display:grid;place-items:center}
+.slot.muscle svg{height:84%;width:auto;max-width:94%;margin-top:10px}
+.slot.muscle .mt{position:absolute;left:8px;top:8px;font-size:var(--f11);font-weight:700;color:var(--흐림);background:var(--면);border-radius:99px;padding:2px 8px;white-space:nowrap}
+.mus{fill:var(--선);transition:fill .8s ease;stroke:var(--면2);stroke-width:4}
+.몸{fill:color-mix(in srgb,var(--선) 70%,var(--면));stroke:var(--면2);stroke-width:4}
+.banner.big{height:180px}
+.banner .bt{position:absolute;left:10px;bottom:8px;z-index:2;font-size:var(--f11);font-weight:700;color:#fff;background:rgba(0,0,0,.38);border-radius:99px;padding:2px 8px}
+.banner .bx{position:absolute;right:62px;transition:right .6s;top:6px;z-index:2;width:28px;height:28px;border-radius:99px;border:0;background:rgba(0,0,0,.35);color:#fff;display:grid;place-items:center}
+.banner .bx svg{width:14px;height:14px}
+.thumb{width:28px;height:28px;border-radius:6px;background-size:cover;background-position:center;flex:none}
+.edit{padding:var(--s12) var(--s16) var(--s16);border-top:1px solid var(--선);background:var(--면2);display:grid;gap:var(--s8)}
+.photos{display:flex;gap:var(--s8);overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.photos::-webkit-scrollbar{display:none}
+.ptile{width:72px;height:72px;border-radius:var(--r12);flex:none;background-size:cover;background-position:center;position:relative;border:0}
+.ptile.addp{background:var(--면);box-shadow:inset 0 0 0 1.5px var(--선);display:grid;place-content:center;justify-items:center;gap:2px;color:var(--강조);font-size:var(--f11);font-weight:700}
+.ptile.addp svg{width:18px;height:18px}
+.ptile .del{position:absolute;right:4px;top:4px;width:20px;height:20px;border-radius:99px;border:0;background:rgba(0,0,0,.45);color:#fff;display:grid;place-items:center;padding:0}
+.ptile .del svg{width:10px;height:10px}
+.field{height:var(--h40);border-radius:var(--r8);border:1px solid var(--선);background:var(--면);padding:0 var(--s12);font-size:var(--f15);width:100%;outline:0}
+.field:focus{border-color:var(--강조)}
+.fbody{display:grid;grid-template-rows:0fr;transition:grid-template-rows .4s cubic-bezier(.2,.8,.2,1)}
+.fbody>div{overflow:hidden;min-height:0}
+.fbody.open{grid-template-rows:1fr}
+.exh svg.cv{transition:transform .3s}
+.open-card .exh svg.cv{transform:rotate(180deg)}
+@media (prefers-reduced-motion:reduce){.slot,.banner,.fbody,.mus{transition:none!important}}
+/* ── 레포트 ───────────────────── */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s8)}
+.stat{background:var(--면);border:1px solid var(--선);border-radius:var(--r12);padding:var(--s8) var(--s12)}
+.stat .v{font-size:var(--f18);font-weight:700;line-height:1.3}
+.stat .dl{font-size:var(--f11);font-weight:700}
+.badge{width:44px;height:44px;flex:none}
+
+/* ── 옆 설명 ───────────────────── */
+.side{width:360px;max-width:100%;display:grid;gap:var(--s12);align-content:start}
+.jump{display:flex;flex-wrap:wrap;gap:6px}
+.note{font-size:var(--f13);line-height:1.6;color:var(--흐림)}
+.note b{color:var(--글)}
+.spec{width:100%;border-collapse:collapse;font-size:var(--f13)}
+.spec td{padding:6px 0;border-top:1px solid var(--선);vertical-align:top}
+.spec td:first-child{color:var(--옅음);width:72px;font-weight:700;font-size:var(--f11);letter-spacing:.04em;padding-top:8px}
+.scale{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+button:focus-visible,input:focus-visible{outline:2px solid var(--강조);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+</style>
+
+<div class="wrap">
+<div class="phone" id="phone">
+
+  <!-- 캘린더 -->
+  <section class="view" id="v-cal">
+    <div class="cal">
+      <div class="card" style="flex:1;min-height:0;display:flex;flex-direction:column;padding:var(--s8)">
+        <div class="calhd">
+          <button class="ib" aria-label="이전 달"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <span class="h2 grow" style="text-align:center">2026년 9월</span>
+          <button class="ib" aria-label="다음 달"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
+        </div>
+        <div class="dow c"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
+        <div class="weeks" id="weeks"></div>
+      </div>
+    </div>
+    <div class="card dayp">
+      <div style="display:flex;align-items:baseline;gap:var(--s8)"><span class="h2">가슴,등 루틴</span><span class="c">5종목 · 25세트 · 약 58분</span></div>
+      <div class="s" style="margin-top:2px">3개월 동안 <b class="up">9% 성장</b></div>
+      <div class="brow">
+        <button class="btn sm p" style="flex:1.3" data-go="work">운동 시작</button>
+        <button class="btn sm">다른 루틴</button>
+        <button class="btn sm" style="flex:.7">휴식</button>
+        <button class="btn sm" style="flex:.7">＋ 일정</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 루틴 -->
+  <section class="view" id="v-rou" hidden>
+    <div class="top"><h1 class="h1">루틴</h1><span class="c">순서대로 · 빠진 날은 이어서</span></div>
+    <div class="scroll" id="rouScroll">
+      <div class="card">
+        <div class="rhd">
+          <span class="rnum">1</span>
+          <div class="grow">
+            <div style="display:flex;align-items:center;gap:6px"><span class="h2 ell">가슴,등 루틴</span><span class="pill">다음</span></div>
+            <div class="c" id="rmeta"></div>
+          </div>
+          <button class="ib" aria-label="루틴 설정"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></button>
+        </div>
+        <div class="s" style="padding:0 var(--s16) var(--s8)">3개월 동안 <b class="up">9% 성장</b></div>
+        <div id="exs"></div>
+        <div class="sup">
+          <div class="suph"><span>슈퍼세트 · 번갈아</span><button class="btn q sm" style="flex:none;height:22px;padding:0;color:var(--묶음)">풀기</button></div>
+          <div class="ex"><span class="nm ell">덤벨 컬</span><span class="sm">12kg×12회×4세트</span><span class="grow"></span><button class="ib" aria-label="펼치기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></button></div>
+          <div class="ex"><span class="nm ell">해머 컬</span><span class="sm">12kg×12회×4세트·1:00</span><span class="grow"></span><button class="ib" aria-label="펼치기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></button></div>
+        </div>
+        <div id="addWrap"></div>
+      </div>
+      <div class="card">
+        <div class="rhd"><span class="rnum">2</span><div class="grow"><span class="h2">하체 루틴</span><div class="c">4종목 · 20세트 · 약 52분</div></div><button class="ib" aria-label="펼치기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></button></div>
+      </div>
+      <div class="card">
+        <div class="rhd"><span class="rnum">3</span><div class="grow"><span class="h2" style="color:var(--흐림)">휴식일</span><div class="c">순서에서 한 칸</div></div></div>
+      </div>
+      <div style="display:flex;gap:var(--s8)"><button class="btn">＋ 루틴</button><button class="btn">＋ 휴식일</button></div>
+    </div>
+  </section>
+
+  <!-- 운동 중 -->
+  <section class="view" id="v-work" hidden>
+    <div class="whd">
+      <div class="l1"><span class="h2 grow ell">가슴,등 루틴</span><button class="btn sm" style="flex:none" data-go="rep">운동 끝내기</button></div>
+      <div class="l2 c"><span><b style="color:var(--강조)">44%</b> 달성</span><span>2/5 종목</span><span id="elapsed">23:41</span><span>3,720 / 8,400kg</span></div>
+      <div class="prog"><i style="width:44%"></i></div>
+    </div>
+    <div class="scroll" style="gap:var(--s8)">
+      <div class="card folded"><div class="exh"><span class="thumb" data-photo="0"></span><span class="nm grow ell">인클라인 벤치프레스</span><span class="c">5/5세트</span><span class="pill">완료</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></div></div>
+      <div class="card" style="border-color:var(--강조)">
+        <div class="banner" id="banner"><span class="bt" id="btxt"></span><button class="bx" aria-label="사진 숨기기" id="bhide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
+        <div class="exh"><span class="no" style="color:var(--강조)">02</span><span class="nm grow ell">덤벨 플라이</span><span class="c">1RM 31.2</span><span class="c">2/5</span></div>
+        <div class="st"><button class="ck on" aria-label="1세트"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></button><span class="sn">1</span><span class="val">14<small>kg</small></span><span class="val">12<small>회</small></span><span class="rest">1:30</span><button class="ib" aria-label="더보기" style="width:28px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></button></div>
+        <div class="st"><button class="ck on" aria-label="2세트"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></button><span class="sn">2</span><span class="val">14<small>kg</small></span><span class="val">12<small>회</small></span><span class="rest run" id="rest">1:30</span><button class="btn q sm" style="padding:0;font-size:var(--f11)" id="skip">건너뛰기</button></div>
+        <div class="st now"><button class="ck" aria-label="3세트"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></button><span class="sn">3</span><span class="val">14<small>kg</small></span><span class="val">12<small>회</small></span><span class="rest">1:30</span><button class="ib" aria-label="더보기" style="width:28px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></button></div>
+        <div class="st later"><span class="ck"></span><span class="sn">4</span><span class="val">14<small>kg</small></span><span class="val">12<small>회</small></span><span class="rest">1:30</span><span></span></div>
+        <div class="st later"><span class="ck"></span><span class="sn">5</span><span class="val">14<small>kg</small></span><span class="val">12<small>회</small></span><span class="rest">1:30</span><span></span></div>
+        <div class="addset"><span class="plus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></div>
+      </div>
+      <div class="card wsup folded" id="sup3">
+        <div class="exh" role="button" tabindex="0" id="sup3h"><span class="no" style="color:var(--묶음)">03</span><span class="nm grow ell">덤벨 컬 + 해머 컬</span><span class="pill sup">슈퍼세트</span><span class="c">0/8세트</span><svg class="cv" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></div>
+        <div class="fbody" id="sup3b"><div>
+        <div class="st later"><span class="ck"></span><span class="sn">1A</span><span class="val">12<small>kg</small></span><span class="val">12<small>회</small></span><span class="rest"></span><span></span></div>
+        <div class="st later"><span class="ck"></span><span class="sn">1B</span><span class="val">12<small>kg</small></span><span class="val">12<small>회</small></span><span class="rest">1:00</span><span></span></div>
+        <div class="st later"><span class="ck"></span><span class="sn">2A</span><span class="val">12<small>kg</small></span><span class="val">12<small>회</small></span><span class="rest"></span><span></span></div>
+        </div></div>
+      </div>
+      <div class="card folded"><div class="exh"><span class="no">04</span><span class="nm grow ell">랫풀다운</span><span class="c">0/5세트</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></div></div>
+      <div class="card folded"><div class="exh"><span class="no">05</span><span class="nm grow ell">시티드 로우</span><span class="c">0/5세트</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></div></div>
+    </div>
+    <div class="bar"><button class="btn sm">운동 목록</button><button class="btn sm">＋ 운동</button><button class="btn sm p">다음 종목</button></div>
+  </section>
+
+  <!-- 레포트 -->
+  <section class="view" id="v-rep" hidden>
+    <div class="scroll">
+      <div style="display:flex;align-items:center;gap:var(--s12)">
+        <svg class="badge" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="23" fill="var(--강조)"/><circle cx="24" cy="24" r="17" fill="none" stroke="var(--강조글)" stroke-opacity=".35" stroke-width="1.5"/><rect x="15" y="18" width="18" height="13" rx="4" fill="var(--강조글)"/><rect x="18" y="22" width="12" height="4" rx="2" fill="var(--강조)"/><path d="M24 18v-4M22 13h4" stroke="var(--강조글)" stroke-width="2" stroke-linecap="round"/><path d="M12 23v4M36 23v4" stroke="var(--강조글)" stroke-width="2.4" stroke-linecap="round"/></svg>
+        <div><h1 class="h1">운동 레포트</h1><div class="c">9월 21일 (월) · 오늘 운동 완료</div></div>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="c">세트</div><div class="v">25/25</div><div class="dl up">▲ 2</div></div>
+        <div class="stat"><div class="c">볼륨 kg</div><div class="v">8,420</div><div class="dl up">▲ 6%</div></div>
+        <div class="stat"><div class="c">시간</div><div class="v">1:12</div><div class="dl down">▼ 4분</div></div>
+      </div>
+      <div class="card" style="flex:1;min-height:0;display:flex;flex-direction:column">
+        <div class="pad" style="background:var(--면2);border-bottom:1px solid var(--선)"><div class="b" style="font-weight:700">가슴,등 루틴</div><div class="s">3개월 동안 <b class="up">9% 성장</b> · 달성도 100%</div></div>
+        <div style="overflow:auto">
+          <div class="row"><span class="grow ell">인클라인 벤치프레스</span><b class="up s">+7%</b></div>
+          <div class="row"><span class="grow ell">덤벨 플라이</span><b class="up s">+3%</b></div>
+          <div class="row"><span class="grow ell">랫풀다운</span><b class="down s">−2%</b></div>
+          <div class="row"><span class="grow ell">시티드 로우</span><b class="up s">+5%</b></div>
+          <div class="row"><span class="grow ell">덤벨 컬 + 해머 컬</span><span class="s">0%</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="bar" style="flex-direction:column"><button class="btn p" data-go="cal">기록 저장하고 끝내기</button><div style="display:flex;gap:var(--s8)"><button class="btn sm" data-go="work">운동으로 돌아가기</button><button class="btn sm q" style="color:var(--나쁨)">기록 없이 끝내기</button></div></div>
+  </section>
+
+  <!-- 종목 -->
+  <section class="view" id="v-ex" hidden>
+    <div class="top"><h1 class="h1">종목</h1><button class="ib" aria-label="부위 관리"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></button></div>
+    <div class="scroll">
+      <div class="chips" id="exCats"></div>
+      <div class="card" id="exList"></div>
+      <button class="btn">＋ 종목</button>
+    </div>
+  </section>
+
+  <!-- 설정 -->
+  <section class="view" id="v-set" hidden>
+    <div class="top"><h1 class="h1">설정</h1></div>
+    <div class="scroll">
+      <div class="lab">운동 진행</div>
+      <div class="card">
+        <div class="row"><div class="grow"><div class="b">자동 진행</div><div class="c">휴식이 끝나면 다음 세트로</div></div><button class="sw on" aria-label="자동 진행"></button></div>
+        <div class="row"><div class="grow"><div class="b">소리 · 진동</div><div class="c">휴식이 끝나면 알림</div></div><button class="sw on" aria-label="소리 진동"></button></div>
+        <div class="row"><div class="grow"><div class="b">화면 켜 두기</div><div class="c">운동 중 꺼지지 않게</div></div><button class="sw" aria-label="화면 켜 두기"></button></div>
+      </div>
+      <div class="lab">기본값</div>
+      <div class="card">
+        <div class="pad" style="display:grid;gap:var(--s8)"><div class="b">기본 세트</div><div class="chips" data-pick><button class="chip">3</button><button class="chip">4</button><button class="chip on">5</button><button class="chip">6</button></div></div>
+        <div class="pad" style="display:grid;gap:var(--s8);border-top:1px solid var(--선)"><div class="b">기본 휴식</div><div class="chips" data-pick><button class="chip">1:00</button><button class="chip on">1:30</button><button class="chip">2:00</button><button class="chip">3:00</button></div></div>
+        <div class="pad" style="display:grid;gap:var(--s8);border-top:1px solid var(--선)"><div class="b">향상도 기준</div><div class="chips" data-pick><button class="chip">직전</button><button class="chip">1개월</button><button class="chip on">3개월</button><button class="chip">6개월</button><button class="chip">12개월</button></div></div>
+      </div>
+      <div class="lab">데이터</div>
+      <div class="card"><div class="pad" style="display:grid;gap:var(--s8)"><div class="s">기록은 이 폰에만 저장됩니다</div><div style="display:flex;gap:var(--s8)"><button class="btn sm">백업 내보내기</button><button class="btn sm">백업 가져오기</button></div></div></div>
+    </div>
+  </section>
+
+  <div class="kbd" id="kbd" hidden aria-hidden="true"><span>ㅣ</span><span>·</span><span>ㅡ</span><span>⌫</span><span>ㄱㅋ</span><span>ㄴㄹ</span><span>ㄷㅌ</span><span>완료</span><span>ㅂㅍ</span><span>ㅅㅎ</span><span>ㅈㅊ</span><span>.,?!</span><span>!#1</span><span>한/영</span><span>ㅇㅁ</span><span>␣</span></div>
+  <nav class="tabs" id="tabs">
+    <button class="tab" data-go="cal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg>캘린더</button>
+    <button class="tab" data-go="rou"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>루틴</button>
+    <button class="tab" data-go="ex"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6.5 6.5v11M17.5 6.5v11M3 9v6M21 9v6M6.5 12h11"/></svg>종목</button>
+    <button class="tab" data-go="set"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>설정</button>
+    <button class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>메모</button>
+  </nav>
+</div>
+
+<aside class="side">
+  <div class="jump" id="jump">
+    <button class="chip" data-go="cal">캘린더</button><button class="chip" data-go="rou">루틴</button><button class="chip" data-go="work">운동 중</button><button class="chip" data-go="rep">운동 레포트</button><button class="chip" data-go="ex">종목</button><button class="chip" data-go="set">설정</button>
+  </div>
+  <div class="card pad" style="display:grid;gap:var(--s8)">
+    <div class="h2">통일한 규칙</div>
+    <table class="spec">
+      <tr><td>글자</td><td><div class="scale"><span style="font-size:11px">11</span><span style="font-size:13px">13</span><span style="font-size:15px">15</span><span style="font-size:18px;font-weight:700">18</span><span style="font-size:22px;font-weight:700">22</span><span style="font-size:28px;font-weight:700">28</span></div>설명 · 보조 · 본문 · 카드 제목 · 화면 제목 · 큰 숫자. 예전 9단계 → 6단계</td></tr>
+      <tr><td>줄간격</td><td>제목 1.25 · 목록 1.4 · 설명 글 1.6</td></tr>
+      <tr><td>자간</td><td>본문 −0.01em · 제목 −0.02em · 작은 이름표 +0.04em</td></tr>
+      <tr><td>간격</td><td>4의 배수만: 4 · 8 · 12 · 16 · 24. 화면 좌우 16, 카드 안 16</td></tr>
+      <tr><td>높이</td><td>칩 28 · 작은 버튼 32 · 버튼 40 · 목록 줄 44 · 아래 탭 52</td></tr>
+      <tr><td>모서리</td><td>버튼 8 · 안쪽 상자 12 · 카드 16 · 칩 동그라미</td></tr>
+      <tr><td>색</td><td>초록 = 누를 것 · 지금 · 완료 / 주황 = 슈퍼세트 / 빨강 ▲ 파랑 ▼ = 늘고 줄어듦</td></tr>
+    </table>
+  </div>
+  <div class="note" id="note"></div>
+  <div class="c">시안입니다. 앱에는 아직 넣지 않았고, 숫자와 종목은 예시입니다.</div>
+</aside>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const 부위=["가슴","등","하체","어깨","팔","복근"],장비=["바벨","덤벨","머신","케이블","맨몸","스미스","케틀벨","밴드"];
+const 기본=[["벤치프레스","가슴","바벨"],["인클라인 벤치프레스","가슴","바벨"],["덤벨 플라이","가슴","덤벨"],["케이블 크로스오버","가슴","케이블"],["딥스","가슴","맨몸"],["랫풀다운","등","머신"],["시티드 로우","등","케이블"],["바벨 로우","등","바벨"],["풀업","등","맨몸"],["스쿼트","하체","바벨"],["레그 프레스","하체","머신"],["오버헤드 프레스","어깨","바벨"],["사이드 레터럴 레이즈","어깨","덤벨"],["덤벨 컬","팔","덤벨"],["덤벨 컬(리버스)","팔","덤벨"],["해머 컬","팔","덤벨"],["트라이셉스 푸시다운","팔","케이블"],["크런치","복근","맨몸"]].map(([n,p,e])=>({n,p,e}));
+const 부위규칙=[["레그레이즈","복근"],["크런치","복근"],["플랭크","복근"],["벤치","가슴"],["체스트","가슴"],["플라이","가슴"],["크로스오버","가슴"],["딥스","가슴"],["푸시업","가슴"],["레터럴","어깨"],["숄더","어깨"],["오버헤드","어깨"],["페이스","어깨"],["컬","팔"],["트라이셉스","팔"],["푸시다운","팔"],["로우","등"],["풀다운","등"],["풀업","등"],["데드","등"],["풀오버","등"],["스쿼트","하체"],["레그","하체"],["런지","하체"]];
+const 장비후보=[["벤치",["바벨","머신","스미스"]],["스쿼트",["바벨","스미스","머신"]],["로우",["바벨","덤벨","케이블","머신"]],["컬",["덤벨","바벨","케이블"]],["프레스",["바벨","덤벨","머신"]],["레이즈",["덤벨","케이블"]],["플라이",["덤벨","머신","케이블"]],["풀다운",["머신","케이블"]],["풀오버",["덤벨","케이블"]],["레그",["머신"]]];
+const 띄움=s=>s.replace(/\s/g,"");
+function 추천(n){const t=띄움(n);const p=부위규칙.find(([k])=>t.includes(k))?.[1]||null;const e=장비.find(x=>t.includes(x))||null;return{p,e,후보:e?[]:(장비후보.find(([k])=>t.includes(k))?.[1]||[])}}
+const 초="ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ",중=["ㅏ","ㅐ","ㅑ","ㅒ","ㅓ","ㅔ","ㅕ","ㅖ","ㅗ","ㅗㅏ","ㅗㅐ","ㅗㅣ","ㅛ","ㅜ","ㅜㅓ","ㅜㅔ","ㅜㅣ","ㅠ","ㅡ","ㅡㅣ","ㅣ"],종=["","ㄱ","ㄲ","ㄱㅅ","ㄴ","ㄴㅈ","ㄴㅎ","ㄷ","ㄹ","ㄹㄱ","ㄹㅁ","ㄹㅂ","ㄹㅅ","ㄹㅌ","ㄹㅍ","ㄹㅎ","ㅁ","ㅂ","ㅂㅅ","ㅅ","ㅆ","ㅇ","ㅈ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
+function 자모(s){let o="";for(const ch of s){if(/\s/.test(ch))continue;const c=ch.charCodeAt(0);if(c>=0xAC00&&c<=0xD7A3){const n=c-0xAC00;o+=초[Math.floor(n/588)]+중[Math.floor((n%588)/28)]+종[n%28]}else o+=ch.toLowerCase()}return o}
+const esc=s=>s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const P='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
+const V='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>';
+
+/* 캘린더 — 펼친 주는 내용만큼, 남는 높이는 다른 주들이 나눔 */
+function renderCal(){
+  const items=["인클라인","덤벨 플라","랫풀다운","시티드","덤벨 컬"];
+  const recs={14:["가슴,등","done"],15:["하체","done"],16:["휴식","plan"],17:["가슴,등","miss"],18:["하체","done"]};
+  let h="",day=-1;
+  for(let w=0;w<5;w++){const open=w===3;h+=`<div class="wk${open?" open":""}">`;
+    for(let c=0;c<7;c++,day++){if(day<1||day>30){h+="<span></span>";continue}
+      const cls=c===0?"sun":c===6?"sat":"";let inner=`<span class="n ${cls}">${day}</span>`;
+      if(recs[day])inner+=`<span class="tag ${recs[day][1]}">${recs[day][0]}</span>`;
+      if(day>=21&&day<=26){const nm=["가슴,등","하체","휴식","가슴,등","하체","휴식"][day-21];inner+=`<span class="tag plan">${nm}</span>`;if(open&&nm!=="휴식")inner+=(nm==="하체"?["스쿼트","레그 프레","레그 컬","카프"]:items).map(x=>`<span class="it">${x}</span>`).join("")}
+      h+=`<button class="d${day===21?" sel today":""}">${inner}</button>`}
+    h+="</div>"}
+  $("weeks").innerHTML=h;
+}
+
+/* 루틴 */
+let added=[{n:"인클라인 벤치프레스",v:{s:5,w:60,r:10,t:120}},{n:"덤벨 플라이",v:{s:5,w:14,r:12,t:90}},{n:"랫풀다운",v:{s:5,w:55,r:10,t:90}}],openEx=0,field=null,form=null,cat="전체";
+const 분초=t=>`${Math.floor(t/60)}:${String(t%60).padStart(2,"0")}`;
+const 요약=v=>`${v.w}kg×${v.r}회×${v.s}세트·${분초(v.t)}`;
+const 칸=[["s","세트"],["w","무게"],["r","횟수"],["t","휴식"]];
+const 폭={s:1,w:1,r:1,t:5},하한={s:1,w:0,r:0,t:0};
+const 휠={s:Array.from({length:50},(_,i)=>i+1),w:Array.from({length:101},(_,i)=>i*5),r:Array.from({length:50},(_,i)=>i+1),t:Array.from({length:19},(_,i)=>i*10)};
+const 보기=(k,x)=>k==="t"?분초(x):String(x);
+function renderRou(){
+  const 세트=added.reduce((a,x)=>a+x.v.s,0)+8;$("rmeta").textContent=`${added.length+2}종목 · ${세트}세트 · 약 ${Math.round(세트*2.2)}분`;
+  $("exs").innerHTML=added.map((x,i)=>{
+    let h=`<div class="ex${i===openEx?" open":""}"><span class="nm ell">${esc(x.n)}</span><span class="sm">${요약(x.v)}</span><span class="grow"></span><button class="ib" data-ex="${i}" aria-label="펼치기" style="${i===openEx?"transform:rotate(180deg)":""}">${V}</button></div>`;
+    if(i!==openEx)return h;
+    const cols=칸.map(([k])=>k===field?"2fr":"1fr").join(" ");
+    h+=`<div class="set4" id="set4" style="grid-template-columns:${cols}">`+칸.map(([k,l])=>{
+      const val=x.v[k];
+      if(k!==field)return `<button class="nb" data-f="${k}"><span class="c">${l}</span><span class="v">${보기(k,val)}</span></button>`;
+      const 가운데=k==="t"
+        ?`<div class="mmss"><input id="inM" inputmode="numeric" value="${Math.floor(val/60)}" aria-label="분"><span>:</span><input id="inS" inputmode="numeric" value="${String(val%60).padStart(2,"0")}" aria-label="초"></div>`
+        :`<input id="inV" class="one" inputmode="decimal" value="${val}" aria-label="${l}">`;
+      return `<div class="nb on"><button class="pm" data-pm="-1" aria-label="빼기">−</button><div class="mid"><span class="c" id="hint" style="font-size:10px">${l}</span>${가운데}</div><button class="pm" data-pm="1" aria-label="더하기">＋</button></div>`;
+    }).join("");
+    if(field){
+      const idx=칸.findIndex(([k])=>k===field);
+      h+=`<div class="wheel" id="wheel" style="grid-column:${idx+1}">${휠[field].map(v=>`<div data-wv="${v}" class="${v===x.v[field]?"on":""}">${보기(field,v)}</div>`).join("")}</div>`;
+    }
+    return h+`</div>`}).join("");
+  const w=$("wheel");
+  if(w){const 값=added[openEx].v[field];const o=[...w.children].reduce((b,c)=>Math.abs(+c.dataset.wv-값)<Math.abs(+b.dataset.wv-값)?c:b);w.scrollTop=o.offsetTop-44;w.onscroll=휠가운데;휠가운데()}
+  편집연결();
+  renderAdd();
+}
+/* 휠을 돌려도 값은 그대로 — 가운데 칸에 '누르면 선택' 테두리만 */
+function 휠가운데(){const w=$("wheel");if(!w)return;const 중=w.scrollTop+w.clientHeight/2;[...w.children].forEach(c=>c.classList.toggle("mid",Math.abs(c.offsetTop+22-중)<22&&!c.classList.contains("on")))}
+function 확정(v){added[openEx].v[field]=v;field=null;kbEdit(false);renderRou()}
+function 취소(){if(!field)return;field=null;kbEdit(false);renderRou()}
+function 편집연결(){
+  const one=$("inV");
+  if(one){one.focus();one.select();kbEdit(true);
+    one.onkeydown=e=>{if(e.key==="Enter"){const n=parseFloat(one.value.replace(",","."));if(!isNaN(n))확정(Math.max(하한[field],n));else 취소()}};}
+  const m=$("inM"),s=$("inS");
+  if(s){kbEdit(true);
+    let 초만짐=false,분만짐=false;
+    const 미리=()=>{const mm=분만짐?+(m.value||0):초만짐?0:Math.floor(added[openEx].v.t/60);const t=mm*60+(+(s.value||0));$("hint").textContent=초만짐||분만짐?`= ${분초(Math.min(t,5999))}`:"휴식";return t};
+    s.focus();s.select();
+    /* 초 칸에 치기 시작하면 분 칸을 비운다 — 60 을 치는 동안 1:60 이 보이지 않게 */
+    s.oninput=()=>{s.value=s.value.replace(/\D/g,"").slice(0,4);if(!초만짐&&!분만짐){m.value="";m.placeholder="0"}초만짐=true;미리()};
+    m.onfocus=()=>m.select();
+    m.oninput=()=>{m.value=m.value.replace(/\D/g,"").slice(0,2);분만짐=true;미리()};
+    const 엔터=e=>{if(e.key==="Enter"){if(초만짐||분만짐)확정(Math.min(미리(),5999));else 취소()}};
+    s.onkeydown=엔터;m.onkeydown=엔터;}
+}
+function kbEdit(on){$("kbd").hidden=!on;$("tabs").hidden=on}
+$("exs").onclick=e=>{
+  const x=e.target.closest("[data-ex]");if(x){openEx=openEx===+x.dataset.ex?-1:+x.dataset.ex;field=null;kbEdit(false);renderRou();return}
+  const f=e.target.closest("[data-f]");if(f){field=f.dataset.f;renderRou();return}
+  const pm=e.target.closest("[data-pm]");if(pm){const v=added[openEx].v;v[field]=Math.max(하한[field],v[field]+폭[field]*+pm.dataset.pm);renderRou();return}
+  const wv=e.target.closest("[data-wv]");if(wv){확정(+wv.dataset.wv);return}
+};
+/* 빈 곳을 누르면 취소 — 고르기 전 화면으로 */
+document.addEventListener("pointerdown",e=>{if(field&&!e.target.closest("#set4")&&!e.target.closest("#kbd"))취소()},true);
+function renderAdd(){
+  if(!$("addPanel")){$("addWrap").innerHTML=`<div class="add" id="addPanel"><div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="q" placeholder="종목 추가 · 찾거나 새로 만들기" autocomplete="off"><button class="btn sm p" style="flex:none" id="doneQ">완료</button></div><div class="chips" id="cats" style="padding:var(--s8) var(--s12)"></div><div class="alist" id="alist"></div></div>`;
+    $("q").oninput=()=>{if(form)openForm();renderList()};$("q").onfocus=()=>kb(true);$("doneQ").onclick=()=>{kb(false);$("q").blur()};
+    $("cats").onclick=e=>{const b=e.target.closest("[data-c]");if(b){cat=b.dataset.c;renderList()}};
+    $("alist").onclick=onList;}
+  renderList();
+}
+function openForm(){const r=추천($("q").value.trim());form={p:r.p,e:r.e}}
+function chipsOf(list,sel,rec,key){const 앞=rec.filter(x=>list.includes(x));return[...앞,...list.filter(x=>!앞.includes(x))].map(x=>`<button class="chip${x===sel?" on":rec.includes(x)?" rec":""}" data-${key}="${x}">${x}</button>`).join("")}
+function renderList(){
+  $("cats").innerHTML=["전체",...부위].map(p=>`<button class="chip${p===cat?" on":""}" data-c="${p}">${p}</button>`).join("");
+  const q=$("q").value.trim(),jq=자모(q);
+  let it=기본.filter(x=>cat==="전체"||x.p===cat);
+  if(jq)it=it.map(x=>({x,a:자모(x.n).indexOf(jq)})).filter(o=>o.a>=0).sort((a,b)=>(a.a>0)-(b.a>0)||a.x.n.length-b.x.n.length).map(o=>o.x);
+  let h=it.slice(0,q?8:5).map(x=>{const c=added.filter(a=>a.n===x.n).length;return`<div class="row" data-n="${esc(x.n)}" role="button" tabindex="0"><span class="ell">${esc(x.n)}</span><span class="c grow">${x.p}·${x.e}</span>${c?`<span class="pill">×${c}</span>`:""}<span class="plus${c?" on":""}">${P}</span></div>`}).join("");
+  if(q&&!기본.some(x=>자모(x.n)===jq)){
+    h+=`<div class="new" data-new role="button" tabindex="0">${P}‘${esc(q)}’ 새 종목으로 만들기</div>`;
+    if(form){const r=추천(q);
+      h+=`<div class="form"><div class="lab">부위${form.p&&form.p===r.p?'<span class="hint">이름에서 골랐어요</span>':""}</div><div class="chips">${chipsOf(부위,form.p,[],"fp")}<button class="chip ghost">＋ 부위</button></div>
+      <div class="lab">장비${r.e&&form.e===r.e?'<span class="hint">이름에서 골랐어요</span>':r.후보.length&&!form.e?'<span class="hint">● 추천</span>':""}</div><div class="chips">${chipsOf(장비,form.e,r.후보,"fe")}<button class="chip ghost">직접 입력</button></div>
+      <div style="display:flex;gap:var(--s8)"><button class="btn sm" data-cancel>취소</button><button class="btn sm p" style="flex:1.6" data-make>만들고 넣기</button></div></div>`}}
+  $("alist").innerHTML=h;
+}
+function onList(e){
+  const r=e.target.closest("[data-n]");if(r){added.push({n:r.dataset.n,m:"20kg×10회×5세트·1:30"});renderRou();return}
+  if(e.target.closest("[data-new]")){if(form)form=null;else openForm();renderList();return}
+  const fp=e.target.closest("[data-fp]");if(fp){form.p=fp.dataset.fp;renderList();return}
+  const fe=e.target.closest("[data-fe]");if(fe){form.e=form.e===fe.dataset.fe?null:fe.dataset.fe;renderList();return}
+  if(e.target.closest("[data-cancel]")){form=null;renderList();return}
+  if(e.target.closest("[data-make]")){const n=$("q").value.trim();기본.push({n,p:form.p||"—",e:form.e||"—"});added.push({n,m:"20kg×10회×5세트·1:30"});form=null;$("q").value="";kb(false);renderRou()}
+}
+function kb(on){$("kbd").hidden=!on;$("tabs").hidden=on;if(on)requestAnimationFrame(()=>{$("rouScroll").scrollTop=$("addPanel").offsetTop-12})}
+$("kbd").onclick=()=>{if(field)return;kb(false)};
+
+/* 종목 */
+let exCat="전체";
+let exOpen="덤벨 플라이";
+const 사진들={"덤벨 플라이":[1,0,2],"인클라인 벤치프레스":[0,2]};
+function renderEx(){
+  $("exCats").innerHTML=["전체",...부위].map(p=>`<button class="chip${p===exCat?" on":""}" data-xc="${p}">${p}</button>`).join("");
+  const pct={"인클라인 벤치프레스":7,"덤벨 플라이":3,"랫풀다운":-2,"시티드 로우":5,"덤벨 컬":0,"해머 컬":4,"스쿼트":11,"레그 프레스":6};
+  const X='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>';
+  $("exList").innerHTML=기본.filter(x=>(exCat==="전체"||x.p===exCat)&&x.n in pct).map(x=>{const p=pct[x.n],o=x.n===exOpen,ph=사진들[x.n]||[];
+    let h=`<div class="row" data-xo="${esc(x.n)}" role="button" tabindex="0" style="${o?"background:var(--강조옅음)":""}">${ph.length?`<span class="thumb" data-photo="${ph[0]}"></span>`:""}<span class="b ell">${x.n}</span><span class="c grow">${x.p}·${x.e}</span><b class="s ${p>0?"up":p<0?"down":""}">${p>0?"+":""}${p}%</b><span class="ib" style="width:24px;${o?"transform:rotate(180deg)":""}">${V}</span></div>`;
+    if(o)h+=`<div class="edit">
+      <div class="lab">사진 <span class="c" style="letter-spacing:0;font-weight:500">${ph.length}/10 · 운동 중 하나씩 번갈아</span></div>
+      <div class="photos"><button class="ptile addp" data-addp><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>사진 추가</button>${ph.map((k,i)=>`<div class="ptile" data-photo="${k}"><button class="del" data-delp="${i}" aria-label="사진 지우기">${X}</button></div>`).join("")}</div>
+      <div class="lab" style="margin-top:4px">이름</div><input class="field" id="xname" value="${esc(x.n)}">
+      <div class="lab">부위</div><div class="chips" data-pick>${부위.map(q=>`<button class="chip${q===x.p?" on":""}">${q}</button>`).join("")}</div>
+      <div class="lab">장비</div><div class="chips" data-pick>${장비.map(q=>`<button class="chip${q===x.e?" on":""}">${q}</button>`).join("")}</div>
+    </div>`;
+    return h}).join("")||'<div class="row c">이 부위에 종목이 없습니다</div>';
+  document.querySelectorAll("#exList [data-pick]").forEach(g=>g.onclick=e=>{const b=e.target.closest(".chip");if(b)g.querySelectorAll(".chip").forEach(c=>c.classList.toggle("on",c===b))});
+  칠하기();
+}
+$("exList").onclick=e=>{
+  const d=e.target.closest("[data-delp]");if(d){사진들[exOpen].splice(+d.dataset.delp,1);renderEx();return}
+  if(e.target.closest("[data-addp]")){(사진들[exOpen]=사진들[exOpen]||[]);if(사진들[exOpen].length<10)사진들[exOpen].push(사진들[exOpen].length%3);renderEx();return}
+  const r=e.target.closest("[data-xo]");if(r){exOpen=exOpen===r.dataset.xo?null:r.dataset.xo;renderEx()}
+};
+$("exCats").onclick=e=>{const b=e.target.closest("[data-xc]");if(b){exCat=b.dataset.xc;renderEx()}};
+
+/* 예시 사진 — 진짜 사진 자리. 그라데이션 위에 기구 실루엣 */
+const 장면=[["#1F3B33","#4E8C74"],["#2B2F45","#7A6FB0"],["#3D2A1F","#C0834A"],["#1E3245","#4F8FC0"],["#402033","#B05A7A"],["#2E3A1F","#8AA64E"],["#33302A","#9C8E76"],["#2A2233","#8E6FB5"],["#1F3340","#5AA0A8"],["#3A2626","#B86E5A"]].map(([a,b],i)=>{
+  const 기구=i%3===0?'<rect x="150" y="150" width="300" height="10" rx="5" fill="#fff" opacity=".85"/><rect x="170" y="110" width="22" height="90" rx="6" fill="#fff" opacity=".9"/><rect x="408" y="110" width="22" height="90" rx="6" fill="#fff" opacity=".9"/><rect x="140" y="125" width="18" height="60" rx="5" fill="#fff" opacity=".7"/><rect x="442" y="125" width="18" height="60" rx="5" fill="#fff" opacity=".7"/>'
+   :i%3===1?'<rect x="210" y="170" width="200" height="18" rx="6" fill="#fff" opacity=".85"/><rect x="230" y="188" width="10" height="40" fill="#fff" opacity=".6"/><rect x="380" y="188" width="10" height="40" fill="#fff" opacity=".6"/><circle cx="300" cy="120" r="26" fill="none" stroke="#fff" stroke-width="10" opacity=".8"/>'
+   :'<rect x="260" y="90" width="12" height="130" fill="#fff" opacity=".8"/><rect x="330" y="90" width="12" height="130" fill="#fff" opacity=".8"/><rect x="235" y="120" width="130" height="8" rx="4" fill="#fff" opacity=".9"/><rect x="220" y="105" width="16" height="38" rx="4" fill="#fff" opacity=".75"/><rect x="364" y="105" width="16" height="38" rx="4" fill="#fff" opacity=".75"/>';
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 450"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient></defs><rect width="600" height="450" fill="url(#g)"/><rect y="228" width="600" height="222" fill="#000" opacity=".18"/>${기구}<text x="300" y="330" font-family="sans-serif" font-size="30" font-weight="700" fill="#fff" opacity=".55" text-anchor="middle">예시 사진 ${i+1}</text></svg>`;
+  return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`});
+function 칠하기(){document.querySelectorAll("[data-photo]").forEach(el=>el.style.backgroundImage=장면[+el.dataset.photo%장면.length])}
+
+/* 운동 중 — 휴식 칸: 초록 → 절반 이하 파랑 → 5초 이하 빨강 굵게. 휴식 동안은 사진이 커진다 */
+let left=90,tick=null,elapsed=23*60+41,phase="rest",setLeft=0;
+function restPaint(){const el=$("rest");if(!el)return;
+  if(phase==="set"){el.textContent="1:30";el.style.color="var(--옅음)";el.style.fontWeight="400";el.classList.remove("run")}
+  else{el.classList.add("run");const m=Math.floor(left/60),s=left%60;el.textContent=`${m}:${String(s).padStart(2,"0")}`;el.style.color=left<=5?"var(--나쁨)":left*2<=90?"var(--내림)":"var(--좋음)";el.style.fontWeight=left<=5?"900":"700"}
+  const b=$("banner");if(b)b.classList.toggle("big",phase==="rest")}
+function startRest(){clearInterval(tick);left=90;phase="rest";restPaint();tick=setInterval(()=>{
+  elapsed++;const e=$("elapsed");e.textContent=`${Math.floor(elapsed/60)}:${String(elapsed%60).padStart(2,"0")}`;
+  if(phase==="rest"){left--;if(left<0){phase="set";setLeft=40;한세트끝()}}
+  else{setLeft--;if(setLeft<0){phase="rest";left=90}}
+  restPaint()},250)}
+
+/* 사진 칸 엔진
+ * 칸 종류: 전신(루틴 전체 누적) · 확대(지금 부위 자세히) · 사진(최대 10장)
+ * 보기: 근육 2장 = [전신, 확대] · 근육+사진 = [전신, 사진1] · 사진 2장 · 사진 1장
+ * 나가는 칸은 오른쪽 끝으로 접혀 들어가고, 들어오는 칸은 그 더미에서 펼쳐져 나온다 */
+const 사진수=10;let 모드="근육2";let 보임사진=[0,3];let 번갈=0,부위알림=0;
+/* 예시 루틴 — 가슴, 팔. [종목, 부위, 근육, 세트] */
+const 계획=[["인클라인 벤치프레스","가슴","가슴위",5],["덤벨 플라이","가슴","가슴",5],["덤벨 컬","팔","이두",4],["해머 컬","팔","전완",4]];
+const 총세트=계획.reduce((a,x)=>a+x[3],0);
+let 진행=8;   /* 지금까지 끝낸 세트 수 — 가슴 마지막 세트 직전부터 시작 */
+function 지금(){let n=진행;for(let i=0;i<계획.length;i++){if(n<계획[i][3])return{i,한:n};n-=계획[i][3]}return{i:계획.length-1,한:계획.at(-1)[3]}}
+function 근육비(근){let n=진행,한=0,합=0;계획.forEach(([,,m,s])=>{const d=Math.max(0,Math.min(s,n));n-=s;if(m===근||(근==="가슴"&&m==="가슴위")){한+=d;합+=s}});return 합?한/합:0}
+function 운동비(근){let n=진행,r=0;계획.forEach(([,,m,s])=>{const d=Math.max(0,Math.min(s,n));n-=s;if(m===근)r=d/s});return r}
+const 빨강=r=>r<=0?"var(--선)":`color-mix(in srgb, var(--오름) ${Math.round(18+r*82)}%, var(--선))`;
+
+/* 근육 그림 좌표 — react-body-highlighter (MIT License, © 2020 GV79) 의 앞·뒤 모습 다각형. 원본 좌표계 1000×2000 */
+const 몸={"\uc55e":[["CHEST",["518 416 510 551 580 580 678 555 706 473 620 416","298 465 314 555 408 580 482 551 478 420 376 420"]],["OBLIQUES",["686 633 673 571 588 596 600 641 604 833 657 788 665 698","339 784 331 718 310 633 322 571 408 592 392 633 392 837"]],["ABS",["563 592 580 641 584 780 584 927 563 984 551 1041 514 1078 510 845 506 673 510 571","437 588 486 571 490 673 486 845 482 1073 445 1037 408 914 408 784 412 645"]],["BICEPS",["167 682 180 714 229 661 290 539 278 494 204 559","714 494 702 547 763 661 816 718 829 690 788 555"]],["TRICEPS",["694 555 694 616 759 727 776 702 755 673","224 694 298 555 298 608 229 731"]],["NECK",["555 237 506 335 506 392 616 400 706 449 694 367 633 351 584 306","290 449 302 371 363 351 412 302 445 245 490 339 486 392 380 396"]],["FRONT_DELTOIDS",["784 531 796 478 792 412 759 380 710 363 722 429 714 473","282 473 212 531 200 478 204 408 245 371 286 371 269 433"]],["HEAD",["424 29 400 118 420 196 461 233 498 253 547 224 576 192 592 102 571 24 498 0"]],["ABDUCTORS",["527 1102 543 1249 600 1102 620 1000 649 943 600 927 567 1045","478 1106 449 1253 420 1159 404 1131 396 1073 380 1024 347 939 396 922 416 992 437 1053"]],["QUADRICEPS",["347 988 371 1082 371 1278 343 1371 310 1327 294 1200 282 1114 294 1008 322 947","633 1057 645 1000 669 947 702 1012 710 1118 682 1331 653 1376 624 1286 620 1114","388 1294 384 1122 412 1184 445 1294 429 1351 400 1461 363 1465 355 1400","596 1457 555 1290 608 1139 612 1302 641 1396 629 1465","327 1384 265 1457 257 1367 257 1273 269 1143 294 1335","718 1131 739 1241 739 1404 727 1457 665 1384 702 1335"]],["KNEES",["339 1400 347 1433 355 1473 363 1510 351 1567 298 1567 273 1527 273 1473 302 1441","657 1400 722 1478 722 1522 698 1571 649 1567 629 1510"]],["CALVES",["714 1604 735 1535 767 1612 796 1678 784 1878 796 1955 747 1955","249 1947 278 1649 282 1604 261 1543 249 1576 224 1616 208 1678 220 1882 208 1955","727 1951 698 1592 653 1584 641 1624 641 1653 657 1771","355 1584 359 1624 359 1669 351 1722 351 1767 322 1820 306 1873 269 1947 273 1878 282 1804 286 1755 290 1698 298 1641 302 1588"]],["FOREARM",["61 886 102 751 147 702 163 743 192 735 45 976 0 1000","845 698 833 735 800 731 951 984 1000 1004 935 894 898 763","776 722 776 776 804 841 853 898 922 1012 947 996","69 1012 135 906 188 841 216 771 212 718 49 988"]]],"\ub4a4":[["HEAD",["506 0 460 9 409 55 404 128 451 200 557 200 591 136 596 47 557 13"]],["TRAPEZIUS",["447 217 477 217 472 383 477 647 383 532 353 409 311 366 391 332 438 272","523 217 557 217 566 272 609 328 689 366 647 404 617 532 523 647 532 383"]],["BACK_DELTOIDS",["294 370 230 391 174 443 183 536 243 494 272 464","711 370 783 396 826 447 817 536 749 489 723 451"]],["UPPER_BACK",["311 387 281 489 285 553 340 753 472 711 472 664 366 540 336 413","689 387 719 494 715 562 660 753 528 711 528 664 634 545 664 417"]],["TRICEPS",["268 498 179 557 145 723 166 817 217 638 268 557","736 502 821 557 860 732 834 821 779 630 732 557","268 583 268 685 230 753 191 774 226 655","728 583 770 647 804 774 766 753 728 689"]],["LOWER_BACK",["477 728 345 770 353 834 494 1021 468 830","523 728 655 770 647 834 506 1021 532 838"]],["FOREARM",["864 757 911 834 932 940 1000 1064 962 1043 881 894 843 838","136 757 89 838 68 936 0 1064 38 1043 123 885 157 830","813 796 774 779 791 847 911 1038 932 1089 945 1047","187 796 221 779 209 843 94 1030 68 1085 51 1047"]],["GLUTEAL",["447 996 302 1085 298 1187 315 1260 472 1213 494 1149","553 991 511 1145 523 1209 681 1260 698 1191 694 1085"]],["ADDUCTOR",["481 1230 447 1230 413 1255 451 1443 485 1357 489 1294","519 1226 557 1234 591 1260 549 1443 519 1362 511 1294"]],["HAMSTRING",["289 1221 311 1294 366 1260 353 1353 345 1502 294 1583 289 1468 277 1413 272 1315","715 1217 694 1289 638 1260 655 1366 664 1502 711 1583 715 1477 728 1421 736 1319","387 1255 443 1460 404 1668 362 1528 370 1353","617 1255 634 1362 643 1532 600 1668 562 1464"]],["KNEES",["345 1532 311 1591 336 1664 374 1626","664 1536 630 1630 668 1664 694 1591"]],["CALVES",["294 1604 285 1672 247 1796 238 1928 255 1970 285 1932 298 1800 319 1711 319 1668","374 1651 353 1677 332 1719 311 1804 302 1919 340 2000 387 1906 391 1689","630 1651 613 1685 617 1906 664 1996 706 1919 689 1796 668 1702","706 1604 723 1685 757 1791 766 1928 745 1966 723 1936 706 1796 681 1681"]],["LEFT_SOLEUS",["285 1957 302 1957 336 2017 306 2200 285 2136 268 1983"]],["RIGHT_SOLEUS",["698 1957 719 1957 736 1983 719 2132 702 2196 672 2021"]]]};
+const 근육키={CHEST:"가슴",BICEPS:"이두",FOREARM:"전완",TRICEPS:"삼두",FRONT_DELTOIDS:"어깨",BACK_DELTOIDS:"어깨",ABS:"복근",OBLIQUES:"복근",
+  QUADRICEPS:"하체",HAMSTRING:"하체",GLUTEAL:"하체",CALVES:"하체",ADDUCTOR:"하체",ABDUCTORS:"하체",LEFT_SOLEUS:"하체",RIGHT_SOLEUS:"하체",
+  TRAPEZIUS:"등",UPPER_BACK:"등",LOWER_BACK:"등"};
+function 다각형(면,dx){return 몸[면].map(([m,ps])=>ps.map(pt=>{const k=근육키[m];return `<polygon points="${pt}" transform="translate(${dx} 0)" class="${k?"mus":"몸"}"${k?` data-m="${k}"`:""}/>`}).join("")).join("")}
+function 전신그림(){return `<span class="mt" id="mtA">루틴 전체</span><svg viewBox="-40 -20 2120 2040" aria-label="앞·뒤 근육 그림">${다각형("앞",0)}${다각형("뒤",1040)}</svg>`}
+function 가슴확대(){return `<span class="mt" id="mtB">가슴</span><svg viewBox="250 340 510 340" aria-label="가슴 확대">${다각형("앞",0)}</svg>`}
+function 팔확대(){return `<span class="mt" id="mtC">팔</span><svg viewBox="0 430 760 620" aria-label="팔 확대 · 앞과 뒤">
+<defs><clipPath id="cA"><rect x="0" y="0" width="370" height="2000"/></clipPath><clipPath id="cB"><rect x="390" y="0" width="370" height="2000"/></clipPath></defs>
+<g clip-path="url(#cA)"><g transform="translate(-640 0)">${다각형("앞",0)}</g></g>
+<g clip-path="url(#cB)"><g transform="translate(-250 0)">${다각형("뒤",0)}</g></g></svg>`}
+function 칸만들기(){
+  const b=$("banner");b.querySelectorAll(".slot").forEach(x=>x.remove());
+  const add=(id,cls,html,photo)=>{const d=document.createElement("div");d.className="slot"+(cls?" "+cls:"");d.id=id;if(html)d.innerHTML=html;if(photo!=null)d.dataset.photo=photo;b.prepend(d)};
+  for(let k=0;k<사진수;k++)add("slot"+k,"",null,k);
+  add("slotZ팔","muscle",팔확대());add("slotZ가슴","muscle",가슴확대());add("slotA","muscle",전신그림());
+  칠하기();배치();근육칠();
+}
+function 보일칸(){
+  const 부=계획[지금().i][1],확대="slotZ"+부;
+  /* 근육 2장 — 사진은 쓰지 않는다 (접힌 더미도 없음) */
+  if(모드==="근육2")return["slotA",확대];
+  /* 근육 + 사진 — 1번 자리에 전신 · 확대가 세트마다 번갈아 */
+  if(모드==="근육1")return[번갈%2?확대:"slotA","slot"+보임사진[0]];
+  /* 사진만 — 부위가 바뀐 첫 세트에만 1번 자리에 새 부위 확대가 잠깐 나온다 */
+  const 사진=(모드==="사진2"?보임사진.slice(0,2):보임사진.slice(0,1)).map(k=>"slot"+k);
+  if(부위알림>0)사진[0]=확대;
+  return 사진;
+}
+function 배치(){
+  const b=$("banner"),W=b.clientWidth||326,얇=6,틈=2;
+  const 보=보일칸();
+  /* 부위 확대가 잠깐 자리를 빌린 사진은 더미에 넣지 않고 숨겨 둔다 (더미 수가 늘지 않게) */
+  const 빌린=(모드==="사진1"||모드==="사진2")&&부위알림>0?"slot"+보임사진[0]:null;
+  if(빌린){const e=$(빌린);e.style.width="0px";e.style.opacity=0}
+  const 사진접힘=모드==="근육2"?[]:[...Array(사진수).keys()].map(k=>"slot"+k).filter(id=>!보.includes(id)&&id!==빌린);
+  /* 근육 2장이면 사진 칸은 모두 오른쪽 끝으로 사라진다 */
+  if(모드==="근육2")[...Array(사진수).keys()].forEach(k=>{const e=$("slot"+k);e.classList.add("fold");e.style.left=W+"px";e.style.width="0px";e.style.opacity=0});
+  const 오른쪽=사진접힘.length*(얇+틈);
+  const 폭=(W-오른쪽-틈*(보.length-1))/보.length;
+  let x=0;
+  보.forEach(id=>{const e=$(id);e.classList.remove("fold");e.style.opacity=1;e.style.left=x+"px";e.style.width=폭+"px";e.style.zIndex=1;x+=폭+틈});
+  사진접힘.forEach((id,n)=>{const e=$(id);e.classList.add("fold");e.style.opacity=1;e.style.left=(W-오른쪽+n*(얇+틈)+틈)+"px";e.style.width=얇+"px";e.style.zIndex=0});
+  /* 안 쓰는 근육 칸은 더미 쪽으로 접혀 사라진다 */
+  ["slotA","slotZ가슴","slotZ팔"].filter(id=>!보.includes(id)).forEach(id=>{const e=$(id);e.style.left=(W-오른쪽)+"px";e.style.width="0px";e.style.opacity=0;e.style.zIndex=0});
+  const bx=$("bhide");if(bx)bx.style.right=(오른쪽+6)+"px";
+  const 지=지금(),[이름,,,세트]=계획[지.i];
+  $("btxt").textContent=`${이름} · ${지.한}/${세트}세트`;
+}
+function 사진바꿈(){
+  const 후보=[...Array(사진수).keys()].filter(k=>!보임사진.includes(k));
+  const 새=[];while(새.length<2){새.push(후보.splice(Math.floor(Math.random()*후보.length),1)[0])}
+  보임사진=새;배치();
+}
+function 근육칠(){
+  document.querySelectorAll("[data-m]").forEach(e=>e.style.fill=빨강(근육비(e.dataset.m)));
+  
+  const 지=지금(),[,부,근,세트]=계획[지.i];
+  const 부세트=계획.filter(x=>x[1]===부),부합=부세트.reduce((a,x)=>a+x[3],0);
+  let n=진행,부한=0;계획.forEach(x=>{const d=Math.max(0,Math.min(x[3],n));n-=x[3];if(x[1]===부)부한+=d});
+  const 이름={가슴위:"가슴 윗부분",가슴:"가슴",이두:"이두",전완:"전완"}[근];
+  $("mtA").textContent=`루틴 전체 ${진행}/${총세트}`;
+  const mt=$("mtB");if(mt)mt.textContent=부==="가슴"?`${이름} ${지.한}/${세트}`:`가슴 ${부한}/${부합}`;
+  const mc=$("mtC");if(mc)mc.textContent=부==="팔"?`${이름} ${지.한}/${세트}`:"팔";
+}
+function 한세트끝(){
+  const 전=계획[지금().i][1];
+  진행=진행>=총세트?0:진행+1;번갈++;
+  부위알림=계획[지금().i][1]!==전?1:Math.max(0,부위알림-1);
+  사진바꿈();근육칠()}
+document.addEventListener("click",e=>{const b=e.target.closest("[data-bm]");if(!b)return;모드=b.dataset.bm;document.querySelectorAll("[data-bm]").forEach(x=>x.classList.toggle("on",x===b));배치()});
+new ResizeObserver(()=>배치()).observe($("banner"));
+
+$("bhide").onclick=()=>{$("banner").hidden=true};
+$("sup3h").onclick=()=>{const b=$("sup3b");const o=b.classList.toggle("open");$("sup3").classList.toggle("folded",!o);$("sup3").classList.toggle("open-card",o)};
+$("skip").onclick=()=>{if(phase==="rest")left=0};
+
+/* 설정 칩 · 스위치 */
+document.querySelectorAll("[data-pick]").forEach(g=>g.onclick=e=>{const b=e.target.closest(".chip");if(!b)return;g.querySelectorAll(".chip").forEach(x=>x.classList.toggle("on",x===b))});
+document.querySelectorAll(".sw").forEach(s=>s.onclick=()=>s.classList.toggle("on"));
+
+/* 화면 전환 */
+const notes={
+cal:"<b>캘린더</b> — 펼친 주는 종목 수만큼만 커지고, 남는 높이는 다른 주들이 나눕니다. 아래 판은 제목 18 · 요약 11 · 버튼 32 한 줄.",
+rou:"<b>루틴</b> — 숫자 칸을 누르면 자판과 휠이 뜹니다. <b>휠은 돌려도 값이 안 바뀌고, 숫자를 눌러야 들어갑니다.</b> 빈 곳을 누르면 취소. 휴식 칸에 <b>60</b>을 치면 분 칸이 비워지고 <b>= 1:00</b> 로 미리 보입니다(자판 완료 = 엔터). 종목 추가는 카드 맨 아래 검색칸 하나로 — 누르면 자판 위로 올라옵니다. <b>인클라인 벤치</b>나 <b>덤벨 풀오버</b>를 쳐 보세요.",
+work:"<div class='chips' style='margin-bottom:8px'><button class='chip on' data-bm='근육2'>근육 2장</button><button class='chip' data-bm='근육1'>근육 + 사진</button><button class='chip' data-bm='사진2'>사진 2장</button><button class='chip' data-bm='사진1'>사진 1장</button></div><b>사진 칸</b> — 세트가 끝날 때마다 사진이 무작위로 바뀝니다. 나갈 사진은 오른쪽 끝으로 얇게 접혀 들어가고, 새 사진이 그 더미에서 펼쳐져 나옵니다. 안 나온 사진(최대 10장)은 오른쪽 구석에 얇은 띠로 쌓여 보입니다. 휴식 동안은 칸이 180으로 커집니다. <b>보기마다 오른쪽 더미</b> — 근육 2장: 더미 없음 · 근육 + 사진: 1번 자리에 전신과 확대가 세트마다 번갈아, 사진 9장 접힘 · 사진 1장: 9장 접힘 · 사진 2장: 8장 접힘. <b>사진만 보는 중에도 부위가 바뀐 첫 세트에는 새 부위 확대가 한 번 나옵니다</b>(제 제안). <b>근육 그림은 공개 좌표(react-body-highlighter, MIT)를 옮긴 것</b> — 앞·뒤 모습 22개 근육. <b>근육 2장</b> — 1번 칸은 <b>루틴 전체</b>: 끝낸 부위가 빨갛게 남고 쌓입니다. 2번 칸은 <b>지금 부위 확대</b>: 종목의 근육(가슴 윗부분 · 이두 · 전완)이 세트마다 차오릅니다. 예시 루틴은 가슴 10세트 → 팔 8세트이고, 가슴을 끝내면 2번 칸이 접혀 들어가고 팔 확대가 펼쳐져 나옵니다(아래 카드는 그대로 둔 시안이라 이름이 안 바뀝니다). <b>접기</b> — 지금 종목만 펼치고 나머지는 접힘. 03 슈퍼세트를 누르면 부드럽게 펼쳐지고 접힙니다. 시안은 4배속 · 건너뛰기로 바로 넘겨 보세요.",
+rep:"<b>운동 레포트</b> — 제목 22, 요약 세 칸은 같은 크기 카드, 종목 목록만 상자 안에서 넘깁니다. 늘면 빨강 ▲, 줄면 파랑 ▼.",
+ex:"<b>종목 편집</b> — 종목 줄을 누르면 펼쳐지고, 맨 위에 <b>72×72 사진 칸</b>이 가로 한 줄로 놓입니다. 첫 칸이 사진 추가, 넘치면 옆으로 밀기(최대 10장). 목록 줄 왼쪽에도 28 크기 작은 사진. 사진은 예시 그림입니다.",
+set:"<b>설정</b> — 이름표 11(자간 +0.04em) 아래 카드. 스위치 줄 44, 고르는 값은 칩."};
+function go(v){
+  ["cal","rou","work","rep","ex","set"].forEach(x=>$("v-"+x).hidden=x!==v);
+  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("on",t.dataset.go===v));
+  document.querySelectorAll("#jump .chip").forEach(c=>c.classList.toggle("on",c.dataset.go===v));
+  $("tabs").hidden=false;$("kbd").hidden=true;
+  $("note").innerHTML=notes[v];
+  if(v==="work")startRest();else clearInterval(tick);
+}
+document.addEventListener("click",e=>{const g=e.target.closest("[data-go]");if(g)go(g.dataset.go)});
+renderCal();renderRou();renderEx();칠하기();칸만들기();go("work");
+</script>

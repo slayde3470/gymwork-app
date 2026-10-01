@@ -1,0 +1,17 @@
+{
+  "version": 3,
+  "note": "종목마다 쓰는 근육과 역할. 근육 id 는 muscle-catalog.json 의 어느 층이든. 역할 비중은 피로가 쌓이는 정도 — 주동근이 가장 크다. 사용자는 종목 편집에서 근육을 더하고 빼고 역할을 바꿀 수 있다(커스텀). 기본값은 지우지 않고 남겨 '기본값으로' 돌아갈 수 있게 한다.",
+  "roles": [
+    { "id": "primary",   "name": "주동근", "weight": 1.0 },
+    { "id": "secondary", "name": "보조근", "weight": 0.5 },
+    { "id": "synergist", "name": "협응근", "weight": 0.25 }
+  ],
+  "exercises": [
+    { "name": "인클라인 벤치프레스", "muscles": { "chest_upper": "primary", "chest_mid": "secondary", "delt_front": "secondary", "triceps": "synergist" } },
+    { "name": "덤벨 플라이",       "muscles": { "chest_mid": "primary", "chest_lower": "primary", "chest_upper": "secondary", "delt_front": "synergist" } },
+    { "name": "덤벨 컬",          "muscles": { "biceps": "primary", "brachialis": "secondary", "forearm_flexors": "synergist" } },
+    { "name": "해머 컬",          "muscles": { "brachioradialis": "primary", "brachialis": "primary", "biceps": "secondary" } },
+    { "name": "랫풀다운",         "muscles": { "lats": "primary", "teres_major": "secondary", "rhomboids": "secondary", "biceps": "synergist", "delt_rear": "synergist" } },
+    { "name": "스쿼트",           "muscles": { "quads": "primary", "gluteus_maximus": "primary", "adductor_magnus": "secondary", "hamstrings": "synergist", "lower_back": "synergist" } }
+  ]
+}

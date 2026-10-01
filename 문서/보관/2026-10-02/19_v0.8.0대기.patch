@@ -1,0 +1,852 @@
+From 4d605f00fae0f26231ac5bc4089d5d78ac7d8122 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 29 Sep 2026 08:40:29 +0900
+Subject: [PATCH] =?UTF-8?q?v0.8.0:=20=EC=9A=B4=EB=8F=99=20=ED=94=8C?=
+ =?UTF-8?q?=EB=9E=9C=20=E2=80=94=20=ED=95=A9=EC=9D=98=EB=90=9C=20=EB=8B=A4?=
+ =?UTF-8?q?=EC=84=AF=20=EC=A2=85=EB=AA=A9=EC=9D=98=20=EC=A3=BC=EC=B0=A8?=
+ =?UTF-8?q?=EB=B3=84=20=EC=B2=98=EB=B0=A9=20+=20=EC=95=84=EB=9E=98=20?=
+ =?UTF-8?q?=ED=83=AD=20'=ED=94=8C=EB=9E=9C'?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+합의 확정: 벤치프레스(13-1) · 백 스쿼트(14) · 데드리프트(16) · 오버헤드 프레스(17) · 펜들레이 로우(18)
+
+- data/Plan.kt 새로 — 모든 숫자를 '플랜표' 한곳에 모음 (12 문서 ★원칙).
+  종목별 수준 경계 · 속도 배수 · 목표 · 측정 주기 · 속도 5단계 · 나이/성별 배수 ·
+  측정일 조정 규칙 · 에플리 환산. 계산 뼈대는 종목과 무관하게 같다.
+- ui/PlanScreen.kt 새로 + 아래 탭에 '플랜' 추가 (캘린더 · 루틴 · 플랜 · 종목 · 설정 · 메모)
+- 저장 형식 스키마 7 → 8 (플랜들 · 몸 조건). 옛 파일도 그대로 읽힌다
+
+속도 표를 고쳤다: 고급 0.8 → 2.0 · 상급 0.4 → 1.5 %.
+홍겸 님이 "OHP·펜들레이 계산이 너무 오래 걸린다"고 짚었고, 따져 보니 옛 값(상급 연 5%)이
+Latella 2022 대회 선수 실측(벤치 연 10.5~12.8kg ≈ 연 8~10%)보다 비관적이었다.
+표는 모든 종목이 공유하므로 데드리프트 기간이 185주 → 144주로 바뀌었다 (홍겸 님 동의).
+
+09-29 검토에서 찾아 고친 것 (시험으로 재현 확인 — 고치기 전 코드에서 8가지 실패):
+- 측정일 기록이 있어도 늘 시작값으로 계산해, 측정이 처방에 전혀 반영되지 않았다
+- '지금주'가 저절로 오르지 않아 늘 1주차 처방만 나왔다 → 만든 날로부터 날짜로 센다
+- 기대속도 되돌림 값이 옛 상급 값(0.4)으로 남아 있었다
+- 시작 무게 ± 가 설정의 무게폭을 따르지 않고 2.5 로 박혀 있었다
+
+아직 안 만든 것(화면에 그렇게 적어 둠): 처방을 루틴에 저절로 넣기 · 측정일 입력
+
+kotlinc 시험 107가지 실패 0. 화면 코드는 안드로이드 SDK가 없어 빌드로만 확인된다.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_018XVvgsopvsbvnvd4UZSaG3
+---
+ app/build.gradle.kts                          |   4 +-
+ .../java/com/slayde/hasenheide/data/Model.kt  |   6 +-
+ .../java/com/slayde/hasenheide/data/Plan.kt   | 386 ++++++++++++++++++
+ .../com/slayde/hasenheide/data/Storage.kt     |  22 +
+ .../main/java/com/slayde/hasenheide/ui/App.kt |   4 +-
+ .../java/com/slayde/hasenheide/ui/Icons.kt    |   2 +
+ .../com/slayde/hasenheide/ui/PlanScreen.kt    | 278 +++++++++++++
+ 7 files changed, 698 insertions(+), 4 deletions(-)
+ create mode 100644 app/src/main/java/com/slayde/hasenheide/data/Plan.kt
+ create mode 100644 app/src/main/java/com/slayde/hasenheide/ui/PlanScreen.kt
+
+diff --git a/app/build.gradle.kts b/app/build.gradle.kts
+index 4426143..92de576 100644
+--- a/app/build.gradle.kts
++++ b/app/build.gradle.kts
+@@ -18,8 +18,8 @@ android {
+ 
+         minSdk = 26        // 안드로이드 8.0 이상에서 동작
+         targetSdk = 35
+-        versionCode = 20    // 새 APK를 낼 때마다 1씩 올린다 (덮어쓰기 설치에 필요)
+-        versionName = "0.7.1"
++        versionCode = 21    // 새 APK를 낼 때마다 1씩 올린다 (덮어쓰기 설치에 필요)
++        versionName = "0.8.0"
+     }
+ 
+     buildTypes {
+diff --git a/app/src/main/java/com/slayde/hasenheide/data/Model.kt b/app/src/main/java/com/slayde/hasenheide/data/Model.kt
+index 302ea7a..0c7bfb5 100644
+--- a/app/src/main/java/com/slayde/hasenheide/data/Model.kt
++++ b/app/src/main/java/com/slayde/hasenheide/data/Model.kt
+@@ -207,10 +207,14 @@ data class 앱데이터(
+     val 미실시: Map<String, String> = emptyMap(),
+     /** "2026-09-28" → 그 날만 조절 (09-27) */
+     val 조절: Map<String, 오늘조절> = emptyMap(),
++    /** 운동 플랜 — 종목마다 하나 (09-28, Plan.kt) */
++    val 플랜들: List<플랜> = emptyList(),
++    /** 플랜 계산에 쓰는 몸 조건 (09-28) */
++    val 몸: 몸조건 = 몸조건(),
+ ) {
+     companion object {
+         /** 자료 구조가 바뀌면 올린다 — 옛 백업 파일을 읽을 때 구분하려고 */
+-        const val 스키마 = 7
++        const val 스키마 = 8
+         val 기본카테고리 = listOf("가슴", "등", "하체", "어깨", "팔", "복근")
+     }
+ }
+diff --git a/app/src/main/java/com/slayde/hasenheide/data/Plan.kt b/app/src/main/java/com/slayde/hasenheide/data/Plan.kt
+new file mode 100644
+index 0000000..e8b21bf
+--- /dev/null
++++ b/app/src/main/java/com/slayde/hasenheide/data/Plan.kt
+@@ -0,0 +1,386 @@
++package com.slayde.hasenheide.data
++
++import kotlin.math.ceil
++import kotlin.math.ln
++import kotlin.math.max
++import kotlin.math.min
++import kotlin.math.pow
++import kotlin.math.roundToInt
++
++/**
++ * 운동 플랜 — 목표까지 주차별 처방을 앱이 짜 준다 (2026-09-28, 프로젝트 12 ~ 18 문서)
++ *
++ * ── ★ 이 파일의 원칙 (12 문서, 홍겸 님 09-27 19:41) ──
++ * **모든 숫자를 아래 `플랜표` 한곳에 모았다.** 계산 뼈대(아래쪽 함수들)는 종목이 무엇이든 같고,
++ * 종목마다 다른 값은 `플랜표.종목들` 의 한 줄만 고치면 된다.
++ * "이 값 고치자" 하면 표 한 줄만 바꾸면 되고, 뼈대 코드는 건드리지 않는다.
++ *
++ * ── 이 파일에는 안드로이드 기능을 쓰지 않는다 ──
++ * 컴퓨터에서 kotlinc 로 따로 검사할 수 있게 (Model.kt 와 같은 규칙).
++ *
++ * ── 책임 한계 (12 문서 2번, 홍겸 님) ──
++ * 이것은 가이드라인이다. 운동은 그날 컨디션대로 조절해야 한다.
++ */
++
++// ═══════════════════════════════════════════════════════════════════
++//  ★ 숫자 표 — 고칠 것은 전부 여기 있다
++// ═══════════════════════════════════════════════════════════════════
++
++/** 수준 5단계 */
++enum class 수준(val 이름: String) { 입문("입문"), 초급("초급"), 중급("중급"), 고급("고급"), 상급("상급") }
++
++/** 플랜을 짜는 속도 — 홍겸 님 09-27 19:37. `보통` = 근거 기준값 */
++enum class 속도(val 이름: String, val 배수: Double) {
++    천천히("천천히", 0.5), 여유있게("여유있게", 0.75), 보통("보통", 1.0), 강도높게("강도 높게", 1.25), 극한("극한", 1.5)
++}
++
++/** 목표를 재는 방법 */
++enum class 목표종류 { 무게횟수, 최대횟수 }
++
++/**
++ * 종목 하나의 숫자 묶음.
++ *
++ * @param 경계남 1RM ÷ 체중 의 구간 경계 넷 (입문|초급|중급|고급|상급)
++ * @param 속도배수 벤치 표(`기준속도`)에 곱하는 값 — 종목별 합의에서 정한 것
++ */
++data class 플랜종목(
++    val 이름: String,
++    val 경계남: List<Double>,
++    val 경계여: List<Double>,
++    val 속도배수: Double,
++    val 목표: 목표값,
++    /** 같은 날 함께 하지 않는 종목 (허리를 겹쳐 쓰는 것 등) */
++    val 다른날: List<String> = emptyList(),
++    /** 합의 문서 번호 — 화면에서 근거를 찾아갈 수 있게 */
++    val 문서: String = "",
++    val 비고: String = "",
++)
++
++/** 목표 — 무게 × 횟수, 또는 맨몸 최대 횟수 */
++data class 목표값(val 종류: 목표종류, val 무게: Double = 0.0, val 횟수: Int = 0) {
++    /** 환산 1RM (에플리) — 무게×횟수 목표일 때만 */
++    val 환산1RM: Double get() = if (종류 == 목표종류.무게횟수) 일RM(무게, 횟수) else 0.0
++}
++
++object 플랜표 {
++
++    /**
++     * 4주당 기대 향상 속도(%) — **벤치프레스 기준값**. 다른 종목은 여기에 `속도배수` 를 곱한다.
++     * 근거: 13 문서 E1~E8 · 13-1 E9. 모양은 근거 있음, 정확한 값은 [내 생각] (홍겸 님 동의)
++     *
++     * ⚠ 09-28 밤 고침 — 고급 0.8 → **2.0** · 상급 0.4 → **1.5**.
++     * 홍겸 님이 "OHP·펜들레이 계산이 너무 오래 걸린다"고 짚었고, 따져 보니 옛 값(상급 0.4% = 연 5%)이
++     * Latella 2022 의 대회 선수 실측(벤치 연 10.5~12.8kg ≈ 연 8~10%)보다 비관적이었다.
++     * 이 표는 모든 종목이 함께 쓰므로 데드리프트 기간도 185주 → 144주 로 바뀐다 (홍겸 님 동의).
++     */
++    val 기준속도: Map<수준, Double> = mapOf(
++        수준.입문 to 5.0, 수준.초급 to 3.0, 수준.중급 to 1.5, 수준.고급 to 2.0, 수준.상급 to 1.5,
++    )
++
++    /** 한 번에 올릴 수 있는 상한(%) — 기준속도의 이 배수까지만 (강도 높게·극한이 지나치지 않게) */
++    const val 상한배수 = 1.5
++
++    /** 측정 주기(주) — 수준이 높을수록 드물게 (13-1 8번 확정) */
++    val 측정주기: Map<수준, Int> = mapOf(
++        수준.입문 to 4, 수준.초급 to 4, 수준.중급 to 8, 수준.고급 to 12, 수준.상급 to 12,
++    )
++
++    /** 나이 배수 — 35세 = 1.0 (13-1 4번 확정). 30 넘으면 조금씩 낮아진다 (Barbell Medicine 경향) */
++    fun 나이배수(나이: Int): Double = when {
++        나이 < 20 -> 1.05
++        나이 < 30 -> 1.0
++        나이 < 40 -> 1.0
++        나이 < 50 -> 0.9
++        나이 < 60 -> 0.8
++        else -> 0.7
++    }
++
++    /** 성별 배수 — 1.0 (13-1 5번 확정: 구간 경계를 성별로 따로 두었으므로 속도는 같게) */
++    const val 성별배수 = 1.0
++
++    // ── 측정일 조정 규칙 (13-1 9번 확정) ──
++    /** 이 안쪽이면 계획 그대로 간다 (kg) */
++    const val 그대로폭 = 2.5
++    /** 남은 주를 늘리거나 줄이는 배수의 범위 */
++    const val 조정하한 = 0.5
++    const val 조정상한 = 1.5
++    /** 달성비가 이보다 낮으면 그 주를 반복한다 */
++    const val 반복선 = 0.9
++    /** 반복할 주 수 */
++    const val 반복주 = 2
++
++    /** 같은 무게로 세 번 실패하면 이만큼 내린다 (13-1 7번) */
++    const val 실패내림 = 0.10
++    const val 실패횟수 = 3
++
++    /** 처방 무게 = 그 횟수 최대 무게의 이 비율 (13-1 7번 '꾸준히 늘리기') */
++    const val 처방비율 = 0.90
++
++    /** 기본 세트 수 · 목표 횟수 범위 (13-1 7번) */
++    const val 기본세트 = 3
++    val 횟수범위 = 5..12
++
++    /**
++     * 이 주 수를 넘으면 '너무 멀다'로 본다 (20년).
++     * 화면은 이 값에 닿으면 날짜를 지어내지 않고 "목표를 낮추거나 속도를 올리세요"로 보인다.
++     */
++    const val 최대주 = 1040
++
++    /**
++     * ★ 종목별 숫자 — **합의된 다섯 종목만 들어 있다.**
++     * 아직 합의하지 않은 종목(프론트 스쿼트 · 인클라인 · 딥스 · 올림픽 역도 셋 · 턱걸이 ·
++     * 팔굽혀펴기 · 맨몸 스쿼트 · 플랭크 · 유산소)은 여기에 넣지 않았다 → 01 문서 ㉒
++     */
++    val 종목들: List<플랜종목> = listOf(
++        플랜종목(
++            이름 = "벤치프레스",
++            경계남 = listOf(0.6, 0.9, 1.25, 1.6),
++            경계여 = listOf(0.4, 0.6, 0.85, 1.1),
++            속도배수 = 1.0,
++            목표 = 목표값(목표종류.무게횟수, 100.0, 12),
++            문서 = "13-1",
++            비고 = "손목 수술 영향 — 아프면 그 주 반복",
++        ),
++        플랜종목(
++            이름 = "백 스쿼트",
++            경계남 = listOf(0.8, 1.2, 1.75, 2.25),
++            경계여 = listOf(0.6, 0.95, 1.4, 1.8),
++            속도배수 = 1.2,
++            목표 = 목표값(목표종류.무게횟수, 140.0, 10),
++            다른날 = listOf("데드리프트"),
++            문서 = "14",
++        ),
++        플랜종목(
++            이름 = "데드리프트",
++            경계남 = listOf(1.0, 1.5, 2.0, 2.6),
++            경계여 = listOf(0.7, 1.0, 1.4, 1.8),
++            속도배수 = 1.2,
++            목표 = 목표값(목표종류.무게횟수, 220.0, 5),
++            다른날 = listOf("백 스쿼트"),
++            문서 = "16",
++            비고 = "컨벤셔널 기준 · 허리 통증이 다음 날까지 남으면 그 주 반복",
++        ),
++        플랜종목(
++            이름 = "오버헤드 프레스",
++            경계남 = listOf(0.35, 0.50, 0.60, 0.75),
++            경계여 = listOf(0.22, 0.32, 0.42, 0.55),
++            // 09-28: 처음에 0.7 로 했다가 1.0 으로 되돌렸다 — 상급 구간이 이미 더디게 만들어 주므로
++            // 배수로 또 누를 필요가 없다 (홍겸 님 확인)
++            속도배수 = 1.0,
++            목표 = 목표값(목표종류.무게횟수, 100.0, 5),
++            문서 = "17",
++            비고 = "서서 하는 바벨 기준 · 홍겸 님이 일부러 높게 잡은 목표",
++        ),
++        플랜종목(
++            이름 = "펜들레이 로우",
++            경계남 = listOf(0.70, 0.90, 1.10, 1.35),
++            경계여 = listOf(0.45, 0.58, 0.72, 0.90),
++            속도배수 = 1.0,
++            목표 = 목표값(목표종류.무게횟수, 140.0, 5),
++            문서 = "18",
++            비고 = "데드스톱 · 측정은 5회 이하로 (에플리가 과대추정할 수 있다)",
++        ),
++    )
++
++    fun 찾기(이름: String): 플랜종목? = 종목들.firstOrNull { it.이름 == 이름 }
++
++    /** 아직 합의하지 않아 플랜을 짤 수 없는 종목들 — 화면에서 '예정' 으로 보인다 (01 ㉒) */
++    val 예정종목: List<String> = listOf(
++        "프론트 스쿼트", "인클라인 벤치프레스", "딥스", "바벨로우",
++        "인상(스내치)", "용상(클린 앤 저크)", "클린",
++        "턱걸이(맨몸)", "팔굽혀펴기", "맨몸 스쿼트", "플랭크", "오래달리기", "자전거", "계단오르기",
++    )
++}
++
++// ═══════════════════════════════════════════════════════════════════
++//  뼈대 — 종목이 무엇이든 같다. 위의 표만 읽는다
++// ═══════════════════════════════════════════════════════════════════
++
++/** 사람 조건 — 플랜 계산에 쓰는 것만 */
++data class 몸조건(val 나이: Int = 35, val 남: Boolean = true, val 체중: Double = 70.0)
++
++/** 한 종목의 플랜 — 앱에 저장된다 */
++data class 플랜(
++    val 종목: String,
++    /** 시작할 때 잰 값 (무게 × 횟수) */
++    val 시작무게: Double,
++    val 시작횟수: Int,
++    val 속도단계: 속도 = 속도.보통,
++    /** 만든 날 "2026-09-28" */
++    val 만든날: String = "",
++    /** 지금 몇 주째인가 (1부터) */
++    val 지금주: Int = 1,
++    /** 측정일마다 남긴 기록 */
++    val 측정들: List<측정> = emptyList(),
++    /** 켜져 있으면 루틴에 처방이 들어간다 */
++    val 켬: Boolean = true,
++) {
++    val 시작1RM: Double get() = 일RM(시작무게, 시작횟수)
++
++    /** 가장 최근 측정 — 없으면 null */
++    val 마지막측정: 측정? get() = 측정들.maxByOrNull { it.주 }
++
++    /**
++     * 지금 실력으로 보는 1RM.
++     * 측정일 기록이 있으면 **그 값**을, 없으면 시작값을 쓴다.
++     * (09-29 고침: 전에는 늘 시작값만 보아 측정을 해도 화면이 바뀌지 않았다)
++     */
++    val 지금1RM: Double get() = 마지막측정?.환산1RM ?: 시작1RM
++
++    /** 계산을 시작할 주 — 마지막 측정을 한 주부터 (측정이 없으면 1주차부터) */
++    val 기준주: Int get() = 마지막측정?.주 ?: 1
++}
++
++/** 측정일 기록 — 그 주 처방 무게로 최대 반복한 결과 (13-1 12번) */
++data class 측정(val 주: Int, val 날: String, val 무게: Double, val 횟수: Int) {
++    val 환산1RM: Double get() = 일RM(무게, 횟수)
++}
++
++/** 그 주의 처방 — 화면과 루틴에 그대로 들어간다 */
++data class 주처방(
++    val 주: Int,
++    val 목표1RM: Double,
++    /** 세트에 올릴 무게 (무게폭으로 반올림한 값) */
++    val 무게: Double,
++    val 횟수: Int,
++    val 세트: Int,
++    /** 이 주가 측정일인가 */
++    val 측정일: Boolean,
++)
++
++/** 무게를 원판 단위로 맞춘다 — 설정의 무게폭(기본 1kg)을 쓴다 */
++fun 무게맞춤(kg: Double, 폭: Double = 1.0): Double {
++    if (폭 <= 0) return kg
++    return (kg / 폭).roundToInt() * 폭
++}
++
++/** 1RM ÷ 체중 으로 수준을 판정한다 */
++fun 수준판정(표: 플랜종목, 일RM값: Double, 몸: 몸조건): 수준 {
++    if (몸.체중 <= 0) return 수준.입문
++    val 비 = 일RM값 / 몸.체중
++    val 경계 = if (몸.남) 표.경계남 else 표.경계여
++    return when {
++        비 < 경계[0] -> 수준.입문
++        비 < 경계[1] -> 수준.초급
++        비 < 경계[2] -> 수준.중급
++        비 < 경계[3] -> 수준.고급
++        else -> 수준.상급
++    }
++}
++
++/**
++ * 4주당 기대 향상률(%) — 표의 기준값 × 종목배수 × 속도배수 × 나이 × 성별.
++ * 상한: 기준값 × 종목배수 × `상한배수` 를 넘지 않는다.
++ */
++fun 기대속도(표: 플랜종목, 수준값: 수준, 속도값: 속도, 몸: 몸조건): Double {
++    // 표에 없으면 가장 느린 값으로 — 표는 다섯 단계를 모두 채우고 있으므로 닿지 않는 길이다
++    val 바탕 = (플랜표.기준속도[수준값] ?: 플랜표.기준속도.getValue(수준.상급)) * 표.속도배수
++    val 값 = 바탕 * 속도값.배수 * 플랜표.나이배수(몸.나이) * 플랜표.성별배수
++    return min(값, 바탕 * 플랜표.상한배수)
++}
++
++/**
++ * 목표까지 몇 주 걸릴까.
++ *
++ * 수준이 오르면 속도가 떨어지므로 **한 주씩 밟아 가며** 센다 (한 번에 나누지 않는다).
++ * 근거가 가장 약한 부분이다 (12 문서 '한계') → 측정일마다 다시 계산해 맞춰 간다.
++ *
++ * @return 걸리는 주 수. 너무 멀면 [최대주] 를 돌려준다
++ */
++fun 남은주(표: 플랜종목, 지금1RM: Double, 목표1RM: Double, 속도값: 속도, 몸: 몸조건, 최대주: Int = 플랜표.최대주): Int {
++    if (지금1RM <= 0.0 || 목표1RM <= 지금1RM) return 0
++    var 값 = 지금1RM
++    var 주 = 0
++    while (값 < 목표1RM && 주 < 최대주) {
++        val 수준값 = 수준판정(표, 값, 몸)
++        val 넉주 = 기대속도(표, 수준값, 속도값, 몸)
++        if (넉주 <= 0.0) return 최대주
++        // 4주당 %를 한 주당으로 — 복리로 쪼갠다
++        val 한주 = (1.0 + 넉주 / 100.0).pow(0.25)
++        값 *= 한주
++        주++
++    }
++    return 주
++}
++
++/** 몇 주째의 목표 1RM — 남은주()와 같은 걸음으로 앞으로 걸어간다 */
++fun 주목표1RM(표: 플랜종목, 시작1RM: Double, 주: Int, 속도값: 속도, 몸: 몸조건): Double {
++    var 값 = 시작1RM
++    repeat(max(0, 주 - 1)) {
++        val 수준값 = 수준판정(표, 값, 몸)
++        val 넉주 = 기대속도(표, 수준값, 속도값, 몸)
++        값 *= (1.0 + 넉주 / 100.0).pow(0.25)
++    }
++    return 값
++}
++
++/**
++ * 그 주의 처방을 낸다 (13-1 7번 '꾸준히 늘리기').
++ *
++ * 목표 1RM 에서 그 종목 목표 횟수로 들 수 있는 무게를 에플리로 되돌리고,
++ * 실제로는 그 무게의 [플랜표.처방비율] 만큼만 올린다 (마지막 한 세트까지 채울 수 있게).
++ */
++fun 주처방내기(표: 플랜종목, 플랜값: 플랜, 주: Int, 몸: 몸조건, 무게폭: Double = 1.0): 주처방 {
++    // 09-29 고침: 측정일 기록이 있으면 그 값 · 그 주를 출발점으로 삼는다.
++    // 전에는 늘 시작값에서 걸어와, 측정일 결과가 처방에 전혀 반영되지 않았다 (12 문서 4번 요구사항).
++    val 걸을주 = (주 - 플랜값.기준주 + 1).coerceAtLeast(1)
++    val 목표 = 주목표1RM(표, 플랜값.지금1RM, 걸을주, 플랜값.속도단계, 몸)
++    val 횟수 = 표.목표.횟수.coerceIn(플랜표.횟수범위.first, 플랜표.횟수범위.last)
++    // 에플리 뒤집기: 1RM = w(1 + r/30) → w = 1RM / (1 + r/30)
++    val 무게 = 무게맞춤(목표 / (1 + 횟수 / 30.0) * 플랜표.처방비율, 무게폭)
++    val 수준값 = 수준판정(표, 목표, 몸)
++    val 주기 = 플랜표.측정주기[수준값] ?: 12
++    return 주처방(주, 목표, 무게, 횟수, 플랜표.기본세트, 측정일 = 주 % 주기 == 0)
++}
++
++/**
++ * 측정일 결과로 남은 주를 다시 잡는다 (13-1 9번).
++ *
++ * @return (새 남은 주, 그 주를 반복할까)
++ */
++fun 측정일조정(표: 플랜종목, 측정값: 측정, 계획1RM: Double, 목표1RM: Double, 속도값: 속도, 몸: 몸조건): Pair<Int, Boolean> {
++    val 실제 = 측정값.환산1RM
++    val 남 = 남은주(표, 실제, 목표1RM, 속도값, 몸)
++    // 2.5kg 안쪽이면 계획 그대로
++    if (kotlin.math.abs(실제 - 계획1RM) <= 플랜표.그대로폭) return 남 to false
++    val 달성비 = if (계획1RM > 0) 실제 / 계획1RM else 1.0
++    val 조정 = 달성비.coerceIn(플랜표.조정하한, 플랜표.조정상한)
++    // 계획보다 낮으면 남은 주가 늘어난다 (조정 < 1 → 나누면 커진다)
++    val 새남은 = ceil(남 / 조정).toInt()
++    return 새남은 to (달성비 < 플랜표.반복선)
++}
++
++/**
++ * 오늘이 몇 주차인가 — 만든 날로부터 지난 주를 센다 (1부터).
++ *
++ * 09-29 고침: 전에는 `플랜.지금주` 가 저절로 오르지 않아 늘 1주차 처방만 나왔다.
++ * 날짜로 세면 앱을 며칠 안 켜도 주차가 맞는다.
++ * 만든날이 비어 있거나 읽을 수 없으면 저장된 `지금주` 를 그대로 쓴다.
++ */
++fun 플랜.주차(오늘: String): Int {
++    if (만든날.isBlank()) return 지금주
++    return try {
++        val a = java.time.LocalDate.parse(만든날)
++        val b = java.time.LocalDate.parse(오늘)
++        val 일 = java.time.temporal.ChronoUnit.DAYS.between(a, b)
++        if (일 < 0) 지금주 else (일 / 7 + 1).toInt()
++    } catch (e: Exception) { 지금주 }
++}
++
++/** 같은 날 함께 두면 안 되는 종목인가 */
++fun 같은날안됨(a: String, b: String): Boolean =
++    플랜표.찾기(a)?.다른날?.contains(b) == true || 플랜표.찾기(b)?.다른날?.contains(a) == true
++
++// ─────────────── 참고용 — 무게의존 1RM 식 (01 ㉒ 검토 후보) ───────────────
++
++/**
++ * Marzagao 2026 프리프린트의 식 (303,494 세트). **지금은 쓰지 않는다** — 에플리로 통일했다 (14 S3).
++ * 5회 이하에서는 에플리와 2% 안쪽이고, 가벼운 종목 · 높은 횟수에서 벌어진다.
++ * 덤벨 · 머신 종목에 쓸지 검토할 때 이 함수를 쓴다.
++ */
++fun 일RM무게의존(w: Double, r: Int): Double {
++    if (r <= 0 || w <= 0) return 0.0
++    if (r == 1) return w
++    val k = max(0.5, -2.55 + 4.58 * ln(w))
++    return w * (1 + (r - 1).toDouble().pow(0.85) / k)
++}
+diff --git a/app/src/main/java/com/slayde/hasenheide/data/Storage.kt b/app/src/main/java/com/slayde/hasenheide/data/Storage.kt
+index a9e405a..8dd8674 100644
+--- a/app/src/main/java/com/slayde/hasenheide/data/Storage.kt
++++ b/app/src/main/java/com/slayde/hasenheide/data/Storage.kt
+@@ -46,6 +46,9 @@ object 저장소 {
+         d.세션?.let { o.put("세션", 세션to(it)) }
+         o.put("미실시", JSONObject().also { m -> d.미실시.forEach { (k, v) -> m.put(k, v) } })
+         o.put("조절", JSONObject().also { m -> d.조절.forEach { (k, v) -> m.put(k, JSONObject().put("볼륨", v.볼륨).put("무게", v.무게).put("세트", v.세트)) } })
++        // 운동 플랜 (09-28, 스키마 8)
++        o.put("플랜들", JSONArray().also { a -> d.플랜들.forEach { a.put(플랜to(it)) } })
++        o.put("몸", JSONObject().put("나이", d.몸.나이).put("남", d.몸.남).put("체중", d.몸.체중))
+         return o.toString(1)
+     }
+ 
+@@ -77,6 +80,12 @@ object 저장소 {
+             }
+         })
+ 
++    private fun 플랜to(p: 플랜) = JSONObject().put("종목", p.종목).put("시작무게", p.시작무게).put("시작횟수", p.시작횟수)
++        .put("속도", p.속도단계.name).put("만든날", p.만든날).put("지금주", p.지금주).put("켬", p.켬)
++        .put("측정들", JSONArray().also { a ->
++            p.측정들.forEach { m -> a.put(JSONObject().put("주", m.주).put("날", m.날).put("무게", m.무게).put("횟수", m.횟수)) }
++        })
++
+     private fun 설정to(s: 설정값) = JSONObject().put("자동진행", s.자동진행).put("넘어가기전확인", s.넘어가기전확인)
+         .put("소리진동", s.소리진동).put("화면유지", s.화면유지).put("무게폭", s.무게폭)
+         .put("기본휴식", s.기본휴식).put("기준", s.기준).put("기본세트", s.기본세트)
+@@ -130,6 +139,9 @@ object 저장소 {
+             세션 = o.optJSONObject("세션")?.let { 세션from(it) },
+             미실시 = 사전(o.optJSONObject("미실시")) { m, k -> m.getString(k) },
+             조절 = 사전(o.optJSONObject("조절")) { m, k -> m.getJSONObject(k).let { j -> 오늘조절(j.optInt("볼륨", 100), j.optDouble("무게", 0.0), j.optInt("세트", 0)) } },
++            // 스키마 8 — 옛 파일에는 없다 → 빈 목록 · 기본 몸조건 (시험으로 확인)
++            플랜들 = 목록(o.optJSONArray("플랜들")) { a, i -> 플랜from(a.getJSONObject(i)) },
++            몸 = o.optJSONObject("몸")?.let { j -> 몸조건(j.optInt("나이", 35), j.optBoolean("남", true), j.optDouble("체중", 70.0)) } ?: 몸조건(),
+         )
+     }
+ 
+@@ -161,6 +173,16 @@ object 저장소 {
+         자동생성 = o.optBoolean("자동생성", true),
+     )
+ 
++    private fun 플랜from(o: JSONObject) = 플랜(
++        o.getString("종목"), o.optDouble("시작무게", 20.0), o.optInt("시작횟수", 1),
++        속도.entries.firstOrNull { it.name == o.optString("속도") } ?: 속도.보통,
++        o.optString("만든날"), o.optInt("지금주", 1),
++        목록(o.optJSONArray("측정들")) { a, i ->
++            a.getJSONObject(i).let { 측정(it.optInt("주"), it.optString("날"), it.optDouble("무게"), it.optInt("횟수")) }
++        },
++        o.optBoolean("켬", true),
++    )
++
+     private fun 세트from(a: JSONArray) = 세트(a.getDouble(0), a.getInt(1))
+ 
+     private fun 세트들from(a: JSONArray?): List<세트?> =
+diff --git a/app/src/main/java/com/slayde/hasenheide/ui/App.kt b/app/src/main/java/com/slayde/hasenheide/ui/App.kt
+index aaefe1e..24f9bb6 100644
+--- a/app/src/main/java/com/slayde/hasenheide/ui/App.kt
++++ b/app/src/main/java/com/slayde/hasenheide/ui/App.kt
+@@ -108,7 +108,8 @@ class 폰기능(
+ )
+ 
+ enum class 탭(val 이름: String, val 그림: ImageVector) {
+-    캘린더("캘린더", 아이콘.달력), 루틴("루틴", 아이콘.루틴), 종목("종목", 아이콘.바벨), 설정("설정", 아이콘.톱니)
++    // 09-28: '플랜' 을 루틴 다음에 넣었다 — 루틴과 가장 가까운 일이라서
++    캘린더("캘린더", 아이콘.달력), 루틴("루틴", 아이콘.루틴), 플랜("플랜", 아이콘.과녁), 종목("종목", 아이콘.바벨), 설정("설정", 아이콘.톱니)
+ }
+ 
+ @OptIn(ExperimentalLayoutApi::class)
+@@ -164,6 +165,7 @@ fun 앱(상태: 앱상태, 폰: 폰기능) {
+                 else when (지금탭) {
+                     탭.캘린더 -> 캘린더화면(상태, { 지금탭 = 탭.루틴 }, { 운동보기 = true })
+                     탭.루틴 -> 루틴화면(상태, 폰)
++                    탭.플랜 -> 플랜화면(상태)
+                     탭.종목 -> 종목화면(상태)
+                     탭.설정 -> 설정화면(상태, 폰)
+                 }
+diff --git a/app/src/main/java/com/slayde/hasenheide/ui/Icons.kt b/app/src/main/java/com/slayde/hasenheide/ui/Icons.kt
+index 8b529f5..2eeddce 100644
+--- a/app/src/main/java/com/slayde/hasenheide/ui/Icons.kt
++++ b/app/src/main/java/com/slayde/hasenheide/ui/Icons.kt
+@@ -50,6 +50,8 @@ object 아이콘 {
+     val 루틴 = 선("rou", "M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01")
+     val 바벨 = 선("ex", "M6.5 6.5v11M17.5 6.5v11M3 9v6M21 9v6M6.5 12h11")
+     val 톱니 = 설정
++    /** 플랜 탭 — 목표(과녁) (09-28) */
++    val 과녁 = 선("target", "M12 21a9 9 0 1 0 0-18a9 9 0 1 0 0 18z", "M12 16.5a4.5 4.5 0 1 0 0-9a4.5 4.5 0 1 0 0 9z", "M12 13.5a1.5 1.5 0 1 0 0-3a1.5 1.5 0 1 0 0 3z")
+ 
+     /** 참고 링크 — 고리 (09-24) */
+     val 링크 = 선("link", "M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.5 1.5", "M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7L12 19")
+diff --git a/app/src/main/java/com/slayde/hasenheide/ui/PlanScreen.kt b/app/src/main/java/com/slayde/hasenheide/ui/PlanScreen.kt
+new file mode 100644
+index 0000000..66b2fbc
+--- /dev/null
++++ b/app/src/main/java/com/slayde/hasenheide/ui/PlanScreen.kt
+@@ -0,0 +1,278 @@
++package com.slayde.hasenheide.ui
++
++import androidx.compose.foundation.background
++import androidx.compose.foundation.border
++import androidx.compose.foundation.layout.Arrangement
++import androidx.compose.foundation.layout.Box
++import androidx.compose.foundation.layout.Column
++import androidx.compose.foundation.layout.Row
++import androidx.compose.foundation.layout.fillMaxSize
++import androidx.compose.foundation.layout.fillMaxWidth
++import androidx.compose.foundation.layout.height
++import androidx.compose.foundation.layout.padding
++import androidx.compose.foundation.layout.width
++import androidx.compose.foundation.rememberScrollState
++import androidx.compose.foundation.shape.RoundedCornerShape
++import androidx.compose.foundation.verticalScroll
++import androidx.compose.runtime.Composable
++import androidx.compose.runtime.getValue
++import androidx.compose.runtime.mutableStateOf
++import androidx.compose.runtime.remember
++import androidx.compose.runtime.setValue
++import androidx.compose.ui.Alignment
++import androidx.compose.ui.Modifier
++import androidx.compose.ui.draw.clip
++import androidx.compose.ui.text.font.FontWeight
++import androidx.compose.ui.unit.dp
++import com.slayde.hasenheide.data.무게글
++import com.slayde.hasenheide.data.기대속도
++import com.slayde.hasenheide.data.남은주
++import com.slayde.hasenheide.data.몸조건
++import com.slayde.hasenheide.data.수준
++import com.slayde.hasenheide.data.수준판정
++import com.slayde.hasenheide.data.속도
++import com.slayde.hasenheide.data.주처방내기
++import com.slayde.hasenheide.data.주차
++import com.slayde.hasenheide.data.플랜
++import com.slayde.hasenheide.data.플랜종목
++import com.slayde.hasenheide.data.플랜표
++import com.slayde.hasenheide.ui.theme.Local색
++import com.slayde.hasenheide.ui.theme.간격
++import com.slayde.hasenheide.ui.theme.높이
++import com.slayde.hasenheide.ui.theme.모서리
++import com.slayde.hasenheide.ui.theme.크기
++import java.time.LocalDate
++
++/**
++ * 플랜 화면 (아래 탭 '플랜', 09-28) — 합의된 다섯 종목의 주차별 처방을 보여 준다.
++ *
++ * ── 무엇을 보여 주나 ──
++ *  · 몸 조건 한 줄 (나이 · 성별 · 체중) — 수준 판정과 속도에 쓰인다
++ *  · 종목마다: 지금 1RM → 목표 1RM · 수준 알약 · 남은 주와 도달 예상 날짜
++ *  · 줄을 누르면 펼침: 시작 측정값 · 속도 5단계 · 이번 주 처방 · 측정일
++ *
++ * ── 정직하게 ──
++ * 예상 기간이 20년을 넘으면 날짜를 지어내지 않고 그렇게 적는다 (09-28 OHP 798주).
++ * 숫자는 모두 `Plan.kt` 의 `플랜표` 한곳에서 온다 — 고칠 때는 그 표만.
++ */
++@Composable
++fun 플랜화면(상태: 앱상태) {
++    val c = Local색.current
++    val d = 상태.d
++    val 몸 = d.몸
++    var 펼친 by remember { mutableStateOf<String?>(null) }
++
++    Column(Modifier.fillMaxSize()) {
++        제목글("플랜", Modifier.padding(start = 간격.보통, top = 16.dp, bottom = 8.dp))
++        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(간격.보통)) {
++
++            // ── 몸 조건 ──
++            카드 {
++                Row(verticalAlignment = Alignment.CenterVertically) {
++                    글("몸 조건", Modifier.weight(1f), 크기값 = 크기.크게, 굵기 = FontWeight.Bold)
++                    글("수준 판정 · 속도에 쓰입니다", 크기값 = 크기.아주작게, 색 = c.옅음)
++                }
++                Box(Modifier.height(간격.좁게))
++                Row(horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
++                    작은수(Modifier.weight(1f), "나이", "${몸.나이}", "세",
++                        { 상태.바꿈 { it.copy(몸 = it.몸.copy(나이 = (it.몸.나이 - 1).coerceIn(10, 90))) } },
++                        { 상태.바꿈 { it.copy(몸 = it.몸.copy(나이 = (it.몸.나이 + 1).coerceIn(10, 90))) } })
++                    작은수(Modifier.weight(1f), "체중", 무게글(몸.체중), "kg",
++                        { 상태.바꿈 { it.copy(몸 = it.몸.copy(체중 = (it.몸.체중 - 1).coerceIn(30.0, 250.0))) } },
++                        { 상태.바꿈 { it.copy(몸 = it.몸.copy(체중 = (it.몸.체중 + 1).coerceIn(30.0, 250.0))) } })
++                    버튼(if (몸.남) "남" else "여", { 상태.바꿈 { it.copy(몸 = it.몸.copy(남 = !it.몸.남)) } }, Modifier.width(56.dp), 작게 = true)
++                }
++            }
++
++            Box(Modifier.height(간격.보통))
++
++            // ── 합의된 종목들 ──
++            플랜표.종목들.forEach { 표 ->
++                val 플랜값 = d.플랜들.firstOrNull { it.종목 == 표.이름 }
++                종목칸(상태, 표, 플랜값, 몸, 펼친 == 표.이름) { 펼친 = if (펼친 == 표.이름) null else 표.이름 }
++                Box(Modifier.height(간격.좁게))
++            }
++
++            Box(Modifier.height(간격.좁게))
++
++            // ── 아직 합의하지 않은 종목 ──
++            카드 {
++                글("아직 플랜을 짤 수 없는 종목", 크기값 = 크기.조금작게, 굵기 = FontWeight.Bold, 색 = c.옅음)
++                Box(Modifier.height(간격.아주좁게))
++                글(플랜표.예정종목.joinToString(" · "), 크기값 = 크기.아주작게, 색 = c.옅음)
++                Box(Modifier.height(간격.아주좁게))
++                글("근거를 찾고 합의한 뒤에 하나씩 넣습니다 (업데이트 예정 ㉒)", 크기값 = 크기.아주작게, 색 = c.옅음)
++            }
++
++            Box(Modifier.height(간격.보통))
++            글("이것은 가이드라인입니다. 그날 컨디션에 맞춰 조절하세요.", 크기값 = 크기.아주작게, 색 = c.옅음)
++            Box(Modifier.height(높이.높게))
++        }
++    }
++}
++
++/** 종목 한 칸 */
++@Composable
++private fun 종목칸(상태: 앱상태, 표: 플랜종목, 플랜값: 플랜?, 몸: 몸조건, 펼침: Boolean, on누름: () -> Unit) {
++    val c = Local색.current
++    val 목표1RM = 표.목표.환산1RM
++
++    if (플랜값 == null) {
++        // 아직 시작 안 한 종목 — 측정값을 넣으면 플랜이 생긴다
++        카드 {
++            Row(verticalAlignment = Alignment.CenterVertically) {
++                글(표.이름, Modifier.weight(1f), 크기값 = 크기.본문, 굵기 = FontWeight.Bold)
++                버튼("시작", {
++                    상태.바꿈 {
++                        it.copy(플랜들 = it.플랜들 + 플랜(표.이름, 20.0, 1, 속도.보통, LocalDate.now().toString()))
++                    }
++                }, 주요 = true, 작게 = true)
++            }
++            글("목표 ${무게글(표.목표.무게)}kg × ${표.목표.횟수}회 · 환산 1RM ${무게글(목표1RM)}kg", 크기값 = 크기.아주작게, 색 = c.옅음)
++        }
++        return
++    }
++
++    // 측정일 기록이 있으면 그 값으로 (09-29 고침)
++    val 지금1RM = 플랜값.지금1RM
++    val 수준값 = 수준판정(표, 지금1RM, 몸)
++    val 주수 = 남은주(표, 지금1RM, 목표1RM, 플랜값.속도단계, 몸)
++    // 주차는 만든 날로부터 날짜로 센다 — 앱을 며칠 안 켜도 맞는다 (09-29 고침)
++    val 이번주 = 플랜값.주차(상태.오늘)
++    val 처방 = 주처방내기(표, 플랜값, 이번주, 몸, 상태.d.설정.무게폭)
++
++    카드 {
++        Row(Modifier.눌림(on누름), verticalAlignment = Alignment.CenterVertically) {
++            Column(Modifier.weight(1f)) {
++                Row(verticalAlignment = Alignment.CenterVertically) {
++                    글(표.이름, 크기값 = 크기.본문, 굵기 = FontWeight.Bold, 색 = c.강조)
++                    Box(Modifier.width(간격.좁게))
++                    수준알약(수준값)
++                }
++                글("1RM ${무게글(지금1RM)} → ${무게글(목표1RM)}kg", 크기값 = 크기.아주작게, 색 = c.옅음)
++            }
++            Column(horizontalAlignment = Alignment.End) {
++                글(남은주글(주수), 크기값 = 크기.조금작게, 굵기 = FontWeight.Bold)
++                글(도달글(주수), 크기값 = 크기.아주작게, 색 = c.옅음)
++            }
++            Box(Modifier.width(간격.아주좁게))
++            아이콘버튼(if (펼침) 아이콘.아래 else 아이콘.오른쪽, if (펼침) "접기" else "펼치기", on누름, 칠함 = false)
++        }
++
++        if (펼침) {
++            구분선(Modifier.padding(vertical = 간격.좁게))
++
++            // 이번 주 처방
++            Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(모서리.작게)).background(c.강조옅음).padding(간격.좁게),
++                verticalAlignment = Alignment.CenterVertically) {
++                Column(Modifier.weight(1f)) {
++                    글("${이번주}주차 처방", 크기값 = 크기.아주작게, 색 = c.옅음)
++                    글("${무게글(처방.무게)}kg × ${처방.횟수}회 × ${처방.세트}세트", 크기값 = 크기.본문, 굵기 = FontWeight.Bold)
++                }
++                if (처방.측정일) 알약("측정일", c.강조)
++            }
++
++            Box(Modifier.height(간격.좁게))
++
++            // 시작 측정값
++            val 폭 = 상태.d.설정.무게폭
++            글(if (플랜값.마지막측정 != null) "시작 측정값 (지금은 ${플랜값.마지막측정!!.주}주차 측정값으로 계산합니다)" else "시작 측정값 (이 값으로 계산합니다)", 크기값 = 크기.아주작게, 색 = c.옅음)
++            Box(Modifier.height(간격.아주좁게))
++            Row(horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
++                작은수(Modifier.weight(1f), "무게", 무게글(플랜값.시작무게), "kg",
++                    { 고치기(상태, 표.이름) { p -> p.copy(시작무게 = (p.시작무게 - 폭).coerceAtLeast(0.0)) } },
++                    { 고치기(상태, 표.이름) { p -> p.copy(시작무게 = p.시작무게 + 폭) } })
++                작은수(Modifier.weight(1f), "횟수", "${플랜값.시작횟수}", "회",
++                    { 고치기(상태, 표.이름) { p -> p.copy(시작횟수 = (p.시작횟수 - 1).coerceAtLeast(1)) } },
++                    { 고치기(상태, 표.이름) { p -> p.copy(시작횟수 = (p.시작횟수 + 1).coerceAtMost(30)) } })
++            }
++
++            Box(Modifier.height(간격.좁게))
++
++            // 속도 5단계
++            글("속도", 크기값 = 크기.아주작게, 색 = c.옅음)
++            Box(Modifier.height(간격.아주좁게))
++            칩줄(속도.entries.map { it.이름 }, 플랜값.속도단계.이름, { 고른 ->
++                속도.entries.firstOrNull { it.이름 == 고른 }?.let { sp -> 고치기(상태, 표.이름) { p -> p.copy(속도단계 = sp) } }
++            })
++
++            Box(Modifier.height(간격.좁게))
++            구분선()
++            Box(Modifier.height(간격.좁게))
++
++            // 근거 · 비고
++            글("4주당 기대 ${"%.2f".format(기대속도(표, 수준값, 플랜값.속도단계, 몸))}% · 측정 주기 ${플랜표.측정주기[수준값]}주 · 합의 문서 ${표.문서}",
++                크기값 = 크기.아주작게, 색 = c.옅음)
++            if (표.비고.isNotEmpty()) {
++                Box(Modifier.height(간격.아주좁게))
++                글(표.비고, 크기값 = 크기.아주작게, 색 = c.옅음)
++            }
++            if (표.다른날.isNotEmpty()) {
++                Box(Modifier.height(간격.아주좁게))
++                글("${표.다른날.joinToString(" · ")} 와 다른 날에", 크기값 = 크기.아주작게, 색 = c.옅음)
++            }
++
++            Box(Modifier.height(간격.아주좁게))
++            // 아직 안 만든 것을 된 것처럼 보이지 않게 적어 둔다 (09-29)
++            글("처방을 루틴에 저절로 넣는 것 · 측정일 입력은 다음 판", 크기값 = 크기.아주작게, 색 = c.나쁨)
++
++            Box(Modifier.height(간격.좁게))
++            Row(horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
++                버튼("플랜 지우기", {
++                    상태.지우고알림("${표.이름} 플랜을 지웠습니다") { it.copy(플랜들 = it.플랜들.filter { p -> p.종목 != 표.이름 }) }
++                }, Modifier.weight(1f), 작게 = true, 글색 = c.나쁨)
++            }
++        }
++    }
++}
++
++private fun 고치기(상태: 앱상태, 종목이름: String, f: (플랜) -> 플랜) {
++    상태.바꿈 { d -> d.copy(플랜들 = d.플랜들.map { if (it.종목 == 종목이름) f(it) else it }) }
++}
++
++/** 남은 주 — 너무 멀면 지어내지 않는다 */
++private fun 남은주글(주: Int): String = when {
++    주 <= 0 -> "달성"
++    주 >= 플랜표.최대주 -> "20년 이상"
++    주 >= 260 -> "%.1f년".format(주 / 52.0)
++    else -> "${주}주"
++}
++
++private fun 도달글(주: Int): String = when {
++    주 <= 0 -> "목표를 넘었습니다"
++    주 >= 플랜표.최대주 -> "목표를 낮추거나 속도를 올리세요"
++    else -> {
++        val 날 = LocalDate.now().plusWeeks(주.toLong())
++        "${날.year}년 ${날.monthValue}월쯤"
++    }
++}
++
++@Composable
++private fun 수준알약(s: 수준) {
++    val c = Local색.current
++    Box(
++        Modifier.clip(RoundedCornerShape(모서리.아주작게)).border(1.dp, c.속선, RoundedCornerShape(모서리.아주작게))
++            .padding(horizontal = 6.dp, vertical = 1.dp),
++    ) { 글(s.이름, 크기값 = 크기.아주작게, 색 = c.강조) }
++}
++
++/** 작은 − 값 ＋ 칸 — 플랜 화면에서만 쓰는 단순한 것 (휠·자판 없이) */
++@Composable
++private fun 작은수(modifier: Modifier, 이름: String, 값: String, 단위: String, 빼기: () -> Unit, 더하기: () -> Unit) {
++    val c = Local색.current
++    Column(modifier) {
++        글(이름, 크기값 = 크기.아주작게, 색 = c.옅음)
++        Row(
++            Modifier.fillMaxWidth().height(높이.낮게).clip(RoundedCornerShape(모서리.작게))
++                .border(1.dp, c.속선, RoundedCornerShape(모서리.작게)),
++            verticalAlignment = Alignment.CenterVertically,
++        ) {
++            아이콘버튼(아이콘.빼기, "줄이기", 빼기, Modifier.width(30.dp), 칠함 = false)
++            Row(Modifier.weight(1f), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.Bottom) {
++                글(값, 크기값 = 크기.본문, 굵기 = FontWeight.Bold)
++                글(단위, 크기값 = 크기.아주작게, 색 = c.옅음)
++            }
++            아이콘버튼(아이콘.더하기, "늘리기", 더하기, Modifier.width(30.dp), 칠함 = false)
++        }
++    }
++}
+-- 
+2.43.0
+

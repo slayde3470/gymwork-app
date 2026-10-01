@@ -1,0 +1,1363 @@
+{
+ "version": 2,
+ "stepCount": 20,
+ "note": "온몸 근육 나무. region > group > muscle > part. 그림은 이 중 어느 층이든 그려도 되고, 앱은 나무를 따라 색을 올리고 내린다(07_근육지도규칙.md 2·4절). depth=deep 은 겉에서 안 보이는 근육 — 기록은 하고, 그림에서는 겉 근육이나 부모로 칠한다.",
+ "regions": [
+  {
+   "id": "chest",
+   "name": "가슴",
+   "restHours": 24
+  },
+  {
+   "id": "back",
+   "name": "등",
+   "restHours": 24
+  },
+  {
+   "id": "shoulders",
+   "name": "어깨",
+   "restHours": 24
+  },
+  {
+   "id": "arms",
+   "name": "팔",
+   "restHours": 24
+  },
+  {
+   "id": "core",
+   "name": "몸통 앞 · 옆",
+   "restHours": 24
+  },
+  {
+   "id": "legs",
+   "name": "하체",
+   "restHours": 24
+  },
+  {
+   "id": "neck",
+   "name": "목",
+   "restHours": 24
+  }
+ ],
+ "muscles": [
+  {
+   "id": "pectoralis_major",
+   "parent": "chest",
+   "kind": "muscle",
+   "name": "대흉근",
+   "latin": "pectoralis major",
+   "depth": "surface",
+   "views": [
+    "front"
+   ]
+  },
+  {
+   "id": "chest_upper",
+   "parent": "pectoralis_major",
+   "kind": "part",
+   "name": "가슴 윗부분 (쇄골갈래)",
+   "latin": "pars clavicularis",
+   "depth": "surface",
+   "views": [
+    "front"
+   ]
+  },
+  {
+   "id": "chest_mid",
+   "parent": "pectoralis_major",
+   "kind": "part",
+   "name": "가슴 가운데 (흉골갈래)",
+   "latin": "pars sternocostalis",
+   "depth": "surface",
+   "views": [
+    "front"
+   ]
+  },
+  {
+   "id": "chest_lower",
+   "parent": "pectoralis_major",
+   "kind": "part",
+   "name": "가슴 아랫부분 (복부갈래)",
+   "latin": "pars abdominalis",
+   "depth": "surface",
+   "views": [
+    "front"
+   ]
+  },
+  {
+   "id": "pectoralis_minor",
+   "parent": "chest",
+   "kind": "muscle",
+   "name": "소흉근",
+   "latin": "pectoralis minor",
+   "depth": "deep",
+   "views": [
+    "front"
+   ]
+  },
+  {
+   "id": "serratus",
+   "parent": "chest",
+   "kind": "muscle",
+   "name": "전거근",
+   "latin": "serratus anterior",
+   "depth": "surface",
+   "views": [
+    "front",
+    "side"
+   ]
+  },
+  {
+   "id": "subclavius",
+   "parent": "chest",
+   "kind": "muscle",
+   "name": "쇄골하근",
+   "latin": "subclavius",
+   "depth": "deep",
+   "views": [
+    "front"
+   ]
+  },
+  {
+   "id": "traps",
+   "parent": "back",
+   "kind": "muscle",
+   "name": "승모근",
+   "latin": "trapezius",
+   "depth": "surface",
+   "views": [
+    "back",
+    "front"
+   ]
+  },
+  {
+   "id": "traps_upper",
+   "parent": "traps",
+   "kind": "part",
+   "name": "승모 윗부분",
+   "latin": "pars descendens",
+   "depth": "surface",
+   "views": [
+    "back",
+    "front"
+   ]
+  },
+  {
+   "id": "traps_mid",
+   "parent": "traps",
+   "kind": "part",
+   "name": "승모 가운데",
+   "latin": "pars transversa",
+   "depth": "surface",
+   "views": [
+    "back"
+   ]
+  },
+  {
+   "id": "traps_lower",
+   "parent": "traps",
+   "kind": "part",
+   "name": "승모 아랫부분",
+   "latin": "pars ascendens",
+   "depth": "surface",
+   "views": [
+    "back"
+   ]
+  },
+  {
+   "id": "lats",
+   "parent": "back",
+   "kind": "muscle",
+   "name": "광배근",
+   "latin": "latissimus dorsi",
+   "depth": "surface",
+   "views": [
+    "back",
+    "side"
+   ]
+  },
+  {
+   "id": "rhomboids",
+   "parent": "back",
+   "kind": "group",
+   "name": "능형근",
+   "latin": "rhomboidei",
+   "depth": "deep",
+   "views": [
+    "back"
+   ]
+  },
+  {
+   "id": "rhomboid_major",
+   "parent": "rhomboids",
+   "kind": "muscle",
+   "name": "대능형근",
+   "latin": "rhomboideus major",
+   "depth": "deep",
+   "views": [
+    "back"
+   ]
+  },
+  {
+   "id": "rhomboid_minor",
+   "parent": "rhomboids",
+   "kind": "muscle",
+   "name": "소능형근",
+   "latin": "rhomboideus minor",
+   "depth": "deep",
+   "views": [
+    "back"
+   ]
+  },
+  {
+   "id": "levator_scapulae",
+   "parent": "back",
+   "kind": "muscle",
+   "name": "견갑거근",
+   "latin": "levator scapulae",
+   "depth": "deep",
+   "views": [
+    "back"
+   ]
+  },
+  {
+   "id": "teres_major",
+   "parent": "back",
+   "kind": "muscle",
+   "name": "대원근",
+   "latin": "teres major",
+   "depth": "surface",
+   "views": [
+    "back"
+   ]
+  },
+  {
+   "id": "lower_back",
+   "parent": "back",
+   "kind": "group",
+   "name": "척추 기립근",
+   "latin": "erector spinae",
+   "depth": "surface",
+   "views": [
+    "back"
+   ]
+  },
+  {
+   "id": "iliocostalis",
+   "parent": "lower_back",
+   "kind": "muscle",
+   "name": "장늑근",
+   "latin": "iliocostalis",
+   "depth": "deep",
+   "views": [
+    "back"
+   ]
+  },
+  {
+   "id": "longissimus",
+   "parent": "lower_back",
+   "kind": "muscle",
+   "name": "최장근",
+   "latin": "longissimus",
+   "depth": "deep",
+   "views": [
+    "back"
+   ]
+  },
+  {
+   "id": "spinalis",
+   "parent": "lower_back",
+   "kind": "muscle",
+   "name": "극근",
+   "latin": "spinalis",
+   "depth": "deep",
+   "views": [
+    "back"
+   ]
+  },
+  {
+   "id": "multifidus",
+   "parent": "back",
+   "kind": "muscle",
+   "name": "다열근",
+   "latin": "multifidus",
+   "depth": "deep",
+   "views": [
+    "back"
+   ]
+  },
+  {
+   "id": "quadratus_lumborum",
+   "parent": "back",
+   "kind": "muscle",
+   "name": "요방형근",
+   "latin": "quadratus lumborum",
+   "depth": "deep",
+   "views": [
+    "back"
+   ]
+  },
+  {
+   "id": "deltoid",
+   "parent": "shoulders",
+   "kind": "muscle",
+   "name": "삼각근",
+   "latin": "deltoideus",
+   "depth": "surface",
+   "views": [
+    "front",
+    "back",
+    "side"
+   ]
+  },
+  {
+   "id": "delt_front",
+   "parent": "deltoid",
+   "kind": "part",
+   "name": "어깨 앞",
+   "latin": "pars clavicularis",
+   "depth": "surface",
+   "views": [
+    "front"
+   ]
+  },
+  {
+   "id": "delt_side",
+   "parent": "deltoid",
+   "kind": "part",
+   "name": "어깨 옆",
+   "latin": "pars acromialis",
+   "depth": "surface",
+   "views": [
+    "front",
+    "back",
+    "side"
+   ]
+  },
+  {
+   "id": "delt_rear",
+   "parent": "deltoid",
+   "kind": "part",
+   "name": "어깨 뒤",
+   "latin": "pars spinalis",
+   "depth": "surface",
+   "views": [
+    "back"
+   ]
+  },
+  {
+   "id": "rotator_cuff",
+   "parent": "shoulders",
+   "kind": "group",
+   "name": "회전근개",
+   "latin": "rotator cuff",
+   "depth": "deep",
+   "views": [
+    "back"
+   ]
+  },
+  {
+   "id": "supraspinatus",
+   "parent": "rotator_cuff",
+   "kind": "muscle",
+   "name": "극상근",
+   "latin": "supraspinatus",
+   "depth": "deep",
+   "views": [
+    "back"
+   ]
+  },
+  {
+   "id": "infraspinatus",
+   "parent": "rotator_cuff",
+   "kind": "muscle",
+   "name": "극하근",
+   "latin": "infraspinatus",
+   "depth": "surface",
+   "views": [
+    "back"
+   ]
+  },
+  {
+   "id": "teres_minor",
+   "parent": "rotator_cuff",
+   "kind": "muscle",
+   "name": "소원근",
+   "latin": "teres minor",
+   "depth": "surface",
+   "views": [
+    "back"
+   ]
+  },
+  {
+   "id": "subscapularis",
+   "parent": "rotator_cuff",
+   "kind": "muscle",
+   "name": "견갑하근",
+   "latin": "subscapularis",
+   "depth": "deep",
+   "views": [
+    "front"
+   ]
+  },
+  {
+   "id": "upper_arm_front",
+   "parent": "arms",
+   "kind": "group",
+   "name": "위팔 앞 (굽힘근)",
+   "depth": "surface",
+   "views": [
+    "front"
+   ]
+  },
+  {
+   "id": "biceps",
+   "parent": "upper_arm_front",
+   "kind": "muscle",
+   "name": "이두 (상완이두근)",
+   "latin": "biceps brachii",
+   "depth": "surface",
+   "views": [
+    "front"
+   ]
+  },
+  {
+   "id": "biceps_long",
+   "parent": "biceps",
+   "kind": "part",
+   "name": "이두 긴갈래",
+   "latin": "caput longum",
+   "depth": "surface",
+   "views": [
+    "front"
+   ]
+  },
+  {
+   "id": "biceps_short",
+   "parent": "biceps",
+   "kind": "part",
+   "name": "이두 짧은갈래",
+   "latin": "caput breve",
+   "depth": "surface",
+   "views": [
+    "front"
+   ]
+  },
+  {
+   "id": "brachialis",
+   "parent": "upper_arm_front",
+   "kind": "muscle",
+   "name": "상완근",
+   "latin": "brachialis",
+   "depth": "surface",
+   "views": [
+    "front",
+    "side"
+   ]
+  },
+  {
+   "id": "coracobrachialis",
+   "parent": "upper_arm_front",
+   "kind": "muscle",
+   "name": "오훼완근",
+   "latin": "coracobrachialis",
+   "depth": "deep",
+   "views": [
+    "front"
+   ]
+  },
+  {
+   "id": "upper_arm_back",
+   "parent": "arms",
+   "kind": "group",
+   "name": "위팔 뒤 (폄근)",
+   "depth": "surface",
+   "views": [
+    "back"
+   ]
+  },
+  {
+   "id": "triceps",
+   "parent": "upper_arm_back",
+   "kind": "muscle",
+   "name": "삼두 (상완삼두근)",
+   "latin": "triceps brachii",
+   "depth": "surface",
+   "views": [
+    "back",
+    "side"
+   ]
+  },
+  {
+   "id": "triceps_long",
+   "parent": "triceps",
+   "kind": "part",
+   "name": "삼두 긴갈래",
+   "latin": "caput longum",
+   "depth": "surface",
+   "views": [
+    "back"
+   ]
+  },
+  {
+   "id": "triceps_lateral",
+   "parent": "triceps",
+   "kind": "part",
+   "name": "삼두 가쪽갈래",
+   "latin": "caput laterale",
+   "depth": "surface",
+   "views": [
+    "back",
+    "side"
+   ]
+  },
+  {
+   "id": "triceps_medial",
+   "parent": "triceps",
+   "kind": "part",
+   "name": "삼두 안쪽갈래",
+   "latin": "caput mediale",
+   "depth": "deep",
+   "views": [
+    "back"
+   ]
+  },
+  {
+   "id": "anconeus",
+   "parent": "upper_arm_back",
+   "kind": "muscle",
+   "name": "주근",
+   "latin": "anconeus",
+   "depth": "surface",
+   "views": [
+    "back"
+   ]
+  },
+  {
+   "id": "forearm",
+   "parent": "arms",
+   "kind": "group",
+   "name": "전완",
+   "latin": "antebrachium",
+   "depth": "surface",
+   "views": [
+    "front",
+    "back"
+   ]
+  },
+  {
+   "id": "forearm_flexors",
+   "parent": "forearm",
+   "kind": "group",
+   "name": "전완 앞 (손목 굽힘근)",
+   "depth": "surface",
+   "views": [
+    "front"
+   ]
+  },
+  {
+   "id": "pronator_teres",
+   "parent": "forearm_flexors",
+   "kind": "muscle",
+   "name": "원회내근",
+   "latin": "pronator teres",
+   "depth": "surface",
+   "views": [
+    "front"
+   ]
+  },
+  {
+   "id": "flexor_carpi_radialis",
+   "parent": "forearm_flexors",
+   "kind": "muscle",
+   "name": "요측수근굴근",
+   "latin": "flexor carpi radialis",
+   "depth": "surface",
+   "views": [
+    "front"
+   ]
+  },
+  {
+   "id": "palmaris_longus",
+   "parent": "forearm_flexors",
+   "kind": "muscle",
+   "name": "장장근",
+   "latin": "palmaris longus",
+   "depth": "surface",
+   "views": [
+    "front"
+   ]
+  },
+  {
+   "id": "flexor_carpi_ulnaris",
+   "parent": "forearm_flexors",
+   "kind": "muscle",
+   "name": "척측수근굴근",
+   "latin": "flexor carpi ulnaris",
+   "depth": "surface",
+   "views": [
+    "front",
+    "back"
+   ]
+  },
+  {
+   "id": "flexor_digitorum_superficialis",
+   "parent": "forearm_flexors",
+   "kind": "muscle",
+   "name": "얕은손가락굽힘근",
+   "latin": "flexor digitorum superficialis",
+   "depth": "surface",
+   "views": [
+    "front"
+   ]
+  },
+  {
+   "id": "flexor_digitorum_profundus",
+   "parent": "forearm_flexors",
+   "kind": "muscle",
+   "name": "깊은손가락굽힘근",
+   "latin": "flexor digitorum profundus",
+   "depth": "deep",
+   "views": [
+    "front"
+   ]
+  },
+  {
+   "id": "flexor_pollicis_longus",
+   "parent": "forearm_flexors",
+   "kind": "muscle",
+   "name": "긴엄지굽힘근",
+   "latin": "flexor pollicis longus",
+   "depth": "deep",
+   "views": [
+    "front"
+   ]
+  },
+  {
+   "id": "pronator_quadratus",
+   "parent": "forearm_flexors",
+   "kind": "muscle",
+   "name": "방형회내근",
+   "latin": "pronator quadratus",
+   "depth": "deep",
+   "views": [
+    "front"
+   ]
+  },
+  {
+   "id": "forearm_extensors",
+   "parent": "forearm",
+   "kind": "group",
+   "name": "전완 뒤 (손목 폄근)",
+   "depth": "surface",
+   "views": [
+    "back"
+   ]
+  },
+  {
+   "id": "brachioradialis",
+   "parent": "forearm_extensors",
+   "kind": "muscle",
+   "name": "완요골근",
+   "latin": "brachioradialis",
+   "depth": "surface",
+   "views": [
+    "front",
+    "back",
+    "side"
+   ]
+  },
+  {
+   "id": "extensor_carpi_radialis_longus",
+   "parent": "forearm_extensors",
+   "kind": "muscle",
+   "name": "긴요측수근신근",
+   "latin": "extensor carpi radialis longus",
+   "depth": "surface",
+   "views": [
+    "back",
+    "side"
+   ]
+  },
+  {
+   "id": "extensor_carpi_radialis_brevis",
+   "parent": "forearm_extensors",
+   "kind": "muscle",
+   "name": "짧은요측수근신근",
+   "latin": "extensor carpi radialis brevis",
+   "depth": "surface",
+   "views": [
+    "back"
+   ]
+  },
+  {
+   "id": "extensor_digitorum",
+   "parent": "forearm_extensors",
+   "kind": "muscle",
+   "name": "손가락폄근",
+   "latin": "extensor digitorum",
+   "depth": "surface",
+   "views": [
+    "back"
+   ]
+  },
+  {
+   "id": "extensor_digiti_minimi",
+   "parent": "forearm_extensors",
+   "kind": "muscle",
+   "name": "새끼폄근",
+   "latin": "extensor digiti minimi",
+   "depth": "surface",
+   "views": [
+    "back"
+   ]
+  },
+  {
+   "id": "extensor_carpi_ulnaris",
+   "parent": "forearm_extensors",
+   "kind": "muscle",
+   "name": "척측수근신근",
+   "latin": "extensor carpi ulnaris",
+   "depth": "surface",
+   "views": [
+    "back"
+   ]
+  },
+  {
+   "id": "supinator",
+   "parent": "forearm_extensors",
+   "kind": "muscle",
+   "name": "회외근",
+   "latin": "supinator",
+   "depth": "deep",
+   "views": [
+    "back"
+   ]
+  },
+  {
+   "id": "abductor_pollicis_longus",
+   "parent": "forearm_extensors",
+   "kind": "muscle",
+   "name": "긴엄지벌림근",
+   "latin": "abductor pollicis longus",
+   "depth": "deep",
+   "views": [
+    "back"
+   ]
+  },
+  {
+   "id": "extensor_pollicis_brevis",
+   "parent": "forearm_extensors",
+   "kind": "muscle",
+   "name": "짧은엄지폄근",
+   "latin": "extensor pollicis brevis",
+   "depth": "deep",
+   "views": [
+    "back"
+   ]
+  },
+  {
+   "id": "extensor_pollicis_longus",
+   "parent": "forearm_extensors",
+   "kind": "muscle",
+   "name": "긴엄지폄근",
+   "latin": "extensor pollicis longus",
+   "depth": "deep",
+   "views": [
+    "back"
+   ]
+  },
+  {
+   "id": "extensor_indicis",
+   "parent": "forearm_extensors",
+   "kind": "muscle",
+   "name": "검지폄근",
+   "latin": "extensor indicis",
+   "depth": "deep",
+   "views": [
+    "back"
+   ]
+  },
+  {
+   "id": "hand",
+   "parent": "arms",
+   "kind": "group",
+   "name": "손 (손 안 근육)",
+   "depth": "surface",
+   "views": [
+    "front"
+   ]
+  },
+  {
+   "id": "thenar",
+   "parent": "hand",
+   "kind": "muscle",
+   "name": "엄지두덩근",
+   "latin": "thenar group",
+   "depth": "surface",
+   "views": [
+    "front"
+   ]
+  },
+  {
+   "id": "hypothenar",
+   "parent": "hand",
+   "kind": "muscle",
+   "name": "새끼두덩근",
+   "latin": "hypothenar group",
+   "depth": "surface",
+   "views": [
+    "front"
+   ]
+  },
+  {
+   "id": "interossei_hand",
+   "parent": "hand",
+   "kind": "muscle",
+   "name": "손 뼈사이근",
+   "latin": "interossei",
+   "depth": "deep",
+   "views": [
+    "front"
+   ]
+  },
+  {
+   "id": "abs",
+   "parent": "core",
+   "kind": "muscle",
+   "name": "복직근",
+   "latin": "rectus abdominis",
+   "depth": "surface",
+   "views": [
+    "front"
+   ]
+  },
+  {
+   "id": "abs_upper",
+   "parent": "abs",
+   "kind": "part",
+   "name": "복근 위",
+   "depth": "surface",
+   "views": [
+    "front"
+   ]
+  },
+  {
+   "id": "abs_lower",
+   "parent": "abs",
+   "kind": "part",
+   "name": "복근 아래",
+   "depth": "surface",
+   "views": [
+    "front"
+   ]
+  },
+  {
+   "id": "obliques",
+   "parent": "core",
+   "kind": "group",
+   "name": "옆구리",
+   "depth": "surface",
+   "views": [
+    "front",
+    "side",
+    "back"
+   ]
+  },
+  {
+   "id": "external_oblique",
+   "parent": "obliques",
+   "kind": "muscle",
+   "name": "외복사근",
+   "latin": "obliquus externus abdominis",
+   "depth": "surface",
+   "views": [
+    "front",
+    "side"
+   ]
+  },
+  {
+   "id": "internal_oblique",
+   "parent": "obliques",
+   "kind": "muscle",
+   "name": "내복사근",
+   "latin": "obliquus internus abdominis",
+   "depth": "deep",
+   "views": [
+    "front",
+    "side"
+   ]
+  },
+  {
+   "id": "transversus_abdominis",
+   "parent": "core",
+   "kind": "muscle",
+   "name": "복횡근",
+   "latin": "transversus abdominis",
+   "depth": "deep",
+   "views": [
+    "front"
+   ]
+  },
+  {
+   "id": "hip_flexors",
+   "parent": "core",
+   "kind": "group",
+   "name": "엉덩허리근",
+   "latin": "iliopsoas",
+   "depth": "deep",
+   "views": [
+    "front"
+   ]
+  },
+  {
+   "id": "psoas_major",
+   "parent": "hip_flexors",
+   "kind": "muscle",
+   "name": "대요근",
+   "latin": "psoas major",
+   "depth": "deep",
+   "views": [
+    "front"
+   ]
+  },
+  {
+   "id": "iliacus",
+   "parent": "hip_flexors",
+   "kind": "muscle",
+   "name": "장골근",
+   "latin": "iliacus",
+   "depth": "deep",
+   "views": [
+    "front"
+   ]
+  },
+  {
+   "id": "glutes",
+   "parent": "legs",
+   "kind": "group",
+   "name": "엉덩이",
+   "depth": "surface",
+   "views": [
+    "back",
+    "side"
+   ]
+  },
+  {
+   "id": "gluteus_maximus",
+   "parent": "glutes",
+   "kind": "muscle",
+   "name": "대둔근",
+   "latin": "gluteus maximus",
+   "depth": "surface",
+   "views": [
+    "back"
+   ]
+  },
+  {
+   "id": "gluteus_medius",
+   "parent": "glutes",
+   "kind": "muscle",
+   "name": "중둔근",
+   "latin": "gluteus medius",
+   "depth": "surface",
+   "views": [
+    "back",
+    "side"
+   ]
+  },
+  {
+   "id": "gluteus_minimus",
+   "parent": "glutes",
+   "kind": "muscle",
+   "name": "소둔근",
+   "latin": "gluteus minimus",
+   "depth": "deep",
+   "views": [
+    "back",
+    "side"
+   ]
+  },
+  {
+   "id": "tfl",
+   "parent": "glutes",
+   "kind": "muscle",
+   "name": "대퇴근막장근",
+   "latin": "tensor fasciae latae",
+   "depth": "surface",
+   "views": [
+    "front",
+    "side"
+   ]
+  },
+  {
+   "id": "deep_rotators",
+   "parent": "glutes",
+   "kind": "group",
+   "name": "고관절 깊은 돌림근",
+   "depth": "deep",
+   "views": [
+    "back"
+   ]
+  },
+  {
+   "id": "piriformis",
+   "parent": "deep_rotators",
+   "kind": "muscle",
+   "name": "이상근",
+   "latin": "piriformis",
+   "depth": "deep",
+   "views": [
+    "back"
+   ]
+  },
+  {
+   "id": "quads",
+   "parent": "legs",
+   "kind": "group",
+   "name": "허벅지 앞 (대퇴사두근)",
+   "latin": "quadriceps femoris",
+   "depth": "surface",
+   "views": [
+    "front"
+   ]
+  },
+  {
+   "id": "rectus_femoris",
+   "parent": "quads",
+   "kind": "muscle",
+   "name": "대퇴직근",
+   "latin": "rectus femoris",
+   "depth": "surface",
+   "views": [
+    "front"
+   ]
+  },
+  {
+   "id": "vastus_lateralis",
+   "parent": "quads",
+   "kind": "muscle",
+   "name": "외측광근",
+   "latin": "vastus lateralis",
+   "depth": "surface",
+   "views": [
+    "front",
+    "side"
+   ]
+  },
+  {
+   "id": "vastus_medialis",
+   "parent": "quads",
+   "kind": "muscle",
+   "name": "내측광근",
+   "latin": "vastus medialis",
+   "depth": "surface",
+   "views": [
+    "front"
+   ]
+  },
+  {
+   "id": "vastus_intermedius",
+   "parent": "quads",
+   "kind": "muscle",
+   "name": "중간광근",
+   "latin": "vastus intermedius",
+   "depth": "deep",
+   "views": [
+    "front"
+   ]
+  },
+  {
+   "id": "sartorius",
+   "parent": "legs",
+   "kind": "muscle",
+   "name": "봉공근",
+   "latin": "sartorius",
+   "depth": "surface",
+   "views": [
+    "front"
+   ]
+  },
+  {
+   "id": "hamstrings",
+   "parent": "legs",
+   "kind": "group",
+   "name": "허벅지 뒤 (햄스트링)",
+   "depth": "surface",
+   "views": [
+    "back"
+   ]
+  },
+  {
+   "id": "biceps_femoris",
+   "parent": "hamstrings",
+   "kind": "muscle",
+   "name": "대퇴이두근",
+   "latin": "biceps femoris",
+   "depth": "surface",
+   "views": [
+    "back"
+   ]
+  },
+  {
+   "id": "biceps_femoris_long",
+   "parent": "biceps_femoris",
+   "kind": "part",
+   "name": "대퇴이두 긴갈래",
+   "latin": "caput longum",
+   "depth": "surface",
+   "views": [
+    "back"
+   ]
+  },
+  {
+   "id": "biceps_femoris_short",
+   "parent": "biceps_femoris",
+   "kind": "part",
+   "name": "대퇴이두 짧은갈래",
+   "latin": "caput breve",
+   "depth": "deep",
+   "views": [
+    "back"
+   ]
+  },
+  {
+   "id": "semitendinosus",
+   "parent": "hamstrings",
+   "kind": "muscle",
+   "name": "반건양근",
+   "latin": "semitendinosus",
+   "depth": "surface",
+   "views": [
+    "back"
+   ]
+  },
+  {
+   "id": "semimembranosus",
+   "parent": "hamstrings",
+   "kind": "muscle",
+   "name": "반막양근",
+   "latin": "semimembranosus",
+   "depth": "surface",
+   "views": [
+    "back"
+   ]
+  },
+  {
+   "id": "adductors",
+   "parent": "legs",
+   "kind": "group",
+   "name": "허벅지 안쪽 (내전근)",
+   "depth": "surface",
+   "views": [
+    "front",
+    "back"
+   ]
+  },
+  {
+   "id": "adductor_longus",
+   "parent": "adductors",
+   "kind": "muscle",
+   "name": "긴모음근",
+   "latin": "adductor longus",
+   "depth": "surface",
+   "views": [
+    "front"
+   ]
+  },
+  {
+   "id": "adductor_brevis",
+   "parent": "adductors",
+   "kind": "muscle",
+   "name": "짧은모음근",
+   "latin": "adductor brevis",
+   "depth": "deep",
+   "views": [
+    "front"
+   ]
+  },
+  {
+   "id": "adductor_magnus",
+   "parent": "adductors",
+   "kind": "muscle",
+   "name": "큰모음근",
+   "latin": "adductor magnus",
+   "depth": "surface",
+   "views": [
+    "back",
+    "front"
+   ]
+  },
+  {
+   "id": "gracilis",
+   "parent": "adductors",
+   "kind": "muscle",
+   "name": "두덩정강근",
+   "latin": "gracilis",
+   "depth": "surface",
+   "views": [
+    "front"
+   ]
+  },
+  {
+   "id": "pectineus",
+   "parent": "adductors",
+   "kind": "muscle",
+   "name": "치골근",
+   "latin": "pectineus",
+   "depth": "surface",
+   "views": [
+    "front"
+   ]
+  },
+  {
+   "id": "calves",
+   "parent": "legs",
+   "kind": "group",
+   "name": "종아리",
+   "latin": "triceps surae",
+   "depth": "surface",
+   "views": [
+    "back",
+    "front"
+   ]
+  },
+  {
+   "id": "gastrocnemius",
+   "parent": "calves",
+   "kind": "muscle",
+   "name": "비복근",
+   "latin": "gastrocnemius",
+   "depth": "surface",
+   "views": [
+    "back",
+    "front"
+   ]
+  },
+  {
+   "id": "gastrocnemius_medial",
+   "parent": "gastrocnemius",
+   "kind": "part",
+   "name": "비복근 안쪽갈래",
+   "latin": "caput mediale",
+   "depth": "surface",
+   "views": [
+    "back",
+    "front"
+   ]
+  },
+  {
+   "id": "gastrocnemius_lateral",
+   "parent": "gastrocnemius",
+   "kind": "part",
+   "name": "비복근 가쪽갈래",
+   "latin": "caput laterale",
+   "depth": "surface",
+   "views": [
+    "back"
+   ]
+  },
+  {
+   "id": "soleus",
+   "parent": "calves",
+   "kind": "muscle",
+   "name": "가자미근",
+   "latin": "soleus",
+   "depth": "surface",
+   "views": [
+    "back",
+    "front",
+    "side"
+   ]
+  },
+  {
+   "id": "shin",
+   "parent": "legs",
+   "kind": "group",
+   "name": "정강이 (앞 · 옆)",
+   "depth": "surface",
+   "views": [
+    "front",
+    "side"
+   ]
+  },
+  {
+   "id": "tibialis_anterior",
+   "parent": "shin",
+   "kind": "muscle",
+   "name": "전경골근",
+   "latin": "tibialis anterior",
+   "depth": "surface",
+   "views": [
+    "front"
+   ]
+  },
+  {
+   "id": "extensor_digitorum_longus",
+   "parent": "shin",
+   "kind": "muscle",
+   "name": "긴발가락폄근",
+   "latin": "extensor digitorum longus",
+   "depth": "surface",
+   "views": [
+    "front"
+   ]
+  },
+  {
+   "id": "peroneus",
+   "parent": "shin",
+   "kind": "muscle",
+   "name": "비골근",
+   "latin": "fibularis longus · brevis",
+   "depth": "surface",
+   "views": [
+    "side",
+    "front"
+   ]
+  },
+  {
+   "id": "tibialis_posterior",
+   "parent": "calves",
+   "kind": "muscle",
+   "name": "후경골근",
+   "latin": "tibialis posterior",
+   "depth": "deep",
+   "views": [
+    "back"
+   ]
+  },
+  {
+   "id": "scm",
+   "parent": "neck",
+   "kind": "muscle",
+   "name": "흉쇄유돌근",
+   "latin": "sternocleidomastoideus",
+   "depth": "surface",
+   "views": [
+    "front"
+   ]
+  },
+  {
+   "id": "scalenes",
+   "parent": "neck",
+   "kind": "muscle",
+   "name": "사각근",
+   "latin": "scaleni",
+   "depth": "deep",
+   "views": [
+    "front"
+   ]
+  },
+  {
+   "id": "splenius",
+   "parent": "neck",
+   "kind": "muscle",
+   "name": "판상근",
+   "latin": "splenius capitis · cervicis",
+   "depth": "surface",
+   "views": [
+    "back"
+   ]
+  }
+ ]
+}

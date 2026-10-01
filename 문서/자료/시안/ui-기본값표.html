@@ -1,0 +1,744 @@
+<title>하젠하이데 UI 기본값표</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* 부품 카탈로그 — 왼쪽 번호 기둥 + 오른쪽 실물 미리보기. 위에 묶음 단추가 붙어 있다 */
+:root{
+  --바탕:#F4F7FA; --면:#FFFFFF; --면2:#E8EEF4; --선:#D0DCE6; --속선:#B4C6D6;
+  --글:#0D1A26; --흐림:#3B5168; --옅음:#64788C;
+  --남:#084B83; --남옅음:#DCE7F1; --남진:#063A66; --칩글:#FFFFFF;
+  --빨:#B3261E; --빨옅음:#FBE8E7; --풀:#3F7F19; --풀옅음:#E9F3E2;
+  --노랑:#8A6100; --노랑옅음:#FBF0D8;
+  --본문:"IBM Plex Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --숫자:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --바탕:#06101A; --면:#101E2B; --면2:#19293A; --선:#24384D; --속선:#36506B;
+  --글:#E6F0F9; --흐림:#BCCBD9; --옅음:#8EA0B1;
+  --남:#7FB3E6; --남옅음:#1B2D40; --남진:#A8CDF2; --칩글:#06101A;
+  --빨:#E88479; --빨옅음:#361D1B; --풀:#9BDB6E; --풀옅음:#1F3119;
+  --노랑:#E0B65A; --노랑옅음:#33280F;
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --바탕:#06101A; --면:#101E2B; --면2:#19293a; --선:#24384D; --속선:#36506B;
+  --글:#E6F0F9; --흐림:#BCCBD9; --옅음:#8EA0B1;
+  --남:#7FB3E6; --남옅음:#1B2D40; --남진:#A8CDF2; --칩글:#06101A;
+  --빨:#E88479; --빨옅음:#361D1B; --풀:#9BDB6E; --풀옅음:#1F3119;
+  --노랑:#E0B65A; --노랑옅음:#33280F;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--바탕);color:var(--글);font-family:var(--본문);margin:0;line-height:1.55;
+  -webkit-font-smoothing:antialiased}
+.싸개{max-width:960px;margin:0 auto;padding-inline:16px;padding-block:28px 72px}
+
+/* ── 머리 ── */
+.머리{border-bottom:2px solid var(--남);padding-bottom:18px;margin-bottom:8px}
+.머리 h1{font-size:clamp(24px,5vw,34px);font-weight:700;letter-spacing:-.03em;margin:0 0 6px;
+  text-wrap:balance;line-height:1.15}
+.머리 p{margin:0;color:var(--흐림);font-size:14.5px;max-width:62ch}
+.쓰는법{margin-top:14px;background:var(--남옅음);border-left:3px solid var(--남);
+  padding:12px 14px;border-radius:0 6px 6px 0;font-size:13.5px;color:var(--흐림)}
+.쓰는법 b{color:var(--글)}
+.쓰는법 code{font-family:var(--숫자);background:var(--면);padding:1px 5px;border-radius:4px;
+  font-size:12.5px;color:var(--남);border:1px solid var(--속선)}
+
+/* ── 집계 ── */
+.집계{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:8px;margin:20px 0 4px}
+.집계 div{background:var(--면);border:1px solid var(--선);border-radius:8px;padding:10px 12px;min-width:0}
+.집계 b{display:block;font-family:var(--숫자);font-size:21px;font-weight:600;line-height:1.1;
+  font-variant-numeric:tabular-nums}
+.집계 span{display:block;font-size:11.5px;color:var(--옅음);margin-top:2px}
+.집계 .나쁨 b{color:var(--빨)}
+.집계 .좋음 b{color:var(--풀)}
+
+/* ── 찾기 줄 ── */
+.도구{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--바탕);
+  padding-block:12px;margin-top:16px;border-bottom:1px solid var(--선)}
+.도구 input{width:100%;font-family:var(--본문);font-size:15px;padding:9px 12px;border-radius:8px;
+  border:1px solid var(--속선);background:var(--면);color:var(--글);margin-bottom:8px}
+.도구 input:focus{outline:2px solid var(--남);outline-offset:1px;border-color:var(--남)}
+.묶음줄{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:thin}
+.묶음줄 button{flex:0 0 auto;font-family:var(--본문);font-size:13px;font-weight:500;
+  padding:5px 13px;border-radius:999px;border:1px solid var(--속선);background:transparent;
+  color:var(--흐림);cursor:pointer;white-space:nowrap}
+.묶음줄 button[aria-pressed="true"]{background:var(--남);border-color:var(--남);color:var(--칩글);font-weight:600}
+.묶음줄 button:focus-visible{outline:2px solid var(--남);outline-offset:2px}
+
+/* ── 큰 제목 ── */
+h2.절{font-size:19px;font-weight:700;letter-spacing:-.02em;margin:34px 0 4px;
+  padding-top:14px;border-top:1px solid var(--선);display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
+h2.절 em{font-style:normal;font-family:var(--숫자);font-size:12px;font-weight:500;color:var(--옅음)}
+.절설명{margin:0 0 14px;color:var(--옅음);font-size:13px;max-width:64ch}
+h3.작은절{font-size:14px;font-weight:600;color:var(--흐림);margin:20px 0 8px;
+  letter-spacing:.02em;text-transform:none}
+
+/* ── 항목 ── */
+.줄{display:grid;grid-template-columns:40px 1fr;gap:12px;background:var(--면);
+  border:1px solid var(--선);border-radius:9px;padding:11px 13px;margin-bottom:6px;align-items:start}
+.줄.경고{border-left:3px solid var(--노랑)}
+.줄.문제{border-left:3px solid var(--빨)}
+.번호{font-family:var(--숫자);font-size:13px;font-weight:600;color:var(--남);
+  background:var(--남옅음);border-radius:6px;text-align:center;padding:3px 0;
+  font-variant-numeric:tabular-nums;cursor:pointer;border:none;width:100%;
+  font-feature-settings:"tnum"}
+.번호:hover{background:var(--남);color:var(--칩글)}
+.번호:focus-visible{outline:2px solid var(--남);outline-offset:2px}
+.속{min-width:0}
+.이름{font-size:15px;font-weight:600;letter-spacing:-.01em;display:flex;gap:8px;
+  align-items:baseline;flex-wrap:wrap}
+.이름 .코드{font-family:var(--숫자);font-size:12px;font-weight:500;color:var(--옅음)}
+.값{font-family:var(--숫자);font-size:12.5px;color:var(--흐림);margin-top:2px;
+  font-variant-numeric:tabular-nums;word-break:break-word}
+.값 b{color:var(--글);font-weight:600}
+.말{font-size:13px;color:var(--옅음);margin-top:3px;max-width:64ch}
+.어디{font-family:var(--숫자);font-size:11.5px;color:var(--옅음);margin-top:5px;
+  padding-top:5px;border-top:1px dashed var(--선);word-break:break-word}
+
+/* ── 딱지 ── */
+.딱지{display:inline-block;font-size:10.5px;font-weight:600;padding:1px 7px;border-radius:999px;
+  letter-spacing:.02em;vertical-align:2px;white-space:nowrap}
+.ㅈ좋{background:var(--풀옅음);color:var(--풀)}
+.ㅈ경{background:var(--노랑옅음);color:var(--노랑)}
+.ㅈ나{background:var(--빨옅음);color:var(--빨)}
+.ㅈ무{background:var(--면2);color:var(--옅음)}
+
+/* ── 색 미리보기 ── */
+.색판{display:flex;gap:0;margin-top:6px;border-radius:6px;overflow:hidden;
+  border:1px solid var(--속선);max-width:230px}
+.색칸{flex:1;height:34px;display:flex;align-items:flex-end;justify-content:center;
+  font-family:var(--숫자);font-size:9.5px;padding-bottom:2px;letter-spacing:-.02em}
+
+/* ── 글자 미리보기 ── */
+.글보기{margin-top:7px;padding:7px 10px;background:var(--면2);border-radius:6px;
+  color:var(--글);overflow-x:auto}
+
+/* ── 치수 미리보기 ── */
+.자{margin-top:7px;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.자막대{background:var(--남);height:13px;border-radius:2px;flex:0 0 auto}
+.네모{background:var(--면2);border:1px solid var(--속선);flex:0 0 auto}
+.높이칸{background:var(--남옅음);border:1px solid var(--남);border-radius:6px;
+  display:flex;align-items:center;justify-content:center;font-family:var(--숫자);
+  font-size:11px;color:var(--남);flex:0 0 auto;padding-inline:12px}
+
+/* ── 부품 미리보기 (앱 색을 그대로 씀) ── */
+.실물{margin-top:8px;padding:12px;border-radius:8px;background:#F8FAFB;
+  border:1px solid #D3DFE9;display:flex;gap:8px;align-items:center;flex-wrap:wrap;
+  font-family:var(--본문);color:#000}
+.실물.검{background:#07121E;border-color:#253A50;color:#E5F0FA}
+.ㅂ버튼{background:#084B83;color:#fff;font-weight:700;border-radius:8px;
+  display:inline-flex;align-items:center;padding:0 12px;letter-spacing:-.01em}
+.ㅂ버튼.빈{background:#fff;color:#000;border:1px solid #B5C9DA}
+.ㅂ칩{border-radius:999px;height:32px;display:inline-flex;align-items:center;
+  padding:0 13px;font-size:13px;font-weight:500}
+.ㅂ칩.켬{background:#084B83;color:#fff;font-weight:600}
+.ㅂ칩.끔{border:1px solid #B5C9DA;color:#35495B}
+.ㅂ칩.네모{border-radius:8px;height:auto;padding:6px 9px}
+.ㅂ칩.면2{background:#F0F4F8;border:none;color:#35495B}
+.ㅂ카드{background:#fff;border:2px solid #084B83;border-radius:16px;padding:14px;
+  font-size:13px;color:#35495B;flex:1 1 180px;min-width:0}
+.ㅂ알약{background:#EAF3E4;color:#4C9A1F;border-radius:99px;padding:1px 7px;
+  font-size:10.5px;font-weight:700}
+.ㅂ알약.미{background:rgba(179,38,30,.12);color:#B3261E}
+.ㅂ대비{border:1px solid #B5C9DA;border-radius:4px;padding:0 4px;font-size:11px;
+  display:inline-flex;gap:3px;align-items:center}
+.ㅂ대비 b{color:#B3261E}
+.ㅂ띠{background:#084B83;color:#fff;border-radius:8px;min-height:40px;padding:6px 12px;
+  display:flex;align-items:center;gap:6px;width:100%;font-size:18px;font-weight:700;line-height:23px}
+.ㅂ휴식{background:#F0F4F8;border-radius:8px;width:62px;height:28px;position:relative;
+  overflow:hidden;display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:700;color:#084B83}
+.ㅂ휴식 i{position:absolute;inset:0 42% 0 0;background:#084B83}
+.ㅂ휴식 span{position:relative;z-index:1;mix-blend-mode:normal}
+.ㅂ표{border:1px solid #B5C9DA;border-radius:4px;padding:0 4px;font-size:10px;font-weight:700}
+.ㅂ입력{background:#fff;border:1px solid #B5C9DA;border-radius:8px;height:44px;
+  display:flex;align-items:center;padding:0 12px;color:#5E6B77;font-size:15px;flex:1 1 150px;min-width:0}
+.ㅂ스위치{width:46px;height:28px;border-radius:999px;background:#084B83;padding:4px;
+  display:flex;justify-content:flex-end;flex:0 0 auto}
+.ㅂ스위치 i{width:22px;height:22px;border-radius:999px;background:#fff;display:block}
+.ㅂ번호{background:#1E6FD9;color:#fff;font-size:8px;font-weight:600;height:13.5px;
+  border-radius:7px;padding:0 6px;display:inline-flex;align-items:center}
+.ㅂ네모버튼{width:32px;height:32px;border-radius:8px;background:#F0F4F8;
+  display:inline-flex;align-items:center;justify-content:center;color:#35495B;font-size:15px;flex:0 0 auto}
+
+/* ── 견주기 상자 ── */
+.견줌{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:8px}
+.견줌 > div{background:var(--면2);border-radius:7px;padding:9px 11px;min-width:0}
+.견줌 h4{margin:0 0 4px;font-size:12px;font-weight:600;color:var(--흐림);
+  font-family:var(--숫자);letter-spacing:-.01em}
+.견줌 p{margin:0;font-size:11.5px;color:var(--옅음);font-family:var(--숫자);line-height:1.5}
+
+/* ── 화면 지도 ── */
+.지도{display:grid;grid-template-columns:repeat(auto-fit,minmax(248px,1fr));gap:10px;margin-top:10px}
+.폰{background:var(--면);border:1px solid var(--선);border-radius:10px;padding:0;overflow:hidden;min-width:0}
+.폰머리{background:var(--남);color:var(--칩글);padding:7px 12px;font-size:13.5px;font-weight:600;
+  display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.폰머리 em{font-style:normal;font-family:var(--숫자);font-size:11px;opacity:.85}
+.폰속{padding:9px 11px}
+.칸줄{display:flex;gap:8px;padding:5px 0;border-bottom:1px dashed var(--선);font-size:12.5px;
+  align-items:baseline}
+.칸줄:last-child{border-bottom:none}
+.칸줄 b{font-family:var(--숫자);font-size:11.5px;color:#fff;background:#1E6FD9;
+  border-radius:7px;padding:1px 6px;flex:0 0 auto;font-weight:600;line-height:1.5}
+.칸줄 b.없{background:var(--면2);color:var(--옅음)}
+.칸줄 span{color:var(--흐림);min-width:0}
+
+/* ── 맨 아래 ── */
+.끝말{margin-top:40px;padding-top:16px;border-top:1px solid var(--선);
+  font-size:12.5px;color:var(--옅음)}
+.빔{padding:24px;text-align:center;color:var(--옅음);font-size:14px}
+</style>
+
+<div class="싸개">
+
+<div class="머리">
+  <h1>하젠하이데 UI 기본값표</h1>
+  <p>앱 화면에 쓰이는 색·글자·치수·부품을 전부 꺼내 번호를 붙인 표. 코드를 읽어 적은 것이고, 지금 앱에 들어 있는 값 그대로다.</p>
+  <div class="쓰는법">
+    <b>쓰는 법</b> — 번호를 눌러 고치고 싶은 것을 집으면 된다. “<code>21번 15 → 16</code>”, “<code>74번 하나로 묶어</code>” 처럼 번호로 말하면 그 줄만 고친다. 번호를 누르면 글이 복사된다.
+  </div>
+</div>
+
+<div class="집계">
+  <div><b id="수전체">—</b><span>전체 항목</span></div>
+  <div class="좋음"><b id="수기본">—</b><span>정해진 기본값</span></div>
+  <div><b id="수부품">—</b><span>공통 부품</span></div>
+  <div class="나쁨"><b id="수문제">—</b><span>어긋난 곳</span></div>
+</div>
+
+<div class="도구">
+  <input id="찾기" type="search" placeholder="찾기 — 예: 칩, 12sp, 모서리, 캘린더" autocomplete="off">
+  <div class="묶음줄" id="묶음줄"></div>
+</div>
+
+<div id="몸통"></div>
+
+<h2 class="절">화면 지도 <em>어느 칸이 어디에 있나</em></h2>
+<p class="절설명">설정 → ‘화면 번호 보기’를 켜면 칸 왼쪽 위에 이 번호가 뜬다. 코드에 이미 들어 있는 번호다. 회색은 아직 번호가 없는 칸.</p>
+<div class="지도" id="지도"></div>
+
+<div class="끝말">
+  코드를 읽은 날 2026‑10‑02 · 기준 커밋 <span style="font-family:var(--숫자)">fe7afa8</span> (v0.11.0) ·
+  읽은 파일 <span style="font-family:var(--숫자)">ui/theme/Theme.kt · ui/Common.kt · ui/Motion.kt · ui/App.kt · 화면 7개</span>
+</div>
+</div>
+
+<script>
+/* ───────── 자료 ───────── */
+const 색 = (이,밝,어,쓰) => ({묶음:'색',이름:이,밝,어,말:쓰});
+const 목록 = [];
+let n = 0;
+const 넣 = o => { 목록.push({...o, n: ++n}); };
+
+/* 1부 — 색 */
+[
+ ['바탕','#F8FAFB','#07121E','화면 맨 뒤'],
+ ['면','#FFFFFF','#111F2E','카드·시트·입력칸 바탕'],
+ ['면2','#F0F4F8','#172738','버튼·칩·닫힌 숫자칸 바탕'],
+ ['선','#D3DFE9','#253A50','구분선'],
+ ['속선','#B5C9DA','#37526E','안쪽 상자 테두리'],
+ ['글','#000000','#E5F0FA','본문 글자'],
+ ['흐림','#35495B','#C5D1DB','보조 글자'],
+ ['옅음','#5E6B77','#9BA7B3','설명 글자'],
+ ['강조','#084B83','#7FB3E6','중심색 — 주요 버튼·선택·카드 테두리'],
+ ['강조글','#FFFFFF','#04213D','중심색 위에 얹는 글자'],
+ ['강조옅음','#E1E9F0','#1F3246','지금 할 세트 줄 바탕'],
+ ['좋음','#4C9A1F','#9BE06B','달성'],
+ ['좋음옅음','#EAF3E4','#243A22','달성 알약 바탕'],
+ ['나쁨','#B3261E','#E57368','미달성·지우기'],
+ ['휴식','#084B83','#7FB3E6','휴식·슈퍼세트 — 중심색과 똑같다'],
+ ['휴식옅음','#E1E9F0','#1F3246','휴식 옅은 바탕 — 강조옅음과 똑같다'],
+ ['오름','#B3261E','#E57368','향상도 오름 = 빨강 (주식처럼)'],
+ ['내림','#084B83','#7FB3E6','향상도 내림 — 중심색과 똑같다'],
+].forEach(([이,밝,어,말]) => 넣({묶음:'색',이름:이,코드:'색.'+이,밝,어,말,
+  경고: ['휴식','휴식옅음','내림'].includes(이) ? '다른 이름인데 값이 강조와 같다. 눈으로는 구별되지 않는다' : null}));
+
+/* 2부 — 글자 */
+const 글크 = (이,px,쓰,메) => 넣({묶음:'글자',이름:이,코드:'크기.'+이.split(' ')[0],
+  값:px+'sp',보기:px,말:쓰,경고:메});
+글크('11sp','11','아주작게 · 작게 — 설명·단위·작은 이름표·알약 글');
+글크('13sp','13','조금작게 · 버튼 — 보조 글·칩·버튼 글·세트 번호');
+글크('15sp','15','본문 — 본문·목록 이름·입력칸 글');
+글크('18sp','18','크게 — 카드·시트 제목·세트줄 무게·횟수 숫자');
+글크('22sp','22','제목 · 큰숫자 — 화면 제목 (루틴·종목·플랜·설정)');
+글크('28sp','28','아주큰숫자','앱 어디에서도 한 번도 쓰이지 않는다');
+
+넣({묶음:'글자',이름:'보통 글',코드:'글꼴.보통',
+  값:'자간 −0.01em · 줄높이 글자크기 × 1.4',말:'거의 모든 글이 이것. 기본 한 줄, 넘치면 … 로 자른다',
+  모양:'normal'});
+넣({묶음:'글자',이름:'제목 글',코드:'글꼴.제목',
+  값:'Bold · 자간 −0.02em · 줄높이 × 1.25',말:'화면 제목·카드 제목·시트 제목',모양:'제목'});
+넣({묶음:'글자',이름:'이름표',코드:'글꼴.이름표',
+  값:'11sp · Bold · 자간 +0.04em',말:'칸 위에 붙는 작은 제목 (“부위”, “장비”, “신체 정보”)',모양:'이름표',
+  경고:'설정·종목 화면만 쓴다. 플랜 화면은 같은 자리에 보통 글 11sp 를 써서 더 가늘어 보인다 (→ 75번)'});
+
+/* 3부 — 치수 */
+const 간 = (이,px,쓰) => 넣({묶음:'치수',이름:이,코드:'간격.'+이,값:px+'dp',자:px,말:쓰});
+간('아주좁게','4','글자와 글자 사이, 버튼 두 개 사이');
+간('좁게','8','덩어리 사이 작은 틈');
+간('보통','12','화면 좌우 여백 (운동·캘린더·플랜)');
+간('넓게','16','화면 좌우 여백 (종목·설정·시트 안)');
+간('아주넓게','24','쓰이지 않는다');
+
+const 높 = (이,px,쓰) => 넣({묶음:'치수',이름:이,코드:'높이.'+이,값:px+'dp',높:px,말:쓰});
+높('아주낮게','28','칩 바깥 · 체크 동그라미 · 세트 번호 칸 · 스위치');
+높('낮게','32','작은 아이콘 버튼 · 칩 · 캘린더 판 버튼');
+높('보통','40','작은 버튼 · 숫자 입력 칸');
+높('높게','44','큰 버튼 · 글 입력칸 · 목록 한 줄');
+
+넣({묶음:'치수',이름:'모서리 작게',코드:'모서리.작게 · 아주작게',값:'8dp',둥:8,
+  말:'버튼·입력칸·칩(네모)·안쪽 상자'});
+넣({묶음:'치수',이름:'모서리 보통',코드:'모서리.보통 · 크게',값:'16dp',둥:16,
+  말:'카드·시트 위 두 귀'});
+
+넣({묶음:'치수',이름:'테두리 굵기',코드:'— 토큰 없음',값:'1dp · 1.5dp · 2dp · 2.5dp 가 섞여 있다',
+  문제:true,말:'Theme.kt 에 이름이 없어서 화면마다 숫자를 직접 적는다.',
+  견줌:[['1dp','입력칸·버튼·안쪽 상자·칩·구분선 — 가장 많다'],
+        ['1.5dp','열린 숫자칸 · 고른 날짜 칸 · 막대 점선 자리'],
+        ['2dp','카드 · 고정 띠 · 끌어 놓을 자리 표시'],
+        ['2.5dp','플랜 훈련방식 고른 띠 안쪽 고리']]});
+
+넣({묶음:'치수',이름:'아이콘 크기',코드:'— 토큰 없음',값:'12 · 13 · 14 · 15 · 16 · 18 · 20dp',
+  문제:true,말:'일곱 가지가 섞여 있다. 같은 ✓ 가 15와 14, 같은 ∨ 가 16과 18이다.',
+  견줌:[['18dp','아이콘버튼 속 · 펼침단추 · − ＋ · 고르기줄 › — 기본으로 봐도 될 만큼 많다'],
+        ['16dp','버튼 속 아이콘 · 접기단추 · 탭 아래 아이콘 · 참고 링크'],
+        ['20dp','세트 ＋ 동그라미'],
+        ['15 / 14dp','세트줄 체크 ✓ / 타이트 시트 체크 ✓'],
+        ['13 / 12dp','부위 칩 속 ✕ / 루틴 세트 휴지통']]});
+
+넣({묶음:'치수',이름:'화면 좌우 여백',코드:'— 정해진 바 없음',값:'8dp · 12dp · 16dp',
+  문제:true,말:'화면마다 다르다. 탭을 옮기면 글 시작 위치가 좌우로 움직인다.',
+  견줌:[['8dp','루틴'],['12dp','운동 · 캘린더 · 플랜'],['16dp','종목 · 설정 · 마무리 화면']]});
+
+넣({묶음:'치수',이름:'줄 간격 (lineHeight)',코드:'— 토큰 없음',
+  값:'보통은 글자 × 1.4 · 그런데 10 · 13 · 14 · 23sp 를 직접 쓴 곳이 있다',경고:true,
+  말:'달력 한 칸(56dp)에 네 줄을 우겨 넣느라 줄 간격을 손으로 눌렀다. 글자를 키우면 다시 잘린다.',
+  어디:'CalendarScreen 573·601·612 · Motion 119'});
+
+/* 4부 — 부품 */
+const 부 = o => 넣({...o, 묶음:'부품'});
+
+부({이름:'글',코드:'Common.글()',값:'15sp · 보통 · 한 줄 · 넘치면 …',
+  말:'모든 글의 기본. 긴 설명은 줄 = 2 처럼 줄 수를 따로 줘야 한다',
+  실물:'<span style="font-size:15px">세트를 마치면 자동으로 다음으로 넘어갑니다</span>'});
+부({이름:'제목글',코드:'Common.제목글()',값:'22sp · Bold · 자간 −0.02em',
+  말:'화면 맨 위 제목. 시트 안에서는 18sp 로 쓴다',
+  실물:'<span style="font-size:22px;font-weight:700;letter-spacing:-.02em">루틴</span>'});
+부({이름:'이름표',코드:'Common.이름표()',값:'11sp · Bold · 자간 +0.04em · 옅음',
+  말:'칸 위에 붙는 작은 제목',
+  실물:'<span style="font-size:11px;font-weight:700;letter-spacing:.04em;color:#5E6B77">신체 정보</span>'});
+부({이름:'맞춤글',코드:'Common.맞춤글()',값:'11sp → 자간 좁힘 → 9sp 까지 줄임',
+  말:'한 줄에 다 넣는다. … 로 자르지 않고 글자를 줄인다 (10‑01 결정)',
+  실물:'<span style="font-size:11px">가슴 루틴 · 5종목 · 18세트 · 약 42분</span>'});
+
+부({이름:'카드',코드:'Common.카드()',값:'모서리 16 · 테두리 2dp 중심색 · 안쪽 14dp · 바탕 면',
+  말:'화면의 큰 상자. 지금 10곳에서 쓴다',
+  실물:'<div class="ㅂ카드">카드 안쪽</div>',
+  경고:'안쪽 여백이 쓰는 곳마다 다르다 — 0 / 10 / 14 (→ 80번)'});
+부({이름:'구분선',코드:'Common.구분선()',값:'높이 1dp · 색 선',말:'목록 줄 사이',
+  실물:'<div style="height:1px;background:#D3DFE9;width:100%"></div>'});
+부({이름:'시트 (아래에서 올라오는 판)',코드:'Common.시트()',
+  값:'최대 높이 620dp · 위 두 귀 16 · 안쪽 16 · 뒤 검정 35%',
+  말:'‘고르는 일’에만 쓴다. 지금 20곳쯤. 제목 18sp + 닫기 ✕(32)',
+  실물:'<div style="background:#fff;border-radius:16px 16px 0 0;border:1px solid #D3DFE9;border-bottom:none;padding:16px;width:100%"><div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:18px;letter-spacing:-.02em">운동을 시작할까요?</b><span class="ㅂ네모버튼">✕</span></div></div>'});
+
+부({이름:'버튼 — 큰',코드:'버튼()',값:'높이 44 · 글 15sp Bold · 모서리 8 · 좌우 12',
+  말:'시트의 결정 버튼, 화면 아래 주요 버튼',
+  실물:'<span class="ㅂ버튼" style="height:44px;font-size:15px">기록 저장하고 끝내기</span>'
+       +'<span class="ㅂ버튼 빈" style="height:44px;font-size:15px">아니오</span>'});
+부({이름:'버튼 — 작게',코드:'버튼(작게=true)',값:'높이 40 · 글 13sp Bold',
+  말:'카드 안의 버튼, 나란히 둘 놓는 버튼',
+  실물:'<span class="ㅂ버튼" style="height:40px;font-size:13px">저장</span>'
+       +'<span class="ㅂ버튼 빈" style="height:40px;font-size:13px">취소</span>'
+       +'<span class="ㅂ버튼 빈" style="height:40px;font-size:13px;color:#B3261E">지우기</span>'});
+부({이름:'버튼 — 낮게',코드:'버튼(낮게=true)',값:'높이 32 · 글 13sp · 좌우 8',
+  말:'자리가 좁은 곳 — 캘린더 날짜 판',
+  실물:'<span class="ㅂ버튼" style="height:32px;font-size:13px">운동 시작</span>'
+       +'<span class="ㅂ버튼 빈" style="height:32px;font-size:13px">변경</span>'});
+부({이름:'아이콘 버튼',코드:'아이콘버튼()',값:'네모 32 · 아이콘 18 · 모서리 8 · 바탕 면2',
+  말:'칠함=false 면 바탕이 없다 (지우기·펼치기)',
+  실물:'<span class="ㅂ네모버튼">⚙</span><span class="ㅂ네모버튼">↑</span>'
+       +'<span class="ㅂ네모버튼" style="background:#084B83;color:#fff">🗑</span>'
+       +'<span class="ㅂ네모버튼" style="background:transparent">∨</span>'});
+부({이름:'칩 한 줄',코드:'칩줄()',값:'높이 32 · 동그란 모서리 · 좌우 13 · 사이 8 · 글 13sp',
+  말:'부위 고르기, 설정의 값 고르기. 안 고른 칩은 칠하지 않고 테두리만',
+  실물:'<span class="ㅂ칩 켬">전체</span><span class="ㅂ칩 끔">가슴</span><span class="ㅂ칩 끔">등</span>',
+  경고:'같은 구실의 칩이 앱 안에 네 가지 있다 (→ 74번)'});
+부({이름:'스위치',코드:'스위치()',값:'46 × 28 · 손잡이 22 · 켜짐 중심색',
+  말:'설정 화면에만 6개',
+  실물:'<span class="ㅂ스위치"><i></i></span>'});
+부({이름:'펼침 ∨ · 접기 ∨',코드:'펼침단추() · 접기단추()',값:'네모 32 · 아이콘 18 또는 16',
+  경고:true,말:'같은 구실인데 부품이 둘이고 아이콘 크기가 다르다 (→ 76번)',
+  실물:'<span class="ㅂ네모버튼" style="background:transparent">∨</span>'});
+
+부({이름:'입력칸',코드:'입력칸()',값:'높이 44 · 테두리 1dp 속선 · 모서리 8 · 좌우 12 · 글 15sp',
+  말:'여러줄=true 로 주면 최대 280dp 까지 늘어난다',
+  실물:'<span class="ㅂ입력">루틴 이름</span>'});
+부({이름:'숫자 버튼 줄',코드:'숫자버튼줄()',
+  값:'닫힌 칸 높이 40 · 바탕 면2 · 열면 테두리 1.5dp 중심색 + 아래 휠',
+  말:'세트 · 무게 · 횟수 · 휴식. 누르면 − ＋ 와 자판, 아래에 숫자 휠이 뜬다',
+  실물:'<div style="display:flex;gap:2px;width:100%">'
+   +'<div style="flex:.75;height:40px;background:#F0F4F8;border-radius:8px;display:grid;place-items:center;line-height:1.1"><span style="font-size:11px;color:#5E6B77">세트</span><span style="font-size:13px;font-weight:700">3</span></div>'
+   +'<div style="flex:1.69;height:40px;background:#fff;border:1.5px solid #084B83;border-radius:8px;display:flex;align-items:center;justify-content:space-between;padding:0 10px"><span style="color:#084B83">−</span><span style="display:grid;place-items:center;line-height:1.1"><span style="font-size:11px;color:#5E6B77">무게</span><span style="font-size:15px;font-weight:700">60</span></span><span style="color:#084B83">＋</span></div>'
+   +'<div style="flex:.85;height:40px;background:#F0F4F8;border-radius:8px;display:grid;place-items:center;line-height:1.1"><span style="font-size:11px;color:#5E6B77">횟수</span><span style="font-size:13px;font-weight:700">10회</span></div>'
+   +'</div>'});
+부({이름:'숫자 휠',코드:'숫자휠()',값:'칸 34dp · 5칸 보임 · 바탕 면2 · 고른 값 18sp 중심색',
+  말:'돌려도 안 들어간다. 숫자를 눌러야 들어가고, 들어가면 칸이 닫힌다'});
+
+부({이름:'고르기 줄',코드:'고르기줄()',값:'위아래 12 · 이름 15sp · 곁글 11sp · 오른쪽 › 18dp · 아래 구분선',
+  말:'시트 안에서 하나를 고르는 줄',
+  실물:'<div style="width:100%"><div style="display:flex;align-items:center;gap:8px;padding:12px 0"><span style="font-size:15px;flex:1">가슴 루틴</span><span style="font-size:11px;color:#5E6B77">5종목 · 약 42분</span><span style="color:#084B83">›</span></div><div style="height:1px;background:#D3DFE9"></div></div>'});
+부({이름:'설정 한 줄',코드:'설정줄()',값:'위아래 12 · 이름 15sp Medium · 설명 11sp · 오른쪽 조작부',
+  말:'설정 화면 전용. 지금 16곳',
+  실물:'<div style="display:flex;align-items:center;gap:10px;width:100%"><span style="flex:1;min-width:0"><b style="font-size:15px;font-weight:500;display:block">자동 진행</b><span style="font-size:11px;color:#5E6B77">세트를 마치면 다음으로</span></span><span class="ㅂ스위치"><i></i></span></div>',
+  경고:'오른쪽 조작부를 비워 둔 채 ‘제목’ 으로만 쓴 곳이 9곳 (→ 107번)'});
+부({이름:'물음창',코드:'물음창()',값:'화면 가운데 · 너비 62% · 모서리 16 · 뒤 검정 35%',
+  말:'“○○을 뺄까요?” 처럼 예·아니오를 고르는 것',
+  실물:'<div style="background:#fff;border-radius:16px;padding:16px;max-width:240px;border:1px solid #D3DFE9"><b style="font-size:18px;letter-spacing:-.02em">벤치프레스를 뺄까요?</b><div style="display:flex;gap:4px;margin-top:16px"><span class="ㅂ버튼 빈" style="height:40px;font-size:13px;flex:1;justify-content:center">아니오</span><span class="ㅂ버튼" style="height:40px;font-size:13px;flex:1;justify-content:center">빼기</span></div></div>'});
+
+부({이름:'띠',코드:'Motion.띠() · 띠글()',값:'최소 높이 40 · 여백 12 / 6 · 바탕 중심색 · 글 18sp Bold 흰색',
+  말:'캘린더 년·월 / 운동 중 지금 종목 / 마무리 제목이 모두 이 규격',
+  실물:'<div class="ㅂ띠"><span>2026년 10월</span></div>'});
+부({이름:'달성 알약',코드:'Motion.달성알약()',값:'글 10.5sp Bold · 모서리 99 · 여백 7 / 1',
+  말:'달성 = 옅은 초록 바탕 + 초록 글, 미달성 = 옅은 빨강',
+  실물:'<span class="ㅂ알약">달성</span><span class="ㅂ알약 미">미달성</span>',
+  경고:'10.5sp 는 글자 토큰에 없다 (→ 86번)'});
+부({이름:'알약 (상태 표시)',코드:'CalendarScreen.알약()',값:'글 11sp Bold · 동그란 모서리 · 여백 8 / 4 · 바탕 = 글자색 12%',
+  말:'“다음”, “오늘만”, “마침”',
+  실물:'<span style="background:rgba(8,75,131,.12);color:#084B83;border-radius:99px;padding:4px 8px;font-size:11px;font-weight:700">오늘만</span>'});
+부({이름:'대비 칩',코드:'Motion.대비칩()',값:'글 11sp · 모서리 4 · 테두리 1dp 속선 · 좌우 4',
+  말:'[1주 대비 ▲ 5kg]. 숫자가 움직인다. 비교할 게 없으면 안 그린다',
+  실물:'<span class="ㅂ대비">1주 대비 <b>▲ 5kg</b></span><span class="ㅂ대비">최고 대비 유지</span>',
+  경고:'모서리 4dp 는 토큰에 없다 (→ 90번)'});
+부({이름:'휴식 칸',코드:'Motion.휴식칸()',값:'62 × 28 · 모서리 8 · 글 12sp Bold',
+  말:'중심색이 꽉 찬 채로 시작해 남은 시간만큼 줄어든다. 경계가 딱 떨어진다',
+  실물:'<span class="ㅂ휴식"><i></i><span>1:08</span></span>',
+  경고:'12sp 는 글자 토큰에 없다'});
+부({이름:'작은 표',코드:'Motion.작은표()',값:'글 10sp Bold · 모서리 4 · 테두리 1dp · 좌우 4',
+  말:'캘린더 판의 [1RM] [볼륨] [기록 갱신]',
+  실물:'<span class="ㅂ표">1RM</span><span class="ㅂ표">볼륨</span>'
+   +'<span class="ㅂ표" style="background:#084B83;color:#fff;border-color:#084B83">기록 갱신</span>'});
+
+부({이름:'아래 띠',코드:'Common.아래띠()',값:'화면 아래 · 바탕 = 글자색(거의 검정) · 글 13sp · 모서리 8',
+  말:'되돌리기 · 끌어 옮기기 안내가 같은 자리 같은 모양',
+  실물:'<div style="background:#000;color:#F8FAFB;border-radius:8px;padding:12px 16px;display:flex;gap:12px;width:100%;font-size:13px"><span style="flex:1">루틴을 지웠습니다</span><b style="color:#E1E9F0">되돌리기</b></div>'});
+부({이름:'탭 단추',코드:'App.탭단추()',값:'아이콘 18 · 글 11sp · 위 4 아래 8 · 켜면 중심색 Bold',
+  말:'화면 맨 아래 — 운동 · 캘린더 · 루틴 · 종목 · 설정'});
+부({이름:'화면 번호표',코드:'Modifier.번호()',값:'글 8sp · 높이 13.5dp · 바탕 #1E6FD9 고정 · 흰 글자',
+  말:'설정에서 켜면 칸 왼쪽 위에 뜬다. 칸 모양은 바꾸지 않고 위에 덧그린다',
+  실물:'<span class="ㅂ번호">운4</span><span class="ㅂ번호">캘2</span><span class="ㅂ번호">루3</span>',
+  경고:'색이 중심색과 다른 파랑으로 고정돼 있다 (설정에서 켤 때만 보이므로 급하진 않다)'});
+
+/* 5부 — 어긋난 곳 */
+const 틀 = o => 넣({...o, 묶음:'어긋난 곳', 문제:true});
+const 흠 = o => 넣({...o, 묶음:'어긋난 곳', 경고:true});
+
+틀({이름:'칩이 네 종류다',값:'같은 “하나 고르기”인데 모양이 넷',
+  말:'화면을 옮길 때마다 고르기 단추가 달라 보이는 가장 큰 원인.',
+  견줌:[['칩줄','동그란 모서리 · 높이 32 · 좌우 13 · 안 고르면 테두리만'],
+        ['작은칩 (플랜)','네모 모서리 8 · 높이는 여백이 정함 · 좌우 9 위아래 6'],
+        ['부위·장비 (종목)','동그란 모서리 · 높이 32 · 좌우 12 · 안 고르면 면2 로 칠한다'],
+        ['주당 7칸 (플랜 결과)','네모 모서리 8 · 높이 32 · 글 11sp · 사이 3']],
+  실물:'<span class="ㅂ칩 켬">칩줄</span><span class="ㅂ칩 끔">칩줄</span>'
+   +'<span class="ㅂ칩 네모 켬">작은칩</span><span class="ㅂ칩 네모 끔">작은칩</span>'
+   +'<span class="ㅂ칩 면2">부위</span>',
+  어디:'Common 231 · PlanScreen 420 · PlanScreen 717 · ExerciseScreen 299 · 384'});
+
+틀({이름:'섹션 제목이 두 모양이다',값:'이름표(Bold+자간) vs 보통 글 11sp',
+  말:'설정·종목은 이름표를 쓰고, 플랜은 18곳에서 보통 글을 쓴다. 플랜 화면의 제목만 가늘어 보인다.',
+  실물:'<span style="font-size:11px;font-weight:700;letter-spacing:.04em;color:#5E6B77">운동 목표</span>'
+   +'<span style="color:#B5C9DA">vs</span>'
+   +'<span style="font-size:11px;color:#5E6B77">운동 목표</span>',
+  어디:'PlanScreen 198·234·266·289·316·324·377·434·581·602·619·715·1045·1048·1065·1073·1100'});
+
+틀({이름:'접기 ∨ 가 두 부품이다',값:'접기단추 아이콘 16 · 펼침단추 아이콘 18',
+  말:'운동 화면 안에서도 묶음 접기는 16, 세트줄 펼치기는 18이다.',
+  어디:'WorkoutScreen 526 · RoutineScreen 426'});
+
+흠({이름:'체크 ✓ 가 두 크기다',값:'세트줄 15dp · 타이트 시트 14dp',
+  어디:'WorkoutScreen 610 · 382'});
+
+틀({이름:'진행 막대가 세 종류다',값:'높이 3 / 4 / 8 / 20, 모서리 0 / 2 / 4 / 10',
+  말:'같은 “얼마나 찼나”를 네 번 따로 그렸다.',
+  견줌:[['운동 머리줄','높이 3 · 모서리 없음'],
+        ['플랜 1RM 목표','높이 8 · 모서리 4'],
+        ['플랜 큰 게이지','높이 20 · 모서리 10 · 테두리 1'],
+        ['플랜 작은 막대·칸타일','높이 4 · 모서리 2']],
+  어디:'WorkoutScreen 453 · CalendarScreen 316 · PlanScreen 946 · 958 · 1130'});
+
+틀({이름:'“주당 몇 회” 고르기가 두 모양이다',값:'결과 시트 11sp / 고치기 시트 13sp',
+  말:'같은 플랜 안에서 같은 조작인데 글자와 높이가 다르다.',
+  어디:'PlanScreen 717 vs 1066'});
+
+틀({이름:'카드 안쪽 여백이 세 가지다',값:'0dp · 10dp · 14dp(기본)',
+  말:'카드 테두리와 글 사이가 화면마다 다르다. 설정 화면 5곳은 기본값 14를 다시 적어 둬서 적으나 마나다.',
+  견줌:[['0dp','캘린더 달력 · 루틴 · 종목 목록 · 플랜 종목 — 안에서 따로 여백을 준다'],
+        ['10dp','캘린더 날짜 판'],
+        ['14dp','플랜 카드 6개 · 설정 카드 5개 · 새 종목 칸']],
+  어디:'CalendarScreen 171·629 · RoutineScreen 214 · SettingsScreen 41·69·96·113·144'});
+
+틀({이름:'화면 좌우 여백이 세 가지다',값:'8 / 12 / 16dp',
+  말:'탭을 옮기면 글이 시작하는 자리가 좌우로 움직인다. 운동 화면은 혼자서도 섞여 있다 — 목록은 12, 마무리는 16.',
+  어디:'RoutineScreen 206(8) · WorkoutScreen 256(12) · 713(16) · ExerciseScreen 66(16) · SettingsScreen 36(16) · PlanScreen 167(12)'});
+
+흠({이름:'같은 시트 안에 버튼 높이가 두 가지다',값:'40dp · 44dp 가 섞인다',
+  말:'메모 시트의 취소·저장은 40, 전부 지우기는 44. 운동 화면 타이트 시트는 40, 마칠까 시트는 44.',
+  어디:'MemoSheet 75·76 vs 114 · WorkoutScreen 348 vs 361'});
+
+틀({이름:'캘린더 글자 12sp — 14곳',값:'토큰에 없는 크기. 가장 가까운 토큰은 13sp',
+  말:'캘린더 날짜 판 글의 거의 전부가 12sp 다. 토큰과 1 차이라, 한 번에 바꿀 수 있는 가장 큰 덩어리.',
+  어디:'CalendarScreen 287·307·327·339·433·660·665·678·719·723·746·748·749·804'});
+
+틀({이름:'날짜 판 제목 17sp — 4곳',값:'토큰에 없는 크기. 가장 가까운 토큰은 18sp(크게)',
+  말:'날짜 판 맨 위 큰 파란 제목. 네 곳 모두 같은 모양이라 한 줄로 묶을 수 있다.',
+  어디:'CalendarScreen 640 · 702 · 712 · 716'});
+
+틀({이름:'달력 칸 달성 글자 9sp',값:'토큰 최소(11sp)보다 작다',
+  말:'달력 한 칸 높이가 56dp 로 묶여 있어서 글자만 키우면 “달성” 이 다시 잘린다. 칸 높이와 같이 봐야 한다.',
+  어디:'CalendarScreen 612 (칸 높이는 456줄 56dp)'});
+
+흠({이름:'알약 10.5sp · 작은표 10sp · 번호표 8sp',값:'전부 토큰 밖',
+  말:'작은 표시 글자가 세 가지 크기로 흩어져 있다.',
+  어디:'Motion 129 · 195 · Common 785'});
+
+흠({이름:'띠글 18sp 를 토큰 없이 직접 적었다',값:'값은 크기.크게(18sp)와 같다',
+  말:'값은 맞는데 이름을 안 썼다. 18sp 를 바꾸면 띠만 안 따라온다.',
+  어디:'Motion 119'});
+
+틀({이름:'모서리가 일곱 가지다',값:'2 · 3 · 4 · 6 · 8 · 10 · 12 · 16 · 99dp',
+  말:'토큰은 8과 16 둘뿐인데 실제로는 아홉 가지가 쓰인다.',
+  견줌:[['4dp','대비칩 · 작은표 · 달력 루틴 칩 · 1RM 진행바 · 추세 칩'],
+        ['6dp','캘린더 조절 ±버튼 · 끌 때 이름표 · 유튜브 썸네일 · 타이트 체크'],
+        ['12dp','운동 고정 띠 · 마무리 제목 띠'],
+        ['10 / 2dp','플랜 큰 게이지 / 작은 막대'],
+        ['3dp','캘린더 막대 위쪽 귀'],
+        ['99dp','달성 알약 (= 동그라미)']]});
+
+틀({이름:'테두리 굵기가 네 가지다',값:'1 · 1.5 · 2 · 2.5dp',
+  말:'토큰이 없어 화면마다 숫자를 적는다. 39번과 같은 이야기.'});
+
+틀({이름:'토큰과 값이 같은데 숫자로 쓴 곳이 수백 군데다',값:'4 · 8 · 12 · 16 · 32 · 44dp',
+  말:'토큰으로 바꿔도 화면은 한 픽셀도 안 바뀐다 — 위험 없는 정리. 운동 화면만 해도 8dp 21곳, 4dp 11곳, 12dp 8곳.',
+  견줌:[['운동','40곳 남짓'],['캘린더','30곳 남짓'],['루틴','50곳 남짓'],
+        ['플랜','52줄'],['종목','50줄'],['설정','23줄']]});
+
+틀({이름:'토큰에 아예 없는 간격들',값:'1 · 2 · 3 · 5 · 6 · 7 · 9 · 10 · 13 · 14 · 18 · 20 · 22dp',
+  말:'간격 토큰은 4 · 8 · 12 · 16 · 24 다섯 개인데, 그 사이 값을 손으로 끼워 넣은 곳이 많다.',
+  견줌:[['6dp','띠 안쪽 · 향상줄 칩 사이 · 판줄 · 시트 아래 설명 — 가장 많다'],
+        ['3dp','향상줄 위 · 끌어놓기 선 두께 · 플랜 여러 곳'],
+        ['10dp','고정 띠 속 · 날짜 판 카드 안쪽 · 플랜 방식 박스'],
+        ['18dp','설정 섹션 사이 (4곳)'],
+        ['9dp','작은칩 좌우 · 플랜 경고 박스']]});
+
+틀({이름:'하드코딩된 흰색 — 플랜 훈련 방식 띠',값:'Color.White 5곳',
+  말:'어두운 화면에서도 흰색으로 고정된다. 같은 띠 안에서 테두리 하나(537줄)만 c.강조글을 써서 테마를 따라가 — 규칙이 엇갈린다.',
+  어디:'PlanScreen 466 · 545 · 549 · 551 · 653'});
+
+틀({이름:'하드코딩된 흰색 — 캘린더 끌 때 이름표',값:'Color.White',
+  말:'바탕은 중심색인데 글자만 흰색 고정. 어두운 화면에서는 중심색이 밝은 파랑(#7FB3E6)이라 흰 글자가 잘 안 보인다. 짝은 c.강조글.',
+  어디:'CalendarScreen 530'});
+
+흠({이름:'하드코딩된 흰색 — 유튜브 ▶ · 화면 번호표',값:'Color.White · Color(0xFF1E6FD9)',
+  말:'유튜브 썸네일 위 ▶ 와 시험용 번호표. 늘 어두운 바탕 위라 지금은 문제가 없다.',
+  어디:'Youtube 75·77 · Common 785·793'});
+
+틀({이름:'고정 띠와 세트줄의 왼쪽 선이 2dp 어긋난다',값:'띠 속 22dp · 세트줄 24dp',
+  말:'운동 중 맨 위 띠의 종목 이름과, 그 아래 세트줄 글자의 왼쪽 끝이 안 맞는다. 눈에 보이는 어긋남.',
+  어디:'WorkoutScreen 399+420 (12+10) vs 256+477+599 (12+8+4)'});
+
+흠({이름:'향상줄 위 간격이 2와 3으로 섞인다',값:'top 2dp · top 3dp',
+  말:'같은 향상줄인데 네 곳은 2, 두 곳은 3.',
+  어디:'WorkoutScreen 570·571·761·762 (2) vs 426·748 (3)'});
+
+흠({이름:'캘린더 ± 버튼의 안쪽과 테두리 모서리가 다르다',값:'안쪽 clip 8dp · 테두리 6dp',
+  말:'테두리가 바탕보다 바깥쪽에서 더 둥글어 테두리 안쪽에 틈이 보인다.',
+  어디:'CalendarScreen 379 · 381'});
+
+흠({이름:'끌어 놓을 자리 표시가 색만 다르고 눈엔 같다',값:'루틴 = 강조 · 종목 = 휴식',
+  말:'코드로는 두 색인데 휴식 = 강조라 밝은 화면·어두운 화면 모두 똑같이 보인다.',
+  어디:'RoutineScreen 220·222·223 vs 461·463·464'});
+
+틀({이름:'“이름 + 딸린 칩줄” 부품이 없다',값:'설정줄의 오른쪽을 비워 두고 제목으로 쓴 곳 9군데',
+  말:'이름 아래에 칩줄을 놓는 모양이 반복되는데 부품이 없어, 그때마다 빈 람다 + 손수 띄운 12dp 로 만든다.',
+  어디:'SettingsScreen 77·82·97·101·104·117·130·133·137'});
+
+흠({이름:'긴 글인데 줄 수를 안 줘서 잘린다',값:'줄 = 기본값 1',
+  말:'설정 안내 두 줄과 메모 발자취 줄이 한 줄로 잘린다.',
+  어디:'SettingsScreen 63·146 · MemoSheet 99'});
+
+흠({이름:'화면에 안 그려지는 죽은 코드 5개',값:'성장줄 · 줄값 · 세트값칸 · 둥근단추 · 일정 입력칸',
+  말:'부르는 곳이 없다. 값을 고쳐도 아무 데도 안 바뀐다. 지울 거리.',
+  어디:'CalendarScreen 117·834 · PlanScreen 641 · RoutineScreen 588·597'});
+
+/* ───────── 화면 지도 ───────── */
+const 지도자료 = [
+ ['운동','운','운1 맨 윗줄 — 루틴 · 달성도 · 시간 · 볼륨 · 끝내기|운2 고정 띠 — 지금 종목 (2.1 이름 · 2.2 정보 · 2.3 접기)|운3 끝낸 종목 묶음|운4 지금 묶음 · 세트 줄 (4.1 체크 · 4.2 번호 · 4.3 무게 · 4.4 횟수 · 4.5 휴식 · 4.6 펼치기 · 4.7 ＋)|운5 남은 종목 묶음|운6 아랫줄 — 목록 · 추가 · 다음|· 마무리 화면 (번호 없음)|· 시트 4가지 (번호 없음)'],
+ ['캘린더','캘','캘1 달 이름 · ◀ ▶|캘2 달력 (2.1 날짜 · 2.2 루틴 칩 · 2.3 일정 점)|캘3 날짜 판 (3.1 제목 · 3.2 향상도 · 3.3 버튼)|· 시트 11가지 (번호 없음)'],
+ ['루틴','루','루1 제목 · 안내|루2 루틴 머리줄 (2.1 순서 · 2.2 이름 · 2.3 요약 · 2.4 ↑↓ · 2.5 ⚙ · 2.6 펼치기)|루3 루틴 속 종목 줄 (3.1 이름 · 3.2 1RM·볼륨 · 3.3 세트 줄)|루4 종목 추가|루5 루틴 추가 · 휴식일|· 슈퍼세트 묶음 상자 (번호 없음)|· 참고 링크 칸 (번호 없음)|· 합치기 창 (번호 없음)'],
+ ['플랜','플','플1 종목 고르기|플2 나의 수행능력|플3 운동 목표|플4 훈련 방식|플5 신체 정보|· 훈련 방식 시트 (번호 없음)|· 결과 시트 (번호 없음)|· 계산 중 화면 (번호 없음)'],
+ ['종목','종','종1 제목 · 부위 칩 · ⚙|종2 종목 목록|종3 플랜 종목 (플랜 화면에서 그린다)|· 새 종목 칸 (번호 없음)|· 카테고리 시트 (번호 없음)'],
+ ['설정','설','설0 신체 정보|설1 운동 진행 (1.1~1.7)|설2 기록 (2.1 무게 폭 · 2.2 기본 세트 · 2.3 기본 휴식)|설3 볼륨 자동 올리기|설4 데이터 — 백업'],
+];
+
+/* ───────── 그리기 ───────── */
+const 묶음들 = ['전체','색','글자','치수','부품','어긋난 곳'];
+const 몸통 = document.getElementById('몸통');
+const 묶음줄 = document.getElementById('묶음줄');
+let 고른묶음 = '전체', 찾는말 = '';
+
+묶음들.forEach(g => {
+  const b = document.createElement('button');
+  b.textContent = g === '전체' ? '전체' : g;
+  b.setAttribute('aria-pressed', g === '전체');
+  b.onclick = () => {
+    고른묶음 = g;
+    [...묶음줄.children].forEach(x => x.setAttribute('aria-pressed', x === b));
+    그리기();
+  };
+  묶음줄.appendChild(b);
+});
+
+document.getElementById('찾기').addEventListener('input', e => {
+  찾는말 = e.target.value.trim().toLowerCase();
+  그리기();
+});
+
+const 절설명 = {
+  '색':'Theme.kt 의 색표. 화면 코드는 이 이름만 쓴다. 왼쪽이 밝은 화면, 오른쪽이 어두운 화면.',
+  '글자':'크기는 여섯 단계만 쓰기로 했다. 이름은 아홉 개지만 값은 여섯 개로 겹쳐 있다.',
+  '치수':'여백 · 누르는 것의 높이 · 모서리. 테두리 굵기와 아이콘 크기는 아직 정해진 이름이 없다.',
+  '부품':'여러 화면이 같이 쓰는 조각. 여기를 한 번 고치면 쓰는 곳이 전부 따라온다.',
+  '어긋난 곳':'위 기본값을 안 지키거나, 같은 것을 여러 모양으로 그린 곳. 빨간 줄이 고칠 거리, 노란 줄이 봐 둘 것.',
+};
+
+function 칸만들기(it){
+  const d = document.createElement('div');
+  d.className = '줄' + (it.문제 ? ' 문제' : it.경고 ? ' 경고' : '');
+
+  const b = document.createElement('button');
+  b.className = '번호'; b.textContent = it.n; b.type = 'button';
+  b.title = '번호 복사';
+  b.onclick = () => {
+    const 글 = it.n + '번 ' + it.이름;
+    try {
+      navigator.clipboard.writeText(글).then(
+        () => { b.textContent = '✓'; setTimeout(() => b.textContent = it.n, 900); },
+        () => {}
+      );
+    } catch(e){}
+  };
+  d.appendChild(b);
+
+  const s = document.createElement('div');
+  s.className = '속';
+  let h = '<div class="이름">' + 꾸밈(it.이름);
+  if (it.코드) h += '<span class="코드">' + 꾸밈(it.코드) + '</span>';
+  if (it.문제) h += '<span class="딱지 ㅈ나">고칠 것</span>';
+  else if (it.경고 === true) h += '<span class="딱지 ㅈ경">봐 둘 것</span>';
+  else if (typeof it.경고 === 'string') h += '<span class="딱지 ㅈ경">봐 둘 것</span>';
+  h += '</div>';
+
+  if (it.밝) h += '<div class="값"><b>' + it.밝 + '</b> &nbsp;/&nbsp; ' + it.어 + '</div>'
+    + '<div class="색판"><div class="색칸" style="background:' + it.밝 + ';color:' + 반대(it.밝) + '">밝은</div>'
+    + '<div class="색칸" style="background:' + it.어 + ';color:' + 반대(it.어) + '">어두운</div></div>';
+
+  if (it.값) h += '<div class="값">' + 꾸밈(it.값) + '</div>';
+
+  if (it.보기) h += '<div class="글보기" style="font-size:' + it.보기 + 'px;line-height:1.4;letter-spacing:-.01em">벤치프레스 60kg 10회</div>';
+  if (it.모양 === '제목') h += '<div class="글보기" style="font-size:22px;font-weight:700;letter-spacing:-.02em;line-height:1.25">루틴</div>';
+  if (it.모양 === '이름표') h += '<div class="글보기" style="font-size:11px;font-weight:700;letter-spacing:.04em">신체 정보</div>';
+  if (it.모양 === 'normal') h += '<div class="글보기" style="font-size:15px;line-height:1.4;letter-spacing:-.01em">세트를 마치면 자동으로 넘어갑니다</div>';
+
+  if (it.자) h += '<div class="자"><div class="자막대" style="width:' + it.자 + 'px"></div>'
+    + '<span class="값" style="margin:0">' + it.자 + 'dp</span></div>';
+  if (it.높) h += '<div class="자"><div class="높이칸" style="height:' + it.높 + 'px">' + it.높 + '</div></div>';
+  if (it.둥) h += '<div class="자"><div class="네모" style="width:56px;height:38px;border-radius:'
+    + it.둥 + 'px"></div><span class="값" style="margin:0">' + it.둥 + 'dp</span></div>';
+
+  if (it.실물) h += '<div class="실물">' + it.실물 + '</div>';
+
+  if (it.견줌){
+    h += '<div class="견줌">';
+    it.견줌.forEach(([a,c]) => h += '<div><h4>' + 꾸밈(a) + '</h4><p>' + 꾸밈(c) + '</p></div>');
+    h += '</div>';
+  }
+
+  const 말 = typeof it.경고 === 'string' ? it.경고 : it.말;
+  if (말) h += '<div class="말">' + 꾸밈(말) + '</div>';
+  if (typeof it.경고 === 'string' && it.말 && it.말 !== it.경고) h += '<div class="말">' + 꾸밈(it.말) + '</div>';
+  if (it.어디) h += '<div class="어디">' + 꾸밈(it.어디) + '</div>';
+
+  s.innerHTML = h;
+  d.appendChild(s);
+  return d;
+}
+
+function 꾸밈(t){ return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function 반대(hex){
+  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+  return (r*299 + g*587 + b*114)/1000 > 140 ? '#333' : '#eee';
+}
+
+function 맞나(it){
+  if (고른묶음 !== '전체' && it.묶음 !== 고른묶음) return false;
+  if (!찾는말) return true;
+  const 뭉치 = [it.n, it.이름, it.코드, it.값, it.말, it.어디, it.묶음,
+    typeof it.경고 === 'string' ? it.경고 : '',
+    (it.견줌 || []).flat().join(' ')].join(' ').toLowerCase();
+  return 뭉치.includes(찾는말);
+}
+
+function 그리기(){
+  몸통.innerHTML = '';
+  const 보일 = 목록.filter(맞나);
+  if (!보일.length){
+    몸통.innerHTML = '<p class="빔">찾는 것이 없습니다.</p>';
+    return;
+  }
+  let 지난묶음 = null;
+  보일.forEach(it => {
+    if (it.묶음 !== 지난묶음){
+      지난묶음 = it.묶음;
+      const 수 = 보일.filter(x => x.묶음 === 지난묶음).length;
+      const h = document.createElement('h2');
+      h.className = '절';
+      h.innerHTML = 꾸밈(지난묶음) + ' <em>' + 수 + '개</em>';
+      몸통.appendChild(h);
+      if (절설명[지난묶음]){
+        const p = document.createElement('p');
+        p.className = '절설명';
+        p.textContent = 절설명[지난묶음];
+        몸통.appendChild(p);
+      }
+    }
+    몸통.appendChild(칸만들기(it));
+  });
+}
+
+(function 지도그리기(){
+  const 자리 = document.getElementById('지도');
+  지도자료.forEach(([이름, 표, 줄들]) => {
+    const d = document.createElement('div');
+    d.className = '폰';
+    let h = '<div class="폰머리"><span>' + 이름 + '</span><em>' + 표 + '1 …</em></div><div class="폰속">';
+    줄들.split('|').forEach(줄 => {
+      const 없 = 줄.startsWith('·');
+      const [머리, ...나머지] = 줄.replace(/^· /,'').split(' ');
+      h += '<div class="칸줄"><b class="' + (없 ? '없' : '') + '">'
+        + (없 ? '—' : 꾸밈(머리)) + '</b><span>'
+        + 꾸밈(없 ? 줄.replace(/^· /,'') : 나머지.join(' ')) + '</span></div>';
+    });
+    h += '</div>';
+    d.innerHTML = h;
+    자리.appendChild(d);
+  });
+})();
+
+document.getElementById('수전체').textContent = 목록.length;
+document.getElementById('수기본').textContent = 목록.filter(x => ['색','글자','치수'].includes(x.묶음)).length;
+document.getElementById('수부품').textContent = 목록.filter(x => x.묶음 === '부품').length;
+document.getElementById('수문제').textContent = 목록.filter(x => x.묶음 === '어긋난 곳').length;
+
+그리기();
+</script>

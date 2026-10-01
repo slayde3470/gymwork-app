@@ -1,0 +1,3459 @@
+From 2050d5093f6870abd9ceca3a16e924aaf2a4709d Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 21 Sep 2026 18:08:50 +0900
+Subject: [PATCH] =?UTF-8?q?v0.2.0=20=EC=B2=AB=20=EC=82=AC=EC=9A=A9?=
+ =?UTF-8?q?=ED=8C=90=20=E2=80=94=20=EC=BA=98=EB=A6=B0=EB=8D=94=C2=B7?=
+ =?UTF-8?q?=EB=A3=A8=ED=8B=B4=C2=B7=EC=9A=B4=EB=8F=99=20=EC=8B=A4=ED=96=89?=
+ =?UTF-8?q?=C2=B7=EC=A2=85=EB=AA=A9=C2=B7=EC=84=A4=EC=A0=95=C2=B7=EB=B0=B1?=
+ =?UTF-8?q?=EC=97=85=C2=B7=EC=88=98=EC=A0=95=20=EB=A9=94=EB=AA=A8?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+웹 시제품(v36)에서 확정한 핵심을 네이티브로 옮김. 기록은 폰 안 JSON 파일에 저장.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_012sqmxVDTzfSB3f1QgVEmf3
+---
+ README.md                                     |   2 +-
+ app/build.gradle.kts                          |   4 +-
+ app/src/main/AndroidManifest.xml              |   4 +
+ .../com/slayde/hasenheide/MainActivity.kt     | 111 +++--
+ .../java/com/slayde/hasenheide/data/Logic.kt  | 449 ++++++++++++++++++
+ .../java/com/slayde/hasenheide/data/Model.kt  | 150 ++++++
+ .../com/slayde/hasenheide/data/Storage.kt     | 168 +++++++
+ .../main/java/com/slayde/hasenheide/ui/App.kt | 144 ++++++
+ .../slayde/hasenheide/ui/CalendarScreen.kt    | 339 +++++++++++++
+ .../java/com/slayde/hasenheide/ui/Common.kt   | 431 +++++++++++++++++
+ .../slayde/hasenheide/ui/ExerciseScreen.kt    | 241 ++++++++++
+ .../java/com/slayde/hasenheide/ui/Icons.kt    |  53 +++
+ .../com/slayde/hasenheide/ui/MemoSheet.kt     |  75 +++
+ .../com/slayde/hasenheide/ui/RoutineScreen.kt | 377 +++++++++++++++
+ .../slayde/hasenheide/ui/SettingsScreen.kt    |  75 +++
+ .../com/slayde/hasenheide/ui/WorkoutScreen.kt | 398 ++++++++++++++++
+ .../com/slayde/hasenheide/ui/theme/Theme.kt   | 147 +++---
+ ...35\355\212\270\352\265\254\354\241\260.md" |  39 +-
+ 18 files changed, 3087 insertions(+), 120 deletions(-)
+ create mode 100644 app/src/main/java/com/slayde/hasenheide/data/Logic.kt
+ create mode 100644 app/src/main/java/com/slayde/hasenheide/data/Model.kt
+ create mode 100644 app/src/main/java/com/slayde/hasenheide/data/Storage.kt
+ create mode 100644 app/src/main/java/com/slayde/hasenheide/ui/App.kt
+ create mode 100644 app/src/main/java/com/slayde/hasenheide/ui/CalendarScreen.kt
+ create mode 100644 app/src/main/java/com/slayde/hasenheide/ui/Common.kt
+ create mode 100644 app/src/main/java/com/slayde/hasenheide/ui/ExerciseScreen.kt
+ create mode 100644 app/src/main/java/com/slayde/hasenheide/ui/Icons.kt
+ create mode 100644 app/src/main/java/com/slayde/hasenheide/ui/MemoSheet.kt
+ create mode 100644 app/src/main/java/com/slayde/hasenheide/ui/RoutineScreen.kt
+ create mode 100644 app/src/main/java/com/slayde/hasenheide/ui/SettingsScreen.kt
+ create mode 100644 app/src/main/java/com/slayde/hasenheide/ui/WorkoutScreen.kt
+
+diff --git a/README.md b/README.md
+index 41b129f..f139c88 100644
+--- a/README.md
++++ b/README.md
+@@ -3,7 +3,7 @@
+ 개인 운동기록 · 루틴 트래커. 안드로이드 앱.
+ 
+ - 패키지명: `com.slayde.hasenheide`
+-- 기술: Kotlin + Jetpack Compose, 서버는 Supabase (예정)
++- 기술: Kotlin + Jetpack Compose. 기록은 지금은 폰 안에 저장 (서버 Supabase 는 예정)
+ 
+ ## 문서
+ 
+diff --git a/app/build.gradle.kts b/app/build.gradle.kts
+index 8bbe08d..ca72244 100644
+--- a/app/build.gradle.kts
++++ b/app/build.gradle.kts
+@@ -18,8 +18,8 @@ android {
+ 
+         minSdk = 26        // 안드로이드 8.0 이상에서 동작
+         targetSdk = 35
+-        versionCode = 1    // 새 APK를 낼 때마다 1씩 올린다 (덮어쓰기 설치에 필요)
+-        versionName = "0.1.0"
++        versionCode = 2    // 새 APK를 낼 때마다 1씩 올린다 (덮어쓰기 설치에 필요)
++        versionName = "0.2.0"
+     }
+ 
+     buildTypes {
+diff --git a/app/src/main/AndroidManifest.xml b/app/src/main/AndroidManifest.xml
+index cf598e4..7125d41 100644
+--- a/app/src/main/AndroidManifest.xml
++++ b/app/src/main/AndroidManifest.xml
+@@ -5,6 +5,9 @@
+ -->
+ <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+ 
++    <!-- 휴식이 끝나면 진동으로 알린다 -->
++    <uses-permission android:name="android.permission.VIBRATE" />
++
+     <application
+         android:allowBackup="true"
+         android:icon="@mipmap/ic_launcher"
+@@ -17,6 +20,7 @@
+             android:name=".MainActivity"
+             android:exported="true"
+             android:label="@string/app_name"
++            android:windowSoftInputMode="adjustResize"
+             android:theme="@style/Theme.Hasenheide">
+             <!-- 이 줄들이 "앱 서랍의 아이콘을 누르면 이 화면부터 시작" 이라는 뜻 -->
+             <intent-filter>
+diff --git a/app/src/main/java/com/slayde/hasenheide/MainActivity.kt b/app/src/main/java/com/slayde/hasenheide/MainActivity.kt
+index c8fe762..15272e9 100644
+--- a/app/src/main/java/com/slayde/hasenheide/MainActivity.kt
++++ b/app/src/main/java/com/slayde/hasenheide/MainActivity.kt
+@@ -1,74 +1,85 @@
+ package com.slayde.hasenheide
+ 
++import android.content.ClipData
++import android.content.ClipboardManager
++import android.media.AudioManager
++import android.media.ToneGenerator
++import android.os.Build
+ import android.os.Bundle
++import android.os.VibrationEffect
++import android.os.Vibrator
++import android.widget.Toast
+ import androidx.activity.ComponentActivity
+ import androidx.activity.compose.setContent
+ import androidx.activity.enableEdgeToEdge
+-import androidx.compose.foundation.layout.Arrangement
+-import androidx.compose.foundation.layout.Column
+-import androidx.compose.foundation.layout.fillMaxSize
+-import androidx.compose.foundation.layout.padding
+-import androidx.compose.material3.MaterialTheme
+-import androidx.compose.material3.Scaffold
+-import androidx.compose.material3.Text
+-import androidx.compose.runtime.Composable
+-import androidx.compose.ui.Alignment
+-import androidx.compose.ui.Modifier
+-import androidx.compose.ui.tooling.preview.Preview
+-import com.slayde.hasenheide.ui.theme.간격
++import androidx.activity.result.contract.ActivityResultContracts
++import com.slayde.hasenheide.ui.앱
++import com.slayde.hasenheide.ui.앱상태
++import com.slayde.hasenheide.ui.폰기능
+ import com.slayde.hasenheide.ui.theme.하젠하이데테마
++import java.io.File
++import java.time.LocalDate
+ 
+ /**
+  * 앱을 켰을 때 가장 먼저 실행되는 곳.
+  *
+- * 지금은 빌드와 설치가 제대로 되는지 확인하기 위한 화면만 있다.
+- * 실제 기능(루틴, 기록, 타이머)은 다음 단계에서 붙인다.
++ * 여기서는 '폰이 해 주는 일'만 한다 — 진동 · 소리 · 파일 고르기 · 복사.
++ * 화면과 규칙은 ui/ 와 data/ 폴더에 있다.
+  */
+ class MainActivity : ComponentActivity() {
++
++    private val 상태 by lazy { 앱상태(File(filesDir, "hasenheide.json")) }
++
++    /** 백업 내보내기 — 저장할 곳을 고르면 그 파일에 쓴다 */
++    private val 내보내기창 = registerForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
++        if (uri == null) return@registerForActivityResult
++        val 됐나 = try {
++            contentResolver.openOutputStream(uri)?.use { it.write(상태.백업글().toByteArray()) }; true
++        } catch (e: Exception) { false }
++        알림글(if (됐나) "백업 파일을 저장했습니다" else "저장하지 못했습니다")
++    }
++
++    /** 백업 가져오기 — 파일을 고르면 지금 기록을 그 내용으로 바꾼다 */
++    private val 가져오기창 = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
++        if (uri == null) return@registerForActivityResult
++        val 글 = try { contentResolver.openInputStream(uri)?.use { it.readBytes().toString(Charsets.UTF_8) } } catch (e: Exception) { null }
++        val 됐나 = 글 != null && 상태.백업넣기(글)
++        알림글(if (됐나) "백업을 불러왔습니다" else "이 파일을 읽지 못했습니다")
++    }
++
+     override fun onCreate(savedInstanceState: Bundle?) {
+         super.onCreate(savedInstanceState)
+         // 화면 가장자리(상태바·내비게이션바)까지 앱이 그려지게 한다
+         enableEdgeToEdge()
++        val 폰 = 폰기능(
++            알림 = { 휴식끝알림() },
++            내보내기 = { 내보내기창.launch("하젠하이데-백업-${LocalDate.now()}.json") },
++            가져오기 = { 가져오기창.launch(arrayOf("application/json", "text/plain", "*/*")) },
++            복사 = { 글 ->
++                val 판 = getSystemService(ClipboardManager::class.java)
++                판?.setPrimaryClip(ClipData.newPlainText("수정 메모", 글))
++                알림글("복사했습니다 · Claude 에게 붙여넣으세요")
++            },
++        )
+         setContent {
+-            하젠하이데테마 {
+-                Scaffold(modifier = Modifier.fillMaxSize()) { 여백 ->
+-                    첫화면(Modifier.padding(여백))
+-                }
+-            }
++            하젠하이데테마 { 앱(상태, 폰) }
+         }
+     }
+-}
+ 
+-@Composable
+-fun 첫화면(modifier: Modifier = Modifier) {
+-    Column(
+-        modifier = modifier
+-            .fillMaxSize()
+-            .padding(간격.보통),
+-        horizontalAlignment = Alignment.CenterHorizontally,
+-        verticalArrangement = Arrangement.Center
+-    ) {
+-        Text("하젠하이데", style = MaterialTheme.typography.headlineLarge)
+-        Text(
+-            "운동 기록 앱",
+-            style = MaterialTheme.typography.bodyLarge,
+-            modifier = Modifier.padding(top = 간격.좁게)
+-        )
+-        Text(
+-            "버전 ${BuildConfig.VERSION_NAME}",
+-            style = MaterialTheme.typography.bodySmall,
+-            modifier = Modifier.padding(top = 간격.넓게)
+-        )
+-        Text(
+-            "설치가 되었다면 빌드 통로가 뚫린 것입니다.",
+-            style = MaterialTheme.typography.bodySmall,
+-            modifier = Modifier.padding(top = 간격.보통)
+-        )
++    /** 휴식이 끝났을 때 — 진동 + 짧은 소리 */
++    private fun 휴식끝알림() {
++        try {
++            val 진동 = getSystemService(Vibrator::class.java)
++            if (진동 != null && 진동.hasVibrator()) {
++                if (Build.VERSION.SDK_INT >= 26) 진동.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 300, 150, 300), -1))
++            }
++        } catch (_: Exception) { }
++        try {
++            val 소리 = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 80)
++            소리.startTone(ToneGenerator.TONE_PROP_BEEP2, 400)
++            window.decorView.postDelayed({ 소리.release() }, 800)
++        } catch (_: Exception) { }
+     }
+-}
+ 
+-@Preview(showBackground = true)
+-@Composable
+-fun 첫화면미리보기() {
+-    하젠하이데테마 { 첫화면() }
++    private fun 알림글(글: String) = Toast.makeText(this, 글, Toast.LENGTH_SHORT).show()
+ }
+diff --git a/app/src/main/java/com/slayde/hasenheide/data/Logic.kt b/app/src/main/java/com/slayde/hasenheide/data/Logic.kt
+new file mode 100644
+index 0000000..e89b1a1
+--- /dev/null
++++ b/app/src/main/java/com/slayde/hasenheide/data/Logic.kt
+@@ -0,0 +1,449 @@
++package com.slayde.hasenheide.data
++
++import java.time.LocalDate
++import kotlin.math.max
++import kotlin.math.min
++import kotlin.math.roundToInt
++
++/**
++ * 계산과 규칙 — 시제품(웹)에서 확정한 규칙을 그대로 옮긴 것.
++ * 기능명세(claude/02_기능명세.md)의 절 번호를 주석에 달아 두었다.
++ *
++ * 모든 함수는 '앱데이터를 받아 새 앱데이터를 돌려준다'. 제자리에서 고치지 않는다.
++ */
++
++// ─────────────── 날짜 ───────────────
++
++fun 날(k: String): LocalDate = LocalDate.parse(k)
++fun 키(d: LocalDate): String = d.toString()
++fun 날더하기(k: String, n: Int): String = 키(날(k).plusDays(n.toLong()))
++fun 개월전(오늘: String, n: Int): String = 키(날(오늘).minusMonths(n.toLong()))
++
++/** 목록의 k 번째 칸을 바꾼다. 모자라면 빈 칸(null)으로 늘린다 */
++fun <T> List<T?>.칸바꿈(k: Int, v: T?): List<T?> {
++    val m = toMutableList()
++    while (m.size <= k) m.add(null)
++    m[k] = v
++    return m
++}
++fun <T> List<T?>.칸(k: Int): T? = if (k in indices) this[k] else null
++
++fun 무게반올림(w: Double): Double = (w * 10).roundToInt() / 10.0
++fun 무게글(w: Double): String = if (w == w.toLong().toDouble()) w.toLong().toString() else "%.1f".format(w)
++fun 콤마(n: Number): String = "%,d".format(n.toDouble().roundToInt())
++fun 분초(초: Int): String = "${초 / 60}:${(초 % 60).toString().padStart(2, '0')}"
++
++/** "3:00" 또는 "180" → 초 */
++fun 초읽기(글: String): Int? {
++    val t = 글.trim()
++    if (t.contains(':')) {
++        val (m, s) = t.split(':', limit = 2)
++        return ((m.toIntOrNull() ?: 0) * 60 + (s.toIntOrNull() ?: 0)).coerceIn(0, 3600)
++    }
++    return t.toIntOrNull()?.coerceIn(0, 3600)
++}
++
++/** 운동 중 흐른 시간 — "02분 41초" / 60분 넘으면 "1시간 02분 05초" (5-1) */
++fun 시분초(초: Long): String {
++    val s = max(0L, 초)
++    val h = s / 3600; val m = (s % 3600) / 60; val x = s % 60
++    val mm = m.toString().padStart(2, '0'); val xx = x.toString().padStart(2, '0')
++    return if (h > 0) "${h}시간 ${mm}분 ${xx}초" else "${mm}분 ${xx}초"
++}
++
++// ─────────────── 볼륨 · 1RM ───────────────
++
++fun 볼륨(세트들: List<세트>): Double = 세트들.sumOf { it.w * it.r }
++/** 에플리(Epley) 식 — 무게 × (1 + 횟수/30) */
++fun 일RM(w: Double, r: Int): Double = if (r > 0) w * (1 + r / 30.0) else 0.0
++
++// ─────────────── 루틴 · 예상 시간 (4-3) ───────────────
++
++const val 세트수행초 = 40
++const val 종목전환초 = 60
++
++fun 예상초(r: 루틴?): Int {
++    if (r == null || r.휴식일) return 0
++    val 본 = r.종목.sumOf { it.세트 * 세트수행초 + max(0, it.세트 - 1) * it.휴식 }
++    return 본 + max(0, r.종목.size - 1) * 종목전환초
++}
++fun 시간글(초: Int): String {
++    val m = max(0, (초 / 60.0).roundToInt())
++    return if (m >= 60) "${m / 60}시간 ${(m % 60).toString().padStart(2, '0')}분" else "${m}분"
++}
++fun 총세트(r: 루틴?): Int = if (r == null || r.휴식일) 0 else r.종목.sumOf { it.세트 }
++
++fun 앱데이터.루틴(id: String?): 루틴? = 루틴들.firstOrNull { it.id == id }
++fun 앱데이터.예정루틴(k: String): 루틴? = 루틴(예정[k])
++
++// ─────────────── 예정표 — 2회차까지 미리 깔기 (2-2) ───────────────
++
++const val 회차 = 2
++
++private fun 앱데이터.예정채움(시작날: String, 시작idx: Int, 바탕: Map<String, String>): Map<String, String> {
++    val n = 루틴들.size
++    if (n == 0) return 바탕
++    val m = 바탕.toMutableMap()
++    for (i in 0 until n * 회차) m[날더하기(시작날, i)] = 루틴들[((시작idx + i) % n + n) % n].id
++    return m
++}
++
++/** 마지막으로 한 운동의 '다음'부터 다시 깐다 */
++fun 앱데이터.예정초기화(오늘: String): 앱데이터 {
++    if (루틴들.isEmpty()) return copy(예정 = emptyMap())
++    val 마지막 = 기록.keys.maxOrNull()
++    var idx = 0
++    if (마지막 != null) {
++        val i = 루틴들.indexOfFirst { it.id == 기록[마지막]!!.루틴id }
++        idx = if (i < 0) 0 else (i + 1) % 루틴들.size
++    }
++    val 시작 = if (기록.containsKey(오늘)) 날더하기(오늘, 1) else 오늘
++    return copy(예정 = 예정채움(시작, idx, emptyMap()))
++}
++
++/**
++ * 앱을 켤 때 · 날짜가 바뀔 때 — 빠진 날을 반영해 예정을 맞춘다 (4. 순서 기준)
++ * "오늘 할 것 = 마지막으로 완료한 것의 다음" — 며칠 빠져도 순서가 어긋나지 않는다.
++ *  · 지난 날에 깔려 있었는데 기록이 없는 날(빠진 날)이 있으면, 그 중 첫 '운동 날'의 루틴부터 오늘 다시 깐다
++ *  · 빠진 날이 전부 휴식일이면 쉰 것으로 치고 그 다음 차례부터
++ *  · 빠진 날이 없고 앞으로의 예정도 있으면 그대로 둔다 (옮겨 둔 것을 지키기 위해)
++ */
++fun 앱데이터.예정맞추기(오늘: String): 앱데이터 {
++    if (루틴들.isEmpty()) return copy(예정 = emptyMap())
++    val 빠진 = 예정.filter { it.key < 오늘 && !기록.containsKey(it.key) }.toSortedMap()
++    val 앞으로 = 예정.keys.any { it >= 오늘 }
++    if (빠진.isEmpty()) return if (앞으로) copy(예정 = 예정.filterKeys { it >= 오늘 }) else 예정초기화(오늘)
++    val 운동날 = 빠진.values.firstOrNull { rid -> 루틴(rid)?.휴식일 == false }
++    val n = 루틴들.size
++    val 시작idx = if (운동날 != null) 루틴들.indexOfFirst { it.id == 운동날 }
++                  else (루틴들.indexOfFirst { it.id == 빠진.values.last() } + 1) % n
++    if (시작idx < 0) return 예정초기화(오늘)
++    val 시작 = if (기록.containsKey(오늘)) 날더하기(오늘, 1) else 오늘
++    return copy(예정 = 예정채움(시작, 시작idx, emptyMap()))
++}
++
++/** 날짜 D 에 루틴을 꽂고 그 날부터 순서를 다시 깐다. 앞선 날은 건드리지 않는다 (2-3) */
++fun 앱데이터.꽂기(rid: String, D: String, 오늘: String): 앱데이터 {
++    if (D < 오늘) return this
++    val idx = 루틴들.indexOfFirst { it.id == rid }
++    if (idx < 0) return this
++    val 남김 = 예정.filterKeys { it < D }
++    return copy(예정 = 예정채움(D, idx, 남김))
++}
++
++/** 오늘 쉬기 — push: 오늘 루틴을 내일로 / skip: 오늘 루틴을 건너뛰기 (2-5) */
++fun 앱데이터.오늘휴식(미루기: Boolean, 오늘: String): 앱데이터 {
++    val idx = 루틴들.indexOfFirst { it.id == 예정[오늘] }
++    if (idx < 0) return this
++    val 남김 = 예정.filterKeys { it < 오늘 }
++    val 시작 = if (미루기) idx else (idx + 1) % 루틴들.size
++    return copy(예정 = 예정채움(날더하기(오늘, 1), 시작, 남김))
++}
++/** 휴식 물음에 보여줄 '앞으로 사흘' */
++fun 앱데이터.사흘미리(미루기: Boolean, 오늘: String): List<String> {
++    val idx = 루틴들.indexOfFirst { it.id == 예정[오늘] }
++    if (idx < 0 || 루틴들.isEmpty()) return emptyList()
++    val 시작 = if (미루기) idx else idx + 1
++    val n = 루틴들.size
++    return (0 until 3).map { 루틴들[((시작 + it) % n + n) % n].이름 }
++}
++
++fun 앱데이터.다음차례(오늘: String): 루틴? {
++    val k = 예정.keys.filter { it >= 오늘 }.minOrNull()
++    return if (k != null) 예정루틴(k) else 루틴들.firstOrNull()
++}
++
++// ─────────────── 향상도 (6-2) ───────────────
++
++data class 비교(val 지금: Double, val 과거: Double, val pct: Int?, val diff: Double)
++data class 대비결과(val n: Int, val 볼륨: 비교, val 과거날: String)
++
++/** 같은 세트 수까지만 잘라서 견준다 (8-3 왜곡 방지 ① ) */
++fun 대비(현재: List<세트>, 과거: List<세트>, 과거날: String): 대비결과? {
++    val n = min(현재.size, 과거.size)
++    if (n == 0) return null
++    val a = 볼륨(현재.take(n)); val b = 볼륨(과거.take(n))
++    val pct = if (b != 0.0) ((a - b) / b * 100).roundToInt() else null
++    return 대비결과(n, 비교(a, b, pct, a - b), 과거날)
++}
++
++data class 기준(val k: Int, val 짧: String, val 기간: String)
++val 기준목록 = listOf(
++    기준(0, "직전", "직전 기록 대비"), 기준(1, "1개월", "1개월 동안"), 기준(3, "3개월", "3개월 동안"),
++    기준(6, "6개월", "6개월 동안"), 기준(12, "12개월", "12개월 동안"),
++)
++fun 앱데이터.지금기준(): 기준 = 기준목록.firstOrNull { it.k == 설정.기준 } ?: 기준목록[2]
++fun 앱데이터.기준날(오늘: String): String = if (설정.기준 == 0) 날더하기(오늘, -1) else 개월전(오늘, 설정.기준)
++
++/** 루틴 차원 — 불러온(임시) 종목은 뺀다 */
++fun 정식세트(rec: 날기록): List<세트> = rec.종목들.filter { !it.임시 }.flatMap { it.세트들 }
++
++fun 앱데이터.루틴성장(rid: String, 오늘: String, 지금세트들: List<세트>? = null): 대비결과? {
++    val 기준일 = 기준날(오늘)
++    val 과거날 = 기록.filter { it.value.루틴id == rid && it.key <= 기준일 }.keys.maxOrNull() ?: return null
++    var 현재 = 지금세트들
++    var 현재날 = 오늘
++    if (현재 == null) {
++        현재날 = 기록.filter { it.value.루틴id == rid }.keys.maxOrNull() ?: return null
++        현재 = 정식세트(기록[현재날]!!)
++    }
++    if (현재날 == 과거날) return null
++    return 대비(현재, 정식세트(기록[과거날]!!), 과거날)
++}
++
++/** 종목 차원 — 루틴을 가리지 않는다. 묶음(슈퍼세트)이 같은 날끼리만 */
++fun 앱데이터.종목기록들(이름: String, 묶음: String?): List<Pair<String, List<세트>>> =
++    기록.keys.sorted().mapNotNull { k ->
++        val e = 기록[k]!!.종목들.firstOrNull { it.이름 == 이름 } ?: return@mapNotNull null
++        if (e.묶음 != 묶음) null else k to e.세트들
++    }
++
++fun 앱데이터.종목성장(이름: String, 오늘: String, 지금세트들: List<세트>? = null, 묶음: String? = null): 대비결과? {
++    val 들 = 종목기록들(이름, 묶음)
++    val 기준일 = 기준날(오늘)
++    val 과거 = 들.lastOrNull { it.first <= 기준일 } ?: return null
++    val 최근 = if (!지금세트들.isNullOrEmpty()) 오늘 to 지금세트들 else 들.lastOrNull() ?: return null
++    if (과거.first == 최근.first) return null
++    return 대비(최근.second, 과거.second, 과거.first)
++}
++
++/** 종목 탭의 세 지표 — 최대 1RM / 단일세트 최고(무게×횟수) / 한 세션 볼륨 */
++data class 세션지표(val 날: String, val rm: Double, val 최고: 세트, val 볼륨: Double)
++data class 지표비교(val 지금: 세션지표, val 과거: 세션지표?)
++
++fun 앱데이터.종목지표(이름: String, 오늘: String): 지표비교? {
++    val 들 = 기록.keys.sorted().mapNotNull { k ->
++        val 세트들 = 기록[k]!!.종목들.filter { it.이름 == 이름 }.flatMap { it.세트들 }
++        if (세트들.isEmpty()) null else 세션지표(
++            k, 세트들.maxOf { 일RM(it.w, it.r) }, 세트들.maxBy { it.w * it.r }, 볼륨(세트들),
++        )
++    }
++    val 최근 = 들.lastOrNull() ?: return null
++    val 기준일 = 기준날(오늘)
++    val 과거 = 들.lastOrNull { it.날 <= 기준일 && it.날 != 최근.날 }
++    return 지표비교(최근, 과거)
++}
++
++fun 퍼센트(지금: Double, 과거: Double): Int? = if (과거 != 0.0) ((지금 - 과거) / 과거 * 100).roundToInt() else null
++
++// ─────────────── 운동 실행 (5) ───────────────
++
++fun 세션종목.총칸(): Int = max(세트, 기록.size)
++fun 세션종목.찬것(): List<세트> = 기록.filterNotNull()
++fun 세션종목.덜한가(): Boolean = 찬것().size < 총칸()
++fun 세션종목.세트휴식(k: Int): Int = 휴식들.칸(k) ?: 휴식
++
++/** k 번째 세트에 보일 값 — 기록 → 따로 고친 값 → (지금 세트면) 입력 중인 값 → 종목 기본값 */
++fun 운동세션.세트값(e: 세션종목, k: Int, 지금이면: Boolean = true): 세트 =
++    e.기록.칸(k) ?: e.예정값.칸(k)
++    ?: (if (지금이면 && e === 종목들.getOrNull(i) && k == s) 세트(무게, 횟수) else 세트(e.무게, e.횟수))
++
++fun 다음빈칸(e: 세션종목, 부터: Int): Int {
++    for (k in 부터 + 1 until e.총칸()) if (e.기록.칸(k) == null) return k
++    return e.총칸()
++}
++
++val 운동세션.지금종목: 세션종목 get() = 종목들[i]
++fun 운동세션.정식(): List<세션종목> = 종목들.filter { !it.임시 }
++fun 운동세션.목표세트(): Int = 정식().sumOf { it.계획세트 }
++fun 운동세션.한세트수(): Int = 정식().sumOf { it.찬것().size }
++fun 운동세션.오늘볼륨(): Double = 정식().sumOf { 볼륨(it.찬것()) }
++fun 운동세션.목표볼륨(): Double = 정식().sumOf { it.무게 * it.횟수 * it.계획세트 }
++fun 운동세션.루틴달성도(): Int = 목표세트().let { if (it == 0) 0 else (한세트수() * 100.0 / it).roundToInt() }
++fun 세션종목.달성도(): Int = if (계획세트 == 0) 0 else (찬것().size * 100.0 / 계획세트).roundToInt()
++/** 유효세트 — 계획 세트까지만 (추가한 세트는 향상도에서 뺀다) */
++fun 운동세션.유효세트(): List<세트> = 정식().flatMap { it.찬것().take(it.계획세트) }
++fun 운동세션.묶음이름(e: 세션종목): String? =
++    e.슈퍼?.let { g -> 종목들.filter { it.슈퍼 == g }.map { it.이름 }.sorted().joinToString("+") }
++
++fun 운동시작(r: 루틴, 지금: Long): 운동세션? {
++    if (r.휴식일 || r.종목.isEmpty()) return null
++    val 들 = r.종목.map {
++        세션종목(it.이름, it.세트, it.세트, it.무게, it.횟수, it.휴식,
++            휴식들 = List(it.세트) { _ -> it.휴식 }, 슈퍼 = it.슈퍼)
++    }
++    return 운동세션(r.id, r.이름, 지금, 0, 0, 들[0].무게, 들[0].횟수, 들)
++}
++
++private fun 운동세션.종목바꿈(idx: Int, f: (세션종목) -> 세션종목): 운동세션 =
++    copy(종목들 = 종목들.mapIndexed { j, e -> if (j == idx) f(e) else e })
++
++/** 자리 옮기기 — 그 세트의 값을 입력칸에 올린다 */
++fun 운동세션.자리로(ni: Int, ns: Int): 운동세션 {
++    val e = 종목들.getOrNull(ni) ?: return this
++    val v = e.기록.칸(ns) ?: e.예정값.칸(ns) ?: 세트(e.무게, e.횟수)
++    return copy(i = ni, s = ns, 무게 = v.w, 횟수 = v.r, 끝화면 = false)
++}
++
++/** 체크 결과 — 다음 할 일을 알려준다 */
++fun 운동세션.체크(k: Int, 지금: Long): 운동세션 {
++    val e = 지금종목
++    if (e.기록.칸(k) != null) return 종목바꿈(i) { it.copy(기록 = it.기록.칸바꿈(k, null)) }   // 체크 풀기 — 그 칸만 빈다
++    val 지금세트 = k == s
++    val v = if (지금세트) 세트(무게, 횟수) else 세트값(e, k, false)
++    var S = 종목바꿈(i) { it.copy(기록 = it.기록.칸바꿈(k, v)) }
++    if (!지금세트) return S
++    val ex = S.지금종목
++
++    // 슈퍼세트 — 묶인 종목을 한 바퀴 돈 뒤에만 쉰다 (8-2)
++    if (ex.슈퍼 != null) {
++        val 식구 = S.종목들.withIndex().filter { it.value.슈퍼 == ex.슈퍼 && !it.value.마감 }.map { it.index }
++        val 자리 = 식구.indexOf(S.i)
++        if (자리 >= 0 && 자리 < 식구.size - 1) return S.copy(휴식 = null).자리로(식구[자리 + 1], k)
++        if (자리 >= 0) {
++            val 첫 = S.종목들[식구[0]]
++            val 다음칸 = k + 1
++            S = S.copy(s = 다음빈칸(ex, k))
++            if (다음칸 < 첫.총칸()) return S.휴식시작(k, 지금, 식구[0], 다음칸)
++        }
++    }
++    S = S.copy(s = 다음빈칸(S.지금종목, k))
++    val 마지막 = S.s >= S.지금종목.총칸()
++    if (마지막 && S.종목들.withIndex().all { (j, x) -> j == S.i || x.마감 || !x.덜한가() }) {
++        return S.copy(휴식 = null, 끝화면 = true)
++    }
++    return S.휴식시작(k, 지금)
++}
++
++fun 운동세션.휴식시작(k: Int, 지금: Long, 다음i: Int? = null, 다음s: Int? = null): 운동세션 {
++    val 쉴 = 지금종목.세트휴식(k)
++    return copy(휴식 = 휴식중(k, 지금 + 쉴 * 1000L, false, 다음i, 다음s))
++}
++
++fun 운동세션.휴식조절(초: Int, 지금: Long): 운동세션 {
++    val h = 휴식 ?: return this
++    return copy(휴식 = h.copy(끝시각 = max(지금, h.끝시각 + 초 * 1000L), 물음 = false))
++}
++
++/** 휴식이 끝났을 때 — 넘어가기 전 확인이 켜져 있으면 묻는다 */
++fun 운동세션.휴식끝(설정: 설정값): 운동세션 {
++    val h = 휴식 ?: return this
++    return if (설정.넘어가기전확인 || !설정.자동진행) copy(휴식 = h.copy(물음 = true)) else 다음으로()
++}
++
++/** 휴식을 치우고 다음 세트로 (슈퍼세트면 기다리던 자리로) */
++fun 운동세션.다음으로(): 운동세션 {
++    val h = 휴식
++    val S = copy(휴식 = null)
++    if (h?.다음i != null && h.다음s != null) return S.자리로(h.다음i, h.다음s)
++    if (S.s >= S.지금종목.총칸()) {
++        return if (S.i < S.종목들.size - 1) S.자리로(S.i + 1, 다음빈칸(S.종목들[S.i + 1], -1)) else S.copy(끝화면 = true)
++    }
++    return S.자리로(S.i, S.s)
++}
++
++fun 운동세션.종목으로(idx: Int): 운동세션 {
++    if (idx !in 종목들.indices) return this
++    return copy(휴식 = null).자리로(idx, 다음빈칸(종목들[idx], -1))
++}
++
++/** '다음' — 뒤쪽의 덜 한 종목 → 앞쪽 → 없으면 마무리 (5-1 ⑥) */
++fun 운동세션.다음종목으로(끝낼까: Boolean): 운동세션 {
++    var S = copy(휴식 = null)
++    if (끝낼까) S = S.종목바꿈(i) { it.copy(마감 = true) }
++    var n = S.종목들.withIndex().indexOfFirst { (j, e) -> j > S.i && !e.마감 && e.덜한가() }
++    if (n < 0) n = S.종목들.withIndex().indexOfFirst { (j, e) -> j != S.i && !e.마감 && e.덜한가() }
++    return if (n >= 0) S.종목으로(n) else S.copy(끝화면 = true)
++}
++
++/** ＋ — 맨 아래 세트를 그대로 베낀다. 슈퍼세트면 묶인 종목 전부에 (5-1 ③, 8-2) */
++fun 운동세션.세트추가(): 운동세션 {
++    val ex = 지금종목
++    return copy(종목들 = 종목들.mapIndexed { j, x ->
++        if (x !== ex && (ex.슈퍼 == null || x.슈퍼 != ex.슈퍼)) return@mapIndexed x
++        val 끝 = x.총칸() - 1
++        val 베낄 = if (끝 >= 0) 세트값(x, 끝, j == i) else 세트(x.무게, x.횟수)
++        val 쉴 = if (끝 >= 0) x.세트휴식(끝) else x.휴식
++        val 새 = x.총칸()
++        x.copy(세트 = 새 + 1, 예정값 = x.예정값.칸바꿈(새, 베낄), 휴식들 = x.휴식들.칸바꿈(새, 쉴))
++    })
++}
++
++fun 운동세션.세트삭제(k: Int): 운동세션 {
++    val S = 종목바꿈(i) { e ->
++        fun <T> List<T?>.뺌(): List<T?> = if (k in indices) toMutableList().also { it.removeAt(k) } else this
++        e.copy(기록 = e.기록.뺌(), 휴식들 = e.휴식들.뺌(), 예정값 = e.예정값.뺌(), 세트 = max(1, e.세트 - 1))
++    }
++    return if (S.s > k) S.copy(s = S.s - 1) else S
++}
++
++/** 세트 값 고치기 — 한 세트면 기록을, 지금 세트면 입력값을, 아직이면 그 줄만 */
++fun 운동세션.값고치기(k: Int, 새무게: Double? = null, 새횟수: Int? = null): 운동세션 {
++    val e = 지금종목
++    val w = 새무게?.let { 무게반올림(max(0.0, it)) }
++    val r = 새횟수?.let { max(0, it) }
++    val rec = e.기록.칸(k)
++    return when {
++        rec != null -> 종목바꿈(i) { it.copy(기록 = it.기록.칸바꿈(k, 세트(w ?: rec.w, r ?: rec.r))) }
++        k == s -> copy(무게 = w ?: 무게, 횟수 = r ?: 횟수)
++        else -> {
++            val 이제 = 세트값(e, k)
++            종목바꿈(i) { it.copy(예정값 = it.예정값.칸바꿈(k, 세트(w ?: 이제.w, r ?: 이제.r))) }
++        }
++    }
++}
++fun 운동세션.휴식고치기(k: Int, 초: Int): 운동세션 = 종목바꿈(i) { it.copy(휴식들 = it.휴식들.칸바꿈(k, 초.coerceIn(0, 600))) }
++
++/** 운동 추가 — 오늘만. 지금 종목 바로 뒤에 끼운다 (5-2) */
++fun 운동세션.불러오기(이름: String, 기본휴식: Int): 운동세션 {
++    val 새 = 세션종목(이름, 3, 0, 20.0, 10, 기본휴식, 휴식들 = List(3) { 기본휴식 }, 임시 = true)
++    return copy(종목들 = 종목들.toMutableList().also { it.add(i + 1, 새) })
++}
++
++fun 운동세션.마감풀기(): 운동세션 = 종목바꿈(i) { it.copy(마감 = false) }
++
++/** 기록 저장 — 오늘 기록을 남기고, 내일부터 다음 차례로 다시 깐다 */
++fun 앱데이터.운동저장(오늘: String, 지금: Long): 앱데이터 {
++    val S = 세션 ?: return this
++    val 들 = S.종목들.mapNotNull { e ->
++        val 찬 = e.찬것()
++        if (찬.isEmpty()) null else 종목기록(e.이름, 찬, e.임시, S.묶음이름(e))
++    }
++    val rec = 날기록(S.루틴id, S.루틴이름, S.한세트수() >= S.목표세트(), 들, ((지금 - S.시작시각) / 1000).toInt())
++    val 새 = copy(기록 = 기록 + (오늘 to rec), 세션 = null)
++    val i = 루틴들.indexOfFirst { it.id == S.루틴id }
++    if (루틴들.isEmpty()) return 새
++    val 남김 = 새.예정.filterKeys { it < 오늘 }
++    return 새.copy(예정 = 새.예정채움(날더하기(오늘, 1), ((i + 1) % 루틴들.size + 루틴들.size) % 루틴들.size, 남김))
++}
++
++// ─────────────── 루틴 편집 ───────────────
++
++fun 앱데이터.루틴바꿈(id: String, f: (루틴) -> 루틴): 앱데이터 =
++    copy(루틴들 = 루틴들.map { if (it.id == id) f(it) else it })
++
++/** 순서 옮기기 — 묶음이면 통째로. 모드: 앞(before) / 뒤(after) */
++fun 루틴.종목옮기기(from: Int, to: Int, 뒤에: Boolean): 루틴 {
++    val 대상 = 종목.getOrNull(to) ?: return this
++    val 집은 = 종목[from]
++    val 옮길 = if (집은.슈퍼 != null) 종목.filter { it.슈퍼 == 집은.슈퍼 } else listOf(집은)
++    if (옮길.contains(대상)) return this
++    val 남은 = 종목.filter { it !in 옮길 }.toMutableList()
++    // 대상이 묶음이면 그 묶음 전체의 앞/뒤로
++    val 대상식구 = if (대상.슈퍼 != null) 남은.filter { it.슈퍼 == 대상.슈퍼 } else listOf(대상)
++    val at = if (뒤에) 남은.indexOf(대상식구.last()) + 1 else 남은.indexOf(대상식구.first())
++    남은.addAll(at, 옮길)
++    return copy(종목 = 남은)
++}
++
++/** 슈퍼세트로 묶기 — 대상(또는 그 묶음) 바로 뒤로 옮겨 붙인다 */
++fun 루틴.슈퍼묶기(from: Int, to: Int, 새이름: String): 루틴 {
++    val 대상 = 종목.getOrNull(to) ?: return this
++    val 집은 = 종목[from]
++    if (집은.슈퍼 != null && 집은.슈퍼 == 대상.슈퍼) return this
++    val g = 대상.슈퍼 ?: 새이름
++    val 옮길 = (if (집은.슈퍼 != null) 종목.filter { it.슈퍼 == 집은.슈퍼 } else listOf(집은)).map { it.copy(슈퍼 = g) }
++    val 옛것 = if (집은.슈퍼 != null) 종목.filter { it.슈퍼 == 집은.슈퍼 } else listOf(집은)
++    val 남은 = 종목.filter { it !in 옛것 }.map { if (it == 대상) it.copy(슈퍼 = g) else it }.toMutableList()
++    val at = 남은.indexOfLast { it.슈퍼 == g } + 1
++    남은.addAll(at, 옮길)
++    return copy(종목 = 남은)
++}
++
++fun 루틴.슈퍼풀기(g: String): 루틴 = copy(종목 = 종목.map { if (it.슈퍼 == g) it.copy(슈퍼 = null) else it })
++
++/** 한 명만 남은 묶음은 푼다 */
++fun 루틴.묶음정리(): 루틴 {
++    val 수 = 종목.groupingBy { it.슈퍼 }.eachCount()
++    return copy(종목 = 종목.map { if (it.슈퍼 != null && (수[it.슈퍼] ?: 0) < 2) it.copy(슈퍼 = null) else it })
++}
+diff --git a/app/src/main/java/com/slayde/hasenheide/data/Model.kt b/app/src/main/java/com/slayde/hasenheide/data/Model.kt
+new file mode 100644
+index 0000000..e09d6f6
+--- /dev/null
++++ b/app/src/main/java/com/slayde/hasenheide/data/Model.kt
+@@ -0,0 +1,150 @@
++package com.slayde.hasenheide.data
++
++/**
++ * 앱이 다루는 모든 자료의 모양.
++ *
++ * ── 왜 전부 data class(바꿀 수 없는 값)인가 ──
++ * 화면(Compose)은 "값이 바뀌었나?"를 보고 다시 그린다.
++ * 값을 제자리에서 고치면 화면이 바뀐 줄 모를 수 있다.
++ * 그래서 고칠 때는 언제나 새 값을 만들어 통째로 바꾼다 (copy).
++ *
++ * 이 파일에는 안드로이드 기능을 쓰지 않는다 → 컴퓨터에서 따로 검사할 수 있다.
++ */
++
++/** 종목 — 벤치프레스 같은 운동 하나 */
++data class 종목(
++    val 이름: String,
++    val 부위: String,
++    val 장비: String = "",
++    /** 달력 칸에만 쓰는 짧은 이름. 비어 있으면 종목 이름을 따라간다 */
++    val 달력이름: String? = null,
++)
++
++/** 루틴 안에 들어 있는 종목 한 줄 — 세트 · 무게 · 횟수 · 휴식(초) */
++data class 루틴종목(
++    val 이름: String,
++    val 세트: Int = 3,
++    val 무게: Double = 20.0,
++    val 횟수: Int = 10,
++    val 휴식: Int = 90,
++    /** 같은 값을 가진 종목끼리 슈퍼세트로 묶인다 */
++    val 슈퍼: String? = null,
++)
++
++/** 루틴 — 가슴날처럼 하루에 하는 운동 묶음. 휴식일도 루틴 한 칸이다 */
++data class 루틴(
++    val id: String,
++    val 이름: String,
++    val 휴식일: Boolean = false,
++    val 종목: List<루틴종목> = emptyList(),
++)
++
++/** 한 세트 — 무게(w) × 횟수(r) */
++data class 세트(val w: Double, val r: Int)
++
++/** 그 날 한 종목의 기록 */
++data class 종목기록(
++    val 이름: String,
++    val 세트들: List<세트>,
++    /** 오늘만 끼운 종목(운동 추가) — 루틴 차원 계산에서 뺀다 */
++    val 임시: Boolean = false,
++    /** 슈퍼세트로 했으면 묶음 이름 "덤벨컬+해머컬". 같은 묶음끼리만 견준다 */
++    val 묶음: String? = null,
++)
++
++/** 하루 기록 */
++data class 날기록(
++    val 루틴id: String,
++    val 루틴이름: String,
++    val 달성: Boolean,
++    val 종목들: List<종목기록>,
++    val 걸린초: Int = 0,
++)
++
++/** 설정 */
++data class 설정값(
++    val 자동진행: Boolean = true,
++    val 넘어가기전확인: Boolean = false,
++    val 소리진동: Boolean = true,
++    val 화면유지: Boolean = true,
++    /** 무게 ＋ − 한 번의 폭 */
++    val 무게폭: Double = 2.5,
++    /** 새 종목을 넣을 때의 휴식(초) */
++    val 기본휴식: Int = 90,
++    /** 향상도 기준: 0 = 직전 같은 루틴, 1 · 3 · 6 · 12 = 몇 개월 전 */
++    val 기준: Int = 3,
++)
++
++/** 써보면서 적는 수정 메모 — 어느 화면에서 적었는지 함께 남긴다 */
++data class 수정메모(val 시각: Long, val 화면: String, val 글: String)
++
++// ─────────────── 운동 중 ───────────────
++
++/** 운동 중인 종목 한 줄. 기록 칸은 비어 있을 수 있다(체크를 풀면 그 칸만 빈다) */
++data class 세션종목(
++    val 이름: String,
++    val 세트: Int,
++    /** 루틴에 원래 정해둔 세트 수 — 달성도의 분모. 운동 중 추가해도 안 바뀐다 */
++    val 계획세트: Int,
++    val 무게: Double,
++    val 횟수: Int,
++    val 휴식: Int,
++    val 기록: List<세트?> = emptyList(),
++    /** 아직 안 한 세트의 값을 따로 고쳐둔 것 */
++    val 예정값: List<세트?> = emptyList(),
++    /** 세트마다의 휴식(초) */
++    val 휴식들: List<Int?> = emptyList(),
++    val 임시: Boolean = false,
++    /** '여기까지'로 마친 종목 */
++    val 마감: Boolean = false,
++    val 슈퍼: String? = null,
++)
++
++/** 방금 끝낸 세트 줄 위에서 도는 휴식 */
++data class 휴식중(
++    val k: Int,
++    val 끝시각: Long,
++    /** 휴식이 끝나고 '다음으로 갈까요?'를 묻는 중 */
++    val 물음: Boolean = false,
++    /** 슈퍼세트 한 바퀴 뒤 돌아갈 자리 */
++    val 다음i: Int? = null,
++    val 다음s: Int? = null,
++)
++
++data class 운동세션(
++    val 루틴id: String,
++    val 루틴이름: String,
++    val 시작시각: Long,
++    /** 지금 종목 번호 */
++    val i: Int = 0,
++    /** 지금 할 세트 번호 */
++    val s: Int = 0,
++    /** 지금 할 세트의 무게 · 횟수 (체크하면 이 값으로 기록된다) */
++    val 무게: Double = 0.0,
++    val 횟수: Int = 0,
++    val 종목들: List<세션종목> = emptyList(),
++    val 휴식: 휴식중? = null,
++    /** 마무리 화면을 보는 중 */
++    val 끝화면: Boolean = false,
++)
++
++/** 앱 전체 자료 — 이것 하나를 통째로 파일에 저장한다 */
++data class 앱데이터(
++    val 종목표: List<종목> = emptyList(),
++    val 카테고리: List<String> = 기본카테고리,
++    val 루틴들: List<루틴> = emptyList(),
++    /** "2026-09-21" → 그 날 기록 */
++    val 기록: Map<String, 날기록> = emptyMap(),
++    /** "2026-09-22" → 루틴 id (앞으로 할 날에 미리 깔아둔 것) */
++    val 예정: Map<String, String> = emptyMap(),
++    val 일정: Map<String, List<String>> = emptyMap(),
++    val 설정: 설정값 = 설정값(),
++    val 메모: List<수정메모> = emptyList(),
++    val 세션: 운동세션? = null,
++) {
++    companion object {
++        /** 자료 구조가 바뀌면 올린다 — 옛 백업 파일을 읽을 때 구분하려고 */
++        const val 스키마 = 1
++        val 기본카테고리 = listOf("가슴", "등", "하체", "어깨", "팔", "복근")
++    }
++}
+diff --git a/app/src/main/java/com/slayde/hasenheide/data/Storage.kt b/app/src/main/java/com/slayde/hasenheide/data/Storage.kt
+new file mode 100644
+index 0000000..e720701
+--- /dev/null
++++ b/app/src/main/java/com/slayde/hasenheide/data/Storage.kt
+@@ -0,0 +1,168 @@
++package com.slayde.hasenheide.data
++
++import org.json.JSONArray
++import org.json.JSONObject
++import java.io.File
++
++/**
++ * 저장 — 앱데이터 전체를 JSON 파일 하나로 폰 안에 둔다.
++ *
++ * ── 왜 이렇게 단순하게 ──
++ *  · 첫 버전은 '폰 안에 저장'으로 정했다 (2026-09-21). 서버(Supabase)는 써보면서 나중에.
++ *  · 같은 글자를 '백업 파일'로 내보내고 다시 가져올 수 있다 → 폰을 바꿔도 기록을 옮길 수 있다.
++ *  · 안드로이드에 기본으로 들어 있는 org.json 만 쓴다 (따로 받아야 하는 라이브러리가 없다).
++ *
++ * 쓰는 도중 앱이 꺼져도 파일이 깨지지 않게, 임시 파일에 먼저 쓰고 이름을 바꾼다.
++ */
++object 저장소 {
++
++    fun 읽기(파일: File): 앱데이터 =
++        try { if (파일.exists()) 글에서(파일.readText()) else 앱데이터() } catch (e: Exception) { 앱데이터() }
++
++    fun 쓰기(파일: File, d: 앱데이터) {
++        val 임시 = File(파일.parentFile, 파일.name + ".tmp")
++        임시.writeText(글로(d))
++        if (!임시.renameTo(파일)) { 파일.delete(); 임시.renameTo(파일) }
++    }
++
++    // ─────────────── 앱데이터 → 글 ───────────────
++
++    fun 글로(d: 앱데이터): String {
++        val o = JSONObject()
++        o.put("스키마", 앱데이터.스키마)
++        o.put("종목표", JSONArray().also { a -> d.종목표.forEach { a.put(종목to(it)) } })
++        o.put("카테고리", JSONArray().also { a -> d.카테고리.forEach { a.put(it) } })
++        o.put("루틴들", JSONArray().also { a -> d.루틴들.forEach { a.put(루틴to(it)) } })
++        o.put("기록", JSONObject().also { m -> d.기록.forEach { (k, v) -> m.put(k, 날기록to(v)) } })
++        o.put("예정", JSONObject().also { m -> d.예정.forEach { (k, v) -> m.put(k, v) } })
++        o.put("일정", JSONObject().also { m -> d.일정.forEach { (k, v) -> m.put(k, JSONArray().also { a -> v.forEach { a.put(it) } }) } })
++        o.put("설정", 설정to(d.설정))
++        o.put("메모", JSONArray().also { a -> d.메모.forEach { a.put(JSONObject().put("시각", it.시각).put("화면", it.화면).put("글", it.글)) } })
++        d.세션?.let { o.put("세션", 세션to(it)) }
++        return o.toString(1)
++    }
++
++    private fun 종목to(e: 종목) = JSONObject().put("이름", e.이름).put("부위", e.부위).put("장비", e.장비)
++        .also { if (e.달력이름 != null) it.put("달력이름", e.달력이름) }
++
++    private fun 루틴종목to(e: 루틴종목) = JSONObject().put("이름", e.이름).put("세트", e.세트).put("무게", e.무게)
++        .put("횟수", e.횟수).put("휴식", e.휴식).also { if (e.슈퍼 != null) it.put("슈퍼", e.슈퍼) }
++
++    private fun 루틴to(r: 루틴) = JSONObject().put("id", r.id).put("이름", r.이름).put("휴식일", r.휴식일)
++        .put("종목", JSONArray().also { a -> r.종목.forEach { a.put(루틴종목to(it)) } })
++
++    private fun 세트to(s: 세트) = JSONArray().put(s.w).put(s.r)
++
++    private fun 세트들to(l: List<세트?>) = JSONArray().also { a -> l.forEach { a.put(if (it == null) JSONObject.NULL else 세트to(it)) } }
++
++    private fun 날기록to(r: 날기록) = JSONObject().put("루틴id", r.루틴id).put("루틴이름", r.루틴이름).put("달성", r.달성)
++        .put("걸린초", r.걸린초)
++        .put("종목들", JSONArray().also { a ->
++            r.종목들.forEach { e ->
++                a.put(JSONObject().put("이름", e.이름).put("세트들", 세트들to(e.세트들)).put("임시", e.임시)
++                    .also { if (e.묶음 != null) it.put("묶음", e.묶음) })
++            }
++        })
++
++    private fun 설정to(s: 설정값) = JSONObject().put("자동진행", s.자동진행).put("넘어가기전확인", s.넘어가기전확인)
++        .put("소리진동", s.소리진동).put("화면유지", s.화면유지).put("무게폭", s.무게폭)
++        .put("기본휴식", s.기본휴식).put("기준", s.기준)
++
++    private fun 세션to(S: 운동세션) = JSONObject().put("루틴id", S.루틴id).put("루틴이름", S.루틴이름)
++        .put("시작시각", S.시작시각).put("i", S.i).put("s", S.s).put("무게", S.무게).put("횟수", S.횟수)
++        .put("끝화면", S.끝화면)
++        .put("종목들", JSONArray().also { a ->
++            S.종목들.forEach { e ->
++                a.put(JSONObject().put("이름", e.이름).put("세트", e.세트).put("계획세트", e.계획세트)
++                    .put("무게", e.무게).put("횟수", e.횟수).put("휴식", e.휴식)
++                    .put("기록", 세트들to(e.기록)).put("예정값", 세트들to(e.예정값))
++                    .put("휴식들", JSONArray().also { h -> e.휴식들.forEach { h.put(it ?: JSONObject.NULL) } })
++                    .put("임시", e.임시).put("마감", e.마감).also { if (e.슈퍼 != null) it.put("슈퍼", e.슈퍼) })
++            }
++        })
++        .also { o ->
++            S.휴식?.let { h ->
++                o.put("휴식", JSONObject().put("k", h.k).put("끝시각", h.끝시각).put("물음", h.물음)
++                    .also { if (h.다음i != null) it.put("다음i", h.다음i) }
++                    .also { if (h.다음s != null) it.put("다음s", h.다음s) })
++            }
++        }
++
++    // ─────────────── 글 → 앱데이터 ───────────────
++
++    fun 글에서(글: String): 앱데이터 {
++        val o = JSONObject(글)
++        return 앱데이터(
++            종목표 = 목록(o.optJSONArray("종목표")) { a, i -> a.getJSONObject(i).let { 종목(it.getString("이름"), it.optString("부위"), it.optString("장비"), 글또는널(it, "달력이름")) } },
++            카테고리 = if (o.has("카테고리")) 목록(o.optJSONArray("카테고리")) { a, i -> a.getString(i) } else 앱데이터.기본카테고리,
++            루틴들 = 목록(o.optJSONArray("루틴들")) { a, i -> 루틴from(a.getJSONObject(i)) },
++            기록 = 사전(o.optJSONObject("기록")) { m, k -> 날기록from(m.getJSONObject(k)) },
++            예정 = 사전(o.optJSONObject("예정")) { m, k -> m.getString(k) },
++            일정 = 사전(o.optJSONObject("일정")) { m, k -> 목록(m.optJSONArray(k)) { a, i -> a.getString(i) } },
++            설정 = o.optJSONObject("설정")?.let { 설정from(it) } ?: 설정값(),
++            메모 = 목록(o.optJSONArray("메모")) { a, i -> a.getJSONObject(i).let { 수정메모(it.optLong("시각"), it.optString("화면"), it.optString("글")) } },
++            세션 = o.optJSONObject("세션")?.let { 세션from(it) },
++        )
++    }
++
++    private fun <T> 목록(a: JSONArray?, f: (JSONArray, Int) -> T): List<T> =
++        if (a == null) emptyList() else (0 until a.length()).map { f(a, it) }
++
++    private fun <T> 사전(m: JSONObject?, f: (JSONObject, String) -> T): Map<String, T> {
++        if (m == null) return emptyMap()
++        val 결과 = sortedMapOf<String, T>()
++        val 열쇠 = m.keys()
++        while (열쇠.hasNext()) { val k = 열쇠.next(); 결과[k] = f(m, k) }
++        return 결과
++    }
++
++    private fun 글또는널(o: JSONObject, k: String): String? = if (o.has(k) && !o.isNull(k)) o.getString(k) else null
++    private fun 수또는널(o: JSONObject, k: String): Int? = if (o.has(k) && !o.isNull(k)) o.getInt(k) else null
++
++    private fun 루틴from(o: JSONObject) = 루틴(
++        o.getString("id"), o.getString("이름"), o.optBoolean("휴식일"),
++        목록(o.optJSONArray("종목")) { a, i ->
++            a.getJSONObject(i).let {
++                루틴종목(it.getString("이름"), it.optInt("세트", 3), it.optDouble("무게", 20.0), it.optInt("횟수", 10),
++                    it.optInt("휴식", 90), 글또는널(it, "슈퍼"))
++            }
++        },
++    )
++
++    private fun 세트from(a: JSONArray) = 세트(a.getDouble(0), a.getInt(1))
++
++    private fun 세트들from(a: JSONArray?): List<세트?> =
++        목록(a) { x, i -> if (x.isNull(i)) null else 세트from(x.getJSONArray(i)) }
++
++    private fun 날기록from(o: JSONObject) = 날기록(
++        o.getString("루틴id"), o.optString("루틴이름"), o.optBoolean("달성"),
++        목록(o.optJSONArray("종목들")) { a, i ->
++            a.getJSONObject(i).let { e ->
++                종목기록(e.getString("이름"), 세트들from(e.optJSONArray("세트들")).filterNotNull(), e.optBoolean("임시"), 글또는널(e, "묶음"))
++            }
++        },
++        o.optInt("걸린초"),
++    )
++
++    private fun 설정from(o: JSONObject) = 설정값(
++        o.optBoolean("자동진행", true), o.optBoolean("넘어가기전확인", false), o.optBoolean("소리진동", true),
++        o.optBoolean("화면유지", true), o.optDouble("무게폭", 2.5), o.optInt("기본휴식", 90), o.optInt("기준", 3),
++    )
++
++    private fun 세션from(o: JSONObject) = 운동세션(
++        o.getString("루틴id"), o.optString("루틴이름"), o.optLong("시작시각"), o.optInt("i"), o.optInt("s"),
++        o.optDouble("무게", 0.0), o.optInt("횟수"),
++        목록(o.optJSONArray("종목들")) { a, i ->
++            a.getJSONObject(i).let { e ->
++                세션종목(
++                    e.getString("이름"), e.optInt("세트"), e.optInt("계획세트"), e.optDouble("무게", 0.0), e.optInt("횟수"),
++                    e.optInt("휴식", 90), 세트들from(e.optJSONArray("기록")), 세트들from(e.optJSONArray("예정값")),
++                    목록(e.optJSONArray("휴식들")) { h, j -> if (h.isNull(j)) null else h.getInt(j) },
++                    e.optBoolean("임시"), e.optBoolean("마감"), 글또는널(e, "슈퍼"),
++                )
++            }
++        },
++        o.optJSONObject("휴식")?.let { h -> 휴식중(h.getInt("k"), h.getLong("끝시각"), h.optBoolean("물음"), 수또는널(h, "다음i"), 수또는널(h, "다음s")) },
++        o.optBoolean("끝화면"),
++    )
++}
+diff --git a/app/src/main/java/com/slayde/hasenheide/ui/App.kt b/app/src/main/java/com/slayde/hasenheide/ui/App.kt
+new file mode 100644
+index 0000000..3c98e91
+--- /dev/null
++++ b/app/src/main/java/com/slayde/hasenheide/ui/App.kt
+@@ -0,0 +1,144 @@
++package com.slayde.hasenheide.ui
++
++import androidx.compose.foundation.background
++import androidx.compose.foundation.layout.Arrangement
++import androidx.compose.foundation.layout.Box
++import androidx.compose.foundation.layout.Column
++import androidx.compose.foundation.layout.Row
++import androidx.compose.foundation.layout.fillMaxSize
++import androidx.compose.foundation.layout.fillMaxWidth
++import androidx.compose.foundation.layout.height
++import androidx.compose.foundation.layout.imePadding
++import androidx.compose.foundation.layout.navigationBarsPadding
++import androidx.compose.foundation.layout.padding
++import androidx.compose.foundation.layout.size
++import androidx.compose.foundation.layout.statusBarsPadding
++import androidx.compose.material3.Icon
++import androidx.compose.runtime.Composable
++import androidx.compose.runtime.LaunchedEffect
++import androidx.compose.runtime.getValue
++import androidx.compose.runtime.mutableStateOf
++import androidx.compose.runtime.remember
++import androidx.compose.runtime.setValue
++import androidx.compose.ui.Alignment
++import androidx.compose.ui.Modifier
++import androidx.compose.ui.graphics.vector.ImageVector
++import androidx.compose.ui.text.font.FontWeight
++import androidx.compose.ui.unit.dp
++import com.slayde.hasenheide.data.앱데이터
++import com.slayde.hasenheide.data.예정맞추기
++import com.slayde.hasenheide.data.저장소
++import com.slayde.hasenheide.ui.theme.Local색
++import com.slayde.hasenheide.ui.theme.크기
++import kotlinx.coroutines.delay
++import java.io.File
++import java.time.LocalDate
++import java.util.concurrent.Executors
++
++/**
++ * 앱 전체의 상태를 쥐고 있는 곳.
++ *
++ * 자료는 '앱데이터' 하나. 고칠 때는 언제나 바꿈 { ... } 으로 새 값을 만들어 통째로 바꾸고,
++ * 바꿀 때마다 폰 안의 파일에 조용히 저장한다 (저장은 뒤에서 — 화면이 멈추지 않게).
++ */
++class 앱상태(private val 파일: File) {
++    var d by mutableStateOf(저장소.읽기(파일))
++        private set
++    var 오늘 by mutableStateOf(LocalDate.now().toString())
++        private set
++
++    private val 일꾼 = Executors.newSingleThreadExecutor()
++
++    fun 바꿈(f: (앱데이터) -> 앱데이터) {
++        d = f(d)
++        val 찍은것 = d
++        일꾼.execute { try { 저장소.쓰기(파일, 찍은것) } catch (_: Exception) { } }
++    }
++
++    /** 지우기는 묻지 않고 바로 — 5초 동안 되돌리기 (1-3) */
++    var 되돌림 by mutableStateOf<Pair<String, 앱데이터>?>(null)
++        private set
++    fun 지우고알림(글: String, f: (앱데이터) -> 앱데이터) { val 전 = d; 바꿈(f); 되돌림 = 글 to 전 }
++    fun 되돌리기() { val r = 되돌림 ?: return; 바꿈 { r.second }; 되돌림 = null }
++    fun 되돌림치움() { 되돌림 = null }
++
++    /** 날짜가 바뀌었는지 — 바뀌었으면 빠진 날을 반영해 예정을 맞춘다 */
++    fun 날짜확인() {
++        val 지금 = LocalDate.now().toString()
++        if (지금 != 오늘 || d.예정.isEmpty()) { 오늘 = 지금 }
++        바꿈 { it.예정맞추기(오늘) }
++    }
++
++    /** 백업 — 파일로 내보내고 가져온다 */
++    fun 백업글(): String = 저장소.글로(d)
++    fun 백업넣기(글: String): Boolean = try { val 새 = 저장소.글에서(글); 바꿈 { 새 }; true } catch (_: Exception) { false }
++}
++
++/** 폰이 해 주는 일(진동 · 소리 · 파일)을 화면 쪽에 넘겨주는 통로 */
++class 폰기능(
++    val 알림: () -> Unit,
++    val 내보내기: () -> Unit,
++    val 가져오기: () -> Unit,
++    val 복사: (String) -> Unit,
++)
++
++enum class 탭(val 이름: String, val 그림: ImageVector) {
++    캘린더("캘린더", 아이콘.달력), 루틴("루틴", 아이콘.루틴), 종목("종목", 아이콘.바벨), 설정("설정", 아이콘.톱니)
++}
++
++@Composable
++fun 앱(상태: 앱상태, 폰: 폰기능) {
++    val c = Local색.current
++    var 지금탭 by remember { mutableStateOf(탭.캘린더) }
++    var 메모열림 by remember { mutableStateOf(false) }
++
++    // 앱을 켤 때 한 번, 그 뒤로 1분마다 날짜가 바뀌었는지 본다
++    LaunchedEffect(Unit) { while (true) { 상태.날짜확인(); delay(60_000) } }
++    // 되돌리기 띠는 5초 뒤 사라진다
++    LaunchedEffect(상태.되돌림) { if (상태.되돌림 != null) { delay(5_000); 상태.되돌림치움() } }
++
++    val 운동중 = 상태.d.세션 != null
++    val 화면이름 = if (운동중) "운동 중" else 지금탭.이름
++
++    Box(Modifier.fillMaxSize().background(c.바탕)) {
++        Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().imePadding()) {
++            Box(Modifier.weight(1f).fillMaxWidth()) {
++                if (운동중) 운동화면(상태, 폰)
++                else when (지금탭) {
++                    탭.캘린더 -> 캘린더화면(상태) { 지금탭 = 탭.루틴 }
++                    탭.루틴 -> 루틴화면(상태)
++                    탭.종목 -> 종목화면(상태)
++                    탭.설정 -> 설정화면(상태, 폰)
++                }
++            }
++            // 아래 탭 — 운동 중에도 살아 있다. 맨 오른쪽은 '수정 메모'(어느 화면에서든)
++            Row(
++                Modifier.fillMaxWidth().background(c.면).padding(top = 1.dp),
++                horizontalArrangement = Arrangement.SpaceEvenly,
++            ) {
++                탭.entries.forEach { t ->
++                    탭단추(t.이름, t.그림, !운동중 && 지금탭 == t) {
++                        if (운동중) return@탭단추       // 운동 중에는 '운동 끝내기'로만 나간다
++                        지금탭 = t
++                    }
++                }
++                탭단추("메모", 아이콘.연필, 메모열림) { 메모열림 = true }
++            }
++        }
++        상태.되돌림?.let { (글자, _) -> 아래띠(글자, "되돌리기", { 상태.되돌리기() }, 바깥 = Modifier.navigationBarsPadding().padding(bottom = 62.dp)) }
++        if (메모열림) 메모시트(상태, 화면이름, 폰) { 메모열림 = false }
++    }
++}
++
++@Composable
++private fun androidx.compose.foundation.layout.RowScope.탭단추(이름: String, 그림: ImageVector, 켬: Boolean, onClick: () -> Unit) {
++    val c = Local색.current
++    Column(
++        Modifier.weight(1f).눌림(onClick).padding(top = 9.dp, bottom = 10.dp),
++        horizontalAlignment = Alignment.CenterHorizontally,
++    ) {
++        Icon(그림, 이름, Modifier.size(21.dp), tint = if (켬) c.강조 else c.흐림)
++        Box(Modifier.height(3.dp))
++        글(이름, 크기값 = 크기.작게, 색 = if (켬) c.강조 else c.흐림, 굵기 = if (켬) FontWeight.Bold else FontWeight.Medium)
++    }
++}
+diff --git a/app/src/main/java/com/slayde/hasenheide/ui/CalendarScreen.kt b/app/src/main/java/com/slayde/hasenheide/ui/CalendarScreen.kt
+new file mode 100644
+index 0000000..e1049f4
+--- /dev/null
++++ b/app/src/main/java/com/slayde/hasenheide/ui/CalendarScreen.kt
+@@ -0,0 +1,339 @@
++package com.slayde.hasenheide.ui
++
++import androidx.compose.foundation.background
++import androidx.compose.foundation.border
++import androidx.compose.foundation.layout.Arrangement
++import androidx.compose.foundation.layout.Box
++import androidx.compose.foundation.layout.Column
++import androidx.compose.foundation.layout.Row
++import androidx.compose.foundation.layout.fillMaxSize
++import androidx.compose.foundation.layout.fillMaxWidth
++import androidx.compose.foundation.layout.height
++import androidx.compose.foundation.layout.heightIn
++import androidx.compose.foundation.layout.padding
++import androidx.compose.foundation.layout.width
++import androidx.compose.foundation.rememberScrollState
++import androidx.compose.foundation.shape.CircleShape
++import androidx.compose.foundation.shape.RoundedCornerShape
++import androidx.compose.foundation.verticalScroll
++import androidx.compose.material3.Text
++import androidx.compose.runtime.Composable
++import androidx.compose.runtime.getValue
++import androidx.compose.runtime.mutableStateOf
++import androidx.compose.runtime.remember
++import androidx.compose.runtime.setValue
++import androidx.compose.ui.Alignment
++import androidx.compose.ui.Modifier
++import androidx.compose.ui.draw.clip
++import androidx.compose.ui.graphics.Color
++import androidx.compose.ui.text.SpanStyle
++import androidx.compose.ui.text.buildAnnotatedString
++import androidx.compose.ui.text.font.FontWeight
++import androidx.compose.ui.text.style.TextOverflow
++import androidx.compose.ui.text.withStyle
++import androidx.compose.ui.unit.dp
++import com.slayde.hasenheide.data.대비결과
++import com.slayde.hasenheide.data.루틴
++import com.slayde.hasenheide.data.루틴성장
++import com.slayde.hasenheide.data.볼륨
++import com.slayde.hasenheide.data.사흘미리
++import com.slayde.hasenheide.data.시간글
++import com.slayde.hasenheide.data.앱데이터
++import com.slayde.hasenheide.data.예상초
++import com.slayde.hasenheide.data.예정루틴
++import com.slayde.hasenheide.data.오늘휴식
++import com.slayde.hasenheide.data.운동시작
++import com.slayde.hasenheide.data.정식세트
++import com.slayde.hasenheide.data.지금기준
++import com.slayde.hasenheide.data.총세트
++import com.slayde.hasenheide.data.꽂기
++import com.slayde.hasenheide.data.콤마
++import com.slayde.hasenheide.data.시분초
++import com.slayde.hasenheide.data.대비
++import com.slayde.hasenheide.data.예정초기화
++import com.slayde.hasenheide.ui.theme.Local색
++import com.slayde.hasenheide.ui.theme.간격
++import com.slayde.hasenheide.ui.theme.글꼴
++import com.slayde.hasenheide.ui.theme.모서리
++import com.slayde.hasenheide.ui.theme.크기
++import java.time.DayOfWeek
++import java.time.LocalDate
++import java.time.YearMonth
++
++/** 2026년 공휴일 — 시제품과 같다. 안드로이드에서 자동으로 받기는 나중에 (업데이트 예정 ⑬) */
++val 공휴일 = mapOf(
++    "2026-01-01" to "신정", "2026-02-16" to "설 연휴", "2026-02-17" to "설날", "2026-02-18" to "설 연휴",
++    "2026-03-01" to "삼일절", "2026-03-02" to "대체휴일", "2026-05-05" to "어린이날", "2026-05-24" to "부처님오신날",
++    "2026-05-25" to "대체휴일", "2026-06-06" to "현충일", "2026-08-15" to "광복절", "2026-08-17" to "대체휴일",
++    "2026-09-24" to "추석 연휴", "2026-09-25" to "추석", "2026-09-26" to "추석 연휴", "2026-10-03" to "개천절",
++    "2026-10-05" to "대체휴일", "2026-10-09" to "한글날", "2026-12-25" to "성탄절",
++)
++
++/** "가슴날, 3개월 동안 18% 성장했습니다" — 오르면 빨강 내리면 파랑 (6-3) */
++@Composable
++fun 성장줄(대상: String, 결과: 대비결과?, 기간: String, modifier: Modifier = Modifier) {
++    val c = Local색.current
++    val 글자 = buildAnnotatedString {
++        withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = c.글)) { append(대상) }
++        val p = 결과?.볼륨?.pct
++        if (p == null) { append(" · $기간 비교 기록 없음"); return@buildAnnotatedString }
++        append(", $기간 ")
++        when {
++            p > 0 -> { withStyle(SpanStyle(color = c.오름, fontWeight = FontWeight.Bold)) { append("${p}% 성장") }; append("했습니다") }
++            p < 0 -> { withStyle(SpanStyle(color = c.내림, fontWeight = FontWeight.Bold)) { append("${-p}% 줄었") }; append("습니다") }
++            else -> append("변화가 없습니다")
++        }
++    }
++    Text(글자, modifier, style = 글꼴.보통(크기.버튼), color = c.흐림, maxLines = 1, overflow = TextOverflow.Ellipsis)
++}
++
++@Composable
++fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit) {
++    val c = Local색.current
++    val d = 상태.d
++    val 오늘 = 상태.오늘
++    var 보는달 by remember { mutableStateOf(YearMonth.from(LocalDate.parse(오늘))) }
++    var 고른날 by remember { mutableStateOf(오늘) }
++    var 열린시트 by remember { mutableStateOf<String?>(null) }     // "루틴" | "휴식"
++
++    Box(Modifier.fillMaxSize()) {
++        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 간격.넓게)) {
++            Row(Modifier.fillMaxWidth().padding(vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
++                제목글("하젠하이데", Modifier.weight(1f))
++                글("${보는달.year}.${보는달.monthValue.toString().padStart(2, '0')}", 크기값 = 크기.조금작게, 색 = c.옅음)
++            }
++            카드(안쪽 = 10.dp) {
++                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
++                    아이콘버튼(아이콘.왼쪽, "이전 달", { 보는달 = 보는달.minusMonths(1) })
++                    제목글("${보는달.year}년 ${보는달.monthValue}월", Modifier.weight(1f).padding(start = 12.dp), 크기값 = 크기.크게)
++                    아이콘버튼(아이콘.오른쪽, "다음 달", { 보는달 = 보는달.plusMonths(1) })
++                }
++                Box(Modifier.height(8.dp))
++                달력(d, 오늘, 보는달, 고른날) { 고른날 = it }
++            }
++            Box(Modifier.height(10.dp))
++            날짜판(상태, 고른날, 루틴으로, { 열린시트 = "루틴" }, { 열린시트 = "휴식" })
++            Box(Modifier.height(90.dp))
++        }
++
++        when (열린시트) {
++            "루틴" -> 시트("${LocalDate.parse(고른날).monthValue}월 ${LocalDate.parse(고른날).dayOfMonth}일에 넣을 루틴", { 열린시트 = null }) {
++                글("이 날부터 순서를 다시 깝니다 · 앞선 날은 그대로", 크기값 = 크기.조금작게, 색 = c.옅음)
++                d.루틴들.forEach { r ->
++                    고르기줄(r.이름, if (r.휴식일) "휴식일" else "${r.종목.size}종목 · ${총세트(r)}세트") {
++                        상태.바꿈 { it.꽂기(r.id, 고른날, 오늘) }; 열린시트 = null
++                    }
++                }
++            }
++            "휴식" -> 시트("오늘 쉴까요?", { 열린시트 = null }) {
++                val 미루기 = d.사흘미리(true, 오늘); val 건너 = d.사흘미리(false, 오늘)
++                버튼("오늘 루틴을 내일로 미루기", { 상태.바꿈 { it.오늘휴식(true, 오늘) }; 열린시트 = null }, Modifier.fillMaxWidth(), 주요 = true)
++                글("오늘 휴식 · 내일 ${미루기.getOrElse(0) { "" }} · 모레 ${미루기.getOrElse(1) { "" }} · 글피 ${미루기.getOrElse(2) { "" }}",
++                    Modifier.padding(top = 4.dp, bottom = 12.dp), 크기값 = 크기.작게, 색 = c.옅음)
++                버튼("오늘 루틴 건너뛰기", { 상태.바꿈 { it.오늘휴식(false, 오늘) }; 열린시트 = null }, Modifier.fillMaxWidth())
++                글("오늘 휴식 · 내일 ${건너.getOrElse(0) { "" }} · 모레 ${건너.getOrElse(1) { "" }} · 글피 ${건너.getOrElse(2) { "" }}",
++                    Modifier.padding(top = 4.dp, bottom = 4.dp), 크기값 = 크기.작게, 색 = c.옅음)
++            }
++        }
++    }
++}
++
++@Composable
++private fun 달력(d: 앱데이터, 오늘: String, 달: YearMonth, 고른날: String, on고름: (String) -> Unit) {
++    val c = Local색.current
++    Row(Modifier.fillMaxWidth()) {
++        listOf("일", "월", "화", "수", "목", "금", "토").forEach {
++            글(it, Modifier.weight(1f), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)
++        }
++    }
++    val 첫 = 달.atDay(1)
++    val 앞빈칸 = 첫.dayOfWeek.value % 7          // 일요일 = 0
++    val 칸수 = 앞빈칸 + 달.lengthOfMonth()
++    val 줄수 = (칸수 + 6) / 7
++    val 고른줄 = run {
++        val g = LocalDate.parse(고른날)
++        if (YearMonth.from(g) == 달) (앞빈칸 + g.dayOfMonth - 1) / 7 else -1
++    }
++    for (줄 in 0 until 줄수) {
++        val 펼침 = 줄 == 고른줄                        // 누른 날이 있는 줄만 종목까지 (2-1)
++        Row(Modifier.fillMaxWidth().padding(top = 4.dp)) {
++            for (칸 in 0 until 7) {
++                val n = 줄 * 7 + 칸 - 앞빈칸 + 1
++                if (n < 1 || n > 달.lengthOfMonth()) { Box(Modifier.weight(1f)); continue }
++                val 날 = 달.atDay(n)
++                날칸(d, 날.toString(), 날, 오늘, 날.toString() == 고른날, 펼침, Modifier.weight(1f)) { on고름(날.toString()) }
++            }
++        }
++    }
++}
++
++@Composable
++private fun 날칸(d: 앱데이터, k: String, 날: LocalDate, 오늘: String, 고름: Boolean, 펼침: Boolean, modifier: Modifier, onClick: () -> Unit) {
++    val c = Local색.current
++    val rec = d.기록[k]
++    val 예 = if (rec == null && k >= 오늘) d.예정루틴(k) else null
++    val 휴 = 공휴일[k]
++    val 숫자색 = when {
++        휴 != null || 날.dayOfWeek == DayOfWeek.SUNDAY -> c.나쁨
++        날.dayOfWeek == DayOfWeek.SATURDAY -> c.내림
++        else -> c.글
++    }
++    Column(
++        modifier
++            .padding(1.dp)
++            .heightIn(min = 52.dp)
++            .clip(RoundedCornerShape(모서리.아주작게))
++            .then(if (고름) Modifier.border(1.5.dp, c.강조, RoundedCornerShape(모서리.아주작게)) else Modifier)
++            .눌림(onClick)
++            .padding(2.dp),
++        horizontalAlignment = Alignment.CenterHorizontally,
++    ) {
++        글("${날.dayOfMonth}", 크기값 = 크기.조금작게, 색 = 숫자색, 굵기 = if (k == 오늘) FontWeight.Bold else FontWeight.Normal)
++        val 이름: String?; val 바탕: Color; val 글색: Color; var 테두리 = false
++        when {
++            rec != null -> { 이름 = rec.루틴이름; 바탕 = if (rec.달성) c.강조옅음 else c.나쁨.copy(alpha = 0.12f); 글색 = if (rec.달성) c.좋음 else c.나쁨 }
++            예 != null && 예.휴식일 -> { 이름 = "휴식"; 바탕 = c.면2; 글색 = c.옅음 }
++            예 != null -> { 이름 = 예.이름; 바탕 = Color.Transparent; 글색 = c.흐림; 테두리 = true }
++            else -> { 이름 = null; 바탕 = Color.Transparent; 글색 = c.흐림 }
++        }
++        if (이름 != null) {
++            Box(
++                Modifier
++                    .fillMaxWidth()
++                    .padding(top = 2.dp)
++                    .clip(RoundedCornerShape(4.dp))
++                    .background(바탕)
++                    .then(if (테두리) Modifier.border(1.dp, c.선, RoundedCornerShape(4.dp)) else Modifier)
++                    .padding(horizontal = 2.dp, vertical = 1.dp),
++                contentAlignment = Alignment.Center,
++            ) { 글(이름, 크기값 = 크기.아주작게, 색 = 글색, 굵기 = FontWeight.Bold) }
++        }
++        if (휴 != null) 글(휴, 크기값 = 크기.아주작게, 색 = c.나쁨)
++        if (rec != null) 글("${정식세트(rec).size}세트", 크기값 = 크기.아주작게, 색 = c.옅음)
++        if (펼침) {
++            val 종목들 = rec?.종목들?.map { it.이름 } ?: 예?.종목?.map { it.이름 } ?: emptyList()
++            종목들.forEach { 이 ->
++                val 짧게 = d.종목표.firstOrNull { it.이름 == 이 }?.달력이름 ?: 이
++                Text(짧게, style = 글꼴.보통(크기.아주작게), color = c.흐림, maxLines = 1, overflow = TextOverflow.Clip, softWrap = false)
++            }
++        }
++        if (d.일정[k]?.isNotEmpty() == true) Box(Modifier.padding(top = 2.dp).width(4.dp).height(4.dp).clip(CircleShape).background(c.휴식))
++    }
++}
++
++@Composable
++private fun 날짜판(상태: 앱상태, k: String, 루틴으로: () -> Unit, 다른루틴: () -> Unit, 쉬기: () -> Unit) {
++    val c = Local색.current
++    val d = 상태.d
++    val 오늘 = 상태.오늘
++    val 날 = LocalDate.parse(k)
++    val 요일 = "일월화수목금토"[날.dayOfWeek.value % 7]
++    val 머리 = (if (k == 오늘) "오늘 · " else "") + "${날.monthValue}월 ${날.dayOfMonth}일 ($요일)"
++    카드 {
++        글(머리, 크기값 = 크기.조금작게, 색 = c.옅음, 굵기 = FontWeight.Bold)
++        Box(Modifier.height(6.dp))
++        val rec = d.기록[k]
++        when {
++            d.루틴들.isEmpty() -> {
++                글("아직 루틴이 없습니다", 굵기 = FontWeight.Bold)
++                글("루틴을 만들면 순서대로 달력에 깔립니다", 크기값 = 크기.조금작게, 색 = c.옅음)
++                Box(Modifier.height(10.dp))
++                버튼("루틴 만들러 가기", 루틴으로, Modifier.fillMaxWidth(), 주요 = true, 그림 = 아이콘.더하기)
++            }
++            rec != null -> {
++                Row(verticalAlignment = Alignment.CenterVertically) {
++                    제목글(rec.루틴이름, 크기값 = 크기.크게)
++                    Box(Modifier.width(8.dp))
++                    알약(if (rec.달성) "달성" else "미달성", if (rec.달성) c.좋음 else c.나쁨)
++                }
++                val 세트들 = 정식세트(rec)
++                글("${세트들.size}세트 · 볼륨 ${콤마(볼륨(세트들))}kg · ${시분초(rec.걸린초.toLong())}", 크기값 = 크기.조금작게, 색 = c.흐림)
++                val 앞 = d.기록.filter { it.value.루틴id == rec.루틴id && it.key < k }.keys.maxOrNull()
++                val 결과 = 앞?.let { 대비(세트들, 정식세트(d.기록[it]!!), it) }
++                성장줄(rec.루틴이름, 결과, "직전 대비", Modifier.padding(vertical = 6.dp))
++                rec.종목들.forEach { e ->
++                    Row(Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
++                        글(e.이름, Modifier.weight(1f), 크기값 = 크기.버튼)
++                        글(e.세트들.joinToString(" ") { "${com.slayde.hasenheide.data.무게글(it.w)}×${it.r}" }, Modifier.weight(1.4f), 크기값 = 크기.작게, 색 = c.흐림)
++                    }
++                }
++                Box(Modifier.height(8.dp))
++                버튼("이 날 기록 지우기", {
++                    상태.지우고알림("${날.monthValue}월 ${날.dayOfMonth}일 기록을 지웠습니다") { it.copy(기록 = it.기록 - k).예정초기화(오늘) }
++                }, Modifier.fillMaxWidth(), 작게 = true, 글색 = c.나쁨)
++            }
++            k < 오늘 -> 글("기록이 없는 날입니다", 색 = c.옅음)
++            else -> {
++                val r = d.예정루틴(k)
++                if (r == null) 글("예정된 루틴이 없습니다", 색 = c.옅음)
++                else if (r.휴식일) { 제목글("휴식일", 크기값 = 크기.크게); 글("순서에서 한 칸을 차지합니다", 크기값 = 크기.조금작게, 색 = c.옅음) }
++                else {
++                    Row(verticalAlignment = Alignment.Bottom) {
++                        제목글(r.이름, 크기값 = 크기.크게)
++                        Box(Modifier.width(8.dp))
++                        글("${r.종목.size}종목 · ${총세트(r)}세트 · 약 ${시간글(예상초(r))}", 크기값 = 크기.조금작게, 색 = c.흐림)
++                    }
++                    성장줄(r.이름, d.루틴성장(r.id, 오늘), d.지금기준().기간, Modifier.padding(top = 4.dp))
++                }
++                Box(Modifier.height(10.dp))
++                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
++                    if (k == 오늘 && r != null && !r.휴식일 && r.종목.isNotEmpty()) {
++                        버튼("운동 시작", {
++                            val S = 운동시작(r, System.currentTimeMillis())
++                            if (S != null) 상태.바꿈 { it.copy(세션 = S) }
++                        }, Modifier.weight(1.3f), 주요 = true, 작게 = true)
++                    }
++                    버튼("다른 루틴", 다른루틴, Modifier.weight(1f), 작게 = true)
++                    if (k == 오늘 && r != null && !r.휴식일) 버튼("휴식", 쉬기, Modifier.weight(1f), 작게 = true)
++                }
++                if (k == 오늘 && r != null && !r.휴식일 && r.종목.isEmpty())
++                    글("이 루틴에 종목이 없습니다 · 루틴 탭에서 넣어 주세요", Modifier.padding(top = 6.dp), 크기값 = 크기.작게, 색 = c.옅음)
++            }
++        }
++        일정칸(상태, k)
++    }
++}
++
++@Composable
++fun 알약(글자: String, 색: Color) {
++    Box(Modifier.clip(CircleShape).background(색.copy(alpha = 0.12f)).padding(horizontal = 9.dp, vertical = 3.dp)) {
++        글(글자, 크기값 = 크기.작게, 색 = 색, 굵기 = FontWeight.Bold)
++    }
++}
++
++/** 일정 — 그 자리에서 적는다 (팝업 없음) */
++@Composable
++private fun 일정칸(상태: 앱상태, k: String) {
++    val c = Local색.current
++    val 것 = 상태.d.일정[k].orEmpty()
++    var 적는중 by remember(k) { mutableStateOf(false) }
++    var 새글 by remember(k) { mutableStateOf("") }
++    Box(Modifier.height(10.dp))
++    구분선()
++    것.forEachIndexed { i, t ->
++        Row(Modifier.fillMaxWidth().padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
++            Box(Modifier.width(6.dp).height(6.dp).clip(CircleShape).background(c.휴식))
++            글(t, Modifier.weight(1f).padding(start = 8.dp), 크기값 = 크기.버튼)
++            아이콘버튼(아이콘.지우기, "일정 지우기", {
++                상태.지우고알림("'$t' 일정을 지웠습니다") { d ->
++                    val 남 = d.일정[k].orEmpty().filterIndexed { j, _ -> j != i }
++                    d.copy(일정 = if (남.isEmpty()) d.일정 - k else d.일정 + (k to 남))
++                }
++            }, 칠함 = false)
++        }
++    }
++    Box(Modifier.height(8.dp))
++    if (적는중) {
++        val 넣기 = {
++            val t = 새글.trim()
++            if (t.isNotEmpty()) 상태.바꿈 { d -> d.copy(일정 = d.일정 + (k to (d.일정[k].orEmpty() + t))) }
++            새글 = ""; 적는중 = false
++        }
++        Row(verticalAlignment = Alignment.CenterVertically) {
++            입력칸(새글, { 새글 = it }, Modifier.weight(1f), 안내 = "일정 적기", onDone = 넣기)
++            Box(Modifier.padding(start = 6.dp)) { 버튼("넣기", 넣기, 주요 = true, 작게 = true) }
++        }
++    } else {
++        버튼("일정 추가", { 적는중 = true }, Modifier.fillMaxWidth(), 작게 = true, 그림 = 아이콘.더하기)
++    }
++}
+diff --git a/app/src/main/java/com/slayde/hasenheide/ui/Common.kt b/app/src/main/java/com/slayde/hasenheide/ui/Common.kt
+new file mode 100644
+index 0000000..13774a8
+--- /dev/null
++++ b/app/src/main/java/com/slayde/hasenheide/ui/Common.kt
+@@ -0,0 +1,431 @@
++@file:OptIn(ExperimentalFoundationApi::class)
++
++package com.slayde.hasenheide.ui
++
++import androidx.activity.compose.BackHandler
++import androidx.compose.foundation.ExperimentalFoundationApi
++import androidx.compose.foundation.background
++import androidx.compose.foundation.border
++import androidx.compose.foundation.clickable
++import androidx.compose.foundation.combinedClickable
++import androidx.compose.foundation.horizontalScroll
++import androidx.compose.foundation.interaction.MutableInteractionSource
++import androidx.compose.foundation.layout.Arrangement
++import androidx.compose.foundation.layout.Box
++import androidx.compose.foundation.layout.BoxScope
++import androidx.compose.foundation.layout.Column
++import androidx.compose.foundation.layout.ColumnScope
++import androidx.compose.foundation.layout.Row
++import androidx.compose.foundation.layout.RowScope
++import androidx.compose.foundation.layout.fillMaxHeight
++import androidx.compose.foundation.layout.fillMaxSize
++import androidx.compose.foundation.layout.fillMaxWidth
++import androidx.compose.foundation.layout.height
++import androidx.compose.foundation.layout.heightIn
++import androidx.compose.foundation.layout.imePadding
++import androidx.compose.foundation.layout.navigationBarsPadding
++import androidx.compose.foundation.layout.padding
++import androidx.compose.foundation.layout.size
++import androidx.compose.foundation.layout.width
++import androidx.compose.foundation.layout.widthIn
++import androidx.compose.foundation.rememberScrollState
++import androidx.compose.foundation.shape.CircleShape
++import androidx.compose.foundation.shape.RoundedCornerShape
++import androidx.compose.foundation.text.BasicTextField
++import androidx.compose.foundation.text.KeyboardActions
++import androidx.compose.foundation.text.KeyboardOptions
++import androidx.compose.foundation.verticalScroll
++import androidx.compose.material3.Icon
++import androidx.compose.material3.Text
++import androidx.compose.runtime.Composable
++import androidx.compose.runtime.getValue
++import androidx.compose.runtime.mutableStateOf
++import androidx.compose.runtime.remember
++import androidx.compose.runtime.setValue
++import androidx.compose.ui.Alignment
++import androidx.compose.ui.Modifier
++import androidx.compose.ui.draw.clip
++import androidx.compose.ui.focus.onFocusChanged
++import androidx.compose.ui.graphics.Color
++import androidx.compose.ui.graphics.SolidColor
++import androidx.compose.ui.graphics.vector.ImageVector
++import androidx.compose.ui.platform.LocalFocusManager
++import androidx.compose.ui.text.TextStyle
++import androidx.compose.ui.text.font.FontWeight
++import androidx.compose.ui.text.input.ImeAction
++import androidx.compose.ui.text.input.KeyboardType
++import androidx.compose.ui.text.style.TextAlign
++import androidx.compose.ui.text.style.TextOverflow
++import androidx.compose.ui.unit.Dp
++import androidx.compose.ui.unit.TextUnit
++import androidx.compose.ui.unit.dp
++import com.slayde.hasenheide.ui.theme.Local색
++import com.slayde.hasenheide.ui.theme.간격
++import com.slayde.hasenheide.ui.theme.글꼴
++import com.slayde.hasenheide.ui.theme.높이
++import com.slayde.hasenheide.ui.theme.모서리
++import com.slayde.hasenheide.ui.theme.크기
++
++/**
++ * 여러 화면이 같이 쓰는 부품.
++ * '같은 동작은 같은 모양'(기능명세 1-3)을 지키려고 한곳에 모았다.
++ */
++
++/** 글자 — 설명 글은 한 줄을 넘지 않는다 (1-1). 넘치면 끝을 … 로 */
++@Composable
++fun 글(
++    text: String,
++    modifier: Modifier = Modifier,
++    크기값: TextUnit = 크기.본문,
++    색: Color = Local색.current.글,
++    굵기: FontWeight = FontWeight.Normal,
++    가운데: Boolean = false,
++    줄: Int = 1,
++) {
++    Text(
++        text, modifier = modifier, style = 글꼴.보통(크기값, 굵기), color = 색, maxLines = 줄,
++        overflow = TextOverflow.Ellipsis, textAlign = if (가운데) TextAlign.Center else null,
++    )
++}
++
++@Composable
++fun 제목글(text: String, modifier: Modifier = Modifier, 크기값: TextUnit = 크기.제목, 색: Color = Local색.current.글) {
++    Text(text, modifier = modifier, style = 글꼴.제목(크기값), color = 색, maxLines = 1, overflow = TextOverflow.Ellipsis)
++}
++
++/** 누를 때 파란 빛(물결)을 칠하지 않는다 (1-3) */
++fun Modifier.눌림(onClick: () -> Unit): Modifier = this.clickable(
++    interactionSource = MutableInteractionSource(), indication = null, onClick = onClick,
++)
++
++/** 누르고 떼기 = 열기, 꾹 누르기 = 집기 (1-3) */
++fun Modifier.눌림길게(onClick: () -> Unit, onLongClick: (() -> Unit)?): Modifier = this.combinedClickable(
++    interactionSource = MutableInteractionSource(), indication = null, onClick = onClick, onLongClick = onLongClick,
++)
++
++@Composable
++fun 카드(modifier: Modifier = Modifier, 안쪽: Dp = 14.dp, content: @Composable ColumnScope.() -> Unit) {
++    val c = Local색.current
++    Column(
++        modifier
++            .fillMaxWidth()
++            .clip(RoundedCornerShape(모서리.보통))
++            .background(c.면)
++            .border(1.dp, c.선, RoundedCornerShape(모서리.보통))
++            .padding(안쪽),
++        content = content,
++    )
++}
++
++@Composable
++fun 구분선(modifier: Modifier = Modifier) {
++    Box(modifier.fillMaxWidth().height(1.dp).background(Local색.current.선))
++}
++
++/** 아이콘 버튼 — 네모 32. 칠함=false 는 '지우기'·'펼치기'처럼 바탕 없는 것 */
++@Composable
++fun 아이콘버튼(
++    그림: ImageVector,
++    설명: String,
++    onClick: () -> Unit,
++    modifier: Modifier = Modifier,
++    칠함: Boolean = true,
++    켬: Boolean = false,
++    색: Color? = null,
++    크기칸: Dp = 높이.낮게,
++    쓸수있음: Boolean = true,
++) {
++    val c = Local색.current
++    val 바탕 = when { 켬 -> c.강조; 칠함 -> c.면2; else -> Color.Transparent }
++    val 글색 = 색 ?: if (켬) c.강조글 else c.흐림
++    Box(
++        modifier
++            .size(크기칸)
++            .clip(RoundedCornerShape(모서리.아주작게))
++            .background(바탕)
++            .then(if (쓸수있음) Modifier.눌림(onClick) else Modifier),
++        contentAlignment = Alignment.Center,
++    ) {
++        Icon(그림, 설명, Modifier.size(18.dp), tint = if (쓸수있음) 글색 else 글색.copy(alpha = 0.3f))
++    }
++}
++
++/** 글 버튼 — 기본(48) · 작게(40). 주요=true 면 강조색으로 칠한다 */
++@Composable
++fun 버튼(
++    text: String,
++    onClick: () -> Unit,
++    modifier: Modifier = Modifier,
++    주요: Boolean = false,
++    작게: Boolean = false,
++    그림: ImageVector? = null,
++    글색: Color? = null,
++) {
++    val c = Local색.current
++    Row(
++        modifier
++            .height(if (작게) 높이.보통 else 높이.높게)
++            .clip(RoundedCornerShape(모서리.작게))
++            .background(if (주요) c.강조 else c.면2)
++            .then(if (주요) Modifier else Modifier.border(1.dp, c.선, RoundedCornerShape(모서리.작게)))
++            .눌림(onClick)
++            .padding(horizontal = 12.dp),
++        horizontalArrangement = Arrangement.Center,
++        verticalAlignment = Alignment.CenterVertically,
++    ) {
++        val 색 = 글색 ?: if (주요) c.강조글 else c.글
++        if (그림 != null) {
++            Icon(그림, null, Modifier.size(16.dp), tint = 색)
++            Box(Modifier.width(6.dp))
++        }
++        글(text, 크기값 = if (작게) 크기.버튼 else 크기.본문, 색 = 색, 굵기 = FontWeight.Bold)
++    }
++}
++
++/** 칩 한 줄 — 넘치면 옆으로 밀어서 꺼낸다 (1-1) */
++@Composable
++fun 칩줄(목록: List<String>, 선택: String?, onSelect: (String) -> Unit, modifier: Modifier = Modifier) {
++    val c = Local색.current
++    Row(
++        modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
++        horizontalArrangement = Arrangement.spacedBy(6.dp),
++    ) {
++        목록.forEach { p ->
++            val 켬 = p == 선택
++            Box(
++                Modifier
++                    .height(높이.낮게)
++                    .clip(CircleShape)
++                    .background(if (켬) c.강조 else c.면2)
++                    .눌림 { onSelect(p) }
++                    .padding(horizontal = 13.dp),
++                contentAlignment = Alignment.Center,
++            ) { 글(p, 크기값 = 크기.버튼, 색 = if (켬) c.강조글 else c.흐림, 굵기 = FontWeight.Medium) }
++        }
++    }
++}
++
++/** 켜고 끄기 */
++@Composable
++fun 스위치(켜짐: Boolean, onChange: (Boolean) -> Unit) {
++    val c = Local색.current
++    Box(
++        Modifier
++            .width(46.dp).height(높이.아주낮게)
++            .clip(CircleShape)
++            .background(if (켜짐) c.강조 else c.선)
++            .눌림 { onChange(!켜짐) }
++            .padding(3.dp),
++        contentAlignment = if (켜짐) Alignment.CenterEnd else Alignment.CenterStart,
++    ) { Box(Modifier.size(22.dp).clip(CircleShape).background(if (켜짐) c.강조글 else c.면)) }
++}
++
++/** 설정 한 줄 — 이름 · 한 줄 설명 · 오른쪽 조작부 */
++@Composable
++fun 설정줄(이름: String, 설명: String? = null, 오른쪽: @Composable RowScope.() -> Unit) {
++    Row(Modifier.fillMaxWidth().padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
++        Column(Modifier.weight(1f)) {
++            글(이름, 굵기 = FontWeight.Medium)
++            if (설명 != null) 글(설명, 크기값 = 크기.작게, 색 = Local색.current.옅음)
++        }
++        오른쪽()
++    }
++}
++
++/** 작은 이름표(섹션 제목) */
++@Composable
++fun 이름표(text: String, modifier: Modifier = Modifier) {
++    Text(text, modifier, style = 글꼴.이름표, color = Local색.current.옅음, maxLines = 1)
++}
++
++/** 한 줄 글 입력칸 */
++@Composable
++fun 입력칸(
++    값: String,
++    onChange: (String) -> Unit,
++    modifier: Modifier = Modifier,
++    안내: String = "",
++    숫자: Boolean = false,
++    onDone: (() -> Unit)? = null,
++) {
++    val c = Local색.current
++    val 초점 = LocalFocusManager.current
++    Box(
++        modifier
++            .height(높이.높게)
++            .clip(RoundedCornerShape(모서리.작게))
++            .background(c.면)
++            .border(1.dp, c.선, RoundedCornerShape(모서리.작게))
++            .padding(horizontal = 12.dp),
++        contentAlignment = Alignment.CenterStart,
++    ) {
++        if (값.isEmpty()) 글(안내, 색 = c.옅음)
++        BasicTextField(
++            value = 값, onValueChange = onChange, singleLine = true,
++            textStyle = 글꼴.보통(크기.본문).copy(color = c.글),
++            cursorBrush = SolidColor(c.강조),
++            keyboardOptions = KeyboardOptions(
++                keyboardType = if (숫자) KeyboardType.Decimal else KeyboardType.Text, imeAction = ImeAction.Done,
++            ),
++            keyboardActions = KeyboardActions(onDone = { onDone?.invoke(); 초점.clearFocus() }),
++            modifier = Modifier.fillMaxWidth(),
++        )
++    }
++}
++
++// ─────────────── 숫자 버튼 줄 (1-3 · 4-4-1) ───────────────
++
++/** 버튼 한 칸 — 평소엔 [이름표/값], 누르면 [− 값 ＋] */
++data class 숫자칸(
++    val 키: String,
++    val 라벨: String,
++    val 값글: String,
++    val 단위: String,
++    val 소수: Boolean = false,
++    val 빼기: () -> Unit,
++    val 더하기: () -> Unit,
++    /** 직접 쳐 넣은 글 — 받는 쪽에서 숫자로 바꾼다 */
++    val 넣기: (String) -> Unit,
++)
++
++@Composable
++fun 숫자버튼줄(칸들: List<숫자칸>, 켠: String?, on고름: (String) -> Unit, modifier: Modifier = Modifier) {
++    val c = Local색.current
++    Row(
++        modifier
++            .fillMaxWidth()
++            .clip(RoundedCornerShape(모서리.작게))
++            .background(c.면)
++            .border(1.dp, c.선, RoundedCornerShape(모서리.작게))
++            .padding(6.dp),
++        horizontalArrangement = Arrangement.spacedBy(5.dp),
++    ) {
++        칸들.forEach { k ->
++            if (k.키 == 켠) {
++                Row(
++                    Modifier
++                        .weight(2.3f)
++                        .height(높이.보통)
++                        .clip(RoundedCornerShape(모서리.작게))
++                        .background(c.면)
++                        .border(1.5.dp, c.강조, RoundedCornerShape(모서리.작게)),
++                    verticalAlignment = Alignment.CenterVertically,
++                ) {
++                    Box(Modifier.width(30.dp).fillMaxHeight().눌림(k.빼기), contentAlignment = Alignment.Center) {
++                        Icon(아이콘.빼기, "${k.라벨} 빼기", Modifier.size(18.dp), tint = c.강조)
++                    }
++                    Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
++                        글(k.라벨, 크기값 = 크기.아주작게, 색 = c.옅음)
++                        숫자입력(k.값글, k.소수, k.넣기)
++                    }
++                    Box(Modifier.width(30.dp).fillMaxHeight().눌림(k.더하기), contentAlignment = Alignment.Center) {
++                        Icon(아이콘.더하기, "${k.라벨} 더하기", Modifier.size(18.dp), tint = c.강조)
++                    }
++                }
++            } else {
++                Column(
++                    Modifier
++                        .weight(1f)
++                        .height(높이.보통)
++                        .clip(RoundedCornerShape(모서리.작게))
++                        .background(c.면2)
++                        .눌림 { on고름(k.키) },
++                    horizontalAlignment = Alignment.CenterHorizontally,
++                    verticalArrangement = Arrangement.Center,
++                ) {
++                    글(k.라벨, 크기값 = 크기.아주작게, 색 = c.옅음)
++                    글(k.값글 + k.단위, 크기값 = 크기.버튼, 굵기 = FontWeight.Bold)
++                }
++            }
++        }
++    }
++}
++
++/** 직접 쳐 넣는 숫자 — 다 치고 '완료'를 누르거나 다른 곳을 누를 때 반영한다 */
++@Composable
++private fun 숫자입력(값글: String, 소수: Boolean, 넣기: (String) -> Unit) {
++    val c = Local색.current
++    val 초점 = LocalFocusManager.current
++    var 글값 by remember(값글) { mutableStateOf(값글) }
++    var 만졌나 by remember { mutableStateOf(false) }
++    BasicTextField(
++        value = 글값,
++        onValueChange = { 글값 = it; 만졌나 = true },
++        singleLine = true,
++        textStyle = TextStyle(fontSize = 크기.본문, fontWeight = FontWeight.Bold, color = c.글, textAlign = TextAlign.Center),
++        cursorBrush = SolidColor(c.강조),
++        keyboardOptions = KeyboardOptions(
++            keyboardType = if (소수) KeyboardType.Decimal else KeyboardType.Number, imeAction = ImeAction.Done,
++        ),
++        keyboardActions = KeyboardActions(onDone = { if (만졌나) 넣기(글값); 만졌나 = false; 초점.clearFocus() }),
++        modifier = Modifier
++            .widthIn(max = 64.dp)
++            .onFocusChanged { if (!it.isFocused && 만졌나) { 넣기(글값); 만졌나 = false } },
++    )
++}
++
++// ─────────────── 시트 · 띠 ───────────────
++
++/** 아래에서 올라오는 판 — '고르는 일'에만 쓴다 (1-1: 팝업은 고르기뿐) */
++@Composable
++fun 시트(제목: String, onClose: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
++    val c = Local색.current
++    BackHandler(onBack = onClose)
++    Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.35f)).눌림(onClose), contentAlignment = Alignment.BottomCenter) {
++        Column(
++            Modifier
++                .fillMaxWidth()
++                .heightIn(max = 620.dp)
++                .clip(RoundedCornerShape(topStart = 모서리.크게, topEnd = 모서리.크게))
++                .background(c.면)
++                .눌림 { }
++                .navigationBarsPadding()
++                .imePadding()
++                .padding(horizontal = 간격.넓게, vertical = 14.dp),
++        ) {
++            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
++                제목글(제목, Modifier.weight(1f), 크기값 = 크기.크게)
++                아이콘버튼(아이콘.닫기, "닫기", onClose, 크기칸 = 높이.낮게)
++            }
++            Column(Modifier.padding(top = 10.dp).verticalScroll(rememberScrollState()), content = content)
++        }
++    }
++}
++
++/** 화면 아래(탭 위)에 뜨는 띠 — 되돌리기 · 집기 안내가 같은 자리 · 같은 모양 */
++@Composable
++fun BoxScope.아래띠(글자: String, 버튼글: String, on버튼: () -> Unit, 어둡게: Boolean = true, 바깥: Modifier = Modifier) {
++    val c = Local색.current
++    Row(
++        바깥
++            .align(Alignment.BottomCenter)
++            .padding(horizontal = 12.dp, vertical = 10.dp)
++            .fillMaxWidth()
++            .clip(RoundedCornerShape(모서리.작게))
++            .background(if (어둡게) c.글 else c.면)
++            .border(1.dp, if (어둡게) c.글 else c.휴식, RoundedCornerShape(모서리.작게))
++            .padding(horizontal = 14.dp, vertical = 11.dp),
++        verticalAlignment = Alignment.CenterVertically,
++    ) {
++        글(글자, Modifier.weight(1f), 크기값 = 크기.버튼, 색 = if (어둡게) c.면 else c.휴식)
++        Box(Modifier.width(10.dp))
++        글(버튼글, Modifier.눌림(on버튼), 크기값 = 크기.버튼, 색 = if (어둡게) c.강조옅음 else c.휴식, 굵기 = FontWeight.Bold)
++    }
++}
++
++/** 목록 한 줄 (시트 안에서 고르는 것) */
++@Composable
++fun 고르기줄(이름: String, 곁: String? = null, 오른쪽: ImageVector? = 아이콘.오른쪽, 흐림: Boolean = false, onClick: () -> Unit) {
++    val c = Local색.current
++    Row(
++        Modifier.fillMaxWidth().눌림(onClick).padding(vertical = 12.dp),
++        verticalAlignment = Alignment.CenterVertically,
++    ) {
++        Row(Modifier.weight(1f), verticalAlignment = Alignment.Bottom) {
++            글(이름, Modifier.weight(1f, fill = false), 색 = if (흐림) c.옅음 else c.글)
++            if (곁 != null) { Box(Modifier.width(6.dp)); 글(곁, 크기값 = 크기.작게, 색 = c.옅음) }
++        }
++        if (오른쪽 != null) Icon(오른쪽, null, Modifier.size(18.dp), tint = if (흐림) c.옅음 else c.강조)
++    }
++    구분선()
++}
+diff --git a/app/src/main/java/com/slayde/hasenheide/ui/ExerciseScreen.kt b/app/src/main/java/com/slayde/hasenheide/ui/ExerciseScreen.kt
+new file mode 100644
+index 0000000..12dcd28
+--- /dev/null
++++ b/app/src/main/java/com/slayde/hasenheide/ui/ExerciseScreen.kt
+@@ -0,0 +1,241 @@
++package com.slayde.hasenheide.ui
++
++import androidx.compose.foundation.background
++import androidx.compose.foundation.layout.Arrangement
++import androidx.compose.foundation.layout.Box
++import androidx.compose.foundation.layout.Column
++import androidx.compose.foundation.layout.Row
++import androidx.compose.foundation.layout.fillMaxSize
++import androidx.compose.foundation.layout.fillMaxWidth
++import androidx.compose.foundation.layout.height
++import androidx.compose.foundation.layout.padding
++import androidx.compose.foundation.layout.width
++import androidx.compose.foundation.rememberScrollState
++import androidx.compose.foundation.shape.RoundedCornerShape
++import androidx.compose.foundation.verticalScroll
++import androidx.compose.runtime.Composable
++import androidx.compose.runtime.getValue
++import androidx.compose.runtime.mutableStateOf
++import androidx.compose.runtime.remember
++import androidx.compose.runtime.setValue
++import androidx.compose.ui.Alignment
++import androidx.compose.ui.Modifier
++import androidx.compose.ui.draw.clip
++import androidx.compose.ui.text.font.FontWeight
++import androidx.compose.ui.unit.dp
++import com.slayde.hasenheide.data.앱데이터
++import com.slayde.hasenheide.data.종목
++import com.slayde.hasenheide.data.종목지표
++import com.slayde.hasenheide.data.무게글
++import com.slayde.hasenheide.data.콤마
++import com.slayde.hasenheide.data.퍼센트
++import com.slayde.hasenheide.ui.theme.Local색
++import com.slayde.hasenheide.ui.theme.간격
++import com.slayde.hasenheide.ui.theme.모서리
++import com.slayde.hasenheide.ui.theme.크기
++
++/** 종목 이름을 바꾸면 루틴과 지난 기록의 이름도 함께 바꾼다 (기록이 끊기지 않게) */
++fun 앱데이터.종목이름바꿈(옛: String, 새: String): 앱데이터 {
++    if (옛 == 새 || 새.isBlank() || 종목표.any { it.이름 == 새 }) return this
++    return copy(
++        종목표 = 종목표.map { if (it.이름 == 옛) it.copy(이름 = 새) else it },
++        루틴들 = 루틴들.map { r -> r.copy(종목 = r.종목.map { if (it.이름 == 옛) it.copy(이름 = 새) else it }) },
++        기록 = 기록.mapValues { (_, rec) -> rec.copy(종목들 = rec.종목들.map { if (it.이름 == 옛) it.copy(이름 = 새, 묶음 = it.묶음?.split("+")?.map { x -> if (x == 옛) 새 else x }?.sorted()?.joinToString("+")) else it }) },
++        세션 = 세션?.let { S -> S.copy(종목들 = S.종목들.map { if (it.이름 == 옛) it.copy(이름 = 새) else it }) },
++    )
++}
++
++@Composable
++fun 종목화면(상태: 앱상태) {
++    val c = Local색.current
++    val d = 상태.d
++    var 부위 by remember { mutableStateOf("전체") }
++    var 열린 by remember { mutableStateOf<String?>(null) }
++    var 카테고리시트 by remember { mutableStateOf(false) }
++    var 추가중 by remember { mutableStateOf(false) }
++
++    Box(Modifier.fillMaxSize()) {
++        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 간격.넓게)) {
++            제목글("종목", Modifier.padding(top = 14.dp, bottom = 10.dp))
++            Row(verticalAlignment = Alignment.CenterVertically) {
++                칩줄(listOf("전체") + d.카테고리, 부위, { 부위 = it }, Modifier.weight(1f))
++                Box(Modifier.width(6.dp))
++                아이콘버튼(아이콘.설정, "카테고리 관리", { 카테고리시트 = true })
++            }
++            Box(Modifier.height(10.dp))
++            val 목록 = d.종목표.filter { 부위 == "전체" || it.부위 == 부위 }
++            카드(안쪽 = 0.dp) {
++                if (목록.isEmpty()) 글(if (d.종목표.isEmpty()) "아직 종목이 없습니다 · 아래에서 만들어 주세요" else "이 부위에 종목이 없습니다",
++                    Modifier.padding(14.dp), 크기값 = 크기.조금작게, 색 = c.옅음)
++                목록.forEachIndexed { i, e ->
++                    if (i > 0) 구분선()
++                    종목한줄(상태, e, 열린 == e.이름) { 열린 = if (열린 == e.이름) null else e.이름 }
++                }
++            }
++            Box(Modifier.height(10.dp))
++            if (추가중) 새종목칸(상태, if (부위 == "전체") d.카테고리.firstOrNull() ?: "" else 부위) { 추가중 = false }
++            else 버튼("종목 추가", { 추가중 = true }, Modifier.fillMaxWidth(), 그림 = 아이콘.더하기)
++            Box(Modifier.height(100.dp))
++        }
++        if (카테고리시트) 카테고리관리(상태) { 카테고리시트 = false }
++    }
++}
++
++@Composable
++private fun 종목한줄(상태: 앱상태, e: 종목, 열림: Boolean, on열기: () -> Unit) {
++    val c = Local색.current
++    val d = 상태.d
++    val 지표 = d.종목지표(e.이름, 상태.오늘)
++    val 볼pct = if (지표 != null && 지표.과거 != null) 퍼센트(지표.지금.볼륨, 지표.과거.볼륨) else null
++    Column(Modifier.fillMaxWidth()) {
++        Row(Modifier.fillMaxWidth().눌림(on열기).padding(start = 14.dp, end = 6.dp, top = 11.dp, bottom = 11.dp), verticalAlignment = Alignment.CenterVertically) {
++            Row(Modifier.weight(1f), verticalAlignment = Alignment.Bottom) {
++                글(e.이름, Modifier.weight(1f, fill = false), 굵기 = FontWeight.Medium)
++                Box(Modifier.width(6.dp))
++                글(listOf(e.부위, e.장비).filter { it.isNotBlank() }.joinToString("·"), 크기값 = 크기.작게, 색 = c.옅음)
++            }
++            if (볼pct != null) 글(
++                (if (볼pct > 0) "+" else "") + "$볼pct%", 크기값 = 크기.버튼, 굵기 = FontWeight.Bold,
++                색 = if (볼pct > 0) c.오름 else if (볼pct < 0) c.내림 else c.흐림,
++            )
++            펼침단추(열림, on열기)
++        }
++        if (열림) Column(Modifier.padding(start = 14.dp, end = 14.dp, bottom = 14.dp)) {
++            if (지표 == null) 글("아직 기록이 없습니다", 크기값 = 크기.조금작게, 색 = c.옅음)
++            else {
++                val 과 = 지표.과거
++                Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(모서리.작게)).background(c.면2).padding(10.dp)) {
++                    지표줄("지표", "지금", "이전", "늘어난 값", 머리 = true)
++                    지표줄("최대 1RM", "%.1f".format(지표.지금.rm), 과?.let { "%.1f".format(it.rm) } ?: "—", 증감(지표.지금.rm, 과?.rm))
++                    지표줄("단일세트 최고", "${무게글(지표.지금.최고.w)}×${지표.지금.최고.r}", 과?.let { "${무게글(it.최고.w)}×${it.최고.r}" } ?: "—",
++                        증감(지표.지금.최고.w * 지표.지금.최고.r, 과?.let { it.최고.w * it.최고.r }))
++                    지표줄("한 세션 볼륨", 콤마(지표.지금.볼륨), 과?.let { 콤마(it.볼륨) } ?: "—", 증감(지표.지금.볼륨, 과?.볼륨))
++                }
++                글(if (과 != null) "${과.날}과 견준 값" else "견줄 이전 기록이 없습니다", Modifier.padding(top = 6.dp), 크기값 = 크기.작게, 색 = c.옅음)
++            }
++            Box(Modifier.height(12.dp))
++            var 이름 by remember(e.이름) { mutableStateOf(e.이름) }
++            var 달력 by remember(e.이름) { mutableStateOf(e.달력이름 ?: "") }
++            var 장비 by remember(e.이름) { mutableStateOf(e.장비) }
++            이름표("종목 이름")
++            입력칸(이름, { 이름 = it }, Modifier.fillMaxWidth().padding(top = 4.dp), onDone = {
++                상태.바꿈 { it.종목이름바꿈(e.이름, 이름.trim()) }
++            })
++            Box(Modifier.height(10.dp))
++            이름표("달력 표시 이름")
++            입력칸(달력, { 달력 = it }, Modifier.fillMaxWidth().padding(top = 4.dp), 안내 = "비워두면 종목 이름을 따라갑니다", onDone = {
++                상태.바꿈 { d -> d.copy(종목표 = d.종목표.map { if (it.이름 == e.이름) it.copy(달력이름 = 달력.trim().ifEmpty { null }) else it }) }
++            })
++            글("달력 칸에만 쓰는 짧은 이름", Modifier.padding(top = 2.dp), 크기값 = 크기.작게, 색 = c.옅음)
++            Box(Modifier.height(10.dp))
++            이름표("부위")
++            칩줄(d.카테고리, e.부위, { p -> 상태.바꿈 { d -> d.copy(종목표 = d.종목표.map { if (it.이름 == e.이름) it.copy(부위 = p) else it }) } }, Modifier.padding(top = 4.dp))
++            Box(Modifier.height(10.dp))
++            이름표("장비")
++            입력칸(장비, { 장비 = it }, Modifier.fillMaxWidth().padding(top = 4.dp), 안내 = "바벨 · 덤벨 · 머신 …", onDone = {
++                상태.바꿈 { d -> d.copy(종목표 = d.종목표.map { if (it.이름 == e.이름) it.copy(장비 = 장비.trim()) else it }) }
++            })
++            글("고친 뒤 자판의 '완료'를 누르면 저장됩니다", Modifier.padding(top = 4.dp), 크기값 = 크기.작게, 색 = c.옅음)
++            Box(Modifier.height(12.dp))
++            버튼("이 종목 지우기", {
++                val 쓰는곳 = d.루틴들.filter { r -> r.종목.any { it.이름 == e.이름 } }.map { it.이름 }
++                상태.지우고알림(if (쓰는곳.isEmpty()) "${e.이름}을(를) 지웠습니다" else "${e.이름} · ${쓰는곳.joinToString("·")}에서도 뺐습니다") { dd ->
++                    dd.copy(
++                        종목표 = dd.종목표.filter { it.이름 != e.이름 },
++                        루틴들 = dd.루틴들.map { r -> r.copy(종목 = r.종목.filter { it.이름 != e.이름 }) },
++                    )
++                }
++            }, Modifier.fillMaxWidth(), 작게 = true, 글색 = c.나쁨)
++        }
++    }
++}
++
++private data class 증감글(val pct: Int?, val 차: Double)
++private fun 증감(지금: Double, 과거: Double?): 증감글? = 과거?.let { 증감글(퍼센트(지금, it), 지금 - it) }
++
++@Composable
++private fun 지표줄(이름: String, 지금: String, 이전: String, 증: Any?, 머리: Boolean = false) {
++    val c = Local색.current
++    val 작은 = if (머리) 크기.아주작게 else 크기.버튼
++    Row(Modifier.fillMaxWidth().padding(vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
++        글(이름, Modifier.weight(1.3f), 크기값 = if (머리) 크기.아주작게 else 크기.조금작게, 색 = if (머리) c.옅음 else c.흐림, 굵기 = FontWeight.Bold)
++        글(지금, Modifier.weight(1f), 크기값 = 작은, 색 = if (머리) c.옅음 else c.글, 굵기 = FontWeight.Bold)
++        글(이전, Modifier.weight(1f), 크기값 = if (머리) 크기.아주작게 else 크기.조금작게, 색 = c.옅음)
++        when (증) {
++            is String -> 글(증, Modifier.weight(0.9f), 크기값 = 크기.아주작게, 색 = c.옅음)
++            is 증감글 -> {
++                val p = 증.pct
++                val 색 = if ((p ?: 0) > 0) c.오름 else if ((p ?: 0) < 0) c.내림 else c.흐림
++                글(if (p == null) "—" else (if (p > 0) "+" else "") + "$p%", Modifier.weight(0.9f), 크기값 = 크기.버튼, 색 = 색, 굵기 = FontWeight.Bold)
++            }
++            else -> 글("—", Modifier.weight(0.9f), 크기값 = 크기.버튼, 색 = c.옅음)
++        }
++    }
++}
++
++/** 새 종목 — 이름 · 부위 · 장비 */
++@Composable
++fun 새종목칸(상태: 앱상태, 처음부위: String, 닫기: () -> Unit) {
++    val d = 상태.d
++    var 이름 by remember { mutableStateOf("") }
++    var 부위 by remember { mutableStateOf(처음부위) }
++    var 장비 by remember { mutableStateOf("") }
++    카드 {
++        이름표("새 종목")
++        입력칸(이름, { 이름 = it }, Modifier.fillMaxWidth().padding(top = 6.dp), 안내 = "종목 이름 (예: 벤치프레스)")
++        Box(Modifier.height(8.dp))
++        칩줄(d.카테고리, 부위, { 부위 = it })
++        Box(Modifier.height(8.dp))
++        입력칸(장비, { 장비 = it }, Modifier.fillMaxWidth(), 안내 = "장비 (바벨 · 덤벨 · 머신 …)")
++        Box(Modifier.height(10.dp))
++        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
++            버튼("취소", 닫기, Modifier.weight(1f), 작게 = true)
++            버튼("만들기", {
++                val n = 이름.trim()
++                if (n.isNotEmpty() && d.종목표.none { it.이름 == n }) {
++                    상태.바꿈 { it.copy(종목표 = it.종목표 + 종목(n, 부위, 장비.trim())) }
++                    닫기()
++                }
++            }, Modifier.weight(1f), 작게 = true, 주요 = true)
++        }
++        if (이름.trim().isNotEmpty() && d.종목표.any { it.이름 == 이름.trim() })
++            글("같은 이름의 종목이 이미 있습니다", Modifier.padding(top = 6.dp), 크기값 = 크기.작게, 색 = Local색.current.나쁨)
++    }
++}
++
++@Composable
++private fun 카테고리관리(상태: 앱상태, 닫기: () -> Unit) {
++    val c = Local색.current
++    var 새 by remember { mutableStateOf("") }
++    시트("카테고리", 닫기) {
++        글("루틴의 종목 고르기에도 그대로 나옵니다", 크기값 = 크기.조금작게, 색 = c.옅음)
++        상태.d.카테고리.forEach { p ->
++            val 수 = 상태.d.종목표.count { it.부위 == p }
++            Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
++                글(p, Modifier.weight(1f))
++                글(if (수 > 0) "종목 ${수}개" else "", 크기값 = 크기.작게, 색 = c.옅음)
++                아이콘버튼(아이콘.지우기, "카테고리 지우기", {
++                    상태.지우고알림(if (수 > 0) "$p · 종목 ${수}개와 함께 지웠습니다" else "$p 카테고리를 지웠습니다") { d ->
++                        val 이름들 = d.종목표.filter { it.부위 == p }.map { it.이름 }.toSet()
++                        d.copy(
++                            카테고리 = d.카테고리 - p,
++                            종목표 = d.종목표.filter { it.부위 != p },
++                            루틴들 = d.루틴들.map { r -> r.copy(종목 = r.종목.filter { it.이름 !in 이름들 }) },
++                        )
++                    }
++                }, 칠함 = false)
++            }
++            구분선()
++        }
++        Box(Modifier.height(10.dp))
++        Row(verticalAlignment = Alignment.CenterVertically) {
++            입력칸(새, { 새 = it }, Modifier.weight(1f), 안내 = "새 카테고리 (예: 전완)")
++            Box(Modifier.width(6.dp))
++            버튼("추가", {
++                val n = 새.trim()
++                if (n.isNotEmpty() && n !in 상태.d.카테고리) 상태.바꿈 { it.copy(카테고리 = it.카테고리 + n) }
++                새 = ""
++            }, 주요 = true)
++        }
++    }
++}
+diff --git a/app/src/main/java/com/slayde/hasenheide/ui/Icons.kt b/app/src/main/java/com/slayde/hasenheide/ui/Icons.kt
+new file mode 100644
+index 0000000..34454ab
+--- /dev/null
++++ b/app/src/main/java/com/slayde/hasenheide/ui/Icons.kt
+@@ -0,0 +1,53 @@
++package com.slayde.hasenheide.ui
++
++import androidx.compose.ui.graphics.Color
++import androidx.compose.ui.graphics.SolidColor
++import androidx.compose.ui.graphics.StrokeCap
++import androidx.compose.ui.graphics.StrokeJoin
++import androidx.compose.ui.graphics.vector.ImageVector
++import androidx.compose.ui.graphics.vector.addPathNodes
++import androidx.compose.ui.unit.dp
++
++/**
++ * 아이콘 한 벌 — 웹 시제품과 똑같은 선 아이콘 (선 굵기 2, 둥근 끝).
++ * 이모지나 글자 기호를 쓰지 않는다 (기능명세 1-2).
++ * 색은 쓰는 곳에서 tint 로 입힌다.
++ */
++object 아이콘 {
++    private fun 선(이름: String, vararg 길: String): ImageVector {
++        val b = ImageVector.Builder(이름, 24.dp, 24.dp, 24f, 24f)
++        길.forEach {
++            b.addPath(
++                pathData = addPathNodes(it),
++                fill = null,
++                stroke = SolidColor(Color.Black),
++                strokeLineWidth = 2f,
++                strokeLineCap = StrokeCap.Round,
++                strokeLineJoin = StrokeJoin.Round,
++            )
++        }
++        return b.build()
++    }
++
++    val 지우기 = 선("trash", "M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3")
++    val 설정 = 선("gear",
++        "M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z",
++        "M15 12a3 3 0 1 1-6 0a3 3 0 1 1 6 0z")
++    val 아래 = 선("chevD", "M6 9l6 6 6-6")
++    val 왼쪽 = 선("chevL", "M15 18l-6-6 6-6")
++    val 오른쪽 = 선("chevR", "M9 18l6-6-6-6")
++    val 위로 = 선("up", "M12 19V5M5 12l7-7 7 7")
++    val 아래로 = 선("down", "M12 5v14M19 12l-7 7-7-7")
++    val 닫기 = 선("x", "M18 6L6 18M6 6l12 12")
++    val 더하기 = 선("plus", "M12 5v14M5 12h14")
++    val 빼기 = 선("minus", "M5 12h14")
++    val 체크 = 선("check", "M20 6L9 17l-5-5")
++    val 목록 = 선("list", "M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01")
++    val 연필 = 선("pencil", "M12 20h9", "M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z")
++
++    // 아래 탭
++    val 달력 = 선("cal", "M8 2v4M16 2v4M3 10h18", "M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z")
++    val 루틴 = 선("rou", "M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01")
++    val 바벨 = 선("ex", "M6.5 6.5v11M17.5 6.5v11M3 9v6M21 9v6M6.5 12h11")
++    val 톱니 = 설정
++}
+diff --git a/app/src/main/java/com/slayde/hasenheide/ui/MemoSheet.kt b/app/src/main/java/com/slayde/hasenheide/ui/MemoSheet.kt
+new file mode 100644
+index 0000000..5ed1291
+--- /dev/null
++++ b/app/src/main/java/com/slayde/hasenheide/ui/MemoSheet.kt
+@@ -0,0 +1,75 @@
++package com.slayde.hasenheide.ui
++
++import androidx.compose.foundation.layout.Arrangement
++import androidx.compose.foundation.layout.Box
++import androidx.compose.foundation.layout.Column
++import androidx.compose.foundation.layout.Row
++import androidx.compose.foundation.layout.fillMaxWidth
++import androidx.compose.foundation.layout.height
++import androidx.compose.foundation.layout.padding
++import androidx.compose.runtime.Composable
++import androidx.compose.runtime.getValue
++import androidx.compose.runtime.mutableStateOf
++import androidx.compose.runtime.remember
++import androidx.compose.runtime.setValue
++import androidx.compose.ui.Alignment
++import androidx.compose.ui.Modifier
++import androidx.compose.ui.unit.dp
++import com.slayde.hasenheide.data.수정메모
++import com.slayde.hasenheide.ui.theme.Local색
++import com.slayde.hasenheide.ui.theme.크기
++import java.time.Instant
++import java.time.ZoneId
++import java.time.format.DateTimeFormatter
++
++/**
++ * 수정 메모 — 써보면서 고칠 점을 바로 적어 둔다.
++ * 어느 화면에서 적었는지가 함께 남는다. '전부 복사'로 Claude 에게 붙여넣으면 된다.
++ */
++@Composable
++fun 메모시트(상태: 앱상태, 화면: String, 폰: 폰기능, onClose: () -> Unit) {
++    val c = Local색.current
++    var 새글 by remember { mutableStateOf("") }
++    val 때 = DateTimeFormatter.ofPattern("M/d HH:mm").withZone(ZoneId.systemDefault())
++    val 넣기 = {
++        val t = 새글.trim()
++        if (t.isNotEmpty()) {
++            상태.바꿈 { it.copy(메모 = it.메모 + 수정메모(System.currentTimeMillis(), 화면, t)) }
++            새글 = ""
++        }
++    }
++    시트("수정 메모 · $화면", onClose) {
++        Row(verticalAlignment = Alignment.CenterVertically) {
++            입력칸(새글, { 새글 = it }, Modifier.weight(1f), 안내 = "고칠 점을 적어 두세요", onDone = 넣기)
++            Box(Modifier.padding(start = 6.dp)) { 버튼("넣기", 넣기, 주요 = true) }
++        }
++        Box(Modifier.height(10.dp))
++        val 메모 = 상태.d.메모
++        if (메모.isEmpty()) 글("아직 적은 메모가 없습니다", 색 = c.옅음, 크기값 = 크기.버튼)
++        메모.reversed().forEach { m ->
++            Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
++                Column(Modifier.weight(1f)) {
++                    글("${때.format(Instant.ofEpochMilli(m.시각))} · ${m.화면}", 크기값 = 크기.작게, 색 = c.옅음)
++                    글(m.글, 줄 = 6)
++                }
++                아이콘버튼(아이콘.지우기, "메모 지우기", {
++                    상태.지우고알림("메모를 지웠습니다") { d -> d.copy(메모 = d.메모.filter { it != m }) }
++                }, 칠함 = false)
++            }
++            구분선()
++        }
++        if (메모.isNotEmpty()) {
++            Box(Modifier.height(12.dp))
++            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
++                버튼("전부 복사", {
++                    폰.복사(메모.joinToString("\n") { "- [${m화면(it)}] ${it.글}" })
++                }, Modifier.weight(1f), 주요 = true, 그림 = 아이콘.목록)
++                버튼("전부 지우기", {
++                    상태.지우고알림("메모 ${메모.size}개를 지웠습니다") { it.copy(메모 = emptyList()) }
++                }, Modifier.weight(1f), 글색 = c.나쁨)
++            }
++        }
++    }
++}
++
++private fun m화면(m: 수정메모) = m.화면
+diff --git a/app/src/main/java/com/slayde/hasenheide/ui/RoutineScreen.kt b/app/src/main/java/com/slayde/hasenheide/ui/RoutineScreen.kt
+new file mode 100644
+index 0000000..e64deb0
+--- /dev/null
++++ b/app/src/main/java/com/slayde/hasenheide/ui/RoutineScreen.kt
+@@ -0,0 +1,377 @@
++package com.slayde.hasenheide.ui
++
++import androidx.compose.foundation.background
++import androidx.compose.foundation.border
++import androidx.compose.foundation.gestures.detectTapGestures
++import androidx.compose.foundation.layout.Arrangement
++import androidx.compose.foundation.layout.Box
++import androidx.compose.foundation.layout.Column
++import androidx.compose.foundation.layout.Row
++import androidx.compose.foundation.layout.fillMaxSize
++import androidx.compose.foundation.layout.fillMaxWidth
++import androidx.compose.foundation.layout.height
++import androidx.compose.foundation.layout.heightIn
++import androidx.compose.foundation.layout.padding
++import androidx.compose.foundation.layout.size
++import androidx.compose.foundation.layout.width
++import androidx.compose.foundation.rememberScrollState
++import androidx.compose.foundation.shape.CircleShape
++import androidx.compose.foundation.shape.RoundedCornerShape
++import androidx.compose.foundation.verticalScroll
++import androidx.compose.material3.Icon
++import androidx.compose.runtime.Composable
++import androidx.compose.runtime.getValue
++import androidx.compose.runtime.mutableStateOf
++import androidx.compose.runtime.remember
++import androidx.compose.runtime.setValue
++import androidx.compose.ui.Alignment
++import androidx.compose.ui.Modifier
++import androidx.compose.ui.draw.alpha
++import androidx.compose.ui.draw.clip
++import androidx.compose.ui.draw.rotate
++import androidx.compose.ui.hapticfeedback.HapticFeedbackType
++import androidx.compose.ui.input.pointer.pointerInput
++import androidx.compose.ui.layout.onSizeChanged
++import androidx.compose.ui.platform.LocalHapticFeedback
++import androidx.compose.ui.text.font.FontWeight
++import androidx.compose.ui.unit.dp
++import com.slayde.hasenheide.data.루틴
++import com.slayde.hasenheide.data.루틴바꿈
++import com.slayde.hasenheide.data.루틴성장
++import com.slayde.hasenheide.data.루틴종목
++import com.slayde.hasenheide.data.무게글
++import com.slayde.hasenheide.data.무게반올림
++import com.slayde.hasenheide.data.묶음정리
++import com.slayde.hasenheide.data.분초
++import com.slayde.hasenheide.data.슈퍼묶기
++import com.slayde.hasenheide.data.슈퍼풀기
++import com.slayde.hasenheide.data.시간글
++import com.slayde.hasenheide.data.예상초
++import com.slayde.hasenheide.data.예정초기화
++import com.slayde.hasenheide.data.종목
++import com.slayde.hasenheide.data.종목옮기기
++import com.slayde.hasenheide.data.지금기준
++import com.slayde.hasenheide.data.초읽기
++import com.slayde.hasenheide.data.총세트
++import com.slayde.hasenheide.data.다음차례
++import com.slayde.hasenheide.ui.theme.Local색
++import com.slayde.hasenheide.ui.theme.간격
++import com.slayde.hasenheide.ui.theme.높이
++import com.slayde.hasenheide.ui.theme.모서리
++import com.slayde.hasenheide.ui.theme.크기
++import kotlin.math.max
++
++/** 집은 종목 — 꾹 눌러 집고, 목적지를 눌러 놓는다 (8-2) */
++private data class 집은것(val rid: String, val j: Int, val 이름: String)
++
++@Composable
++fun 루틴화면(상태: 앱상태) {
++    val c = Local색.current
++    val d = 상태.d
++    val 오늘 = 상태.오늘
++    var 열린루틴 by remember { mutableStateOf<String?>(null) }
++    var 이름고침 by remember { mutableStateOf<String?>(null) }
++    var 열린종목 by remember { mutableStateOf<String?>(null) }   // "rid|j"
++    var 켠칸 by remember { mutableStateOf<String?>(null) }
++    var 고르기 by remember { mutableStateOf<String?>(null) }     // 종목 추가 칸이 열린 루틴
++    var 방금 by remember { mutableStateOf(listOf<String>()) }
++    var 집기 by remember { mutableStateOf<집은것?>(null) }
++    val 진동 = LocalHapticFeedback.current
++
++    fun 구조바뀜(f: (com.slayde.hasenheide.data.앱데이터) -> com.slayde.hasenheide.data.앱데이터) =
++        상태.바꿈 { f(it).예정초기화(오늘) }
++
++    Box(Modifier.fillMaxSize()) {
++        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 간격.넓게)) {
++            제목글("루틴", Modifier.padding(top = 14.dp))
++            글("순서대로 돌아갑니다 · 빠진 날은 이어서", Modifier.padding(top = 2.dp, bottom = 12.dp), 크기값 = 크기.조금작게, 색 = c.옅음)
++
++            val 다음 = d.다음차례(오늘)
++            d.루틴들.forEachIndexed { i, r ->
++                val 열림 = 열린루틴 == r.id
++                카드(Modifier.padding(bottom = 10.dp), 안쪽 = 0.dp) {
++                    // ── 머리줄 ──
++                    Row(Modifier.fillMaxWidth().padding(start = 12.dp, end = 6.dp, top = 9.dp, bottom = 9.dp), verticalAlignment = Alignment.CenterVertically) {
++                        Row(Modifier.weight(1f).눌림 { 열린루틴 = if (열림) null else r.id; 열린종목 = null }, verticalAlignment = Alignment.CenterVertically) {
++                            글("${i + 1}", Modifier.width(22.dp), 크기값 = 크기.크게, 색 = c.흐림, 굵기 = FontWeight.Medium)
++                            Column(Modifier.weight(1f)) {
++                                Row(verticalAlignment = Alignment.CenterVertically) {
++                                    제목글(r.이름, Modifier.weight(1f, fill = false), 크기값 = 크기.크게)
++                                    if (다음?.id == r.id) { Box(Modifier.width(6.dp)); 알약("다음", c.좋음) }
++                                }
++                                글(if (r.휴식일) "휴식일" else "${r.종목.size}종목 · ${총세트(r)}세트 · ${시간글(예상초(r))}", 크기값 = 크기.작게, 색 = c.옅음)
++                            }
++                        }
++                        아이콘버튼(아이콘.위로, "앞으로", { 구조바뀜 { dd -> dd.copy(루틴들 = 자리바꿈(dd.루틴들, i, i - 1)) } }, 쓸수있음 = i > 0)
++                        Box(Modifier.width(3.dp))
++                        아이콘버튼(아이콘.아래로, "뒤로", { 구조바뀜 { dd -> dd.copy(루틴들 = 자리바꿈(dd.루틴들, i, i + 1)) } }, 쓸수있음 = i < d.루틴들.size - 1)
++                        Box(Modifier.width(3.dp))
++                        아이콘버튼(아이콘.설정, "루틴 설정", { 이름고침 = if (이름고침 == r.id) null else r.id }, 켬 = 이름고침 == r.id)
++                        펼침단추(열림) { 열린루틴 = if (열림) null else r.id; 열린종목 = null }
++                    }
++                    // ── 이름 고치기 · 지우기 ──
++                    if (이름고침 == r.id) {
++                        var 새이름 by remember(r.id) { mutableStateOf(r.이름) }
++                        구분선()
++                        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
++                            입력칸(새이름, { 새이름 = it }, Modifier.weight(1f), 안내 = "루틴 이름")
++                            버튼("저장", { 상태.바꿈 { it.루틴바꿈(r.id) { x -> x.copy(이름 = 새이름.trim().ifEmpty { x.이름 }) } }; 이름고침 = null }, 작게 = true, 주요 = true)
++                            버튼("지우기", {
++                                이름고침 = null
++                                상태.지우고알림("${r.이름}을(를) 지웠습니다") { dd -> dd.copy(루틴들 = dd.루틴들.filter { it.id != r.id }).예정초기화(오늘) }
++                            }, 작게 = true, 글색 = c.나쁨)
++                        }
++                    }
++                    // ── 몸통 ──
++                    if (열림) {
++                        구분선()
++                        Column(Modifier.padding(start = 12.dp, end = 12.dp, top = 6.dp, bottom = 12.dp)) {
++                            if (r.휴식일) 글("휴식일 · 순서에서 한 칸 차지", Modifier.padding(vertical = 8.dp), 크기값 = 크기.조금작게, 색 = c.옅음)
++                            else {
++                            성장줄(r.이름, d.루틴성장(r.id, 오늘), d.지금기준().기간, Modifier.padding(vertical = 6.dp))
++                            if (r.종목.isEmpty()) 글("아직 종목이 없습니다", Modifier.padding(vertical = 8.dp), 크기값 = 크기.조금작게, 색 = c.옅음)
++                            // 슈퍼세트 묶음은 상자로 모아 그린다
++                            var j = 0
++                            while (j < r.종목.size) {
++                                val g = r.종목[j].슈퍼
++                                if (g == null) {
++                                    val jj = j
++                                    종목줄(상태, r, jj, 열린종목 == "${r.id}|$jj", 켠칸, 집기,
++                                        on열기 = { 열린종목 = if (열린종목 == "${r.id}|$jj") null else "${r.id}|$jj"; 켠칸 = null },
++                                        on칸 = { k -> 열린종목 = "${r.id}|$jj"; 켠칸 = if (켠칸 == k) null else k },
++                                        on집기 = { 진동.performHapticFeedback(HapticFeedbackType.LongPress); 열린종목 = null; 집기 = 집은것(r.id, jj, r.종목[jj].이름) },
++                                        on놓기 = { 비율 -> 집기 = 놓기(상태, 집기, r.id, jj, 비율) },
++                                    )
++                                    j++
++                                } else {
++                                    val 시작 = j
++                                    while (j < r.종목.size && r.종목[j].슈퍼 == g) j++
++                                    val 끝 = j
++                                    Column(
++                                        Modifier.fillMaxWidth().padding(vertical = 4.dp)
++                                            .clip(RoundedCornerShape(모서리.작게))
++                                            .border(1.dp, c.휴식.copy(alpha = 0.45f), RoundedCornerShape(모서리.작게))
++                                            .background(c.휴식옅음.copy(alpha = 0.5f))
++                                            .padding(horizontal = 9.dp, vertical = 4.dp),
++                                    ) {
++                                        Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
++                                            글("슈퍼세트 · ${끝 - 시작}종목을 번갈아", Modifier.weight(1f), 크기값 = 크기.작게, 색 = c.휴식, 굵기 = FontWeight.Bold)
++                                            글("풀기", Modifier.눌림 { 상태.바꿈 { it.루틴바꿈(r.id) { x -> x.슈퍼풀기(g) } } }.padding(4.dp), 크기값 = 크기.작게, 색 = c.휴식, 굵기 = FontWeight.Bold)
++                                        }
++                                        for (jj in 시작 until 끝) {
++                                            종목줄(상태, r, jj, 열린종목 == "${r.id}|$jj", 켠칸, 집기,
++                                                on열기 = { 열린종목 = if (열린종목 == "${r.id}|$jj") null else "${r.id}|$jj"; 켠칸 = null },
++                                                on칸 = { k -> 열린종목 = "${r.id}|$jj"; 켠칸 = if (켠칸 == k) null else k },
++                                                on집기 = { 진동.performHapticFeedback(HapticFeedbackType.LongPress); 열린종목 = null; 집기 = 집은것(r.id, jj, r.종목[jj].이름) },
++                                                on놓기 = { 비율 -> 집기 = 놓기(상태, 집기, r.id, jj, 비율) },
++                                            )
++                                        }
++                                    }
++                                }
++                            }
++                            // ── 종목 추가 — 그 자리에서 여러 개 (4-5) ──
++                            if (고르기 == r.id) {
++                                안고르기(상태, r, 방금, { 방금 = it }) { 고르기 = null; 방금 = emptyList() }
++                            } else {
++                                Box(Modifier.height(10.dp))
++                                버튼("종목 추가", { 고르기 = r.id; 방금 = emptyList(); 열린종목 = null }, Modifier.fillMaxWidth(), 작게 = true, 그림 = 아이콘.더하기)
++                            }
++                            }
++                        }
++                    }
++                }
++            }
++            Row(Modifier.fillMaxWidth().padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
++                버튼("루틴 추가", {
++                    val id = "r" + System.currentTimeMillis()
++                    val 번호 = d.루틴들.count { !it.휴식일 } + 1
++                    구조바뀜 { it.copy(루틴들 = it.루틴들 + 루틴(id, "새 루틴 $번호")) }
++                    열린루틴 = id; 이름고침 = id
++                }, Modifier.weight(1f), 그림 = 아이콘.더하기)
++                버튼("휴식일", {
++                    구조바뀜 { it.copy(루틴들 = it.루틴들 + 루틴("r" + System.currentTimeMillis(), "휴식", 휴식일 = true)) }
++                }, Modifier.weight(0.7f), 그림 = 아이콘.더하기)
++            }
++            Box(Modifier.height(100.dp))
++        }
++        집기?.let { g ->
++            아래띠("${g.이름} 집음 · 위=앞으로 · 가운데=슈퍼세트 · 아래=뒤로", "취소", { 집기 = null }, 어둡게 = false)
++        }
++    }
++}
++
++private fun <T> 자리바꿈(l: List<T>, a: Int, b: Int): List<T> {
++    if (b !in l.indices) return l
++    val m = l.toMutableList(); val t = m[a]; m[a] = m[b]; m[b] = t
++    return m
++}
++
++/** 목적지를 눌렀을 때 — 줄의 위 30% = 앞으로, 아래 30% = 뒤로, 가운데 = 슈퍼세트 */
++private fun 놓기(상태: 앱상태, 집기: 집은것?, rid: String, to: Int, 비율: Float): 집은것? {
++    val g = 집기 ?: return null
++    if (g.rid != rid) return null            // 다른 루틴으로는 옮기지 않는다
++    if (g.j == to) return null               // 자기 자신을 누르면 취소
++    상태.바꿈 { d ->
++        d.루틴바꿈(rid) { r ->
++            when {
++                비율 < 0.3f -> r.종목옮기기(g.j, to, false)
++                비율 > 0.7f -> r.종목옮기기(g.j, to, true)
++                else -> r.슈퍼묶기(g.j, to, "g" + System.currentTimeMillis())
++            }.묶음정리()
++        }
++    }
++    return null
++}
++
++@Composable
++fun 펼침단추(열림: Boolean, onClick: () -> Unit) {
++    val c = Local색.current
++    Box(Modifier.size(높이.낮게).눌림(onClick), contentAlignment = Alignment.Center) {
++        Icon(아이콘.아래, if (열림) "접기" else "펼치기", Modifier.size(18.dp).rotate(if (열림) 180f else 0f), tint = c.옅음)
++    }
++}
++
++@Composable
++private fun 종목줄(
++    상태: 앱상태, r: 루틴, j: Int, 열림: Boolean, 켠칸: String?, 집기: 집은것?,
++    on열기: () -> Unit, on칸: (String) -> Unit, on집기: () -> Unit, on놓기: (Float) -> Unit,
++) {
++    val c = Local색.current
++    val e = r.종목[j]
++    val 폭 = 상태.d.설정.무게폭
++    var 줄높이 by remember { mutableStateOf(1) }
++    val 집힘 = 집기 != null && 집기.rid == r.id && 집기.j == j
++    Column(Modifier.fillMaxWidth().alpha(if (집힘) 0.35f else 1f)) {
++        Row(
++            Modifier
++                .fillMaxWidth()
++                .heightIn(min = 48.dp)
++                .onSizeChanged { 줄높이 = max(1, it.height) }
++                .pointerInput(r.id, j, 집기) {
++                    detectTapGestures(
++                        onLongPress = { if (집기 == null) on집기() },
++                        onTap = { p -> if (집기 != null) on놓기(p.y / 줄높이) else on열기() },
++                    )
++                }
++                .padding(vertical = 6.dp),
++            verticalAlignment = Alignment.CenterVertically,
++        ) {
++            Column(Modifier.weight(1f)) {
++                글(e.이름, 굵기 = FontWeight.Medium)
++                글("${무게글(e.무게)}kg × ${e.횟수}회 × ${e.세트}세트 · 휴식 ${분초(e.휴식)}", 크기값 = 크기.작게, 색 = c.옅음)
++            }
++            아이콘버튼(아이콘.지우기, "이 루틴에서 빼기", {
++                상태.지우고알림("${e.이름}을(를) 루틴에서 뺐습니다") { d -> d.루틴바꿈(r.id) { x -> x.copy(종목 = x.종목.filterIndexed { k, _ -> k != j }).묶음정리() } }
++            }, 칠함 = false)
++            펼침단추(열림, on열기)
++        }
++        if (열림) {
++            fun 고침(f: (루틴종목) -> 루틴종목) = 상태.바꿈 { d -> d.루틴바꿈(r.id) { x -> x.copy(종목 = x.종목.mapIndexed { k, y -> if (k == j) f(y) else y }) } }
++            숫자버튼줄(
++                listOf(
++                    숫자칸("s", "세트", "${e.세트}", "", false, { 고침 { it.copy(세트 = max(1, it.세트 - 1)) } }, { 고침 { it.copy(세트 = it.세트 + 1) } },
++                        { t -> t.toIntOrNull()?.let { v -> 고침 { it.copy(세트 = max(1, v)) } } }),
++                    숫자칸("w", "무게", 무게글(e.무게), "kg", true, { 고침 { it.copy(무게 = 무게반올림(max(0.0, it.무게 - 폭))) } }, { 고침 { it.copy(무게 = 무게반올림(it.무게 + 폭)) } },
++                        { t -> t.replace(',', '.').toDoubleOrNull()?.let { v -> 고침 { it.copy(무게 = 무게반올림(max(0.0, v))) } } }),
++                    숫자칸("r", "횟수", "${e.횟수}", "회", false, { 고침 { it.copy(횟수 = max(0, it.횟수 - 1)) } }, { 고침 { it.copy(횟수 = it.횟수 + 1) } },
++                        { t -> t.toIntOrNull()?.let { v -> 고침 { it.copy(횟수 = max(0, v)) } } }),
++                    숫자칸("t", "휴식", 분초(e.휴식), "", false, { 고침 { it.copy(휴식 = max(0, it.휴식 - 5)) } }, { 고침 { it.copy(휴식 = it.휴식 + 5) } },
++                        { t -> 초읽기(t)?.let { v -> 고침 { it.copy(휴식 = v) } } }),
++                ),
++                켠칸, on칸, Modifier.padding(bottom = 6.dp),
++            )
++        }
++        구분선()
++    }
++}
++
++/** 루틴 안에서 바로 고르는 칸 — 누르면 바로 들어가고, 다시 누르면 빠진다 (4-5) */
++@Composable
++private fun 안고르기(상태: 앱상태, r: 루틴, 방금: List<String>, 방금바꿈: (List<String>) -> Unit, 완료: () -> Unit) {
++    val c = Local색.current
++    val d = 상태.d
++    var 부위 by remember { mutableStateOf("전체") }
++    var 새로 by remember { mutableStateOf(false) }
++    var 새이름 by remember { mutableStateOf("") }
++    var 새장비 by remember { mutableStateOf("") }
++    var 새부위 by remember { mutableStateOf(d.카테고리.firstOrNull() ?: "") }
++    val 있음 = r.종목.map { it.이름 }.toSet()
++
++    Column(
++        Modifier.fillMaxWidth().padding(top = 10.dp)
++            .clip(RoundedCornerShape(모서리.작게))
++            .background(c.면2)
++            .border(1.dp, c.선, RoundedCornerShape(모서리.작게))
++            .padding(10.dp),
++    ) {
++        Row(verticalAlignment = Alignment.CenterVertically) {
++            글("종목 추가", 굵기 = FontWeight.Bold)
++            글(if (방금.isEmpty()) "누르면 추가" else "${방금.size}개 넣음", Modifier.weight(1f).padding(start = 8.dp), 크기값 = 크기.작게, 색 = c.옅음)
++            버튼("완료", 완료, 작게 = true, 주요 = true)
++        }
++        Box(Modifier.height(8.dp))
++        칩줄(listOf("전체") + d.카테고리, 부위, { 부위 = it })
++        Box(Modifier.height(4.dp))
++        // 새 종목 만들기 — 처음엔 종목이 하나도 없으므로 여기서 바로 만든다
++        if (새로) {
++            Column(Modifier.padding(vertical = 8.dp)) {
++                입력칸(새이름, { 새이름 = it }, Modifier.fillMaxWidth(), 안내 = "종목 이름 (예: 벤치프레스)")
++                Box(Modifier.height(6.dp))
++                칩줄(d.카테고리, 새부위, { 새부위 = it })
++                Box(Modifier.height(6.dp))
++                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
++                    입력칸(새장비, { 새장비 = it }, Modifier.weight(1f), 안내 = "장비 (바벨 · 덤벨 …)")
++                    버튼("만들고 넣기", {
++                        val 이름 = 새이름.trim()
++                        if (이름.isNotEmpty()) {
++                            상태.바꿈 { dd ->
++                                val 표 = if (dd.종목표.any { it.이름 == 이름 }) dd.종목표 else dd.종목표 + 종목(이름, 새부위, 새장비.trim())
++                                dd.copy(종목표 = 표).루틴바꿈(r.id) { x -> x.copy(종목 = x.종목 + 루틴종목(이름, 휴식 = dd.설정.기본휴식)) }
++                            }
++                            방금바꿈(방금 + 이름); 새이름 = ""; 새장비 = ""; 새로 = false
++                        }
++                    }, 작게 = true, 주요 = true)
++                }
++            }
++        } else {
++            고르기줄("새 종목 만들기", null, 아이콘.더하기) { 새로 = true }
++        }
++        val 목록 = d.종목표.filter { 부위 == "전체" || it.부위 == 부위 }
++        if (목록.isEmpty() && !새로) 글("이 부위에 종목이 없습니다", Modifier.padding(vertical = 10.dp), 크기값 = 크기.조금작게, 색 = c.옅음)
++        Column(Modifier.heightIn(max = 360.dp).verticalScroll(rememberScrollState())) {
++            목록.forEach { e ->
++                val 넣음 = e.이름 in 방금
++                val 원래 = e.이름 in 있음 && !넣음
++                Row(
++                    Modifier.fillMaxWidth()
++                        .then(if (원래) Modifier else Modifier.눌림 {
++                            if (넣음) {
++                                상태.바꿈 { dd -> dd.루틴바꿈(r.id) { x ->
++                                    val k = x.종목.indexOfLast { it.이름 == e.이름 }
++                                    if (k < 0) x else x.copy(종목 = x.종목.filterIndexed { i, _ -> i != k }).묶음정리()
++                                } }
++                                방금바꿈(방금 - e.이름)
++                            } else {
++                                상태.바꿈 { dd -> dd.루틴바꿈(r.id) { x -> x.copy(종목 = x.종목 + 루틴종목(e.이름, 휴식 = dd.설정.기본휴식)) } }
++                                방금바꿈(방금 + e.이름)
++                            }
++                        })
++                        .padding(vertical = 11.dp),
++                    verticalAlignment = Alignment.CenterVertically,
++                ) {
++                    Row(Modifier.weight(1f), verticalAlignment = Alignment.Bottom) {
++                        글(e.이름, Modifier.weight(1f, fill = false), 색 = if (원래) c.옅음 else if (넣음) c.강조 else c.글, 굵기 = if (넣음) FontWeight.Bold else FontWeight.Normal)
++                        Box(Modifier.width(6.dp))
++                        글(listOf(e.부위, e.장비).filter { it.isNotBlank() }.joinToString("·"), 크기값 = 크기.작게, 색 = c.옅음)
++                    }
++                    when {
++                        원래 -> 글("있음", 크기값 = 크기.작게, 색 = c.옅음)
++                        넣음 -> Icon(아이콘.체크, "넣음", Modifier.size(18.dp), tint = c.강조)
++                        else -> Icon(아이콘.더하기, "넣기", Modifier.size(18.dp), tint = c.강조)
++                    }
++                }
++                구분선()
++            }
++        }
++    }
++}
+diff --git a/app/src/main/java/com/slayde/hasenheide/ui/SettingsScreen.kt b/app/src/main/java/com/slayde/hasenheide/ui/SettingsScreen.kt
+new file mode 100644
+index 0000000..8590911
+--- /dev/null
++++ b/app/src/main/java/com/slayde/hasenheide/ui/SettingsScreen.kt
+@@ -0,0 +1,75 @@
++package com.slayde.hasenheide.ui
++
++import androidx.compose.foundation.layout.Arrangement
++import androidx.compose.foundation.layout.Box
++import androidx.compose.foundation.layout.Column
++import androidx.compose.foundation.layout.Row
++import androidx.compose.foundation.layout.fillMaxSize
++import androidx.compose.foundation.layout.fillMaxWidth
++import androidx.compose.foundation.layout.height
++import androidx.compose.foundation.layout.padding
++import androidx.compose.foundation.rememberScrollState
++import androidx.compose.foundation.verticalScroll
++import androidx.compose.runtime.Composable
++import androidx.compose.ui.Modifier
++import androidx.compose.ui.unit.dp
++import com.slayde.hasenheide.BuildConfig
++import com.slayde.hasenheide.data.기준목록
++import com.slayde.hasenheide.data.무게글
++import com.slayde.hasenheide.data.분초
++import com.slayde.hasenheide.data.설정값
++import com.slayde.hasenheide.ui.theme.Local색
++import com.slayde.hasenheide.ui.theme.간격
++import com.slayde.hasenheide.ui.theme.크기
++
++@Composable
++fun 설정화면(상태: 앱상태, 폰: 폰기능) {
++    val c = Local색.current
++    val s = 상태.d.설정
++    fun 고침(f: (설정값) -> 설정값) = 상태.바꿈 { it.copy(설정 = f(it.설정)) }
++
++    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 간격.넓게)) {
++        제목글("설정", Modifier.padding(top = 14.dp, bottom = 12.dp))
++
++        이름표("운동 진행", Modifier.padding(bottom = 6.dp))
++        카드(안쪽 = 14.dp) {
++            설정줄("자동 진행", "휴식 끝나면 다음 세트로") { 스위치(s.자동진행) { v -> 고침 { it.copy(자동진행 = v) } } }
++            구분선()
++            설정줄("넘어가기 전 확인", "넘어가기 전에 한 번 묻기") { 스위치(s.넘어가기전확인) { v -> 고침 { it.copy(넘어가기전확인 = v) } } }
++            구분선()
++            설정줄("소리 · 진동", "휴식이 끝나면 알립니다") { 스위치(s.소리진동) { v -> 고침 { it.copy(소리진동 = v) } } }
++            구분선()
++            설정줄("운동 중 화면 켜 두기", "휴식 중에 화면이 꺼지지 않게") { 스위치(s.화면유지) { v -> 고침 { it.copy(화면유지 = v) } } }
++        }
++
++        이름표("기록", Modifier.padding(top = 18.dp, bottom = 6.dp))
++        카드(안쪽 = 14.dp) {
++            설정줄("무게 조절 폭", "＋ − 한 번에 · 직접 입력은 0.1 단위") {}
++            칩줄(listOf(0.5, 1.0, 1.25, 2.5, 5.0).map { 무게글(it) }, 무게글(s.무게폭), { t -> 고침 { it.copy(무게폭 = t.toDouble()) } })
++            Box(Modifier.height(10.dp)); 구분선()
++            설정줄("기본 휴식", "새 종목을 넣을 때") {}
++            칩줄(listOf(60, 90, 120, 150, 180).map { 분초(it) }, 분초(s.기본휴식), { t ->
++                val (m, x) = t.split(":"); 고침 { it.copy(기본휴식 = m.toInt() * 60 + x.toInt()) }
++            })
++            Box(Modifier.height(10.dp)); 구분선()
++            설정줄("향상도 기준", "무엇과 견줄까요") {}
++            칩줄(기준목록.map { it.짧 }, 기준목록.firstOrNull { it.k == s.기준 }?.짧, { t ->
++                val k = 기준목록.first { it.짧 == t }.k; 고침 { it.copy(기준 = k) }
++            })
++        }
++
++        이름표("데이터", Modifier.padding(top = 18.dp, bottom = 6.dp))
++        카드(안쪽 = 14.dp) {
++            글("기록은 이 폰 안에만 저장됩니다", 크기값 = 크기.조금작게, 색 = c.흐림)
++            글("폰을 바꾸거나 앱을 지우기 전에 백업 파일로 내보내 두세요", 크기값 = 크기.작게, 색 = c.옅음)
++            Box(Modifier.height(10.dp))
++            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
++                버튼("백업 내보내기", 폰.내보내기, Modifier.weight(1f), 작게 = true)
++                버튼("백업 가져오기", 폰.가져오기, Modifier.weight(1f), 작게 = true)
++            }
++        }
++
++        글("하젠하이데 ${BuildConfig.VERSION_NAME} · 시험판", Modifier.fillMaxWidth().padding(top = 18.dp), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)
++        Box(Modifier.height(100.dp))
++    }
++}
+diff --git a/app/src/main/java/com/slayde/hasenheide/ui/WorkoutScreen.kt b/app/src/main/java/com/slayde/hasenheide/ui/WorkoutScreen.kt
+new file mode 100644
+index 0000000..409ddc4
+--- /dev/null
++++ b/app/src/main/java/com/slayde/hasenheide/ui/WorkoutScreen.kt
+@@ -0,0 +1,398 @@
++package com.slayde.hasenheide.ui
++
++import androidx.compose.foundation.background
++import androidx.compose.foundation.border
++import androidx.compose.foundation.layout.Arrangement
++import androidx.compose.foundation.layout.Box
++import androidx.compose.foundation.layout.Column
++import androidx.compose.foundation.layout.Row
++import androidx.compose.foundation.layout.fillMaxSize
++import androidx.compose.foundation.layout.fillMaxWidth
++import androidx.compose.foundation.layout.height
++import androidx.compose.foundation.layout.padding
++import androidx.compose.foundation.layout.size
++import androidx.compose.foundation.layout.width
++import androidx.compose.foundation.rememberScrollState
++import androidx.compose.foundation.shape.CircleShape
++import androidx.compose.foundation.shape.RoundedCornerShape
++import androidx.compose.foundation.verticalScroll
++import androidx.compose.material3.Icon
++import androidx.compose.runtime.Composable
++import androidx.compose.runtime.DisposableEffect
++import androidx.compose.runtime.LaunchedEffect
++import androidx.compose.runtime.getValue
++import androidx.compose.runtime.mutableLongStateOf
++import androidx.compose.runtime.mutableStateOf
++import androidx.compose.runtime.remember
++import androidx.compose.runtime.setValue
++import androidx.compose.ui.Alignment
++import androidx.compose.ui.Modifier
++import androidx.compose.ui.draw.alpha
++import androidx.compose.ui.draw.clip
++import androidx.compose.ui.platform.LocalView
++import androidx.compose.ui.text.font.FontWeight
++import androidx.compose.ui.unit.dp
++import com.slayde.hasenheide.data.다음빈칸
++import com.slayde.hasenheide.data.다음으로
++import com.slayde.hasenheide.data.다음종목으로
++import com.slayde.hasenheide.data.덜한가
++import com.slayde.hasenheide.data.달성도
++import com.slayde.hasenheide.data.루틴달성도
++import com.slayde.hasenheide.data.루틴성장
++import com.slayde.hasenheide.data.마감풀기
++import com.slayde.hasenheide.data.목표볼륨
++import com.slayde.hasenheide.data.목표세트
++import com.slayde.hasenheide.data.무게글
++import com.slayde.hasenheide.data.묶음이름
++import com.slayde.hasenheide.data.분초
++import com.slayde.hasenheide.data.불러오기
++import com.slayde.hasenheide.data.세트값
++import com.slayde.hasenheide.data.세트삭제
++import com.slayde.hasenheide.data.세트추가
++import com.slayde.hasenheide.data.세트휴식
++import com.slayde.hasenheide.data.시분초
++import com.slayde.hasenheide.data.오늘볼륨
++import com.slayde.hasenheide.data.운동세션
++import com.slayde.hasenheide.data.운동저장
++import com.slayde.hasenheide.data.유효세트
++import com.slayde.hasenheide.data.일RM
++import com.slayde.hasenheide.data.종목성장
++import com.slayde.hasenheide.data.종목으로
++import com.slayde.hasenheide.data.지금기준
++import com.slayde.hasenheide.data.지금종목
++import com.slayde.hasenheide.data.찬것
++import com.slayde.hasenheide.data.체크
++import com.slayde.hasenheide.data.초읽기
++import com.slayde.hasenheide.data.총칸
++import com.slayde.hasenheide.data.콤마
++import com.slayde.hasenheide.data.한세트수
++import com.slayde.hasenheide.data.휴식고치기
++import com.slayde.hasenheide.data.휴식끝
++import com.slayde.hasenheide.data.휴식조절
++import com.slayde.hasenheide.data.값고치기
++import com.slayde.hasenheide.data.칸
++import com.slayde.hasenheide.ui.theme.Local색
++import com.slayde.hasenheide.ui.theme.간격
++import com.slayde.hasenheide.ui.theme.높이
++import com.slayde.hasenheide.ui.theme.모서리
++import com.slayde.hasenheide.ui.theme.크기
++import kotlinx.coroutines.delay
++import kotlin.math.max
++
++/**
++ * 운동 실행 화면 (기능명세 5).
++ * 휴식은 방금 끝낸 세트 줄 위에서 돈다. 끝나는 '시각'을 기억하므로 화면이 꺼졌다 켜져도 어긋나지 않는다 (5-4).
++ */
++@Composable
++fun 운동화면(상태: 앱상태, 폰: 폰기능) {
++    val c = Local색.current
++    val d = 상태.d
++    val S = d.세션 ?: return
++    var 지금 by remember { mutableLongStateOf(System.currentTimeMillis()) }
++    var 열린세트 by remember { mutableStateOf(-1) }
++    var 켠칸 by remember { mutableStateOf<String?>(null) }
++    var 열린시트 by remember { mutableStateOf<String?>(null) }   // 목록 · 추가 · 마칠까
++
++    fun 바꿈(f: (운동세션) -> 운동세션) = 상태.바꿈 { dd -> dd.세션?.let { dd.copy(세션 = f(it)) } ?: dd }
++
++    // 시계 — 0.25초마다. 휴식이 끝나면 알리고 다음으로
++    LaunchedEffect(Unit) {
++        while (true) {
++            지금 = System.currentTimeMillis()
++            val s = 상태.d.세션
++            val h = s?.휴식
++            if (s != null && h != null && !h.물음 && 지금 >= h.끝시각) {
++                if (상태.d.설정.소리진동) 폰.알림()
++                상태.바꿈 { dd -> dd.세션?.let { dd.copy(세션 = it.휴식끝(dd.설정)) } ?: dd }
++            }
++            delay(250)
++        }
++    }
++    // 운동 중에는 화면을 켜 둔다 (설정에서 끌 수 있다)
++    val 뷰 = LocalView.current
++    DisposableEffect(d.설정.화면유지) {
++        뷰.keepScreenOn = d.설정.화면유지
++        onDispose { 뷰.keepScreenOn = false }
++    }
++
++    Box(Modifier.fillMaxSize()) {
++        Column(Modifier.fillMaxSize()) {
++            머리줄(S, 지금) { 바꿈 { it.copy(휴식 = null, 끝화면 = true) } }
++            if (S.끝화면) 마무리(상태, S, 지금, 폰) else {
++            val ex = S.지금종목
++            종목머리(상태, S)
++            구분선()
++            Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 간격.넓게)) {
++                Box(Modifier.height(8.dp))
++                for (k in 0 until ex.총칸()) {
++                    val h = S.휴식
++                    if (h != null && h.k == k) 휴식띠(S, 지금, ::바꿈)
++                    else 세트줄(상태, S, k, 열린세트 == k, 켠칸,
++                        on체크 = { 바꿈 { it.체크(k, System.currentTimeMillis()) }; 열린세트 = -1 },
++                        on열기 = { 열린세트 = if (열린세트 == k) -1 else k; 켠칸 = null },
++                        on칸 = { f -> 열린세트 = k; 켠칸 = if (켠칸 == f) null else f },
++                        on지우기 = { 바꿈 { it.세트삭제(k) }; if (열린세트 == k) 열린세트 = -1 },
++                        바꿈 = ::바꿈)
++                }
++                // ＋ — 맨 아래 세트를 베낀다
++                Box(Modifier.fillMaxWidth().padding(vertical = 10.dp), contentAlignment = Alignment.Center) {
++                    Box(
++                        Modifier.size(높이.보통).clip(CircleShape).background(c.면).border(1.dp, c.선, CircleShape).눌림 { 바꿈 { it.세트추가() } },
++                        contentAlignment = Alignment.Center,
++                    ) { Icon(아이콘.더하기, "세트 추가", Modifier.size(20.dp), tint = c.강조) }
++                }
++                if (ex.마감) 버튼("남은 운동 마저 하기", { 바꿈 { it.마감풀기() } }, Modifier.fillMaxWidth(), 작게 = true)
++                // 남은 운동
++                val 남은 = S.종목들.withIndex().filter { (j, e) -> j != S.i && !e.마감 && e.덜한가() }
++                if (남은.isNotEmpty()) {
++                    구분선(Modifier.padding(top = 10.dp))
++                    이름표("남은 운동", Modifier.padding(top = 10.dp, bottom = 2.dp))
++                    남은.forEach { (j, e) ->
++                        Row(Modifier.fillMaxWidth().눌림 { 바꿈 { it.종목으로(j) }; 열린세트 = -1 }.padding(vertical = 10.dp)) {
++                            글(e.이름, Modifier.weight(1f))
++                            글("${e.총칸() - e.찬것().size}세트", 크기값 = 크기.작게, 색 = c.옅음)
++                        }
++                        구분선()
++                    }
++                }
++                Box(Modifier.height(16.dp))
++            }
++            // 아랫줄 — 운동 목록 · 운동 추가 · 다음
++            Row(Modifier.fillMaxWidth().background(c.면).padding(horizontal = 12.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
++                버튼("운동 목록", { 열린시트 = "목록" }, Modifier.weight(1f), 작게 = true, 그림 = 아이콘.목록)
++                버튼("운동 추가", { 열린시트 = "추가" }, Modifier.weight(1f), 작게 = true, 그림 = 아이콘.더하기)
++                버튼("다음", {
++                    if (S.지금종목.덜한가()) 열린시트 = "마칠까" else { 바꿈 { it.다음종목으로(false) }; 열린세트 = -1 }
++                }, Modifier.weight(1f), 작게 = true, 그림 = 아이콘.오른쪽)
++            }
++            }
++        }
++        when (열린시트) {
++            "목록" -> 시트("오늘 운동 목록", { 열린시트 = null }) {
++                글("누르면 이동 · 하던 자리는 그대로", 크기값 = 크기.조금작게, 색 = c.옅음)
++                S.종목들.forEachIndexed { j, e ->
++                    고르기줄(e.이름, "${e.찬것().size}/${e.총칸()}세트" + (if (e.마감) " · 마침" else "") + (if (e.임시) " · 오늘만" else ""),
++                        if (j == S.i) 아이콘.체크 else 아이콘.오른쪽, 흐림 = e.마감) {
++                        바꿈 { it.종목으로(j) }; 열린세트 = -1; 열린시트 = null
++                    }
++                }
++            }
++            "추가" -> {
++                var 부위 by remember { mutableStateOf("전체") }
++                시트("운동 추가", { 열린시트 = null }) {
++                    글("오늘만 · 루틴 통계 제외 · 종목 향상도엔 반영", 크기값 = 크기.조금작게, 색 = c.옅음)
++                    Box(Modifier.height(8.dp))
++                    칩줄(listOf("전체") + d.카테고리, 부위, { 부위 = it })
++                    val 목록 = d.종목표.filter { 부위 == "전체" || it.부위 == 부위 }
++                    if (목록.isEmpty()) 글("종목 탭에서 종목을 먼저 만들어 주세요", Modifier.padding(vertical = 12.dp), 크기값 = 크기.조금작게, 색 = c.옅음)
++                    목록.forEach { e ->
++                        고르기줄(e.이름, listOf(e.부위, e.장비).filter { it.isNotBlank() }.joinToString("·"), 아이콘.더하기) {
++                            바꿈 { it.불러오기(e.이름, d.설정.기본휴식).종목으로(it.i + 1) }; 열린시트 = null
++                        }
++                    }
++                }
++            }
++            "마칠까" -> 시트("운동이 완료되지 않았습니다", { 열린시트 = null }) {
++                val e = S.지금종목
++                글("${e.이름} ${e.총칸() - e.찬것().size}세트 남음 · 여기서 마칠까요?", 크기값 = 크기.버튼, 색 = c.흐림)
++                Box(Modifier.height(10.dp))
++                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
++                    버튼("여기까지", { 바꿈 { it.다음종목으로(true) }; 열린시트 = null; 열린세트 = -1 }, Modifier.weight(1f), 주요 = true)
++                    버튼("나중에 더", { 바꿈 { it.다음종목으로(false) }; 열린시트 = null; 열린세트 = -1 }, Modifier.weight(1f))
++                }
++                글("나중에 더 → 남은 운동 목록에 남습니다", Modifier.padding(top = 8.dp), 크기값 = 크기.작게, 색 = c.옅음)
++            }
++        }
++    }
++}
++
++@Composable
++private fun 머리줄(S: 운동세션, 지금: Long, 끝내기: () -> Unit) {
++    val c = Local색.current
++    val 달 = S.루틴달성도()
++    Column(Modifier.fillMaxWidth().background(c.면)) {
++        Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
++            제목글(S.루틴이름, 크기값 = 크기.버튼)
++            글("${S.i + 1}/${S.종목들.size}", 크기값 = 크기.아주작게, 색 = c.흐림)
++            글("달성도 ${달}%", 크기값 = 크기.아주작게, 색 = c.강조, 굵기 = FontWeight.Bold)
++            글(시분초((지금 - S.시작시각) / 1000), 크기값 = 크기.아주작게, 색 = c.흐림)
++            글("${콤마(S.오늘볼륨())}/${콤마(S.목표볼륨())}", Modifier.weight(1f), 크기값 = 크기.아주작게, 색 = c.흐림)
++            Box(
++                Modifier.height(높이.아주낮게).clip(RoundedCornerShape(모서리.아주작게)).background(c.면2)
++                    .border(1.dp, c.선, RoundedCornerShape(모서리.아주작게)).눌림(끝내기).padding(horizontal = 8.dp),
++                contentAlignment = Alignment.Center,
++            ) { 글("운동 끝내기", 크기값 = 크기.작게, 색 = c.흐림, 굵기 = FontWeight.Bold) }
++        }
++        // 3px 막대 — 루틴 달성도
++        Box(Modifier.fillMaxWidth().height(3.dp).background(c.면2)) {
++            Box(Modifier.fillMaxWidth(달.coerceIn(0, 100) / 100f).height(3.dp).background(c.강조))
++        }
++    }
++}
++
++@Composable
++private fun 종목머리(상태: 앱상태, S: 운동세션) {
++    val c = Local색.current
++    val e = S.지금종목
++    val 지금세트 = e.찬것()
++    val 과거rm = 상태.d.기록.values.flatMap { r -> r.종목들.filter { it.이름 == e.이름 }.flatMap { it.세트들 } }.maxOfOrNull { 일RM(it.w, it.r) } ?: 0.0
++    val rm = max(과거rm, 지금세트.maxOfOrNull { 일RM(it.w, it.r) } ?: 0.0)
++    val 목표볼 = e.무게 * e.횟수 * (if (e.계획세트 > 0) e.계획세트 else e.세트)
++    val 뱃지 = listOfNotNull(
++        if (e.임시) "오늘만" else null, if (e.마감) "마침" else null,
++        e.슈퍼?.let { g -> val 식구 = S.종목들.filter { it.슈퍼 == g }; "슈퍼 ${식구.indexOf(e) + 1}/${식구.size}" },
++    )
++    Row(Modifier.fillMaxWidth().padding(horizontal = 간격.넓게, vertical = 11.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
++        Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
++            글("%02d)".format(S.i + 1), 크기값 = 크기.조금작게, 색 = c.흐림, 굵기 = FontWeight.Bold)
++            Box(Modifier.width(4.dp))
++            제목글(e.이름, Modifier.weight(1f, fill = false), 크기값 = 크기.본문)
++            뱃지.forEach { b -> Box(Modifier.width(4.dp)); 알약(b, c.휴식) }
++        }
++        글("달성도 ${e.달성도()}%", 크기값 = 크기.작게, 색 = c.강조, 굵기 = FontWeight.Bold)
++        글("1RM ${if (rm > 0) "%.1f".format(rm) else "—"}", 크기값 = 크기.작게, 색 = c.흐림)
++        글("${콤마(com.slayde.hasenheide.data.볼륨(지금세트))}/${콤마(목표볼)}", 크기값 = 크기.작게, 색 = c.흐림)
++    }
++}
++
++@Composable
++private fun 세트줄(
++    상태: 앱상태, S: 운동세션, k: Int, 열림: Boolean, 켠칸: String?,
++    on체크: () -> Unit, on열기: () -> Unit, on칸: (String) -> Unit, on지우기: () -> Unit,
++    바꿈: ((운동세션) -> 운동세션) -> Unit,
++) {
++    val c = Local색.current
++    val e = S.지금종목
++    val rec = e.기록.칸(k)
++    val 지금칸 = k == S.s
++    val v = S.세트값(e, k)
++    val 쉼 = e.세트휴식(k)
++    val 폭 = 상태.d.설정.무게폭
++    Column(
++        Modifier.fillMaxWidth().padding(vertical = 2.dp)
++            .clip(RoundedCornerShape(모서리.작게))
++            .background(if (지금칸) c.강조옅음 else androidx.compose.ui.graphics.Color.Transparent)
++            .padding(horizontal = 6.dp, vertical = 3.dp)
++            .alpha(if (rec == null && !지금칸) 0.55f else 1f),
++    ) {
++        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
++            // 체크
++            Box(
++                Modifier.size(높이.아주낮게).clip(CircleShape)
++                    .background(if (rec != null) c.강조 else c.면2)
++                    .border(1.dp, if (rec != null) c.강조 else c.선, CircleShape)
++                    .눌림(on체크),
++                contentAlignment = Alignment.Center,
++            ) { Icon(아이콘.체크, "${k + 1}세트 완료", Modifier.size(15.dp), tint = if (rec != null) c.강조글 else c.면) }
++            // 몇 번째 세트
++            Box(
++                Modifier.size(width = 30.dp, height = 높이.아주낮게).clip(RoundedCornerShape(모서리.아주작게)).background(c.면)
++                    .border(1.dp, c.선, RoundedCornerShape(모서리.아주작게)).눌림(on열기),
++                contentAlignment = Alignment.Center,
++            ) { 글("${k + 1}", 크기값 = 크기.버튼, 굵기 = FontWeight.Bold) }
++            Row(Modifier.weight(1.6f).눌림(on열기), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.Bottom) {
++                글(무게글(v.w), 크기값 = 크기.크게, 색 = if (rec != null) c.글 else c.흐림)
++                글("kg", 크기값 = 크기.작게, 색 = c.옅음)
++            }
++            Row(Modifier.weight(1f).눌림(on열기), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.Bottom) {
++                글("${v.r}", 크기값 = 크기.크게, 색 = if (rec != null) c.글 else c.흐림)
++                글("회", 크기값 = 크기.작게, 색 = c.옅음)
++            }
++            Row(Modifier.width(62.dp).눌림(on열기), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.Bottom) {
++                글("휴식 ", 크기값 = 크기.아주작게, 색 = c.옅음)
++                글(분초(쉼), 크기값 = 크기.버튼, 색 = c.옅음)
++            }
++            아이콘버튼(아이콘.지우기, "${k + 1}세트 지우기", on지우기, 칠함 = false, 크기칸 = 높이.아주낮게)
++            펼침단추(열림, on열기)
++        }
++        if (열림) {
++            숫자버튼줄(
++                listOf(
++                    숫자칸("w", "무게", 무게글(v.w), "kg", true, { 바꿈 { it.값고치기(k, 새무게 = it.세트값(it.지금종목, k).w - 폭) } },
++                        { 바꿈 { it.값고치기(k, 새무게 = it.세트값(it.지금종목, k).w + 폭) } },
++                        { t -> t.replace(',', '.').toDoubleOrNull()?.let { w -> 바꿈 { it.값고치기(k, 새무게 = w) } } }),
++                    숫자칸("r", "횟수", "${v.r}", "회", false, { 바꿈 { it.값고치기(k, 새횟수 = it.세트값(it.지금종목, k).r - 1) } },
++                        { 바꿈 { it.값고치기(k, 새횟수 = it.세트값(it.지금종목, k).r + 1) } },
++                        { t -> t.toIntOrNull()?.let { r -> 바꿈 { it.값고치기(k, 새횟수 = r) } } }),
++                    숫자칸("t", "휴식", 분초(쉼), "", false, { 바꿈 { it.휴식고치기(k, it.지금종목.세트휴식(k) - 5) } },
++                        { 바꿈 { it.휴식고치기(k, it.지금종목.세트휴식(k) + 5) } },
++                        { t -> 초읽기(t)?.let { x -> 바꿈 { it.휴식고치기(k, x) } } }),
++                ),
++                켠칸, on칸, Modifier.padding(top = 6.dp, bottom = 4.dp),
++            )
++        }
++    }
++}
++
++/** 휴식 띠 — 방금 끝낸 세트 줄 하나만 덮는다 (5-3-1) */
++@Composable
++private fun 휴식띠(S: 운동세션, 지금: Long, 바꿈: ((운동세션) -> 운동세션) -> Unit) {
++    val c = Local색.current
++    val h = S.휴식 ?: return
++    val 남은초 = max(0L, (h.끝시각 - 지금 + 999) / 1000).toInt()
++    Row(
++        Modifier.fillMaxWidth().padding(vertical = 3.dp)
++            .clip(RoundedCornerShape(모서리.작게))
++            .background(c.휴식옅음)
++            .border(1.dp, c.휴식.copy(alpha = 0.4f), RoundedCornerShape(모서리.작게))
++            .padding(horizontal = 10.dp, vertical = 8.dp),
++        verticalAlignment = Alignment.CenterVertically,
++        horizontalArrangement = Arrangement.spacedBy(6.dp),
++    ) {
++        if (!h.물음) {
++            글("휴식", 크기값 = 크기.작게, 색 = c.휴식, 굵기 = FontWeight.Bold)
++            제목글(분초(남은초), Modifier.weight(1f), 크기값 = 크기.큰숫자, 색 = c.휴식)
++            띠단추("−10초") { 바꿈 { it.휴식조절(-10, System.currentTimeMillis()) } }
++            띠단추("+10초") { 바꿈 { it.휴식조절(10, System.currentTimeMillis()) } }
++            띠단추("건너뛰기", 진하게 = true) { 바꿈 { it.다음으로() } }
++        } else {
++            val 다음 = S.휴식?.다음i?.let { S.종목들.getOrNull(it)?.이름 } ?: S.지금종목.이름
++            글("휴식 끝 · 다음 $다음", Modifier.weight(1f), 크기값 = 크기.버튼, 색 = c.휴식, 굵기 = FontWeight.Bold)
++            띠단추("30초 더") { 바꿈 { s -> s.copy(휴식 = s.휴식?.copy(끝시각 = System.currentTimeMillis() + 30_000, 물음 = false)) } }
++            띠단추("시작", 진하게 = true) { 바꿈 { it.다음으로() } }
++        }
++    }
++}
++
++@Composable
++private fun 띠단추(글자: String, 진하게: Boolean = false, onClick: () -> Unit) {
++    val c = Local색.current
++    Box(
++        Modifier.height(높이.낮게).clip(RoundedCornerShape(모서리.아주작게))
++            .background(if (진하게) c.휴식 else c.면)
++            .border(1.dp, c.휴식.copy(alpha = 0.4f), RoundedCornerShape(모서리.아주작게))
++            .눌림(onClick).padding(horizontal = 9.dp),
++        contentAlignment = Alignment.Center,
++    ) { 글(글자, 크기값 = 크기.조금작게, 색 = if (진하게) c.면 else c.휴식, 굵기 = FontWeight.Bold) }
++}
++
++/** 마무리 — 오늘 운동 달성 (5 · 6-2) */
++@Composable
++private fun 마무리(상태: 앱상태, S: 운동세션, 지금: Long, 폰: 폰기능) {
++    val c = Local색.current
++    val d = 상태.d
++    val 기간 = d.지금기준().기간
++    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 간격.넓게)) {
++        Box(Modifier.height(24.dp))
++        글(S.루틴이름, Modifier.fillMaxWidth(), 크기값 = 크기.조금작게, 색 = c.옅음, 가운데 = true)
++        제목글(if (S.한세트수() >= S.목표세트()) "오늘 운동 달성" else "오늘 운동 끝", Modifier.fillMaxWidth().padding(top = 4.dp), 크기값 = 크기.큰숫자)
++        글("${S.한세트수()} / ${S.목표세트()} 세트 · ${시분초((지금 - S.시작시각) / 1000)} · 볼륨 ${콤마(S.오늘볼륨())}kg",
++            Modifier.fillMaxWidth().padding(top = 6.dp), 크기값 = 크기.조금작게, 색 = c.흐림, 가운데 = true)
++        Box(Modifier.height(18.dp))
++        카드 {
++            성장줄(S.루틴이름, d.루틴성장(S.루틴id, 상태.오늘, S.유효세트()), 기간, Modifier.padding(vertical = 6.dp))
++            S.종목들.filter { it.찬것().isNotEmpty() }.forEach { e ->
++                구분선()
++                성장줄(e.이름, d.종목성장(e.이름, 상태.오늘, e.찬것(), S.묶음이름(e)), 기간, Modifier.padding(vertical = 8.dp))
++            }
++        }
++        Box(Modifier.height(18.dp))
++        버튼("기록 저장하고 끝내기", { 상태.바꿈 { it.운동저장(상태.오늘, System.currentTimeMillis()) } }, Modifier.fillMaxWidth(), 주요 = true)
++        Box(Modifier.height(8.dp))
++        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
++            버튼("운동으로 돌아가기", { 상태.바꿈 { dd -> dd.copy(세션 = dd.세션?.copy(끝화면 = false)) } }, Modifier.weight(1f), 작게 = true)
++            버튼("기록 없이 끝내기", { 상태.지우고알림("기록 없이 끝냈습니다") { it.copy(세션 = null) } }, Modifier.weight(1f), 작게 = true, 글색 = c.나쁨)
++        }
++        Box(Modifier.height(40.dp))
++    }
++}
+diff --git a/app/src/main/java/com/slayde/hasenheide/ui/theme/Theme.kt b/app/src/main/java/com/slayde/hasenheide/ui/theme/Theme.kt
+index da724ba..5a714f1 100644
+--- a/app/src/main/java/com/slayde/hasenheide/ui/theme/Theme.kt
++++ b/app/src/main/java/com/slayde/hasenheide/ui/theme/Theme.kt
+@@ -2,107 +2,128 @@ package com.slayde.hasenheide.ui.theme
+ 
+ import androidx.compose.foundation.isSystemInDarkTheme
+ import androidx.compose.material3.MaterialTheme
+-import androidx.compose.material3.Typography
+ import androidx.compose.material3.darkColorScheme
+ import androidx.compose.material3.lightColorScheme
+ import androidx.compose.runtime.Composable
++import androidx.compose.runtime.CompositionLocalProvider
++import androidx.compose.runtime.Immutable
++import androidx.compose.runtime.staticCompositionLocalOf
+ import androidx.compose.ui.graphics.Color
+ import androidx.compose.ui.text.TextStyle
+ import androidx.compose.ui.text.font.FontWeight
+ import androidx.compose.ui.unit.dp
++import androidx.compose.ui.unit.em
+ import androidx.compose.ui.unit.sp
+ 
+ /**
+  * 이 앱의 디자인 값을 모아둔 파일.
+  *
+- * 색 · 글자 크기 · 굵기 · 간격 · 모서리 둥글기를 전부 여기서만 정한다.
++ * 웹 시제품에서 정한 '디자인 규칙'(기능명세 1-2)을 그대로 옮겼다.
+  * 화면 코드에는 숫자를 직접 쓰지 않고 여기 이름을 가져다 쓴다.
+- *
+- * 왜 이렇게 하나:
+- *  1) "글씨 좀 키워줘"가 이 파일 한 줄 수정으로 끝난다
+- *  2) 나중에 만들 "앱 안에서 디자인 바꾸기" 기능이 이 구조를 그대로 쓴다
++ *  → "글씨 좀 키워줘"가 이 파일 한 줄 수정으로 끝난다.
+  */
+ 
+ // ───────────────────────── 색 ─────────────────────────
+ 
+-/** 밝은 화면에서 쓰는 색 */
+-private val 밝은색 = lightColorScheme(
+-    primary = Color(0xFF2E5E4E),        // 주요 버튼, 강조
+-    onPrimary = Color(0xFFFFFFFF),      // 주요 버튼 위의 글자
+-    secondary = Color(0xFF6B7F76),      // 보조 요소
+-    background = Color(0xFFF7F8F7),     // 화면 바탕
+-    onBackground = Color(0xFF1A1C1B),   // 바탕 위의 글자
+-    surface = Color(0xFFFFFFFF),        // 카드, 목록 한 칸
+-    onSurface = Color(0xFF1A1C1B),
+-    error = Color(0xFFB3261E),
++@Immutable
++data class 색표(
++    val 바탕: Color,      // 화면 바탕
++    val 면: Color,        // 카드
++    val 면2: Color,       // 버튼 · 칩 바탕
++    val 선: Color,        // 구분선 · 테두리
++    val 글: Color,        // 본문 글자
++    val 흐림: Color,      // 보조 글자
++    val 옅음: Color,      // 설명 글자
++    val 강조: Color,      // 주요 버튼 · 선택
++    val 강조글: Color,    // 강조색 위의 글자
++    val 강조옅음: Color,  // 지금 할 세트 줄 바탕
++    val 좋음: Color,      // 달성
++    val 나쁨: Color,      // 미달성 · 지우기
++    val 휴식: Color,      // 휴식 띠 · 슈퍼세트
++    val 휴식옅음: Color,
++    val 오름: Color,      // 향상도 오름 = 빨강 (주식처럼)
++    val 내림: Color,      // 향상도 내림 = 파랑
+ )
+ 
+-/** 어두운 화면(다크 모드)에서 쓰는 색 */
+-private val 어두운색 = darkColorScheme(
+-    primary = Color(0xFF8FD0B8),
+-    onPrimary = Color(0xFF00382A),
+-    secondary = Color(0xFFB0CCC1),
+-    background = Color(0xFF121413),
+-    onBackground = Color(0xFFE2E3E1),
+-    surface = Color(0xFF1E211F),
+-    onSurface = Color(0xFFE2E3E1),
+-    error = Color(0xFFF2B8B5),
++val 밝은색표 = 색표(
++    바탕 = Color(0xFFF7F8F7), 면 = Color(0xFFFFFFFF), 면2 = Color(0xFFF0F2F1), 선 = Color(0xFFDDE2E0),
++    글 = Color(0xFF1A1C1B), 흐림 = Color(0xFF6B7F76), 옅음 = Color(0xFF9AA8A2),
++    강조 = Color(0xFF2E5E4E), 강조글 = Color(0xFFFFFFFF), 강조옅음 = Color(0xFFE2EEE8),
++    좋음 = Color(0xFF2E7D57), 나쁨 = Color(0xFFB3261E), 휴식 = Color(0xFFB06A1F), 휴식옅음 = Color(0xFFFBEEDD),
++    오름 = Color(0xFFD92D20), 내림 = Color(0xFF1668DC),
+ )
+ 
+-// ─────────────────────── 글자 크기 ───────────────────────
+-
+-/**
+- * 화면 부위별 글자 모양.
+- * 나중에 "여기 글씨만 키우고 싶다"고 할 때 해당 줄만 고치면 된다.
+- */
+-val 글자 = Typography(
+-    // 큰 제목 — 화면 맨 위
+-    headlineLarge = TextStyle(fontSize = 28.sp, fontWeight = FontWeight.Bold),
+-    // 중간 제목 — 루틴 이름, 종목 이름
+-    titleLarge = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.SemiBold),
+-    // 본문
+-    bodyLarge = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Normal),
+-    // 작은 설명
+-    bodySmall = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.Normal),
+-    // 버튼 글자
+-    labelLarge = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Medium),
++val 어두운색표 = 색표(
++    바탕 = Color(0xFF121413), 면 = Color(0xFF1E211F), 면2 = Color(0xFF272B29), 선 = Color(0xFF343936),
++    글 = Color(0xFFE2E3E1), 흐림 = Color(0xFF9FB2A9), 옅음 = Color(0xFF6F7F78),
++    강조 = Color(0xFF8FD0B8), 강조글 = Color(0xFF00382A), 강조옅음 = Color(0xFF213029),
++    좋음 = Color(0xFF8FD0B8), 나쁨 = Color(0xFFF2B8B5), 휴식 = Color(0xFFE8B87A), 휴식옅음 = Color(0xFF302819),
++    오름 = Color(0xFFFF7A6B), 내림 = Color(0xFF66B0FF),
+ )
+ 
+-/** 무게·횟수처럼 크게 보여야 하는 숫자 */
+-val 큰숫자 = TextStyle(fontSize = 44.sp, fontWeight = FontWeight.Bold)
++val Local색 = staticCompositionLocalOf { 밝은색표 }
+ 
+-/** 휴식 타이머 숫자 */
+-val 타이머숫자 = TextStyle(fontSize = 72.sp, fontWeight = FontWeight.Bold)
++// ─────────────────────── 글자 ───────────────────────
+ 
+-// ───────────────────── 간격 · 모서리 ─────────────────────
++/** 글자 크기 — 이 아홉 단계만 쓴다 (1-2) */
++object 크기 {
++    val 아주작게 = 10.sp   // 단위 · 아주 작은 이름표
++    val 작게 = 11.sp       // 설명 · 보조 글
++    val 조금작게 = 12.sp   // 작은 본문 · 칩
++    val 버튼 = 13.sp       // 조작 버튼 · 목록 보조
++    val 본문 = 14.sp       // 본문 · 목록 이름
++    val 크게 = 16.sp       // 카드 · 시트 제목
++    val 제목 = 20.sp       // 화면 제목
++    val 큰숫자 = 24.sp
++    val 아주큰숫자 = 32.sp
++}
++
++/** 글자 모양 — 자간은 기본 −0.01em, 제목 −0.02em */
++object 글꼴 {
++    fun 보통(크기값: androidx.compose.ui.unit.TextUnit, 굵기: FontWeight = FontWeight.Normal) =
++        TextStyle(fontSize = 크기값, fontWeight = 굵기, letterSpacing = (-0.01).em, lineHeight = 크기값 * 1.4f)
++    fun 제목(크기값: androidx.compose.ui.unit.TextUnit) =
++        TextStyle(fontSize = 크기값, fontWeight = FontWeight.Bold, letterSpacing = (-0.02).em, lineHeight = 크기값 * 1.2f)
++    /** 작은 이름표 — 약간 벌린다 */
++    val 이름표 = TextStyle(fontSize = 크기.작게, fontWeight = FontWeight.Bold, letterSpacing = 0.06.em)
++}
++
++// ───────────────────── 간격 · 높이 · 모서리 ─────────────────────
+ 
+ object 간격 {
+     val 아주좁게 = 4.dp
+     val 좁게 = 8.dp
+-    val 보통 = 16.dp
+-    val 넓게 = 24.dp
+-    val 아주넓게 = 40.dp
++    val 보통 = 12.dp
++    val 넓게 = 16.dp
++    val 아주넓게 = 24.dp
+ }
+ 
+-object 모서리 {
+-    val 작게 = 8.dp
+-    val 보통 = 16.dp
+-    val 둥글게 = 28.dp
++/** 누르는 것의 높이 — 네 단계 */
++object 높이 {
++    val 아주낮게 = 28.dp
++    val 낮게 = 32.dp
++    val 보통 = 40.dp
++    val 높게 = 48.dp
+ }
+ 
+-/** 손가락으로 누르는 버튼의 최소 높이. 헬스장에서 급하게 눌러도 안 빗나가게 넉넉히. */
+-val 버튼높이 = 56.dp
++object 모서리 {
++    val 아주작게 = 7.dp   // 세트 번호 칸 같은 작은 것
++    val 작게 = 10.dp      // 버튼 · 입력칸
++    val 보통 = 16.dp      // 카드
++    val 크게 = 24.dp      // 시트
++}
+ 
+ // ───────────────────────── 적용 ─────────────────────────
+ 
+ @Composable
+ fun 하젠하이데테마(
+     어둡게: Boolean = isSystemInDarkTheme(),
+-    content: @Composable () -> Unit
++    content: @Composable () -> Unit,
+ ) {
+-    MaterialTheme(
+-        colorScheme = if (어둡게) 어두운색 else 밝은색,
+-        typography = 글자,
+-        content = content
+-    )
++    val 색 = if (어둡게) 어두운색표 else 밝은색표
++    val 기본 = if (어둡게) darkColorScheme(primary = 색.강조, onPrimary = 색.강조글, background = 색.바탕, surface = 색.면, onSurface = 색.글, onBackground = 색.글)
++              else lightColorScheme(primary = 색.강조, onPrimary = 색.강조글, background = 색.바탕, surface = 색.면, onSurface = 색.글, onBackground = 색.글)
++    CompositionLocalProvider(Local색 provides 색) {
++        MaterialTheme(colorScheme = 기본, content = content)
++    }
+ }
+diff --git "a/\354\204\244\353\252\205/01_\355\224\204\353\241\234\354\240\235\355\212\270\352\265\254\354\241\260.md" "b/\354\204\244\353\252\205/01_\355\224\204\353\241\234\354\240\235\355\212\270\352\265\254\354\241\260.md"
+index cca24df..0138aea 100644
+--- "a/\354\204\244\353\252\205/01_\355\224\204\353\241\234\354\240\235\355\212\270\352\265\254\354\241\260.md"
++++ "b/\354\204\244\353\252\205/01_\355\224\204\353\241\234\354\240\235\355\212\270\352\265\254\354\241\260.md"
+@@ -77,9 +77,40 @@ Claude가 코드를 고침
+ 
+ ---
+ 
+-## 지금 앱은 어디까지 되어 있나
++## 지금 앱은 어디까지 되어 있나 (v0.2.0 · 2026-09-21)
+ 
+-**빌드와 설치가 되는지 확인하는 화면만 있다.** 앱 이름과 버전이 보이면 성공.
++**웹 시제품에서 정한 핵심을 옮긴 첫 사용판.** 기록은 **폰 안에만** 저장된다 (서버는 나중에).
+ 
+-아직 없는 것: 루틴, 기록, 타이머, 로그인, 서버 연결.
+-무엇을 만들 것인지는 `문서/` 의 기능명세를 볼 것.
++| 들어 있는 것 | 아직 없는 것 (다음 판) |
++|---|---|
++| 캘린더 · 루틴 · 운동 실행(휴식 타이머 · 슈퍼세트) · 기록 · 종목 · 설정 · 백업 · **수정 메모** | 영양 · 신체 기록 · 성장 그래프 · 종목 사진 · 서버 · 로그인 · 화면 꺼졌을 때 알림 |
++
++### 코드 폴더
++
++```
++app/src/main/java/com/slayde/hasenheide/
++├── MainActivity.kt      ← 폰이 해 주는 일만: 진동 · 소리 · 파일 고르기 · 복사
++├── data/                ← 자료와 규칙 (화면 없음 → 컴퓨터에서 따로 검사할 수 있다)
++│   ├── Model.kt         ← 자료의 모양: 종목 · 루틴 · 기록 · 설정 · 운동 중 상태
++│   ├── Logic.kt         ← 규칙: 2회차 미리 깔기 · 빠진 날 · 휴식 · 슈퍼세트 한 바퀴 · 향상도 · ＋ 베끼기
++│   └── Storage.kt       ← 저장: 전부 JSON 파일 하나로. 같은 글자가 백업 파일이 된다
++└── ui/                  ← 화면
++    ├── theme/Theme.kt   ← 색 · 글자 크기 9단계 · 높이 4단계 · 모서리 (기능명세 1-2)
++    ├── Icons.kt         ← 선 아이콘 한 벌
++    ├── Common.kt        ← 같이 쓰는 부품: 버튼 · 칩 줄 · 숫자 버튼 줄 · 시트 · 아래 띠
++    ├── App.kt           ← 전체 상태 · 아래 탭 · 되돌리기 띠
++    ├── CalendarScreen.kt · RoutineScreen.kt · WorkoutScreen.kt · ExerciseScreen.kt · SettingsScreen.kt
++    └── MemoSheet.kt     ← 수정 메모
++```
++
++### 자료가 흐르는 길
++
++```
++화면에서 누름
++  → 상태.바꿈 { 새 앱데이터 }      ← 언제나 '새 값'을 만들어 통째로 바꾼다
++  → 화면이 알아서 다시 그려진다
++  → 뒤에서 조용히 hasenheide.json 에 저장 (앱 전용 폴더)
++```
++
++- 지우기는 묻지 않고 바로 하고 5초 동안 `되돌리기` — 직전 상태를 통째로 들고 있다가 되살린다
++- **앱을 지우면 기록도 같이 지워진다.** 설정 → 백업 내보내기로 파일을 남겨 둘 것
+-- 
+2.43.0
+

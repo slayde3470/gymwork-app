@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "stepCount": 20,
+  "note": "단계 0 = 근육 기본색(칠하지 않음). 1~20 단계는 stops 사이를 이어 만든다. at 은 0~1 (단계/20).",
+  "scales": [
+    { "id": "heat",  "name": "노랑-주황-빨강", "stops": [ { "at": 0.05, "color": "#FFE9A3" }, { "at": 0.35, "color": "#F9C23C" }, { "at": 0.65, "color": "#F2802E" }, { "at": 1.0, "color": "#D12D24" } ] },
+    { "id": "red",   "name": "빨강 하나",     "stops": [ { "at": 0.05, "color": "#F8D9D6" }, { "at": 1.0, "color": "#C0261E" } ] },
+    { "id": "blue",  "name": "파랑 (예시)",   "stops": [ { "at": 0.05, "color": "#DCE8FF" }, { "at": 1.0, "color": "#1E4FD1" } ] }
+  ]
+}
