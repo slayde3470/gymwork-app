@@ -86,6 +86,7 @@ import com.slayde.hasenheide.data.지금종목
 import com.slayde.hasenheide.data.찬것
 import com.slayde.hasenheide.ui.theme.Local색
 import com.slayde.hasenheide.ui.theme.그림칸
+import com.slayde.hasenheide.ui.theme.간격
 import com.slayde.hasenheide.ui.theme.모서리
 import com.slayde.hasenheide.ui.theme.움직임
 import com.slayde.hasenheide.ui.theme.크기
