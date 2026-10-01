@@ -292,8 +292,12 @@ val 기준목록 = listOf(
 fun 앱데이터.지금기준(): 기준 = 기준목록.firstOrNull { it.k == 설정.기준 } ?: 기준목록[2]
 fun 앱데이터.기준날(오늘: String): String = if (설정.기준 == 0) 날더하기(오늘, -1) else 개월전(오늘, 설정.기준)
 
-/** 루틴 차원 — 불러온(임시) 종목은 뺀다 */
-fun 정식세트(rec: 날기록): List<세트> = rec.종목들.filter { !it.임시 }.flatMap { it.세트들 }
+/**
+ * 루틴 차원 — 불러온(임시) 종목은 뺀다.
+ * 10-02: **워밍업 세트도 뺀다** — 측정일 워밍업이 생겨, '같은 세트 수까지 잘라 견주기'(8-3 ①)에서
+ * 워밍업이 세트 수를 차지해 본 세트가 잘려 나가던 것을 막는다 (볼륨 값 자체는 볼륨() 이 이미 뺀다)
+ */
+fun 정식세트(rec: 날기록): List<세트> = rec.종목들.filter { !it.임시 }.flatMap { it.세트들 }.filter { it.종류 != 세트종류.워밍업 }
 
 fun 앱데이터.루틴성장(rid: String, 오늘: String, 지금세트들: List<세트>? = null): 대비결과? {
     val 기준일 = 기준날(오늘)
@@ -349,6 +353,8 @@ fun 앱데이터.종목지표(이름: String, 오늘: String): 지표비교? {
  *  · 볼륨 — 지금 볼륨 ↔ 날마다 '같은 세트 수까지' 자른 볼륨 중 가장 큰 것 (왜곡 방지 ①, 하던 중이어도 공정하게)
  *  · 1주 = 기준날 7일 전 ~ 전날 (기준날 당일은 뺀다)
  *  · [이전] 보다 앞선 기록만 본다 (글자 비교). 운동 중이면 "~" 를 넣어 모든 기록을 본다
+ *  · 10-02 감사: **같은 [묶음](슈퍼세트) 상태 기록끼리만** 견준다 (02 명세 8-2 · 04 ⑦ — 단독 기록과 섞지 않는다).
+ *    워밍업 세트는 1RM 에서도, 세트 수를 맞춰 자를 때도 뺀다 (2-23 · 기록세트)
  */
 data class 두대비(val 지금: Double, val 주: 비교?, val 최고: 비교?)
 data class 종목향상(val rm: 두대비, val 볼륨: 두대비)
@@ -356,14 +362,15 @@ data class 종목향상(val rm: 두대비, val 볼륨: 두대비)
 private fun 견줌(a: Double, b: Double?): 비교? = if (b == null || b <= 0.0) null else 비교(a, b, 퍼센트(a, b), a - b)
 private fun 한주안(k: String, 기준날: String): Boolean { val d = 날짜만(k); return d >= 날더하기(기준날, -7) && d < 기준날 }
 
-fun 앱데이터.종목향상(이름: String, 지금: List<세트>, 기준날: String, 이전: String = "~"): 종목향상? {
-    if (지금.isEmpty()) return null
+fun 앱데이터.종목향상(이름: String, 지금: List<세트>, 기준날: String, 이전: String = "~", 묶음: String? = null): 종목향상? {
+    val 본 = 기록세트(지금)
+    if (본.isEmpty()) return null
     val 과거 = 기록.filterKeys { it < 이전 }
-        .map { (k, r) -> k to r.종목들.filter { it.이름 == 이름 }.flatMap { it.세트들 } }.filter { it.second.isNotEmpty() }
+        .map { (k, r) -> k to 기록세트(r.종목들.filter { it.이름 == 이름 && it.묶음 == 묶음 }.flatMap { it.세트들 }) }.filter { it.second.isNotEmpty() }
     val 주 = 과거.filter { 한주안(it.first, 기준날) }
-    val n = 지금.size
+    val n = 본.size
     fun rm(l: List<세트>) = l.maxOf { 일RM(it.w, it.r) }
-    val rm지금 = rm(지금); val 볼지금 = 볼륨(지금)
+    val rm지금 = rm(본); val 볼지금 = 볼륨(본)
     return 종목향상(
         두대비(rm지금, 견줌(rm지금, 주.maxOfOrNull { rm(it.second) }), 견줌(rm지금, 과거.maxOfOrNull { rm(it.second) })),
         두대비(볼지금, 견줌(볼지금, 주.maxOfOrNull { 볼륨(it.second.take(n)) }), 견줌(볼지금, 과거.maxOfOrNull { 볼륨(it.second.take(n)) })),
@@ -417,15 +424,15 @@ fun 운동세션.목표세트(): Int = 정식().sumOf { it.계획세트 }
 fun 운동세션.한세트수(): Int = 정식().sumOf { it.찬것().size }
 fun 운동세션.오늘볼륨(): Double = 정식().sumOf { 볼륨(it.찬것()) }
 fun 운동세션.목표볼륨(): Double = 정식().sumOf { it.목표볼륨() }
-/** 한 종목의 목표 볼륨 — 루틴에 정한 세트까지, 세트마다의 목표로 */
+/** 한 종목의 목표 볼륨 — 루틴에 정한 세트까지, 세트마다의 목표로. 워밍업 세트는 넣지 않는다 (10-02 · 볼륨() 과 같은 규칙) */
 fun 세션종목.목표볼륨(): Double {
     val n = if (계획세트 > 0) 계획세트 else 세트
-    return (0 until n).sumOf { k -> (예정값.칸(k) ?: 세트(무게, 횟수)).let { it.w * it.r } }
+    return (0 until n).sumOf { k -> 볼륨(listOf(예정값.칸(k) ?: 세트(무게, 횟수))) }
 }
 fun 운동세션.루틴달성도(): Int = 목표세트().let { if (it == 0) 0 else (한세트수() * 100.0 / it).roundToInt() }
 fun 세션종목.달성도(): Int = if (계획세트 == 0) 0 else (찬것().size * 100.0 / 계획세트).roundToInt()
-/** 유효세트 — 계획 세트까지만 (추가한 세트는 향상도에서 뺀다) */
-fun 운동세션.유효세트(): List<세트> = 정식().flatMap { it.찬것().take(it.계획세트) }
+/** 유효세트 — 계획 세트까지만 (추가한 세트는 향상도에서 뺀다). 워밍업은 뺀다 (10-02 · 정식세트와 같은 규칙) */
+fun 운동세션.유효세트(): List<세트> = 정식().flatMap { it.찬것().take(it.계획세트) }.filter { it.종류 != 세트종류.워밍업 }
 fun 운동세션.묶음이름(e: 세션종목): String? =
     e.슈퍼?.let { g -> 종목들.filter { it.슈퍼 == g }.map { it.이름 }.sorted().joinToString("+") }
 
@@ -486,10 +493,10 @@ fun 루틴종목.세트빼기(k: Int): 루틴종목 {
 }
 /** 루틴에 정해둔 볼륨 (무게 × 횟수 합) */
 fun 루틴종목.볼륨(): Double = (0 until 세트).sumOf { 목표(it).let { v -> v.w * v.r } }
-/** 이 종목의 1RM — 지난 기록 중 가장 높은 값 (없으면 루틴 목표로) */
+/** 이 종목의 1RM — 지난 기록 중 가장 높은 값 (없으면 루틴 목표로). 워밍업 세트는 뺀다 (10-02 · 2-23) */
 fun 앱데이터.종목1RM(이름: String, 지금: 루틴종목? = null): Double {
-    val 과거 = 기록.values.flatMap { r -> r.종목들.filter { it.이름 == 이름 }.flatMap { it.세트들 } }.maxOfOrNull { 일RM(it.w, it.r) } ?: 0.0
-    val 계획 = 지금?.let { e -> (0 until e.세트).maxOfOrNull { k -> e.목표(k).let { 일RM(it.w, it.r) } } } ?: 0.0
+    val 과거 = 기록세트(기록.values.flatMap { r -> r.종목들.filter { it.이름 == 이름 }.flatMap { it.세트들 } }).maxOfOrNull { 일RM(it.w, it.r) } ?: 0.0
+    val 계획 = 지금?.let { e -> 기록세트((0 until e.세트).map { e.목표(it) }).maxOfOrNull { 일RM(it.w, it.r) } } ?: 0.0
     return max(과거, 계획)
 }
 
@@ -711,11 +718,12 @@ fun 운동세션.값고치기(j: Int, k: Int, 새무게: Double? = null, 새횟�
     // 09-26 메모: 운동 중 무게 · 횟수를 바꿔도 화면이 안 바뀌었다.
     // 지금 세트는 '입력 중인 값(무게·횟수)'만 바꾸고 있었는데, 화면은 루틴에서 가져온 '세트별 값(예정값)'을 먼저 보여 줬다.
     // → 지금 세트도 예정값에 같이 적는다 (화면 · 체크 모두 같은 값)
+    // 10-02: 세트 종류(워밍업 등)는 그대로 둔다 — 값만 고친다 (전에는 고치면 본운동으로 바뀌었다)
     return when {
-        rec != null -> 종목바꿈(j) { it.copy(기록 = it.기록.칸바꿈(k, 세트(w ?: rec.w, r ?: rec.r))) }
+        rec != null -> 종목바꿈(j) { it.copy(기록 = it.기록.칸바꿈(k, rec.copy(w = w ?: rec.w, r = r ?: rec.r))) }
         else -> {
             val 이제 = 세트값(e, k)
-            val 새 = 세트(w ?: 이제.w, r ?: 이제.r)
+            val 새 = 이제.copy(w = w ?: 이제.w, r = r ?: 이제.r)
             val T = 종목바꿈(j) { it.copy(예정값 = it.예정값.칸바꿈(k, 새)) }
             if (j == i && k == s) T.copy(무게 = 새.w, 횟수 = 새.r) else T
         }
@@ -880,15 +888,17 @@ data class 점(val 날: String, val 값: Double)
 /**
  * 한 종목의 변화 — 일: 한 세션씩 / 주: 월요일부터 한 주 / 월: 한 달.
  * 볼륨은 기간 안의 합, 1RM 은 기간 안의 최고. 오늘 아직 저장하지 않은 세트도 넣는다.
+ * 10-02: 워밍업 세트는 뺀다 (2-23 · 기록세트) — 워밍업만 한 날은 점이 없다
  */
 fun 앱데이터.종목추이(이름: String, 단위: 묶기, 일RM으로: Boolean, 오늘: String, 오늘세트: List<세트>): List<점> {
     val 날별 = sortedMapOf<String, List<세트>>()
     기록.forEach { (k, rec) ->
-        val s = rec.종목들.filter { it.이름 == 이름 }.flatMap { it.세트들 }
+        val s = 기록세트(rec.종목들.filter { it.이름 == 이름 }.flatMap { it.세트들 })
         if (s.isNotEmpty()) 날별[k] = s
     }
     // 오늘 이미 기록이 있으면('한 번 더') 그 뒤에 붙인다 — 덮어쓰지 않게. '~~' 는 '~2' 보다 뒤로 정렬된다
-    if (오늘세트.isNotEmpty()) 날별[if (날별.containsKey(오늘)) "$오늘~~" else 오늘] = 오늘세트
+    val 오늘것 = 기록세트(오늘세트)
+    if (오늘것.isNotEmpty()) 날별[if (날별.containsKey(오늘)) "$오늘~~" else 오늘] = 오늘것
     fun 기간(k: String): String = when (단위) {
         묶기.일 -> 날짜만(k)      // 같은 날 '한 번 더' 는 그 날 하나로 (볼륨은 합, 1RM 은 최고)
         묶기.주 -> 키(날(k).minusDays((날(k).dayOfWeek.value - 1).toLong()))

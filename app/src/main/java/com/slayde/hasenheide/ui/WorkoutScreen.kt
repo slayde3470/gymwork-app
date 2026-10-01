@@ -418,7 +418,7 @@ private fun 고정머리(상태: 앱상태, S: 운동세션, 띠i: Int, 펼침: 
                 접기단추(펼침, on접기, c.강조글)
             }
             if (펼침) Column(Modifier.fillMaxWidth().padding(start = 10.dp, end = 10.dp, top = 3.dp, bottom = 7.dp)) {
-                val 향 = if (찬.isEmpty()) null else 상태.d.종목향상(e.이름, 찬, 상태.오늘)
+                val 향 = if (찬.isEmpty()) null else 상태.d.종목향상(e.이름, 찬, 상태.오늘, 묶음 = S.묶음이름(e))   // 10-02: 같은 묶음끼리만 (02 8-2)
                 val rm = 찬.maxOfOrNull { 일RM(it.w, it.r) }
                 val rm움 = 움직수(rm ?: 0.0, 영부터 = false, 빠르게 = true)
                 val 볼움 = 움직수(볼륨(찬), 영부터 = false, 빠르게 = true)
@@ -545,7 +545,7 @@ private fun 종목머리(상태: 앱상태, S: 운동세션, j: Int, 표: String
     val 지금것 = 지금표시 || j == S.i
     // 향상도는 오늘 한 세트가 있을 때만 — 아직 시작도 안 한 종목에 지난 기록을 띄우지 않는다
     // 09-26 시안 ①: 1RM 줄 · 볼륨 줄에 각각 [1주] [최고] (kg)
-    val 향 = if (지금세트.isEmpty()) null else 상태.d.종목향상(e.이름, 지금세트, 상태.오늘)
+    val 향 = if (지금세트.isEmpty()) null else 상태.d.종목향상(e.이름, 지금세트, 상태.오늘, 묶음 = S.묶음이름(e))   // 10-02: 같은 묶음끼리만 (02 8-2)
     Column(Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 6.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Row(Modifier.weight(1f).눌림(on누름), verticalAlignment = Alignment.CenterVertically) {
@@ -596,6 +596,8 @@ private fun 세트줄(
             .then(if (앵커) Modifier.onGloballyPositioned { on지금줄(it) } else Modifier)
             .clip(RoundedCornerShape(모서리.작게))
             .background(if (지금칸) c.강조옅음 else Color.Transparent)
+            // 10-02: 워밍업 세트 줄은 왼쪽에 연두 띠 (20 B-4 · E-1 9번 '연두색') — 볼륨 · 1RM · 플랜 반영에서 빠지는 줄
+            .then(if (v.종류 == com.slayde.hasenheide.data.세트종류.워밍업) Modifier.왼띠(c.좋음) else Modifier)
             .padding(horizontal = 4.dp, vertical = 4.dp)
             .alpha(if (rec == null && !지금칸 && !쉬는중) 0.55f else 1f),
     ) {
@@ -755,7 +757,7 @@ private fun 마무리(상태: 앱상태, S: 운동세션, 저장됨: Boolean = f
                     Row(Modifier.fillMaxWidth().눌림 { 열린종목 = if (열림) null else e.이름 }.padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
                         verticalAlignment = Alignment.CenterVertically) {
                         val 찬 = e.찬것()
-                        val 향 = d.종목향상(e.이름, 찬, 오늘)
+                        val 향 = d.종목향상(e.이름, 찬, 오늘, 묶음 = S.묶음이름(e))   // 10-02: 같은 묶음끼리만 (02 8-2)
                         Column(Modifier.weight(1f)) {
                             제목글(e.이름, 크기값 = 크기.조금작게)
                             향상줄("1RM ${kg글(찬.maxOf { 일RM(it.w, it.r) })}kg", 향?.rm, Modifier.padding(top = 2.dp), 영부터 = true)

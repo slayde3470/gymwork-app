@@ -293,7 +293,8 @@ fun 부위고르기(상태: 앱상태, 선택: String, on선택: (String) -> Uni
     var 더하는중 by remember { mutableStateOf(false) }
     var 지우는중 by remember { mutableStateOf(false) }
     var 새 by remember { mutableStateOf("") }
-    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+    val 넘김 = rememberScrollState()   // 10-02: 넘칠 때만 오른쪽 끝을 흐린다 (D2-8)
+    Row(Modifier.fillMaxWidth().오른끝흐림(넘김).horizontalScroll(넘김), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
         상태.d.카테고리.forEach { p ->
             val 켬 = p == 선택 && !지우는중
             Row(
@@ -375,7 +376,8 @@ fun 장비고르기(상태: 앱상태, 선택: String, on선택: (String) -> Uni
     val 목록 = (후보 + 이름추천.장비목록 + 상태.d.종목표.map { it.장비.trim() } + listOf(선택.trim())).filter { it.isNotBlank() }.distinct()
     var 직접 by remember { mutableStateOf(false) }
     var 새 by remember { mutableStateOf("") }
-    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    val 넘김 = rememberScrollState()   // 10-02: 넘칠 때만 오른쪽 끝을 흐린다 (D2-8)
+    Row(Modifier.fillMaxWidth().오른끝흐림(넘김).horizontalScroll(넘김), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         목록.forEach { p ->
             val 켬 = p == 선택.trim()
             Box(

@@ -62,6 +62,7 @@ import com.slayde.hasenheide.data.앱데이터
 import com.slayde.hasenheide.data.플랜
 import com.slayde.hasenheide.data.플랜표
 import com.slayde.hasenheide.data.회처방
+import com.slayde.hasenheide.data.같은날경고
 import com.slayde.hasenheide.data.다음회
 import com.slayde.hasenheide.data.처방글
 import com.slayde.hasenheide.data.세트
@@ -248,7 +249,8 @@ fun 루틴화면(상태: 앱상태, 폰: 폰기능) {
                             Column(Modifier.weight(1f)) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     제목글(r.이름, Modifier.weight(1f, fill = false), 크기값 = 크기.크게)
-                                    if (다음?.id == r.id) { Box(Modifier.width(8.dp)); 알약("다음", c.좋음) }
+                                    // 10-02: 초록은 달성 알약에만 (동작방식 D2-6) → '다음' 은 중심색
+                                    if (다음?.id == r.id) { Box(Modifier.width(8.dp)); 알약("다음", c.강조) }
                                 }
                                 맞춤글((if (r.휴식일) "휴식일" else "${r.종목.size}종목 · ${총세트(r)}세트 · ${시간글(예상초(r))}") + (if (r.자동생성) " · 자동생성" else ""),
                                     색 = if (r.자동생성) c.강조 else c.옅음)
@@ -288,6 +290,8 @@ fun 루틴화면(상태: 앱상태, 폰: 폰기능) {
                             else {
                             val 지난 = d.루틴최근향상(r.id)
                             향상줄(if (지난 != null) "지난번 볼륨 ${콤마(지난.지금)}kg" else "지난번 기록 없음", 지난, Modifier.padding(vertical = 8.dp))
+                            // 10-02: 같은 날 하지 않기로 한 종목이 함께 있으면 한 줄 경고 — 막지는 않는다 (16 D5 · 14 S5)
+                            같은날경고(r, d.플랜들)?.let { 글(it, Modifier.padding(bottom = 6.dp), 크기값 = 크기.작게, 색 = c.흐림) }
                             if (r.종목.isEmpty()) 글("아직 종목이 없습니다", Modifier.padding(vertical = 8.dp), 크기값 = 크기.조금작게, 색 = c.옅음)
                             // 슈퍼세트 묶음은 상자로 모아 그린다
                             var j = 0
@@ -779,7 +783,7 @@ private fun 안고르기(상태: 앱상태, r: 루틴, 방금: List<String>, 방
 private fun 플랜줄(d: 앱데이터, p: 플랜): 루틴종목 {
     val 계획 = p.다음회(d.몸, d.향상기록들)
     val 처방 = if (계획 == null) emptyList()
-               else 회처방(p, 계획.목표값, d.설정.무게폭, d.몸, 계획.측정일)
+               else 회처방(p, 계획.목표값, d.설정.무게폭, d.몸, 계획.측정일, 계획.주)
     val 첫 = 처방.firstOrNull()
     val 세트수 = 처방.sumOf { it.세트 }.coerceAtLeast(1)
     // 10-01: 측정일이라고 세트를 '측정' 으로 표시하지 않는다 — 측정은 저장할 때 가장 좋은 세트로 잡는다 (Plan.kt 플랜반영)
@@ -798,7 +802,7 @@ private fun 플랜줄(d: 앱데이터, p: 플랜): 루틴종목 {
 /** 플랜 줄 오른쪽에 붙는 작은 글 — 다음 회차 처방 */
 private fun 플랜곁글(d: 앱데이터, p: 플랜): String {
     val 계획 = p.다음회(d.몸, d.향상기록들) ?: return "목표 달성"
-    val 목 = 회처방(p, 계획.목표값, d.설정.무게폭, d.몸, 계획.측정일)
+    val 목 = 회처방(p, 계획.목표값, d.설정.무게폭, d.몸, 계획.측정일, 계획.주)
     return (if (계획.측정일) "측정 · " else "") + "${계획.회}회차 " + 처방글(목)
 }
 

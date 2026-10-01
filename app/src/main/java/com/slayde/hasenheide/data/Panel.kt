@@ -21,18 +21,21 @@ data class 갱신(val 이름: String, val 종류: String, val 값: Double, val �
 /**
  * 이 날 기록에서 지난 기록 전부보다 좋아진 것 (09-27).
  * 처음 해 본 종목은 견줄 것이 없으니 넣지 않는다. 1RM 먼저, 볼륨 다음
+ *  · 10-02 감사: 슈퍼세트로 한 기록은 **같은 묶음끼리만** 견준다 (02 명세 8-2 · 04 ⑦)
+ *  · 1RM 은 워밍업을 뺀 세트로 (2-23 · 기록세트). 볼륨은 볼륨() 이 알아서 뺀다
  */
 fun 앱데이터.기록갱신(k: String): List<갱신> {
     val rec = 기록[k] ?: return emptyList()
     val 앞 = 기록.filterKeys { it < k }.values
     val 결과 = mutableListOf<갱신>()
     val 볼륨들 = mutableListOf<갱신>()
-    rec.종목들.map { it.이름 }.distinct().forEach { 이름 ->
-        val 오늘 = rec.종목들.filter { it.이름 == 이름 }.flatMap { it.세트들 }
-        if (오늘.isEmpty()) return@forEach
-        val 전 = 앞.map { r -> r.종목들.filter { it.이름 == 이름 }.flatMap { it.세트들 } }.filter { it.isNotEmpty() }
+    rec.종목들.map { it.이름 to it.묶음 }.distinct().forEach { (이름, 묶음) ->
+        fun 세트들(r: 날기록) = r.종목들.filter { it.이름 == 이름 && it.묶음 == 묶음 }.flatMap { it.세트들 }
+        val 오늘 = 세트들(rec)
+        if (기록세트(오늘).isEmpty()) return@forEach
+        val 전 = 앞.map { 세트들(it) }.filter { 기록세트(it).isNotEmpty() }
         if (전.isEmpty()) return@forEach
-        val rm = 오늘.maxOf { 일RM(it.w, it.r) }; val 전rm = 전.maxOf { l -> l.maxOf { 일RM(it.w, it.r) } }
+        val rm = 기록세트(오늘).maxOf { 일RM(it.w, it.r) }; val 전rm = 전.maxOf { l -> 기록세트(l).maxOf { 일RM(it.w, it.r) } }
         if (rm > 전rm + 0.05) 결과 += 갱신(이름, "1RM", rm, 전rm)
         val 볼 = 볼륨(오늘); val 전볼 = 전.maxOf { 볼륨(it) }
         if (볼 > 전볼 + 0.05) 볼륨들 += 갱신(이름, "볼륨", 볼, 전볼)
@@ -45,7 +48,8 @@ fun 앱데이터.기록갱신(k: String): List<갱신> {
 data class 운동량값(val 종목: Int, val 세트: Int, val 볼륨: Double)
 
 fun 운동량(rec: 날기록): 운동량값 {
-    val 세트들 = rec.종목들.flatMap { it.세트들 }
+    // 10-02: 워밍업 세트는 세지 않는다 — '사용자가 보는 기록에 띄우지 않는다' (Model.kt 세트 · 20 B-5)
+    val 세트들 = rec.종목들.flatMap { it.세트들 }.filter { it.종류 != 세트종류.워밍업 }
     return 운동량값(rec.종목들.map { it.이름 }.distinct().size, 세트들.size, 볼륨(세트들))
 }
 
@@ -89,15 +93,16 @@ fun 앱데이터.루틴한달(rid: String, 끝날: String, 포함: Boolean): Lis
  * 1RM 목표 (09-27) — 지금 = 이 날까지의 최고 1RM.
  * 속도 = 최근 8주 동안 날마다의 최고 1RM 에 맞춘 직선의 기울기(1주당 kg). 두 날 이상 · 7일 이상 떨어져야 잰다
  * 남은주 = (목표 − 지금) / 속도, 올림. 이미 넘었으면 0, 속도가 없거나 0 이하면 null
+ * 10-02 감사: [묶음] 이 같은 기록끼리만 (02 명세 8-2) · 1RM 은 워밍업을 뺀 세트로 (2-23)
  */
 data class 목표현황(val 이름: String, val 목표: Double, val 지금: Double, val 주속도: Double?, val 남은주: Int?)
 
-fun 앱데이터.목표현황(이름: String, 날: String): 목표현황? {
+fun 앱데이터.목표현황(이름: String, 날: String, 묶음: String? = null): 목표현황? {
     val 목표 = 종목표.firstOrNull { it.이름 == 이름 }?.목표1RM ?: return null
     val 날별 = sortedMapOf<String, Double>()
     기록.forEach { (k, r) ->
         val d = 날짜만(k); if (d > 날) return@forEach
-        val s = r.종목들.filter { it.이름 == 이름 }.flatMap { it.세트들 }
+        val s = 기록세트(r.종목들.filter { it.이름 == 이름 && it.묶음 == 묶음 }.flatMap { it.세트들 })
         if (s.isNotEmpty()) 날별[d] = max(날별[d] ?: 0.0, s.maxOf { 일RM(it.w, it.r) })
     }
     if (날별.isEmpty()) return 목표현황(이름, 목표, 0.0, null, null)
@@ -125,10 +130,10 @@ fun 도달달(날: String, 주: Int): String {
     return "${d.monthValue}월 $때"
 }
 
-/** 이 날 기록의 종목 중 1RM 목표가 있는 것들 */
+/** 이 날 기록의 종목 중 1RM 목표가 있는 것들 — 그 날 한 묶음 상태 그대로 견준다 (10-02) */
 fun 앱데이터.목표종목들(k: String): List<목표현황> {
     val rec = 기록[k] ?: return emptyList()
-    return rec.종목들.map { it.이름 }.distinct().mapNotNull { 목표현황(it, 날짜만(k)) }
+    return rec.종목들.map { it.이름 to it.묶음 }.distinct().mapNotNull { (이름, 묶음) -> 목표현황(이름, 날짜만(k), 묶음) }
 }
 
 // ─────────────── 운동 전 — 오늘 목표 · 그 날만 조절 ───────────────
@@ -158,7 +163,8 @@ fun 앱데이터.그날루틴(k: String): 루틴? = 예정루틴(k)?.조절적�
 fun 앱데이터.조절해시작(r: 루틴, k: String, 지금: Long): 운동세션? {
     val j = 조절[k]
     // 10-01: 플랜 줄은 시작할 때마다 지금 회차 처방으로 채운다 (넣은 회차 값에 멈춰 있던 것)
-    val 적용 = 플랜줄채움(r).조절적용(j, 설정.무게폭)
+    // 10-02: 측정일이면 본 세트 앞에 워밍업(40/60/90%)을 붙인다 — 조절한 무게 기준 (20 B-3 · Plan.kt 측정워밍업붙임)
+    val 적용 = 측정워밍업붙임(플랜줄채움(r).조절적용(j, 설정.무게폭))
     return 운동시작(적용, 지금)?.let { if (j != null && !j.그대로) it.copy(조절됨 = true) else it }
 }
 

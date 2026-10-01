@@ -22,7 +22,12 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.unit.IntOffset
 import com.slayde.hasenheide.data.예정옮기기
 import com.slayde.hasenheide.data.플랜줄채움
+import com.slayde.hasenheide.data.측정워밍업붙임
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -189,7 +194,8 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
                         },
                         on두번 = { 고른날 = it; 열린시트 = "시작" },
                         on옮김 = { 원, 새날 -> 상태.바꿈 { it.예정옮기기(원, 새날, 오늘) }; 고른날 = 새날 },
-                        on집음 = { 원, 달이동 -> 집은날 = 원; if (달이동 != 0) 보는달 = 보는달.plusMonths(달이동.toLong()) })
+                        on집음 = { 원, 달이동 -> 집은날 = 원; if (달이동 != 0) 보는달 = 보는달.plusMonths(달이동.toLong()) },
+                        on달넘김 = { 보는달 = 보는달.plusMonths(it.toLong()) })
                 }
             }
             Box(Modifier.height(8.dp))
@@ -236,7 +242,8 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
                 이름표("루틴")
                 d.루틴들.filter { !it.휴식일 && it.종목.isNotEmpty() }.forEach { r ->
                     고르기줄(r.이름, "${r.종목.size}종목 · ${총세트(r)}세트 · 예상 시간 ${시간글(예상초(r))}") {
-                        시작(운동시작(d.플랜줄채움(r), System.currentTimeMillis()))
+                        // 10-02: 측정일이면 플랜 줄 앞에 워밍업 (20 B-3 · 조절해시작과 같은 함수)
+                        시작(운동시작(d.측정워밍업붙임(d.플랜줄채움(r)), System.currentTimeMillis()))
                     }
                 }
                 이름표("종목 하나만", Modifier.padding(top = 8.dp))
@@ -439,9 +446,12 @@ private fun 판줄(
     }
 }
 
+/** 끄는 중 위쪽 띠 좌·우 1/3 에 이만큼 머무르면 달이 넘어간다 (ms · 2-26 약속 · 7일 체험과 같은 값) */
+private const val 달넘김머무름 = 600L
+
 @Composable
 private fun 달력(d: 앱데이터, 오늘: String, 달: YearMonth, 고른날: String, modifier: Modifier, on고름: (String) -> Unit, on두번: (String) -> Unit,
-                on옮김: (String, String) -> Unit, on집음: (String, Int) -> Unit = { _, _ -> }) {
+                on옮김: (String, String) -> Unit, on집음: (String, Int) -> Unit = { _, _ -> }, on달넘김: (Int) -> Unit = {}) {
     val c = Local색.current
     Row(Modifier.fillMaxWidth()) {
         listOf("일", "월", "화", "수", "목", "금", "토").forEach {
@@ -463,38 +473,67 @@ private fun 달력(d: 앱데이터, 오늘: String, 달: YearMonth, 고른날: S
     val 옮김 by rememberUpdatedState(on옮김)
     val 집음 by rememberUpdatedState(on집음)
     val 햅틱 = LocalHapticFeedback.current   // 들어 올렸을 때 '툭' — 옮기기가 시작된 걸 손으로 안다
+    // 10-02 (2-26 약속): 끄는 중에 달이 넘어가도 끌기가 끊기지 않게 — pointerInput 은 '오늘' 에만 묶고,
+    // 칸 계산은 늘 지금 보이는 달(지금달)로 한다. 전에는 달이 바뀌면 끌기가 처음부터 다시 시작됐다
+    val 지금달 by rememberUpdatedState(달)
+    val 달넘김 by rememberUpdatedState(on달넘김)
+    val 범위 = rememberCoroutineScope()
+    var 달타이머 by remember { mutableStateOf<Job?>(null) }
+    var 타이머방향 by remember { mutableStateOf(0) }
+    var 끌며넘김 by remember { mutableStateOf(false) }   // 이번 끌기에서 이미 달을 넘겼나
     fun 칸날(p: Offset, 너비: Float, 줄px: Float): String? {
+        val 달0 = 지금달
+        val 앞0 = 달0.atDay(1).dayOfWeek.value % 7
+        val 줄수0 = (앞0 + 달0.lengthOfMonth() + 6) / 7
         if (p.x < 0 || p.y < 0 || 너비 <= 0f) return null
         val 칸 = (p.x / (너비 / 7f)).toInt().coerceAtMost(6)
         val 줄 = (p.y / 줄px).toInt()
-        val n = 줄 * 7 + 칸 - 앞빈칸 + 1
-        return if (줄 >= 줄수 || n < 1 || n > 달.lengthOfMonth()) null else 달.atDay(n).toString()
+        val n = 줄 * 7 + 칸 - 앞0 + 1
+        return if (줄 >= 줄수0 || n < 1 || n > 달0.lengthOfMonth()) null else 달0.atDay(n).toString()
     }
+    /** 위쪽 달 띠의 왼쪽(−1) · 오른쪽(+1) 1/3 위인가 — 0 = 아님 (놓을 때와 같은 기준) */
+    fun 띠방향(p: Offset, 너비: Float): Int = if (p.y >= 0) 0 else if (p.x > 너비 * 0.66f) 1 else if (p.x < 너비 * 0.33f) -1 else 0
+    fun 타이머끄기() { 달타이머?.cancel(); 달타이머 = null; 타이머방향 = 0 }
     fun 옮길수있음(k: String?) = k != null && k >= 오늘 && !판데이터.기록.containsKey(k)
     Box(modifier.fillMaxWidth()) {
-    Column(Modifier.fillMaxWidth().pointerInput(달, 오늘) {
+    Column(Modifier.fillMaxWidth().pointerInput(오늘) {
         val 줄px = 줄높이.toPx()
         detectDragGesturesAfterLongPress(
             onDragStart = { p ->
+                끌며넘김 = false
                 val k = 칸날(p, size.width.toFloat(), 줄px)
                 if (옮길수있음(k) && 판데이터.예정[k!!] != null) { 끄는날 = k; 놓을날 = k; 손 = p; 햅틱.performHapticFeedback(HapticFeedbackType.LongPress) }
             },
             onDrag = { ch, _ ->
-                if (끄는날 != null) { ch.consume(); 손 = ch.position; 놓을날 = 칸날(ch.position, size.width.toFloat(), 줄px) }
+                if (끄는날 != null) {
+                    ch.consume(); 손 = ch.position; 놓을날 = 칸날(ch.position, size.width.toFloat(), 줄px)
+                    // 띠 좌·우 1/3 에 0.6초 머무르면 **끄는 중에** 달이 넘어간다 — 손을 떼지 않고 다른 달 날짜에 놓을 수 있다
+                    val 방 = 띠방향(ch.position, size.width.toFloat())
+                    if (방 == 0) 타이머끄기()
+                    else if (달타이머 == null || 타이머방향 != 방) {
+                        타이머끄기(); 타이머방향 = 방
+                        달타이머 = 범위.launch {
+                            delay(달넘김머무름)
+                            if (끄는날 != null) { 달넘김(방); 끌며넘김 = true }
+                            달타이머 = null; 타이머방향 = 0
+                        }
+                    }
+                }
             },
             onDragEnd = {
+                타이머끄기()
                 val 원 = 끄는날; val 새 = 놓을날
                 if (원 != null && 새 != null && 새 != 원 && 옮길수있음(새)) 옮김(원, 새)
                 // 10-01: 그 자리에서 뗐거나 달력 밖(위 달 띠)에서 뗐으면 '집어 둔' 상태로 → 다른 달로 넘겨 누르면 옮겨진다
                 //        달 띠의 오른쪽(▶)에서 떼면 다음 달로, 왼쪽(◀)에서 떼면 이전 달로 바로 넘어간다
+                //        10-02: 끄는 중에 이미 달을 넘겼으면 뗄 때 또 넘기지 않는다
                 else if (원 != null && (새 == null || 새 == 원)) {
-                    val 위 = 손.y < 0
-                    val 이동 = if (!위) 0 else if (손.x > size.width * 0.66f) 1 else if (손.x < size.width * 0.33f) -1 else 0
+                    val 이동 = if (끌며넘김) 0 else 띠방향(손, size.width.toFloat())
                     집음(원, 이동)
                 }
-                끄는날 = null; 놓을날 = null
+                끄는날 = null; 놓을날 = null; 끌며넘김 = false
             },
-            onDragCancel = { 끄는날 = null; 놓을날 = null },
+            onDragCancel = { 타이머끄기(); 끄는날 = null; 놓을날 = null; 끌며넘김 = false },
         )
     }) {
         for (줄 in 0 until 줄수) {
@@ -659,6 +698,13 @@ private fun 날짜판(상태: 앱상태, k: String, 루틴으로: () -> Unit, �
                 val 량 = 운동량(rec)
                 판줄("운동량", 윗선 = 갱.isNotEmpty()) {
                     글("${량.종목}종목 · ${량.세트}세트 · ${콤마(량.볼륨)}kg" + (if (rec.걸린초 > 0) " · 운동 시간 ${시간글(rec.걸린초)}" else ""), 크기값 = 12.sp)
+                }
+                // ── 같은 날 '한 번 더' 한 운동 (v0.6.9 · 09-26) — v0.7.0 판 개편 때 빠졌던 것을 되살림 (10-02 감사) ──
+                d.한번더기록(k).forEach { (_, r2) ->
+                    val 량2 = 운동량(r2)
+                    판줄("한 번 더") {
+                        글("${r2.루틴이름} · ${량2.세트}세트 · ${콤마(량2.볼륨)}kg" + (if (r2.걸린초 > 0) " · ${시간글(r2.걸린초)}" else ""), 크기값 = 12.sp)
+                    }
                 }
                 // ── 향상도 — 지난 운동 대비 · 한 달 대비 (보일 때마다 0 부터 올라간다) ──
                 val 두 = d.루틴두대비(k)

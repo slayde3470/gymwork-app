@@ -226,12 +226,13 @@ fun 버튼(
     }
 }
 
-/** 칩 한 줄 — 넘치면 옆으로 밀어서 꺼낸다 (1-1) */
+/** 칩 한 줄 — 넘치면 옆으로 밀어서 꺼낸다 (1-1). 넘칠 때만 오른쪽 끝이 흐려진다 (D2-8 · 10-02) */
 @Composable
 fun 칩줄(목록: List<String>, 선택: String?, onSelect: (String) -> Unit, modifier: Modifier = Modifier) {
     val c = Local색.current
+    val 넘김 = rememberScrollState()
     Row(
-        modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+        modifier.fillMaxWidth().오른끝흐림(넘김).horizontalScroll(넘김),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         목록.forEach { p ->
@@ -812,4 +813,27 @@ fun 맞춤글(text: String, modifier: Modifier = Modifier, 최대: TextUnit = �
             }
         },
     )
+}
+
+/**
+ * 옆으로 미는 줄의 오른쪽 끝을 흐리게 — **넘칠 때만**, 끝까지 밀면 사라진다 (동작방식 D2-8 · 02 명세 1-1 · 10-02).
+ * horizontalScroll **앞**에 둔다 (보이는 칸 기준으로 그린다).
+ * 캘린더 '기록 갱신' 줄과 같은 방법 — 내용을 따로 한 겹에 그린 뒤 끝 [폭] 만큼 서서히 지운다
+ */
+fun Modifier.오른끝흐림(넘김: androidx.compose.foundation.ScrollState, 폭: Dp = 16.dp): Modifier = drawWithContent {
+    if (넘김.value >= 넘김.maxValue) { drawContent(); return@drawWithContent }
+    val 판 = drawContext.canvas
+    판.saveLayer(androidx.compose.ui.geometry.Rect(Offset.Zero, size), androidx.compose.ui.graphics.Paint())
+    drawContent()
+    drawRect(
+        androidx.compose.ui.graphics.Brush.horizontalGradient(listOf(Color.Black, Color.Transparent), startX = size.width - 폭.toPx(), endX = size.width),
+        blendMode = androidx.compose.ui.graphics.BlendMode.DstIn,
+    )
+    판.restore()
+}
+
+/** 줄 왼쪽에 세로 띠 하나 — 줄의 종류를 색으로 알린다 (운동 중 워밍업 세트 · 10-02). 줄의 안쪽 여백 자리에 그린다 */
+fun Modifier.왼띠(색: Color, 폭: Dp = 3.dp): Modifier = drawWithContent {
+    drawRect(색, size = Size(폭.toPx(), size.height))
+    drawContent()
 }

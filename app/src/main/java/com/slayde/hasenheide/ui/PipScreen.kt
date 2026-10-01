@@ -15,7 +15,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.slayde.hasenheide.data.남은초
@@ -55,7 +54,8 @@ fun 작은창(상태: 앱상태) {
             Text("휴식", color = c.흐림, fontSize = 12.sp)
             Text(분초(남은), color = 색, fontSize = 40.sp, fontWeight = FontWeight.Bold)
             val 다음 = (h.다음i ?: S.i).let { S.종목들.getOrNull(it)?.이름 }
-            if (다음 != null) Text("다음 · $다음", color = c.흐림, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            // 10-02 (2-26 약속): 종목 이름은 자르지 않는다 — 말줄임 없이 두 줄까지
+            if (다음 != null) Text("다음 · $다음", color = c.흐림, fontSize = 12.sp, maxLines = 2)
         } else {
             val e = S.종목들.getOrNull(S.i)
             Text("운동 중 · ${시분초(S.흐른초(지금))}", color = c.흐림, fontSize = 12.sp)
