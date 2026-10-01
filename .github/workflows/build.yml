@@ -3,6 +3,17 @@ name: APK 빌드
 on:
   push:
     branches: [ main ]
+    # 문서만 고친 커밋에는 공장을 돌리지 않는다 (2026-10-02).
+    # 아래 목록에 있는 것'만' 바뀐 푸시는 건너뛴다.
+    # 앱 코드(app/)가 한 줄이라도 바뀌면 평소대로 빌드된다.
+    paths-ignore:
+      - '문서/**'
+      - '설명/**'
+      - '.claude/**'
+      - 'CLAUDE.md'
+      - 'README.md'
+  # 문서만 고친 뒤에도 APK 를 새로 뽑고 싶으면
+  # GitHub → Actions → 'APK 빌드' → 'Run workflow' 를 손으로 누른다
   workflow_dispatch:
 
 permissions:
