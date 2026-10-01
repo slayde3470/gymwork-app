@@ -109,6 +109,15 @@ import com.slayde.hasenheide.data.오늘조절
 import com.slayde.hasenheide.data.운동세션
 import com.slayde.hasenheide.data.무게글
 import com.slayde.hasenheide.data.무게반올림
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
+import com.slayde.hasenheide.ui.theme.움직임
 import com.slayde.hasenheide.ui.theme.Local색
 import com.slayde.hasenheide.ui.theme.간격
 import com.slayde.hasenheide.ui.theme.글꼴
@@ -181,8 +190,18 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
                     띠글("${보는달.year}년 ${보는달.monthValue}월", Modifier.weight(1f), 가운데 = true)
                     아이콘버튼(아이콘.오른쪽, "다음 달", { 보는달 = 보는달.plusMonths(1) }, 칠함 = false, 색 = c.강조글, 크기칸 = 높이.아주낮게)
                 }
+                // 10-02: 달을 넘기면 다음 달은 오른쪽에서, 이전 달은 왼쪽에서 밀려 들어온다
+                AnimatedContent(
+                    targetState = 보는달,
+                    transitionSpec = {
+                        val 앞으로 = targetState > initialState
+                        (slideInHorizontally(tween(움직임.달)) { w -> if (앞으로) w else -w } + fadeIn(tween(움직임.달))) togetherWith
+                            (slideOutHorizontally(tween(움직임.달)) { w -> if (앞으로) -w else w } + fadeOut(tween(움직임.달)))
+                    },
+                    label = "달",
+                ) { 그달 ->
                 Column(Modifier.padding(start = 6.dp, end = 6.dp, top = 4.dp, bottom = 6.dp)) {
-                    달력(d, 오늘, 보는달, 고른날, Modifier.번호("캘2"),
+                    달력(d, 오늘, 그달, 고른날, Modifier.번호("캘2"),
                         on고름 = { 날 ->
                             val 원 = 집은날
                             if (원 != null) {
@@ -196,6 +215,7 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
                         on옮김 = { 원, 새날 -> 상태.바꿈 { it.예정옮기기(원, 새날, 오늘) }; 고른날 = 새날 },
                         on집음 = { 원, 달이동 -> 집은날 = 원; if (달이동 != 0) 보는달 = 보는달.plusMonths(달이동.toLong()) },
                         on달넘김 = { 보는달 = 보는달.plusMonths(it.toLong()) })
+                }
                 }
             }
             Box(Modifier.height(8.dp))
@@ -586,11 +606,13 @@ private fun 날칸(d: 앱데이터, k: String, 날: LocalDate, 오늘: String, �
         날.dayOfWeek == DayOfWeek.SATURDAY -> c.내림
         else -> c.글
     }
+    // 10-02: 고른 날 테두리가 스며들듯 나타나고 사라진다 (전에는 한 번에 옮겨 갔다)
+    val 고름테두리 by animateColorAsState(if (고름) c.강조 else c.강조.copy(alpha = 0f), tween(움직임.색), label = "고른날")
     Column(
         modifier
             .padding(1.dp)
             .clip(RoundedCornerShape(모서리.아주작게))
-            .then(if (고름) Modifier.border(1.5.dp, c.강조, RoundedCornerShape(모서리.아주작게)) else Modifier)
+            .border(1.5.dp, 고름테두리, RoundedCornerShape(모서리.아주작게))
             // 끄는 중: 1 = 들어 올린 날(흐리게) · 2 = 놓을 수 있는 날 · 3 = 놓을 수 없는 날(지난 날 · 기록 있는 날)
             .then(when (끌기표시) {
                 1 -> Modifier.alpha(0.35f)

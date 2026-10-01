@@ -2,6 +2,22 @@
 
 package com.slayde.hasenheide.ui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.offset
+import androidx.compose.runtime.State
+import androidx.compose.ui.graphics.graphicsLayer
+import com.slayde.hasenheide.ui.theme.움직임
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Size
@@ -144,12 +160,35 @@ fun Modifier.눌림길게(onClick: () -> Unit, onLongClick: (() -> Unit)?): Modi
     interactionSource = MutableInteractionSource(), indication = null, onClick = onClick, onLongClick = onLongClick,
 )
 
+// ─────────────── 움직임 부품 (10-02 · 홍겸 님 "ui동작들에 전부 애니메이션") ───────────────
+
+/** 누르는 동안 살짝 작아진다 (0.96) — [눌림손] 에 같은 손을 넘긴다 */
+@Composable
+fun 눌림배율(손: MutableInteractionSource): State<Float> {
+    val 눌림중 by 손.collectIsPressedAsState()
+    return animateFloatAsState(if (눌림중) 움직임.눌림배율 else 1f, tween(움직임.눌림), label = "눌림")
+}
+
+/** 배율을 그리기에만 쓴다 — 자리 · 크기는 그대로 (값은 그릴 때 읽는다) */
+fun Modifier.배율(s: State<Float>): Modifier = this.graphicsLayer { scaleX = s.value; scaleY = s.value }
+
+/** 눌림과 같다 — 다만 손(interactionSource)을 밖에서 받아 [눌림배율] 과 짝짓는다 */
+fun Modifier.눌림손(손: MutableInteractionSource, onClick: () -> Unit): Modifier = this.clickable(
+    interactionSource = 손, indication = null, onClick = onClick,
+)
+
+/** 색이 바뀔 때 0.2초 동안 옮겨 간다 */
+@Composable
+fun 색움직(목표: Color, 이름: String = "색"): Color = animateColorAsState(목표, tween(움직임.색), label = 이름).value
+
 @Composable
 fun 카드(modifier: Modifier = Modifier, 안쪽: Dp = 14.dp, content: @Composable ColumnScope.() -> Unit) {
     val c = Local색.current
     Column(
         modifier
             .fillMaxWidth()
+            // 10-02: 안의 것이 펼쳐지고 접힐 때 카드 높이가 부드럽게 따라간다
+            .animateContentSize(tween(움직임.펼침))
             .clip(RoundedCornerShape(모서리.보통))
             .background(c.면)
             // 09-27: 큰 박스 = 굵은 중심색 테두리 (안쪽 박스는 가는 속선)
@@ -178,14 +217,18 @@ fun 아이콘버튼(
     쓸수있음: Boolean = true,
 ) {
     val c = Local색.current
-    val 바탕 = when { 켬 -> c.강조; 칠함 -> c.면2; else -> Color.Transparent }
-    val 글색 = 색 ?: if (켬) c.강조글 else c.흐림
+    // 10-02: 누르면 살짝 작아지고, 켜고 끌 때 색이 옮겨 간다
+    val 손 = remember { MutableInteractionSource() }
+    val 배 = 눌림배율(손)
+    val 바탕 = 색움직(when { 켬 -> c.강조; 칠함 -> c.면2; else -> c.면2.copy(alpha = 0f) }, "아이콘버튼")
+    val 글색 = 색움직(색 ?: if (켬) c.강조글 else c.흐림, "아이콘버튼글")
     Box(
         modifier
             .size(크기칸)
+            .배율(배)
             .clip(RoundedCornerShape(모서리.아주작게))
             .background(바탕)
-            .then(if (쓸수있음) Modifier.눌림(onClick) else Modifier),
+            .then(if (쓸수있음) Modifier.눌림손(손, onClick) else Modifier),
         contentAlignment = Alignment.Center,
     ) {
         Icon(그림, 설명, Modifier.size(18.dp), tint = if (쓸수있음) 글색 else 글색.copy(alpha = 0.3f))
@@ -206,13 +249,16 @@ fun 버튼(
     낮게: Boolean = false,
 ) {
     val c = Local색.current
+    val 손 = remember { MutableInteractionSource() }
+    val 배 = 눌림배율(손)   // 10-02: 누르면 살짝 작아진다
     Row(
         modifier
             .height(if (낮게) 높이.낮게 else if (작게) 높이.보통 else 높이.높게)
+            .배율(배)
             .clip(RoundedCornerShape(모서리.작게))
             .background(if (주요) c.강조 else c.면)
             .then(if (주요) Modifier else Modifier.border(1.dp, c.속선, RoundedCornerShape(모서리.작게)))
-            .눌림(onClick)
+            .눌림손(손, onClick)
             .padding(horizontal = if (낮게) 8.dp else 12.dp),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
@@ -235,19 +281,25 @@ fun 칩줄(목록: List<String>, 선택: String?, onSelect: (String) -> Unit, mo
         modifier.fillMaxWidth().오른끝흐림(넘김).horizontalScroll(넘김),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        목록.forEach { p ->
+        목록.forEach { p -> key(p) {
             val 켬 = p == 선택
+            // 10-02: 누르면 살짝 작아지고, 고르면 색이 옮겨 간다 (켠 칩의 테두리는 바탕과 같은 색이라 보이지 않는다 — 전과 같은 모양)
+            val 손 = remember { MutableInteractionSource() }
+            val 배 = 눌림배율(손)
+            val 바탕 = 색움직(if (켬) c.강조 else c.강조.copy(alpha = 0f), "칩")
+            val 테두리 = 색움직(if (켬) c.강조 else c.속선, "칩테두리")
             Box(
                 Modifier
                     .height(높이.낮게)
+                    .배율(배)
                     .clip(CircleShape)
-                    .background(if (켬) c.강조 else Color.Transparent)
-                    .then(if (켬) Modifier else Modifier.border(1.dp, c.속선, CircleShape))   // 09-27: 안 고른 칩은 칠하지 않고 속선만
-                    .눌림 { onSelect(p) }
+                    .background(바탕)
+                    .border(1.dp, 테두리, CircleShape)   // 09-27: 안 고른 칩은 칠하지 않고 속선만
+                    .눌림손(손) { onSelect(p) }
                     .padding(horizontal = 13.dp),
                 contentAlignment = Alignment.Center,
-            ) { 글(p, 크기값 = 크기.버튼, 색 = if (켬) c.강조글 else c.흐림, 굵기 = FontWeight.Medium) }
-        }
+            ) { 글(p, 크기값 = 크기.버튼, 색 = 색움직(if (켬) c.강조글 else c.흐림, "칩글"), 굵기 = FontWeight.Medium) }
+        } }
     }
 }
 
@@ -255,15 +307,21 @@ fun 칩줄(목록: List<String>, 선택: String?, onSelect: (String) -> Unit, mo
 @Composable
 fun 스위치(켜짐: Boolean, onChange: (Boolean) -> Unit) {
     val c = Local색.current
+    val 폭 = 46.dp; val 안 = 4.dp; val 손잡이 = 22.dp
+    // 10-02: 손잡이가 미끄러지고 색이 옮겨 간다 (전에는 한 번에 건너뛰었다). 자리 · 크기는 그대로
+    val 자리 by animateDpAsState(if (켜짐) 폭 - 안 * 2 - 손잡이 else 0.dp, tween(움직임.스위치), label = "스위치")
+    val 바탕 by animateColorAsState(if (켜짐) c.강조 else c.선, tween(움직임.스위치), label = "스위치바탕")
+    val 손잡이색 by animateColorAsState(if (켜짐) c.강조글 else c.면, tween(움직임.스위치), label = "스위치손잡이")
+    val 손 = remember { MutableInteractionSource() }
     Box(
         Modifier
-            .width(46.dp).height(높이.아주낮게)
+            .width(폭).height(높이.아주낮게)
             .clip(CircleShape)
-            .background(if (켜짐) c.강조 else c.선)
-            .눌림 { onChange(!켜짐) }
-            .padding(4.dp),
-        contentAlignment = if (켜짐) Alignment.CenterEnd else Alignment.CenterStart,
-    ) { Box(Modifier.size(22.dp).clip(CircleShape).background(if (켜짐) c.강조글 else c.면)) }
+            .background(바탕)
+            .눌림손(손) { onChange(!켜짐) }
+            .padding(안),
+        contentAlignment = Alignment.CenterStart,
+    ) { Box(Modifier.offset(x = 자리).size(손잡이).clip(CircleShape).background(손잡이색)) }
 }
 
 /** 설정 한 줄 — 이름 · 한 줄 설명 · 오른쪽 조작부 */
@@ -680,24 +738,41 @@ private fun 분초입력(키: String, 값글: String, 넣기: (String) -> Unit, 
 @Composable
 fun 시트(제목: String, onClose: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
     val c = Local색.current
-    BackHandler(onBack = onClose)
-    Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.35f)).눌림(onClose), contentAlignment = Alignment.BottomCenter) {
-        Column(
-            Modifier
-                .fillMaxWidth()
-                .heightIn(max = 620.dp)
-                .clip(RoundedCornerShape(topStart = 모서리.크게, topEnd = 모서리.크게))
-                .background(c.면)
-                .눌림 { }
-                .navigationBarsPadding()
-                .imePadding()
-                .padding(horizontal = 간격.넓게, vertical = 16.dp),
+    // 10-02: 나타날 때 아래에서 올라오고, ✕ · 바깥 · 뒤로가기로 닫으면 내려간 뒤에 닫힌다.
+    //        (안에서 무언가를 골라 화면이 시트를 바로 치우는 경우는 내려가는 움직임 없이 사라진다)
+    val 보임 = remember { MutableTransitionState(false).apply { targetState = true } }
+    var 닫는중 by remember { mutableStateOf(false) }
+    val 닫기최신 by rememberUpdatedState(onClose)
+    fun 닫기() { if (!닫는중) { 닫는중 = true; 보임.targetState = false } }
+    LaunchedEffect(보임.isIdle, 보임.currentState) { if (닫는중 && 보임.isIdle && !보임.currentState) 닫기최신() }
+    BackHandler(onBack = { 닫기() })
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+        AnimatedVisibility(visibleState = 보임, enter = fadeIn(tween(움직임.시트)), exit = fadeOut(tween(움직임.시트닫기)), label = "시트가림") {
+            Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.35f)).눌림 { 닫기() })
+        }
+        AnimatedVisibility(
+            visibleState = 보임,
+            enter = slideInVertically(tween(움직임.시트, easing = 움직임.부드럽게)) { it },
+            exit = slideOutVertically(tween(움직임.시트닫기)) { it },
+            label = "시트",
         ) {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                제목글(제목, Modifier.weight(1f), 크기값 = 크기.크게)
-                아이콘버튼(아이콘.닫기, "닫기", onClose, 크기칸 = 높이.낮게)
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 620.dp)
+                    .clip(RoundedCornerShape(topStart = 모서리.크게, topEnd = 모서리.크게))
+                    .background(c.면)
+                    .눌림 { }
+                    .navigationBarsPadding()
+                    .imePadding()
+                    .padding(horizontal = 간격.넓게, vertical = 16.dp),
+            ) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    제목글(제목, Modifier.weight(1f), 크기값 = 크기.크게)
+                    아이콘버튼(아이콘.닫기, "닫기", { 닫기() }, 크기칸 = 높이.낮게)
+                }
+                Column(Modifier.padding(top = 12.dp).verticalScroll(rememberScrollState()), content = content)
             }
-            Column(Modifier.padding(top = 12.dp).verticalScroll(rememberScrollState()), content = content)
         }
     }
 }
@@ -709,19 +784,31 @@ fun 시트(제목: String, onClose: () -> Unit, content: @Composable ColumnScope
 @Composable
 fun 물음창(제목: String, 설명: String? = null, 예: String, on예: () -> Unit, on아니오: () -> Unit) {
     val c = Local색.current
-    BackHandler(onBack = on아니오)
-    Box(
-        Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.35f)).눌림(on아니오),
-        contentAlignment = Alignment.Center,
+    // 10-02: 흐려지며 나타나고, '아니오' · 바깥 · 뒤로가기로 닫으면 흐려지며 사라진 뒤에 닫힌다
+    val 보임 = remember { MutableTransitionState(false).apply { targetState = true } }
+    var 닫는중 by remember { mutableStateOf(false) }
+    val 아니오최신 by rememberUpdatedState(on아니오)
+    fun 아니오() { if (!닫는중) { 닫는중 = true; 보임.targetState = false } }
+    LaunchedEffect(보임.isIdle, 보임.currentState) { if (닫는중 && 보임.isIdle && !보임.currentState) 아니오최신() }
+    BackHandler(onBack = { 아니오() })
+    AnimatedVisibility(
+        visibleState = 보임,
+        enter = fadeIn(tween(움직임.물음)), exit = fadeOut(tween(움직임.물음)),
+        label = "물음창",
     ) {
-        Column(
-            Modifier.fillMaxWidth(0.62f).clip(RoundedCornerShape(모서리.보통)).background(c.면).눌림 { }.padding(간격.넓게),
+        Box(
+            Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.35f)).눌림 { 아니오() },
+            contentAlignment = Alignment.Center,
         ) {
-            제목글(제목, 크기값 = 크기.크게)
-            if (설명 != null) 글(설명, Modifier.padding(top = 4.dp), 크기값 = 크기.버튼, 색 = c.흐림, 줄 = 2)
-            Row(Modifier.padding(top = 간격.넓게), horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
-                버튼("아니오", on아니오, Modifier.weight(1f), 작게 = true)
-                버튼(예, on예, Modifier.weight(1f), 작게 = true, 주요 = true)
+            Column(
+                Modifier.fillMaxWidth(0.62f).clip(RoundedCornerShape(모서리.보통)).background(c.면).눌림 { }.padding(간격.넓게),
+            ) {
+                제목글(제목, 크기값 = 크기.크게)
+                if (설명 != null) 글(설명, Modifier.padding(top = 4.dp), 크기값 = 크기.버튼, 색 = c.흐림, 줄 = 2)
+                Row(Modifier.padding(top = 간격.넓게), horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
+                    버튼("아니오", { 아니오() }, Modifier.weight(1f), 작게 = true)
+                    버튼(예, on예, Modifier.weight(1f), 작게 = true, 주요 = true)
+                }
             }
         }
     }
@@ -731,20 +818,28 @@ fun 물음창(제목: String, 설명: String? = null, 예: String, on예: () -> 
 @Composable
 fun BoxScope.아래띠(글자: String, 버튼글: String, on버튼: () -> Unit, 어둡게: Boolean = true, 바깥: Modifier = Modifier) {
     val c = Local색.current
-    Row(
-        바깥
-            .align(Alignment.BottomCenter)
-            .padding(horizontal = 12.dp, vertical = 12.dp)
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(모서리.작게))
-            .background(if (어둡게) c.글 else c.면)
-            .border(1.dp, if (어둡게) c.글 else c.휴식, RoundedCornerShape(모서리.작게))
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
+    // 10-02: 아래에서 미끄러져 올라온다
+    val 보임 = remember { MutableTransitionState(false).apply { targetState = true } }
+    AnimatedVisibility(
+        visibleState = 보임,
+        modifier = Modifier.align(Alignment.BottomCenter),
+        enter = slideInVertically(tween(움직임.띠, easing = 움직임.부드럽게)) { it } + fadeIn(tween(움직임.띠)),
+        label = "아래띠",
     ) {
-        글(글자, Modifier.weight(1f), 크기값 = 크기.버튼, 색 = if (어둡게) c.면 else c.휴식)
-        Box(Modifier.width(12.dp))
-        글(버튼글, Modifier.눌림(on버튼), 크기값 = 크기.버튼, 색 = if (어둡게) c.강조옅음 else c.휴식, 굵기 = FontWeight.Bold)
+        Row(
+            바깥
+                .padding(horizontal = 12.dp, vertical = 12.dp)
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(모서리.작게))
+                .background(if (어둡게) c.글 else c.면)
+                .border(1.dp, if (어둡게) c.글 else c.휴식, RoundedCornerShape(모서리.작게))
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            글(글자, Modifier.weight(1f), 크기값 = 크기.버튼, 색 = if (어둡게) c.면 else c.휴식)
+            Box(Modifier.width(12.dp))
+            글(버튼글, Modifier.눌림(on버튼), 크기값 = 크기.버튼, 색 = if (어둡게) c.강조옅음 else c.휴식, 굵기 = FontWeight.Bold)
+        }
     }
 }
 
@@ -752,16 +847,18 @@ fun BoxScope.아래띠(글자: String, 버튼글: String, on버튼: () -> Unit, 
 @Composable
 fun 고르기줄(이름: String, 곁: String? = null, 오른쪽: ImageVector? = 아이콘.오른쪽, 흐림: Boolean = false, onClick: () -> Unit) {
     val c = Local색.current
+    val 손 = remember { MutableInteractionSource() }
+    val 배 = 눌림배율(손)   // 10-02: 누르면 살짝 작아진다
     Row(
-        Modifier.fillMaxWidth().눌림(onClick).padding(vertical = 12.dp),
+        Modifier.fillMaxWidth().배율(배).눌림손(손, onClick).padding(vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Row(Modifier.weight(1f), verticalAlignment = Alignment.Bottom) {
-            글(이름, Modifier.weight(1f, fill = false), 색 = if (흐림) c.옅음 else c.글)
+            글(이름, Modifier.weight(1f, fill = false), 색 = 색움직(if (흐림) c.옅음 else c.글, "고르기줄"))
             // 10-01: 곁 글(예상 시간 등)은 말줄임 대신 줄여서 다 보인다
             if (곁 != null) { Box(Modifier.width(8.dp)); 맞춤글(곁, Modifier.weight(1f, fill = false), 색 = c.옅음) }
         }
-        if (오른쪽 != null) Icon(오른쪽, null, Modifier.size(18.dp), tint = if (흐림) c.옅음 else c.강조)
+        if (오른쪽 != null) Icon(오른쪽, null, Modifier.size(18.dp), tint = 색움직(if (흐림) c.옅음 else c.강조, "고르기줄그림"))
     }
     구분선()
 }

@@ -78,6 +78,7 @@ import com.slayde.hasenheide.data.회표
 import com.slayde.hasenheide.data.훈련방식
 import com.slayde.hasenheide.data.훈련방식들
 import com.slayde.hasenheide.ui.theme.Local색
+import com.slayde.hasenheide.ui.theme.움직임
 import com.slayde.hasenheide.ui.theme.간격
 import com.slayde.hasenheide.ui.theme.높이
 import com.slayde.hasenheide.ui.theme.모서리
@@ -917,6 +918,8 @@ private fun 플랜한줄(상태: 앱상태, p: 플랜, 펼침: Boolean, 끌림: 
     val 목표 = p.목표진행값
     val 지금 = p.지금진행값
     val 진행 = if (목표 > 시작) ((지금 - 시작) / (목표 - 시작)).coerceIn(0.0, 1.0) else 0.0
+    // 10-02: 게이지 폭이 옛 값에서 새 값으로 차오른다 (글자 % 는 그대로)
+    val 진행폭 by animateFloatAsState(진행.toFloat(), tween(움직임.게이지, easing = 움직임.부드럽게), label = "플랜게이지")
     val 보정 = 표?.let { 보정배수(상태.d.향상기록들, it.이름) } ?: 1.0
     // 10-01 감시관: 측정 뒤에는 그 측정값부터 다시 걸어간 표를 쓴다 (루틴 탭의 '측정 · N회차' 와 같은 숫자)
     val 전체 = if (표 != null && 몸.찼나) p.회표(몸, 상태.d.향상기록들) else emptyList()
@@ -947,7 +950,7 @@ private fun 플랜한줄(상태: 앱상태, p: 플랜, 펼침: Boolean, 끌림: 
         Box(Modifier.fillMaxWidth().padding(top = 6.dp).height(20.dp)
             .clip(RoundedCornerShape(10.dp)).background(c.면2)
             .border(1.dp, c.속선, RoundedCornerShape(10.dp))) {
-            Box(Modifier.fillMaxWidth(진행.toFloat()).fillMaxHeight().background(c.강조))
+            Box(Modifier.fillMaxWidth(진행폭).fillMaxHeight().background(c.강조))
             Box(Modifier.matchParentSize(), contentAlignment = Alignment.Center) {
                 글("${(진행 * 100).toInt()}%", 크기값 = 크기.아주작게, 굵기 = FontWeight.Bold)
             }
@@ -958,7 +961,7 @@ private fun 플랜한줄(상태: 앱상태, p: 플랜, 펼침: Boolean, 끌림: 
             // 시작 – 현재 – 목표 — 09-30: 10dp 위로 올렸다 (14 → 4)
             Box(Modifier.fillMaxWidth().padding(top = 4.dp).height(4.dp)
                 .clip(RoundedCornerShape(2.dp)).background(c.면2)) {
-                Box(Modifier.fillMaxWidth(진행.toFloat()).fillMaxHeight().background(c.강조))
+                Box(Modifier.fillMaxWidth(진행폭).fillMaxHeight().background(c.강조))
             }
             Row(Modifier.fillMaxWidth().padding(top = 3.dp)) {
                 글("시작 ${무게글(시작)}$단위글", 크기값 = 크기.아주작게, 색 = c.옅음)
@@ -1121,6 +1124,7 @@ private fun 플랜고치기시트(상태: 앱상태, p: 플랜, 닫기: () -> Un
 @Composable
 private fun 칸타일(modifier: Modifier, 큰: String, 밑: String, 비: Float) {
     val c = Local색.current
+    val 폭 by animateFloatAsState(비.coerceIn(0f, 1f), tween(움직임.게이지, easing = 움직임.부드럽게), label = "칸타일")   // 10-02
     Column(
         modifier.clip(RoundedCornerShape(모서리.작게)).background(c.면)
             .border(1.dp, c.속선, RoundedCornerShape(모서리.작게)).padding(6.dp),
@@ -1128,7 +1132,7 @@ private fun 칸타일(modifier: Modifier, 큰: String, 밑: String, 비: Float) 
         글(큰, 크기값 = 크기.조금작게, 굵기 = FontWeight.Bold)
         Box(Modifier.fillMaxWidth().padding(vertical = 3.dp).height(4.dp)
             .clip(RoundedCornerShape(2.dp)).background(c.면2)) {
-            Box(Modifier.fillMaxWidth(비.coerceIn(0f, 1f)).fillMaxHeight().background(c.강조))
+            Box(Modifier.fillMaxWidth(폭).fillMaxHeight().background(c.강조))
         }
         글(밑, 크기값 = 크기.아주작게, 색 = c.옅음)
     }

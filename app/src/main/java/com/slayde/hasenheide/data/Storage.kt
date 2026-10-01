@@ -53,6 +53,9 @@ object 저장소 {
         o.put("몸", JSONObject().put("나이", d.몸.나이).put("남", d.몸.남).put("체중", d.몸.체중))
         // 향상 데이터 (09-30, 스키마 10 · 21 문서 5절) — 이 줄들이 있어야 속도표를 다시 짤 수 있다
         o.put("향상기록들", JSONArray().also { a -> d.향상기록들.forEach { a.put(향상to(it)) } })
+        // 근육 피로 (10-02, 스키마 13 · 07 근육지도 4·5절) — 잎 id → [lv0, 시작, 끝] · 잎 id → 이전 최대 볼륨
+        o.put("피로", JSONObject().also { m -> d.피로.forEach { (k, f) -> m.put(k, JSONArray().put(f.lv0).put(f.시작).put(f.끝)) } })
+        o.put("최대볼륨", JSONObject().also { m -> d.최대볼륨.forEach { (k, v) -> m.put(k, v) } })
         return o.toString(1)
     }
 
@@ -61,6 +64,8 @@ object 저장소 {
         .also { if (e.참고url != null) it.put("참고url", e.참고url) }
         .also { if (e.참고글 != null) it.put("참고글", e.참고글) }
         .also { if (e.목표1RM != null) it.put("목표1RM", e.목표1RM) }
+        // 10-02 (스키마 13): 종목 사진 — 파일 **이름만** 적는다. 사진 파일은 백업에 들어가지 않는다 (filesDir/photos 에 그대로)
+        .also { if (e.사진.isNotEmpty()) it.put("사진", JSONArray().also { a -> e.사진.forEach { a.put(it) } }) }
 
     private fun 루틴종목to(e: 루틴종목) = JSONObject().put("이름", e.이름).put("세트", e.세트).put("무게", e.무게)
         .put("횟수", e.횟수).put("휴식", e.휴식).also { if (e.슈퍼 != null) it.put("슈퍼", e.슈퍼) }
@@ -122,6 +127,7 @@ object 저장소 {
         .put("볼륨켬", s.볼륨켬).put("볼륨방식", s.볼륨방식).put("볼륨값", s.볼륨값)
         .put("볼륨언제", s.볼륨언제).put("볼륨배분", s.볼륨배분).put("횟수상한", s.횟수상한)
         .put("진동세기", s.진동세기).put("진동시간", s.진동시간).put("번호보기", s.번호보기)
+        .put("배너", s.배너).put("회복시간", s.회복시간).put("색표", s.색표)   // 10-02 (스키마 13) 운동 중 그림
 
     private fun 세션to(S: 운동세션) = JSONObject().put("루틴id", S.루틴id).put("루틴이름", S.루틴이름)
         .put("시작시각", S.시작시각).put("i", S.i).put("s", S.s).put("무게", S.무게).put("횟수", S.횟수)
@@ -153,7 +159,8 @@ object 저장소 {
         return 앱데이터(
             종목표 = 목록(o.optJSONArray("종목표")) { a, i ->
                 a.getJSONObject(i).let { 종목(it.getString("이름"), it.optString("부위"), it.optString("장비"), 글또는널(it, "참고글"), 글또는널(it, "참고url"), 글또는널(it, "달력이름"),
-                    if (it.has("목표1RM") && !it.isNull("목표1RM")) it.getDouble("목표1RM") else null) }
+                    if (it.has("목표1RM") && !it.isNull("목표1RM")) it.getDouble("목표1RM") else null)
+                    .copy(사진 = 목록(it.optJSONArray("사진")) { x, j -> x.getString(j) }) }   // 스키마 13 (10-02) — 옛 파일은 빈 목록
             },
             카테고리 = if (o.has("카테고리")) 목록(o.optJSONArray("카테고리")) { a, i -> a.getString(i) } else 앱데이터.기본카테고리,
             루틴들 = 목록(o.optJSONArray("루틴들")) { a, i -> 루틴from(a.getJSONObject(i)) },
@@ -178,6 +185,9 @@ object 저장소 {
             몸 = o.optJSONObject("몸")?.let { j -> 몸조건(j.optInt("나이", 0), j.optBoolean("남", true), j.optDouble("체중", 0.0)) } ?: 몸조건(),
             // 스키마 10 — 옛 파일에는 없다 → 빈 목록 (기본표를 쓴다)
             향상기록들 = 목록(o.optJSONArray("향상기록들")) { a, i -> 향상from(a.getJSONObject(i)) },
+            // 스키마 13 (10-02) — 옛 파일에는 없다 → 빈 피로 · 빈 최대 (처음 운동하는 것처럼)
+            피로 = 사전(o.optJSONObject("피로")) { m, k -> m.getJSONArray(k).let { a -> 피로상태(a.optDouble(0, 0.0), a.optLong(1, 0L), a.optLong(2, 0L)) } },
+            최대볼륨 = 사전(o.optJSONObject("최대볼륨")) { m, k -> m.optDouble(k, 0.0) },
         ).플랜줄정리()   // 10-01: 지운 플랜의 줄 · 슈퍼세트로 묶인 플랜 줄을 풀어 둔다
     }
 
@@ -296,6 +306,10 @@ object 저장소 {
             진동세기 = o.optInt("진동세기", 2).coerceIn(1, 3),
             진동시간 = o.optInt("진동시간", 1000).let { if (it in 진동시간목록) it else 1000 },
             번호보기 = o.optBoolean("번호보기", true),
+            // 10-02 (스키마 13) — 옛 파일 · 목록에 없는 값은 기본값
+            배너 = o.optString("배너", "근육 2장").let { if (it in 근육표.배너목록) it else "근육 2장" },
+            회복시간 = o.optInt("회복시간", 24).let { if (it in 근육표.회복시간목록) it else 24 },
+            색표 = o.optString("색표", "heat").let { v -> if (근육표.색표목록.any { it.first == v }) v else "heat" },
         )
     }
 

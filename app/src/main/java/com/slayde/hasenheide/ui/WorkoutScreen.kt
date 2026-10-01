@@ -2,6 +2,13 @@ package com.slayde.hasenheide.ui
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.graphics.graphicsLayer
+import com.slayde.hasenheide.ui.theme.움직임
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -161,7 +168,17 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
 
     Box(Modifier.fillMaxSize()) {
         if (S.끝화면) 마무리(상태, S) else Column(Modifier.fillMaxSize()) {
-            Box(Modifier.번호("운1")) { 머리줄(S, 지금) { 바꿈 { it.끝냄(System.currentTimeMillis()) } } }
+            // 10-02 위쪽 그림 칸 (08 3절) — ✕ 로 감추면 이 운동 동안 감추고, 머리줄 '그림' 으로 다시 보인다
+            val 그림켬 = d.설정.배너 != "숨김"
+            val 그림숨김 = 그림칸기억.숨긴운동 == S.시작시각
+            Box(Modifier.번호("운1")) {
+                머리줄(S, 지금, 그림보기 = if (그림켬 && 그림숨김) ({ 발자취.적기("그림 칸 다시 보임"); 그림칸기억.숨긴운동 = -1L }) else null) {
+                    바꿈 { it.끝냄(System.currentTimeMillis()) }
+                }
+            }
+            AnimatedVisibility(visible = 그림켬 && !그림숨김) {
+                운동그림칸(상태, S, 지금) { 그림칸기억.숨긴운동 = S.시작시각 }
+            }
             val 스크롤 = rememberScrollState()
             var 화면틀 by remember { mutableStateOf(Rect.Zero) }
             // 화면 맞추기에 쓰는 좌표 — 상태가 아니라 그냥 들고 있는다 (바뀔 때마다 화면을 다시 그리지 않게)
@@ -430,12 +447,14 @@ private fun 고정머리(상태: 앱상태, S: 운동세션, 띠i: Int, 펼침: 
 }
 
 @Composable
-private fun 머리줄(S: 운동세션, 지금: Long, 끝내기: () -> Unit) {
+private fun 머리줄(S: 운동세션, 지금: Long, 그림보기: (() -> Unit)? = null, 끝내기: () -> Unit) {
     val c = Local색.current
     val 달 = S.루틴달성도()
     // 09-27: 바뀌는 숫자는 옛 값 → 새 값으로 움직인다
     val 달움 = 움직수(달.toDouble(), 영부터 = false, 빠르게 = true)
     val 볼움 = 움직수(S.오늘볼륨(), 영부터 = false, 빠르게 = true)
+    // 10-02: 막대도 옛 폭에서 새 폭으로
+    val 막대 by animateFloatAsState(달.coerceIn(0, 100) / 100f, tween(움직임.게이지, easing = 움직임.부드럽게), label = "달성막대")
     Column(Modifier.fillMaxWidth().background(c.면)) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             제목글(S.루틴이름, 크기값 = 크기.버튼)
@@ -443,6 +462,12 @@ private fun 머리줄(S: 운동세션, 지금: Long, 끝내기: () -> Unit) {
             글("달성도 ${달움.roundToInt()}%", 크기값 = 크기.아주작게, 색 = c.강조, 굵기 = FontWeight.Bold)
             글(시분초(S.흐른초(지금)), 크기값 = 크기.아주작게, 색 = c.흐림)
             글("${콤마(볼움)}/${콤마(S.목표볼륨())}", Modifier.weight(1f), 크기값 = 크기.아주작게, 색 = c.흐림)
+            // 10-02: 그림 칸을 ✕ 로 감췄을 때만 — 누르면 다시 보인다
+            if (그림보기 != null) Box(
+                Modifier.height(높이.아주낮게).clip(RoundedCornerShape(모서리.아주작게)).background(c.면2)
+                    .border(1.dp, c.속선, RoundedCornerShape(모서리.아주작게)).눌림(그림보기).padding(horizontal = 8.dp),
+                contentAlignment = Alignment.Center,
+            ) { 글("그림", 크기값 = 크기.작게, 색 = c.흐림, 굵기 = FontWeight.Bold) }
             Box(
                 Modifier.height(높이.아주낮게).clip(RoundedCornerShape(모서리.아주작게)).background(c.면2)
                     .border(1.dp, c.속선, RoundedCornerShape(모서리.아주작게)).눌림(끝내기).padding(horizontal = 8.dp),
@@ -451,7 +476,7 @@ private fun 머리줄(S: 운동세션, 지금: Long, 끝내기: () -> Unit) {
         }
         // 3px 막대 — 루틴 달성도
         Box(Modifier.fillMaxWidth().height(3.dp).background(c.면2)) {
-            Box(Modifier.fillMaxWidth(달.coerceIn(0, 100) / 100f).height(3.dp).background(c.강조))
+            Box(Modifier.fillMaxWidth(막대).height(3.dp).background(c.강조))
         }
     }
 }
@@ -525,8 +550,9 @@ private fun 글자표(n: Int): String = ('A' + n).toString()
 @Composable
 private fun 접기단추(펼침: Boolean, on접기: () -> Unit, 색: Color? = null) {
     val c = Local색.current
+    val 각 by animateFloatAsState(if (펼침) 180f else 0f, tween(움직임.펼침), label = "접기단추")   // 10-02: 화살표가 돌아간다
     Box(Modifier.size(높이.낮게).눌림 { 발자취.적기(if (펼침) "종목 접기" else "종목 펼치기"); on접기() }, contentAlignment = Alignment.Center) {
-        Icon(아이콘.아래, if (펼침) "접기" else "펼치기", Modifier.size(16.dp).rotate(if (펼침) 180f else 0f), tint = 색 ?: c.옅음)
+        Icon(아이콘.아래, if (펼침) "접기" else "펼치기", Modifier.size(16.dp).rotate(각), tint = 색 ?: c.옅음)
     }
 }
 
@@ -602,14 +628,21 @@ private fun 세트줄(
             .alpha(if (rec == null && !지금칸 && !쉬는중) 0.55f else 1f),
     ) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            // 체크
+            // 체크 — 10-02: 끝내는 순간 톡 튀고(0.7 → 1), 색이 옮겨 간다. 체크를 풀 때는 튀지 않는다
+            val 완료 = rec != null
+            val 톡 = remember { Animatable(1f) }
+            var 전완료 by remember { mutableStateOf(완료) }
+            LaunchedEffect(완료) {
+                if (완료 && !전완료) { 톡.snapTo(움직임.톡시작); 톡.animateTo(1f, spring(dampingRatio = 움직임.톡탄성, stiffness = Spring.StiffnessMedium)) }
+                전완료 = 완료
+            }
             Box(
-                Modifier.size(높이.아주낮게).clip(CircleShape)
-                    .background(if (rec != null) c.강조 else c.면2)
-                    .border(1.dp, if (rec != null) c.강조 else c.속선, CircleShape)
+                Modifier.size(높이.아주낮게).graphicsLayer { scaleX = 톡.value; scaleY = 톡.value }.clip(CircleShape)
+                    .background(색움직(if (완료) c.강조 else c.면2, "체크"))
+                    .border(1.dp, 색움직(if (완료) c.강조 else c.속선, "체크테두리"), CircleShape)
                     .눌림 { 발자취.적기("${e.이름} $번호 세트 ${if (rec != null) "체크 풀기" else "체크"}"); 바꿈 { it.체크(j, k, System.currentTimeMillis()) } },
                 contentAlignment = Alignment.Center,
-            ) { Icon(아이콘.체크, "$번호 세트 완료", Modifier.size(15.dp), tint = if (rec != null) c.강조글 else c.면) }
+            ) { Icon(아이콘.체크, "$번호 세트 완료", Modifier.size(15.dp), tint = 색움직(if (완료) c.강조글 else c.면, "체크표")) }
             // 몇 번째 세트
             Box(
                 Modifier.size(width = 32.dp, height = 높이.아주낮게).clip(RoundedCornerShape(모서리.아주작게)).background(c.면)

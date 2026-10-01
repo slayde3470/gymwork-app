@@ -1,6 +1,9 @@
 package com.slayde.hasenheide.ui
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
+import com.slayde.hasenheide.ui.theme.움직임
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.input.pointer.pointerInput
 
@@ -89,6 +92,7 @@ class 앱상태(private val 파일: File) {
     /** 백업 — 파일로 내보내고 가져온다 */
     //  · 내보낼 때 수정 메모는 뺀다 (09-24 메모: 백업에 메모까지 담을 필요 없다)
     //  · 그래서 가져올 때 파일에 메모가 없으면 지금 폰의 메모를 그대로 둔다 (가져오기로 메모가 지워지지 않게)
+    //  · 10-02: 종목 사진은 **파일 이름만** 들어간다 (사진 파일은 filesDir/photos 에 남고 백업에는 없다 → 다른 폰에선 빈 칸)
     fun 백업글(): String = 저장소.글로(d.copy(메모 = emptyList()))
     fun 백업넣기(글: String): Boolean = try {
         val 새 = 저장소.글에서(글)
@@ -166,16 +170,26 @@ fun 앱(상태: 앱상태, 폰: 폰기능) {
     Box(Modifier.fillMaxSize().background(c.바탕).pointerInput(Unit) { detectTapGestures(onTap = { 입력중.취소?.invoke() }) }) {
         Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().imePadding()) {
             Box(Modifier.weight(1f).fillMaxWidth()) {
-                val 결과 = 상태.d.결과
-                if (운동화면중) 운동화면(상태, 폰)
-                // 10-01: 저장된 운동의 결과를 한 번 보여 준다 (자동 종료 뒤 결과 화면이 안 나왔다)
-                else if (세션 == null && 결과 != null) 결과화면(상태, 결과)
-                else when (지금탭) {
-                    탭.캘린더 -> 캘린더화면(상태, { 지금탭 = 탭.루틴 }, { 운동보기 = true })
-                    탭.루틴 -> 루틴화면(상태, 폰)
-                    탭.플랜 -> 플랜화면(상태, { 지금탭 = 탭.설정 }, { 지금탭 = 탭.종목 })
-                    탭.종목 -> 종목화면(상태)
-                    탭.설정 -> 설정화면(상태, 폰)
+                // 10-02: 화면을 바꿀 때 0.2초 동안 흐려지며 넘어간다 (자리 · 배치는 그대로)
+                val 화면키 = when {
+                    운동화면중 -> "운동"
+                    세션 == null && 상태.d.결과 != null -> "결과"
+                    else -> 지금탭.name
+                }
+                Crossfade(targetState = 화면키, animationSpec = tween(움직임.화면), label = "화면") { 키 ->
+                    Box(Modifier.fillMaxSize()) {
+                        val 결과 = 상태.d.결과
+                        if (키 == "운동") 운동화면(상태, 폰)
+                        // 10-01: 저장된 운동의 결과를 한 번 보여 준다 (자동 종료 뒤 결과 화면이 안 나왔다)
+                        else if (키 == "결과") { if (결과 != null) 결과화면(상태, 결과) }
+                        else when (탭.valueOf(키)) {
+                            탭.캘린더 -> 캘린더화면(상태, { 지금탭 = 탭.루틴 }, { 운동보기 = true })
+                            탭.루틴 -> 루틴화면(상태, 폰)
+                            탭.플랜 -> 플랜화면(상태, { 지금탭 = 탭.설정 }, { 지금탭 = 탭.종목 })
+                            탭.종목 -> 종목화면(상태)
+                            탭.설정 -> 설정화면(상태, 폰)
+                        }
+                    }
                 }
             }
             if (세션 != null && !운동보기) 운동중띠(세션) { 운동보기 = true }
