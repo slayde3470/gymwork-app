@@ -59,6 +59,9 @@ import com.slayde.hasenheide.data.루틴
 import com.slayde.hasenheide.data.루틴성장
 import com.slayde.hasenheide.data.볼륨
 import com.slayde.hasenheide.data.사흘미리
+import com.slayde.hasenheide.data.날휴식
+import com.slayde.hasenheide.data.예정지우기
+import com.slayde.hasenheide.data.그날만바꾸기
 import com.slayde.hasenheide.data.시간글
 import com.slayde.hasenheide.data.앱데이터
 import com.slayde.hasenheide.data.예상초
@@ -156,6 +159,8 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
     val 오늘 = 상태.오늘
     var 보는달 by remember { mutableStateOf(YearMonth.from(LocalDate.parse(오늘))) }
     var 고른날 by remember { mutableStateOf(오늘) }
+    // 10-01: 집어 둔 예정 — 다른 달로도 옮길 수 있게. 꾹 눌렀다 그 자리에서 떼거나, 달 띠 위에서 떼거나, '다른 날로 옮기기' 로 집는다
+    var 집은날 by remember { mutableStateOf<String?>(null) }
     // "시작" · "루틴" · "휴식" · "한번더" · "변경" · "조절" · "갱신" · "향상" · "목표" · "추세" · "종목"
     var 열린시트 by remember { mutableStateOf<String?>(null) }
     fun 시작(S: 운동세션?) { if (S != null) 상태.바꿈 { it.copy(세션 = S) }; 열린시트 = null }
@@ -171,8 +176,19 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
                     아이콘버튼(아이콘.오른쪽, "다음 달", { 보는달 = 보는달.plusMonths(1) }, 칠함 = false, 색 = c.강조글, 크기칸 = 높이.아주낮게)
                 }
                 Column(Modifier.padding(start = 6.dp, end = 6.dp, top = 4.dp, bottom = 6.dp)) {
-                    달력(d, 오늘, 보는달, 고른날, Modifier.번호("캘2"), on고름 = { 고른날 = it }, on두번 = { 고른날 = it; 열린시트 = "시작" },
-                        on옮김 = { 원, 새날 -> 상태.바꿈 { it.예정옮기기(원, 새날, 오늘) }; 고른날 = 새날 })
+                    달력(d, 오늘, 보는달, 고른날, Modifier.번호("캘2"),
+                        on고름 = { 날 ->
+                            val 원 = 집은날
+                            if (원 != null) {
+                                if (날 != 원 && 날 >= 오늘 && !d.기록.containsKey(날)) {
+                                    상태.바꿈 { it.예정옮기기(원, 날, 오늘) }; 집은날 = null
+                                }
+                                고른날 = 날
+                            } else 고른날 = 날
+                        },
+                        on두번 = { 고른날 = it; 열린시트 = "시작" },
+                        on옮김 = { 원, 새날 -> 상태.바꿈 { it.예정옮기기(원, 새날, 오늘) }; 고른날 = 새날 },
+                        on집음 = { 원, 달이동 -> 집은날 = 원; if (달이동 != 0) 보는달 = 보는달.plusMonths(달이동.toLong()) })
                 }
             }
             Box(Modifier.height(8.dp))
@@ -183,6 +199,9 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
             }
         }
 
+        집은날?.let { 원 ->
+            아래띠("${d.예정루틴(원)?.이름 ?: "예정"} — 옮길 날을 누르세요 · ◀ ▶ 로 다른 달", "취소", { 집은날 = null })
+        }
         val k = 고른날
         val 이날 = if (k == 오늘) "오늘" else "이 날"
         when (열린시트) {
@@ -191,7 +210,7 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
                 if (d.세션 != null) { 열린시트 = null; 운동으로() }
                 else if (r == null) 열린시트 = null
                 else 시트("운동을 시작할까요?", { 열린시트 = null }) {
-                    글("${r.이름} · ${r.종목.size}종목 · ${총세트(r)}세트 · 약 ${시간글(예상초(r))}", 크기값 = 크기.버튼, 색 = c.흐림)
+                    맞춤글("${r.이름} · ${r.종목.size}종목 · ${총세트(r)}세트 · 약 ${시간글(예상초(r))}", 최대 = 크기.버튼, 색 = c.흐림)
                     Box(Modifier.height(12.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         버튼("시작", { 시작(d.예정루틴(오늘)?.let { d.조절해시작(it, 오늘, System.currentTimeMillis()) }) }, Modifier.weight(1f), 주요 = true)
@@ -199,11 +218,15 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
                     }
                 }
             }
-            "루틴" -> 시트("${날글(k)}에 넣을 루틴", { 열린시트 = null }) {
-                글("이 날부터 순서를 다시 깝니다 · 앞선 날은 그대로", 크기값 = 크기.조금작게, 색 = c.옅음)
-                d.루틴들.forEach { r ->
-                    고르기줄(r.이름, if (r.휴식일) "휴식일" else "${r.종목.size}종목 · ${총세트(r)}세트") {
-                        상태.바꿈 { it.꽂기(r.id, k, 오늘) }; 열린시트 = null
+            "루틴" -> {
+                var 이날만 by remember { mutableStateOf(true) }
+                시트("${날글(k)}에 넣을 루틴", { 열린시트 = null }) {
+                    // 10-01: '이 날만 바꾸기' 를 더했다 (전에는 늘 그 날부터 순서를 다시 깔았다)
+                    칩줄(listOf("이 날만", "이 날부터 순서대로"), if (이날만) "이 날만" else "이 날부터 순서대로", { 이날만 = it == "이 날만" })
+                    d.루틴들.forEach { r ->
+                        고르기줄(r.이름, if (r.휴식일) "휴식일" else "${r.종목.size}종목 · ${총세트(r)}세트") {
+                            상태.바꿈 { if (이날만) it.그날만바꾸기(r.id, k, 오늘) else it.꽂기(r.id, k, 오늘) }; 열린시트 = null
+                        }
                     }
                 }
             }
@@ -219,11 +242,18 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
                 고르기줄("종목 고르기", "부위별 종목 목록에서") { 열린시트 = "종목" }
                 글("오늘 기록은 그대로 두고 따로 남깁니다", Modifier.padding(top = 6.dp), 크기값 = 크기.작게, 색 = c.옅음)
             }
-            "변경" -> 시트("$이날 운동 바꾸기", { 열린시트 = null }) {
+            // 10-01: 오늘만이 아니라 앞으로의 아무 날이나 — 옮기기 · 쉬기 · 지우기 (홍겸 님 "변경이 안 됨")
+            "변경" -> 시트("${날글(k)} 운동 바꾸기", { 열린시트 = null }) {
                 고르기줄("다른 루틴으로", d.루틴들.joinToString(" · ") { it.이름 }) { 열린시트 = "루틴" }
                 if (k == 오늘 && d.세션 == null) 고르기줄("종목 하나만", "개별 종목 운동") { 열린시트 = "종목" }
                 val r = d.예정루틴(k)
-                if (k == 오늘 && r != null && !r.휴식일) 고르기줄("오늘은 휴식", "내일로 미루기 · 건너뛰기") { 열린시트 = "휴식" }
+                if (k >= 오늘 && r != null && !d.기록.containsKey(k)) {
+                    고르기줄("다른 날로 옮기기", "다른 달도 · 날짜를 누르면 옮겨집니다") { 집은날 = k; 열린시트 = null }
+                    if (!r.휴식일) 고르기줄("${이날}은 휴식", "미루기 · 건너뛰기") { 열린시트 = "휴식" }
+                    고르기줄("이 날 예정 지우기", "앞뒤 순서는 그대로", 아이콘.지우기) {
+                        상태.지우고알림("${날글(k)} ${r.이름} 예정을 지웠습니다") { it.예정지우기(k, 오늘) }; 열린시트 = null
+                    }
+                }
             }
             "종목" -> {
                 var 부위 by remember { mutableStateOf("전체") }
@@ -318,14 +348,12 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
                     }
                 }
             }
-            "휴식" -> 시트("오늘 쉴까요?", { 열린시트 = null }) {
-                val 미루기 = d.사흘미리(true, 오늘); val 건너 = d.사흘미리(false, 오늘)
-                버튼("오늘 루틴을 내일로 미루기", { 상태.바꿈 { it.오늘휴식(true, 오늘) }; 열린시트 = null }, Modifier.fillMaxWidth(), 주요 = true)
-                글("오늘 휴식 · 내일 ${미루기.getOrElse(0) { "" }} · 모레 ${미루기.getOrElse(1) { "" }} · 글피 ${미루기.getOrElse(2) { "" }}",
-                    Modifier.padding(top = 4.dp, bottom = 12.dp), 크기값 = 크기.작게, 색 = c.옅음)
-                버튼("오늘 루틴 건너뛰기", { 상태.바꿈 { it.오늘휴식(false, 오늘) }; 열린시트 = null }, Modifier.fillMaxWidth())
-                글("오늘 휴식 · 내일 ${건너.getOrElse(0) { "" }} · 모레 ${건너.getOrElse(1) { "" }} · 글피 ${건너.getOrElse(2) { "" }}",
-                    Modifier.padding(top = 4.dp, bottom = 4.dp), 크기값 = 크기.작게, 색 = c.옅음)
+            "휴식" -> 시트("${날글(k)} 쉴까요?", { 열린시트 = null }) {
+                val 미루기 = d.사흘미리(true, k); val 건너 = d.사흘미리(false, k)
+                버튼("이 루틴을 다음 날로 미루기", { 상태.바꿈 { it.날휴식(true, k, 오늘) }; 열린시트 = null }, Modifier.fillMaxWidth(), 주요 = true)
+                맞춤글("${날글(k)} 휴식 · 다음 ${미루기.joinToString(" · ")}", Modifier.padding(top = 4.dp, bottom = 12.dp), 색 = c.옅음)
+                버튼("이 루틴 건너뛰기", { 상태.바꿈 { it.날휴식(false, k, 오늘) }; 열린시트 = null }, Modifier.fillMaxWidth())
+                맞춤글("${날글(k)} 휴식 · 다음 ${건너.joinToString(" · ")}", Modifier.padding(top = 4.dp, bottom = 4.dp), 색 = c.옅음)
             }
         }
     }
@@ -412,7 +440,7 @@ private fun 판줄(
 
 @Composable
 private fun 달력(d: 앱데이터, 오늘: String, 달: YearMonth, 고른날: String, modifier: Modifier, on고름: (String) -> Unit, on두번: (String) -> Unit,
-                on옮김: (String, String) -> Unit) {
+                on옮김: (String, String) -> Unit, on집음: (String, Int) -> Unit = { _, _ -> }) {
     val c = Local색.current
     Row(Modifier.fillMaxWidth()) {
         listOf("일", "월", "화", "수", "목", "금", "토").forEach {
@@ -432,6 +460,7 @@ private fun 달력(d: 앱데이터, 오늘: String, 달: YearMonth, 고른날: S
     var 손 by remember { mutableStateOf(Offset.Zero) }
     val 판데이터 by rememberUpdatedState(d)
     val 옮김 by rememberUpdatedState(on옮김)
+    val 집음 by rememberUpdatedState(on집음)
     val 햅틱 = LocalHapticFeedback.current   // 들어 올렸을 때 '툭' — 옮기기가 시작된 걸 손으로 안다
     fun 칸날(p: Offset, 너비: Float, 줄px: Float): String? {
         if (p.x < 0 || p.y < 0 || 너비 <= 0f) return null
@@ -455,6 +484,13 @@ private fun 달력(d: 앱데이터, 오늘: String, 달: YearMonth, 고른날: S
             onDragEnd = {
                 val 원 = 끄는날; val 새 = 놓을날
                 if (원 != null && 새 != null && 새 != 원 && 옮길수있음(새)) 옮김(원, 새)
+                // 10-01: 그 자리에서 뗐거나 달력 밖(위 달 띠)에서 뗐으면 '집어 둔' 상태로 → 다른 달로 넘겨 누르면 옮겨진다
+                //        달 띠의 오른쪽(▶)에서 떼면 다음 달로, 왼쪽(◀)에서 떼면 이전 달로 바로 넘어간다
+                else if (원 != null && (새 == null || 새 == 원)) {
+                    val 위 = 손.y < 0
+                    val 이동 = if (!위) 0 else if (손.x > size.width * 0.66f) 1 else if (손.x < size.width * 0.33f) -1 else 0
+                    집음(원, 이동)
+                }
                 끄는날 = null; 놓을날 = null
             },
             onDragCancel = { 끄는날 = null; 놓을날 = null },
@@ -680,7 +716,7 @@ private fun 날짜판(상태: 앱상태, k: String, 루틴으로: () -> Unit, �
                         Text(r.이름, Modifier.padding(bottom = 2.dp), style = 글꼴.제목(17.sp).copy(fontWeight = FontWeight.ExtraBold), color = c.강조, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         val 목표 = r.계획볼륨()
                         판줄("운동량", 윗선 = false) {
-                            글("${r.종목.size}종목 · ${총세트(r)}세트 · ${콤마(목표)}kg · 예상 시간 ${시간글(예상초(r))}", 크기값 = 12.sp)
+                            맞춤글("${r.종목.size}종목 · ${총세트(r)}세트 · ${콤마(목표)}kg · 예상 시간 ${시간글(예상초(r))}", 최대 = 12.sp)
                         }
                         val 추 = d.한달추세(r.id, k)
                         판줄(if (k == 오늘) "오늘 목표" else "목표", onClick = { 열기("추세") }) {

@@ -125,6 +125,15 @@ class MainActivity : ComponentActivity() {
                     걸린끝 = null
                 }
             }
+            // 10-01: PiP 가 안 뜨던 것 — [추측] 안드로이드 12 이상 제스처 이동에서는 onUserLeaveHint 가
+            //        늦게 오거나 안 와서 작은 창으로 못 들어간다. 운동 중이면 '자동으로 작은 창' 을 켜 둔다
+            val 작은창켬 = 상태.d.세션 != null && 상태.d.세션?.끝화면 != true
+            LaunchedEffect(작은창켬) {
+                if (Build.VERSION.SDK_INT >= 31) try {
+                    setPictureInPictureParams(PictureInPictureParams.Builder()
+                        .setAspectRatio(Rational(16, 9)).setAutoEnterEnabled(작은창켬).build())
+                } catch (_: Exception) { }
+            }
             하젠하이데테마 {
                 // 작은 창일 때도 앱은 그대로 살아 있어야 휴식 시계 · 알림이 돈다 → 앱 위에 작은 창 화면을 덮는다
                 CompositionLocalProvider(Local번호 provides 상태.d.설정.번호보기) {

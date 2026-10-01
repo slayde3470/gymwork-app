@@ -85,7 +85,7 @@ import com.slayde.hasenheide.data.식구
 import com.slayde.hasenheide.data.앱데이터
 import com.slayde.hasenheide.data.오늘볼륨
 import com.slayde.hasenheide.data.운동세션
-import com.slayde.hasenheide.data.운동저장
+import com.slayde.hasenheide.data.운동저장하기
 import com.slayde.hasenheide.data.유효세트
 import com.slayde.hasenheide.data.일RM
 import com.slayde.hasenheide.data.재개
@@ -200,7 +200,9 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
             //  · (v0.6.6) 지난 종목이 다 접히기 전에 한 번 크게 움직였다가 되돌아와 흔들려 보였다 (09-25 동영상)
             //    → 자리가 **두 번 연속 같아진 뒤** 한 번만 부드럽게 옮기고, 그 뒤엔 남은 오차만 고친다
             val 묶음세트 = S.식구(S.i).sumOf { S.종목들[it].총칸() }
-            LaunchedEffect(S.i, S.s, S.한세트수(), 앵커j, 앵커k, h0 != null, 묶음세트) {
+            val 지금접힘 = 접기[지금머리] == false
+            val 접힘표 = 접기.toMap()   // 10-01: 끝낸 다른 묶음을 펼치거나 접어도 다시 맞춘다
+            LaunchedEffect(S.i, S.s, S.한세트수(), 앵커j, 앵커k, h0 != null, 묶음세트, 지금접힘, 접힘표) {
                 val 키 = "$앵커j|$앵커k"
                 var 조용 = 0
                 var n = 0
@@ -209,11 +211,15 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
                 var 같음 = 0
                 while (n < 40 && 조용 < 3) {   // 최대 약 1.6초, 제자리에 세 번 연속 있으면 끝
                     delay(40); n++
-                    if (접기[지금머리] == false) return@LaunchedEffect   // 지금 묶음을 접어 두었으면 기준 줄이 없다
+                    // 10-01: 전에는 지금 묶음을 접으면 여기서 멈춰, 끝낸 종목(벤치)이 띠 아래에 그대로 보였다.
+                    //        접혀 있으면 기준 줄 대신 **상자 위 테두리**를 띠 바로 아래로 맞춘다
+                    val 접힘 = 접기[지금머리] == false
                     val 내 = 좌표.내용; val 줄 = 좌표.줄; val 끝 = 좌표.끝
-                    if (내 == null || 줄 == null || 끝 == null || 좌표.줄키 != 키) continue
-                    if (!내.isAttached || !줄.isAttached || !끝.isAttached || 좌표.화면높이 <= 0) continue
-                    val y = 내.localPositionOf(줄, Offset.Zero).y                      // 목록 안에서 기준 줄의 위
+                    if (내 == null || 끝 == null) continue
+                    if (!접힘 && (줄 == null || 좌표.줄키 != 키)) continue
+                    if (!내.isAttached || !끝.isAttached || 좌표.화면높이 <= 0) continue
+                    if (!접힘 && 줄?.isAttached != true) continue
+                    val y = if (접힘 || 줄 == null) 0f else 내.localPositionOf(줄, Offset.Zero).y   // 목록 안에서 기준 줄의 위
                     val 끝y = 내.localPositionOf(끝, Offset.Zero).y + 끝.size.height    // 목록 끝(빈자리 앞)
                     val 상자 = 좌표.상자
                     if (상자 == null || !상자.isAttached || 좌표.상자키 != 지금머리) continue
@@ -225,7 +231,7 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
                     //  · 상자가 화면보다 길 때만, 기준 줄이 띠 아래(4dp)에 오도록 따라 올린다.
                     //    단 상자 아래 끝이 화면 아래에 닿으면 더 올리지 않는다 (다음 종목을 괜히 끌어올리지 않게)
                     val 기본 = 상자y + 8f * 밀도 - 바높이 - 6f * 밀도
-                    val 따라감 = minOf(y - 바높이 - 4f * 밀도, 상자끝 - 좌표.화면높이)
+                    val 따라감 = if (접힘) 기본 else minOf(y - 바높이 - 4f * 밀도, 상자끝 - 좌표.화면높이)
                     val 목표0 = maxOf(기본, 따라감).coerceAtLeast(0f)
                     // 빈자리: 목표까지 올릴 수 있을 만큼만 목록 아래에 둔다
                     val 필요 = maxOf(0, (목표0 + 좌표.화면높이 - 끝y).toInt())
@@ -400,11 +406,15 @@ private fun 고정머리(상태: 앱상태, S: 운동세션, 띠i: Int, 펼침: 
             val 한 = 움직수(찬.size.toDouble(), 영부터 = false, 빠르게 = true)
             val 달 = 움직수(e.달성도().toDouble(), 영부터 = false, 빠르게 = true)
             띠 {
-                if (표 != null) 글(표, 크기값 = 크기.조금작게, 색 = c.강조글, 굵기 = FontWeight.Bold)
-                띠글(e.이름, Modifier.weight(1f, fill = false))
-                listOfNotNull(if (e.임시) "오늘만" else null, if (e.마감) "마침" else null).forEach { b -> 글(b, 크기값 = 크기.작게, 색 = c.강조글, 굵기 = FontWeight.Bold) }
-                글("${한.roundToInt()}/${e.총칸()}세트 · ${달.roundToInt()}%", 크기값 = 크기.작게, 색 = c.강조글.copy(alpha = 0.9f), 굵기 = FontWeight.Bold)
-                Box(Modifier.weight(1f))
+                // ★ 지금 종목 이름은 잘리면 안 된다 (09-24 · 10-01 홍겸 님 "몇 번을 말해")
+                //   이름은 제 줄을 통째로 쓰고 길면 두 줄로 넘긴다(말줄임 없음). 세트 · 달성도는 그 아랫줄
+                Column(Modifier.weight(1f)) {
+                    if (표 != null) 글(표, 크기값 = 크기.작게, 색 = c.강조글, 굵기 = FontWeight.Bold)
+                    Text(e.이름, style = 글꼴.제목(크기.크게), color = c.강조글, maxLines = 2)
+                    val 뱃 = listOfNotNull(if (e.임시) "오늘만" else null, if (e.마감) "마침" else null)
+                    글((뱃 + "${한.roundToInt()}/${e.총칸()}세트 · ${달.roundToInt()}%").joinToString(" · "),
+                        크기값 = 크기.작게, 색 = c.강조글.copy(alpha = 0.9f), 굵기 = FontWeight.Bold)
+                }
                 접기단추(펼침, on접기, c.강조글)
             }
             if (펼침) Column(Modifier.fillMaxWidth().padding(start = 10.dp, end = 10.dp, top = 3.dp, bottom = 7.dp)) {
@@ -541,18 +551,18 @@ private fun 종목머리(상태: 앱상태, S: 운동세션, j: Int, 표: String
             Row(Modifier.weight(1f).눌림(on누름), verticalAlignment = Alignment.CenterVertically) {
                 글(표 ?: "%02d)".format(j + 1), 크기값 = 크기.조금작게, 색 = if (표 != null) c.휴식 else c.흐림, 굵기 = FontWeight.Bold)
                 Box(Modifier.width(4.dp))
-                제목글(e.이름, Modifier.weight(1f, fill = false), 크기값 = 크기.본문, 색 = if (지금것) c.글 else c.흐림)
+                // 10-01: 이름은 말줄임 없이 두 줄까지 — 세트 · 달성도는 아랫줄로 (v0.6.1 규칙으로 되돌림)
+                Text(e.이름, Modifier.weight(1f, fill = false), style = 글꼴.제목(크기.본문), color = if (지금것) c.글 else c.흐림, maxLines = 2)
                 뱃지.forEach { b -> Box(Modifier.width(4.dp)); 알약(b, c.휴식) }
-                // 펼친 종목은 세트 수 · 달성도를 이름 줄에 (09-26 시안 ①: 아래 두 줄은 1RM · 볼륨)
-                if (펼침) { Box(Modifier.width(6.dp)); 글("${지금세트.size}/${e.총칸()}세트 · ${e.달성도()}%", 크기값 = 크기.작게, 색 = c.강조, 굵기 = FontWeight.Bold) }
             }
             if (접기칸) 접기단추(펼침, on접기) else Box(Modifier.size(높이.낮게))
         }
-        if (!펼침) Row(
+        Row(
             Modifier.fillMaxWidth().눌림(on누름).padding(top = 1.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            글("${지금세트.size}/${e.총칸()}세트", 크기값 = 크기.작게, 색 = c.흐림)
+            if (펼침) 글("${지금세트.size}/${e.총칸()}세트 · ${e.달성도()}%", 크기값 = 크기.작게, 색 = c.강조, 굵기 = FontWeight.Bold)
+            else 글("${지금세트.size}/${e.총칸()}세트", 크기값 = 크기.작게, 색 = c.흐림)
         }
         // 펼친 종목: 1RM 줄 · 볼륨 줄 — 오늘 한 것 기준, 옆에 [1주] [최고] (09-26 시안 ①)
         if (펼침) {
@@ -685,9 +695,14 @@ private fun 증감표(차: Double, 오름: Color, 내림: Color, 글로: (Double
  * 운동 시간은 이 화면에 들어온 때에서 멈춘다.
  */
 @Composable
-private fun 마무리(상태: 앱상태, S: 운동세션) {
+private fun 마무리(상태: 앱상태, S: 운동세션, 저장됨: Boolean = false) {
     val c = Local색.current
-    val d = 상태.d
+    // 10-01 감시관: 저장된 뒤 보는 결과는 **방금 저장한 그 기록을 빼고** 견준다 (자기 자신과 견줘 늘 ▲0 이던 것)
+    val d = if (!저장됨) 상태.d else 상태.d.let { dd ->
+        val 끝 = S.끝시각
+        val 열쇠 = dd.기록.entries.lastOrNull { (_, r) -> r.루틴id == S.루틴id && (끝 == null || r.끝시각 == 끝) }?.key
+        if (열쇠 == null) dd else dd.copy(기록 = dd.기록 - 열쇠)
+    }
     val 기간 = d.지금기준().기간
     val 오늘 = 상태.오늘
     val 달성 = S.한세트수() >= S.목표세트()
@@ -754,7 +769,16 @@ private fun 마무리(상태: 앱상태, S: 운동세션) {
             }
         }
         Box(Modifier.height(12.dp))
-        버튼("기록 저장하고 끝내기", { 상태.바꿈 { it.운동저장(오늘, System.currentTimeMillis()) } }, Modifier.fillMaxWidth(), 주요 = true)
+        if (저장됨) {
+            // 10-01: 자동 종료 · 다른 탭으로 나가며 이미 저장된 운동 — 결과만 한 번 보여 준다
+            글("기록은 저장되었습니다", Modifier.fillMaxWidth(), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)
+            Box(Modifier.height(6.dp))
+            버튼("확인", { 상태.바꿈 { it.copy(결과 = null) } }, Modifier.fillMaxWidth(), 주요 = true)
+            Box(Modifier.height(12.dp))
+            return@Column
+        }
+        // 10-01: 저장할 때 플랜 회차 · 누적 운동량 · 측정까지 (운동저장하기)
+        버튼("기록 저장하고 끝내기", { 상태.바꿈 { it.운동저장하기(오늘, System.currentTimeMillis()) } }, Modifier.fillMaxWidth(), 주요 = true)
         Box(Modifier.height(8.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             버튼("운동으로 돌아가기", { 상태.바꿈 { dd -> dd.copy(세션 = dd.세션?.재개(System.currentTimeMillis())) } }, Modifier.weight(1f), 작게 = true)
@@ -838,4 +862,11 @@ private class 맞춤좌표 {
     var 상자: LayoutCoordinates? = null   // 지금 묶음 상자
     var 상자키: Int = -1
     var 화면높이: Int = 0
+}
+
+
+/** 저장된 뒤 한 번 보여 주는 결과 화면 (10-01) — App.kt 가 부른다 */
+@Composable
+fun 결과화면(상태: 앱상태, S: 운동세션) {
+    Box(Modifier.fillMaxSize()) { 마무리(상태, S, 저장됨 = true) }
 }

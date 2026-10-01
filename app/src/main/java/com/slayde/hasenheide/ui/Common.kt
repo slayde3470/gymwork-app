@@ -8,6 +8,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.em
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
@@ -756,7 +757,8 @@ fun 고르기줄(이름: String, 곁: String? = null, 오른쪽: ImageVector? = 
     ) {
         Row(Modifier.weight(1f), verticalAlignment = Alignment.Bottom) {
             글(이름, Modifier.weight(1f, fill = false), 색 = if (흐림) c.옅음 else c.글)
-            if (곁 != null) { Box(Modifier.width(8.dp)); 글(곁, 크기값 = 크기.작게, 색 = c.옅음) }
+            // 10-01: 곁 글(예상 시간 등)은 말줄임 대신 줄여서 다 보인다
+            if (곁 != null) { Box(Modifier.width(8.dp)); 맞춤글(곁, Modifier.weight(1f, fill = false), 색 = c.옅음) }
         }
         if (오른쪽 != null) Icon(오른쪽, null, Modifier.size(18.dp), tint = if (흐림) c.옅음 else c.강조)
     }
@@ -789,3 +791,25 @@ fun Modifier.번호(표: String): Modifier = this.composed {
     }
 }
 private val 번호색 = Color(0xFF1E6FD9)
+
+
+/**
+ * 한 줄에 다 들어가게 — 넘치면 **자간을 좁히고, 그래도 넘치면 글자를 줄인다.** 말줄임(…)은 쓰지 않는다
+ * (10-01 홍겸 님: "예상시간 뒤에 ... 으로 짜르지말고 차라리 글자크기를 줄여. 자간을 줄이든지")
+ */
+@Composable
+fun 맞춤글(text: String, modifier: Modifier = Modifier, 최대: TextUnit = 크기.작게, 최소: TextUnit = 9.sp, 색: Color = Local색.current.글) {
+    var 지금크기 by remember(text, 최대) { mutableStateOf(최대) }
+    var 좁힘 by remember(text, 최대) { mutableStateOf(false) }
+    Text(
+        text, modifier,
+        style = 글꼴.보통(지금크기).copy(letterSpacing = if (좁힘) (-0.05).em else (-0.01).em),
+        color = 색, maxLines = 1, softWrap = false,
+        onTextLayout = { r ->
+            if (r.hasVisualOverflow) {
+                if (!좁힘) 좁힘 = true
+                else if (지금크기.value > 최소.value) 지금크기 = (지금크기.value - 0.5f).sp
+            }
+        },
+    )
+}

@@ -42,6 +42,7 @@ import com.slayde.hasenheide.data.앱데이터
 import com.slayde.hasenheide.data.예정맞추기
 import com.slayde.hasenheide.data.남은초
 import com.slayde.hasenheide.data.오래된운동정리
+import com.slayde.hasenheide.data.운동저장하기
 import com.slayde.hasenheide.data.저장소
 import com.slayde.hasenheide.ui.theme.Local색
 import com.slayde.hasenheide.ui.theme.크기
@@ -152,7 +153,11 @@ fun 앱(상태: 앱상태, 폰: 폰기능) {
     BackHandler(enabled = (세션 != null && !운동보기) || 운동화면중 || 지금탭 != 탭.캘린더) {
         when {
             세션 != null && !운동보기 && 지금탭 != 탭.캘린더 -> 운동보기 = true
-            운동화면중 -> { 운동보기 = false; 지금탭 = 탭.캘린더 }
+            운동화면중 -> {
+                // 10-01 감시관: 결과 화면에서 뒤로가기로 나가면 저장되지 않았다 (탭을 누를 때와 다르게)
+                if (세션?.끝화면 == true) 상태.바꿈 { it.운동저장하기(상태.오늘, System.currentTimeMillis()) }
+                운동보기 = false; 지금탭 = 탭.캘린더
+            }
             else -> 지금탭 = 탭.캘린더
         }
     }
@@ -161,7 +166,10 @@ fun 앱(상태: 앱상태, 폰: 폰기능) {
     Box(Modifier.fillMaxSize().background(c.바탕).pointerInput(Unit) { detectTapGestures(onTap = { 입력중.취소?.invoke() }) }) {
         Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().imePadding()) {
             Box(Modifier.weight(1f).fillMaxWidth()) {
+                val 결과 = 상태.d.결과
                 if (운동화면중) 운동화면(상태, 폰)
+                // 10-01: 저장된 운동의 결과를 한 번 보여 준다 (자동 종료 뒤 결과 화면이 안 나왔다)
+                else if (세션 == null && 결과 != null) 결과화면(상태, 결과)
                 else when (지금탭) {
                     탭.캘린더 -> 캘린더화면(상태, { 지금탭 = 탭.루틴 }, { 운동보기 = true })
                     탭.루틴 -> 루틴화면(상태, 폰)
@@ -178,7 +186,14 @@ fun 앱(상태: 앱상태, 폰: 폰기능) {
                     horizontalArrangement = Arrangement.SpaceEvenly,
                 ) {
                     탭.entries.forEach { t ->
-                        탭단추(t.이름, t.그림, !운동화면중 && 지금탭 == t) { 발자취.적기("${t.이름} 탭"); 지금탭 = t; 운동보기 = false }
+                        탭단추(t.이름, t.그림, !운동화면중 && 지금탭 == t) {
+                            발자취.적기("${t.이름} 탭")
+                            // 10-01: 운동을 다 끝내고(결과 화면) 다른 탭으로 나가면 그때 저장한다 —
+                            //        저장 버튼을 안 눌렀다고 기록이 안 남던 것 ("운동 안 하고 넘어갔더라도 기록은 되어야")
+                            if (상태.d.세션?.끝화면 == true) 상태.바꿈 { it.운동저장하기(상태.오늘, System.currentTimeMillis()) }
+                            if (상태.d.결과 != null) 상태.바꿈 { it.copy(결과 = null) }
+                            지금탭 = t; 운동보기 = false
+                        }
                     }
                     탭단추("메모", 아이콘.연필, 메모열림) { 메모열림 = true }
                 }

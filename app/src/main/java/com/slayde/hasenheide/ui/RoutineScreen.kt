@@ -62,10 +62,9 @@ import com.slayde.hasenheide.data.앱데이터
 import com.slayde.hasenheide.data.플랜
 import com.slayde.hasenheide.data.플랜표
 import com.slayde.hasenheide.data.회처방
-import com.slayde.hasenheide.data.회표
+import com.slayde.hasenheide.data.다음회
 import com.slayde.hasenheide.data.처방글
 import com.slayde.hasenheide.data.세트
-import com.slayde.hasenheide.data.세트종류
 import com.slayde.hasenheide.data.루틴
 import com.slayde.hasenheide.data.루틴바꿈
 import com.slayde.hasenheide.data.루틴합치기
@@ -248,8 +247,8 @@ fun 루틴화면(상태: 앱상태, 폰: 폰기능) {
                                     제목글(r.이름, Modifier.weight(1f, fill = false), 크기값 = 크기.크게)
                                     if (다음?.id == r.id) { Box(Modifier.width(8.dp)); 알약("다음", c.좋음) }
                                 }
-                                글((if (r.휴식일) "휴식일" else "${r.종목.size}종목 · ${총세트(r)}세트 · ${시간글(예상초(r))}") + (if (r.자동생성) " · 자동생성" else ""),
-                                    크기값 = 크기.작게, 색 = if (r.자동생성) c.강조 else c.옅음)
+                                맞춤글((if (r.휴식일) "휴식일" else "${r.종목.size}종목 · ${총세트(r)}세트 · ${시간글(예상초(r))}") + (if (r.자동생성) " · 자동생성" else ""),
+                                    색 = if (r.자동생성) c.강조 else c.옅음)
                             }
                         }
                         아이콘버튼(아이콘.위로, "앞으로", { 구조바뀜 { dd -> dd.copy(루틴들 = 자리바꿈(dd.루틴들, i, i - 1)) } }, 쓸수있음 = i > 0)
@@ -775,12 +774,13 @@ private fun 안고르기(상태: 앱상태, r: 루틴, 방금: List<String>, 방
  * 맨몸이면 휴식은 2분 (21 문서 6절).
  */
 private fun 플랜줄(d: 앱데이터, p: 플랜): 루틴종목 {
-    val 계획 = p.회표(d.몸, d.향상기록들).firstOrNull { it.회 > p.한회 }
+    val 계획 = p.다음회(d.몸, d.향상기록들)
     val 처방 = if (계획 == null) emptyList()
                else 회처방(p, 계획.목표값, d.설정.무게폭, d.몸, 계획.측정일)
     val 첫 = 처방.firstOrNull()
     val 세트수 = 처방.sumOf { it.세트 }.coerceAtLeast(1)
-    val 세트값 = 처방.flatMap { x -> List(x.세트) { 세트(x.무게, x.횟수, if (계획?.측정일 == true) 세트종류.측정 else 세트종류.본운동) } }
+    // 10-01: 측정일이라고 세트를 '측정' 으로 표시하지 않는다 — 측정은 저장할 때 가장 좋은 세트로 잡는다 (Plan.kt 플랜반영)
+    val 세트값 = 처방.flatMap { x -> List(x.세트) { 세트(x.무게, x.횟수) } }
     return 루틴종목(
         이름 = p.이름,
         세트 = 세트수,
@@ -794,7 +794,7 @@ private fun 플랜줄(d: 앱데이터, p: 플랜): 루틴종목 {
 
 /** 플랜 줄 오른쪽에 붙는 작은 글 — 다음 회차 처방 */
 private fun 플랜곁글(d: 앱데이터, p: 플랜): String {
-    val 계획 = p.회표(d.몸, d.향상기록들).firstOrNull { it.회 > p.한회 } ?: return "플랜"
+    val 계획 = p.다음회(d.몸, d.향상기록들) ?: return "목표 달성"
     val 목 = 회처방(p, 계획.목표값, d.설정.무게폭, d.몸, 계획.측정일)
     return (if (계획.측정일) "측정 · " else "") + "${계획.회}회차 " + 처방글(목)
 }

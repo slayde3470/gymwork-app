@@ -106,11 +106,14 @@ fun 일RM(w: Double, r: Int): Double = when { r <= 0 -> 0.0; r == 1 -> w; else -
 // ─────────────── 루틴 · 예상 시간 (4-3) ───────────────
 
 const val 세트수행초 = 40
+/** 한 번(1회)에 드는 시간(초) — 10회 = 40초 (10-01 홍겸 님). 예상 시간은 세트마다 횟수 × 이 값 */
+const val 회당초 = 4
 const val 종목전환초 = 60
 
 fun 예상초(r: 루틴?): Int {
     if (r == null || r.휴식일) return 0
-    val 본 = r.종목.sumOf { it.세트 * 세트수행초 + max(0, it.세트 - 1) * it.휴식 }
+    // 10-01: 세트 시간을 횟수에 비례시킨다 (전에는 횟수와 상관없이 세트당 40초)
+    val 본 = r.종목.sumOf { e -> (0 until e.세트).sumOf { k -> e.목표(k).r * 회당초 } + (0 until max(0, e.세트 - 1)).sumOf { k -> e.휴식(k) } }
     return 본 + max(0, r.종목.size - 1) * 종목전환초
 }
 fun 시간글(초: Int): String {
@@ -138,6 +141,12 @@ private fun 앱데이터.예정채움(시작날: String, 시작idx: Int, 바탕:
     if (n == 0) return 바탕
     val m = 바탕.toMutableMap()
     for (i in 0 until n * 회차) m[날더하기(시작날, i)] = 줄[((시작idx + i) % n + n) % n].id
+    return 고정덮기(m, 시작날)
+}
+
+/** 그 날만 손으로 바꾼 것을 다시 덮는다 (10-01) — "" 은 그 날 비움 */
+private fun 앱데이터.고정덮기(m: MutableMap<String, String>, 시작날: String): Map<String, String> {
+    예정고정.forEach { (k, v) -> if (k >= 시작날) { if (v.isEmpty()) m.remove(k) else if (루틴(v) != null) m[k] = v } }
     return m
 }
 
@@ -200,9 +209,11 @@ fun 앱데이터.꽂기(rid: String, D: String, 오늘: String): 앱데이터 {
     if (D < 오늘) return this
     val idx = 순번.indexOfFirst { it.id == rid }
     // 자동생성이 꺼진 루틴은 그 날에만 넣고 나머지 예정은 그대로 둔다
-    if (idx < 0) return if (루틴(rid) != null) copy(예정 = 예정 + (D to rid)) else this
+    // 10-01 감시관: 수동 루틴도 그 날을 고정으로 남겨야 다음 저장 때 덮이지 않는다
+    if (idx < 0) return if (루틴(rid) != null) copy(예정 = 예정 + (D to rid), 예정고정 = 예정고정 + (D to rid)) else this
     val 남김 = 예정.filterKeys { it < D }
-    return copy(예정 = 예정채움(D, idx, 남김))
+    // '이 날부터 순서대로' 는 그 날의 손댄 표시를 지운다
+    return copy(예정고정 = 예정고정 - D).let { it.copy(예정 = it.예정채움(D, idx, 남김)) }
 }
 
 /**
@@ -214,20 +225,37 @@ fun 앱데이터.예정옮기기(원: String, D: String, 오늘: String): 앱데
     if (원 == D || 원 < 오늘 || D < 오늘 || 기록.containsKey(원) || 기록.containsKey(D)) return this
     val rid = 예정[원] ?: return this
     val 자동 = 루틴(rid)?.자동생성 == true
-    if (!자동) return copy(예정 = 예정 - 원 + (D to rid))
-    val 옮김 = 꽂기(rid, D, 오늘)
-    return if (원 < D) 옮김.copy(예정 = 옮김.예정 - 원) else 옮김
+    val 풀린 = copy(예정고정 = 예정고정 - 원 - D)
+    if (!자동) return 풀린.copy(예정 = 예정 - 원 + (D to rid), 예정고정 = 풀린.예정고정 + (D to rid) + (원 to ""))
+    val 옮김 = 풀린.꽂기(rid, D, 오늘)
+    return if (원 < D) 옮김.copy(예정 = 옮김.예정 - 원, 예정고정 = 옮김.예정고정 + (원 to "")) else 옮김
 }
 
 /** 오늘 쉬기 — push: 오늘 루틴을 내일로 / skip: 오늘 루틴을 건너뛰기 (2-5) */
-fun 앱데이터.오늘휴식(미루기: Boolean, 오늘: String): 앱데이터 {
-    val idx = 순번.indexOfFirst { it.id == 예정[오늘] }
-    if (idx < 0) return this
-    val 남김 = 예정.filterKeys { it < 오늘 }
+fun 앱데이터.오늘휴식(미루기: Boolean, 오늘: String): 앱데이터 = 날휴식(미루기, 오늘, 오늘)
+
+/**
+ * 그 날 쉬기 — 오늘만이 아니라 앞으로의 아무 날에나 (10-01 홍겸 님: 정해진 일정을 고칠 수 없었다)
+ *  · 미루기: 그 날 루틴을 다음 날로, 뒤는 하루씩 밀린다 · 건너뛰기: 그 날 루틴을 빼고 다음 차례부터
+ *  · 자동생성이 꺼진 루틴(그 날에만 넣은 것)이면 그 날만 비운다
+ */
+fun 앱데이터.날휴식(미루기: Boolean, D: String, 오늘: String): 앱데이터 {
+    if (D < 오늘 || 기록.containsKey(D)) return this
+    val idx = 순번.indexOfFirst { it.id == 예정[D] }
+    if (idx < 0) return 예정지우기(D, 오늘)
+    val 남김 = 예정.filterKeys { it < D }
     val 시작 = if (미루기) idx else (idx + 1) % 순번.size
-    return copy(예정 = 예정채움(날더하기(오늘, 1), 시작, 남김))
+    return copy(예정고정 = 예정고정 - D).let { it.copy(예정 = it.예정채움(날더하기(D, 1), 시작, 남김)) }
 }
-/** 휴식 물음에 보여줄 '앞으로 사흘' */
+
+/** 그 날 예정만 지운다 — 앞뒤 순서는 그대로 (10-01) */
+fun 앱데이터.예정지우기(D: String, 오늘: String): 앱데이터 =
+    if (D < 오늘 || 기록.containsKey(D)) this else copy(예정 = 예정 - D, 예정고정 = 예정고정 + (D to ""))
+
+/** 그 날만 다른 루틴으로 — 앞뒤 순서는 그대로 (10-01. '이 날부터 다시 깔기' 는 꽂기) */
+fun 앱데이터.그날만바꾸기(rid: String, D: String, 오늘: String): 앱데이터 =
+    if (D < 오늘 || 기록.containsKey(D) || 루틴(rid) == null) this else copy(예정 = 예정 + (D to rid), 예정고정 = 예정고정 + (D to rid))
+/** 휴식 물음에 보여줄 '앞으로 사흘' — 오늘이 아닌 날에도 (10-01: 두 번째 인자는 쉬는 그 날) */
 fun 앱데이터.사흘미리(미루기: Boolean, 오늘: String): List<String> {
     val 줄 = 순번
     val idx = 줄.indexOfFirst { it.id == 예정[오늘] }
@@ -749,7 +777,7 @@ fun 앱데이터.운동저장(오늘: String, 지금: Long): 앱데이터 {
     // 오늘 이미 기록이 있으면 '한 번 더' 기록으로 따로 남긴다 (09-26 메모)
     val 열쇠 = 새기록열쇠(오늘)
     val 새 = copy(
-        기록 = 기록 + (열쇠 to rec), 세션 = null, 조절 = 조절 - 오늘,
+        기록 = 기록 + (열쇠 to rec), 세션 = null, 조절 = 조절 - 오늘, 결과 = null,
         루틴들 = 루틴들.map { if (it.id == S.루틴id && !S.조절됨) it.오늘반영(S).let { r -> if (올릴까) r.볼륨올리기(설정) else r } else it },
     )
     val 줄 = 순번
@@ -758,6 +786,16 @@ fun 앱데이터.운동저장(오늘: String, 지금: Long): 앱데이터 {
     if (줄.isEmpty() || i < 0) return 새
     val 남김 = 새.예정.filterKeys { it < 오늘 }
     return 새.copy(예정 = 새.예정채움(날더하기(오늘, 1), (i + 1) % 줄.size, 남김))
+}
+
+/**
+ * 운동 저장 — 루틴 반영 · 다음 차례 · **플랜 회차** 까지 (10-01).
+ * 화면은 이 함수를 부른다. [운동저장] 은 플랜을 모르는 옛 함수로 남겨 둔다 (시험이 그대로 돌게)
+ */
+fun 앱데이터.운동저장하기(오늘: String, 지금: Long): 앱데이터 {
+    val S = 세션 ?: return this
+    val 들 = S.종목들.mapNotNull { e -> e.찬것().takeIf { it.isNotEmpty() }?.let { 종목기록(e.이름, it, e.임시) } }
+    return 플랜반영(운동저장(오늘, 지금), 들, 오늘)
 }
 
 /**
@@ -773,7 +811,8 @@ fun 앱데이터.오래된운동정리(지금: Long, 한계: Long = 3 * 60 * 60 
     if (지금 - 마지막 < 한계) return this
     if (S.한세트수() == 0) return copy(세션 = null)
     val 날 = java.time.Instant.ofEpochMilli(S.시작시각).atZone(java.time.ZoneId.systemDefault()).toLocalDate().toString()
-    return 운동저장(날, S.끝시각 ?: 마지막)   // 그 날 기록이 있으면 '한 번 더' 로 남는다
+    // 10-01: 저장하고 결과 화면을 **한 번 보여 준다** (전에는 조용히 저장만 해서 결과 화면이 안 나왔다)
+    return 운동저장하기(날, S.끝시각 ?: 마지막).copy(결과 = S.끝냄(S.끝시각 ?: 마지막))   // 그 날 기록이 있으면 '한 번 더' 로 남는다
 }
 
 /**

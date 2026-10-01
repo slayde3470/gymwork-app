@@ -60,7 +60,7 @@ fun 작은창(상태: 앱상태) {
             val e = S.종목들.getOrNull(S.i)
             Text("운동 중 · ${시분초(S.흐른초(지금))}", color = c.흐림, fontSize = 12.sp)
             if (e != null) {
-                Text(e.이름, color = c.글, fontSize = 20.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(e.이름, color = c.글, fontSize = 20.sp, fontWeight = FontWeight.Bold, maxLines = 2)   // 10-01: 지금 종목 이름은 자르지 않는다
                 Text("${e.찬것().size}/${e.총칸()}세트", color = c.강조, fontSize = 14.sp, fontWeight = FontWeight.Bold)
             }
             Text("눌러서 돌아가기", color = c.옅음, fontSize = 11.sp)

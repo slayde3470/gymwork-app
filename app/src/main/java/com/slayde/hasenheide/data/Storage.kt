@@ -44,6 +44,8 @@ object 저장소 {
             }
         })
         d.세션?.let { o.put("세션", 세션to(it)) }
+        d.결과?.let { o.put("결과", 세션to(it)) }   // 스키마 11 (10-01) — 저장 뒤 한 번 보여 줄 결과 화면
+        o.put("예정고정", JSONObject().also { m -> d.예정고정.forEach { (k, v) -> m.put(k, v) } })
         o.put("미실시", JSONObject().also { m -> d.미실시.forEach { (k, v) -> m.put(k, v) } })
         o.put("조절", JSONObject().also { m -> d.조절.forEach { (k, v) -> m.put(k, JSONObject().put("볼륨", v.볼륨).put("무게", v.무게).put("세트", v.세트)) } })
         // 운동 플랜 (09-28, 스키마 8)
@@ -162,6 +164,8 @@ object 저장소 {
                 }
             },
             세션 = o.optJSONObject("세션")?.let { 세션from(it) },
+            결과 = o.optJSONObject("결과")?.let { 세션from(it) },
+            예정고정 = 사전(o.optJSONObject("예정고정")) { m, k -> m.getString(k) },
             미실시 = 사전(o.optJSONObject("미실시")) { m, k -> m.getString(k) },
             조절 = 사전(o.optJSONObject("조절")) { m, k -> m.getJSONObject(k).let { j -> 오늘조절(j.optInt("볼륨", 100), j.optDouble("무게", 0.0), j.optInt("세트", 0)) } },
             // 스키마 8 — 옛 파일에는 없다 → 빈 목록 · 기본 몸조건 (시험으로 확인)
