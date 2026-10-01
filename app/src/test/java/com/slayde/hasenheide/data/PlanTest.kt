@@ -623,4 +623,5 @@ fun main() {
     val n = 플랜시험.전부()
     println("플랜 시험 $n 개 전부 통과")
     println("근육 시험 ${근육시험.전부()} 개 전부 통과")   // 10-02 MuscleTest.kt
+    println("스탯 시험 ${스탯시험.전부()} 개 전부 통과")   // 10-02 StatsTest.kt (스탯 · 업적)
 }

@@ -122,6 +122,8 @@ import com.slayde.hasenheide.ui.theme.글꼴
 import com.slayde.hasenheide.ui.theme.높이
 import com.slayde.hasenheide.ui.theme.모서리
 import com.slayde.hasenheide.ui.theme.크기
+import com.slayde.hasenheide.ui.theme.막대치수
+import com.slayde.hasenheide.ui.theme.선굵기
 
 /**
  * 여러 화면이 같이 쓰는 부품.
@@ -933,4 +935,40 @@ fun Modifier.오른끝흐림(넘김: androidx.compose.foundation.ScrollState, �
 fun Modifier.왼띠(색: Color, 폭: Dp = 3.dp): Modifier = drawWithContent {
     drawRect(색, size = Size(폭.toPx(), size.height))
     drawContent()
+}
+
+// ─────────────── 스탯 · 업적 (10-02) ───────────────
+
+/**
+ * 진행 막대 — 앱에서 하나로 (11 지침 U3-8): 높이 8 · 끝 둥글게 · 바탕 면2 · 채움 [색](기본 강조).
+ * 값이 바뀌면 0.7초 동안 따라간다 (움직임.게이지)
+ */
+@Composable
+fun 진행막대(비율: Float, modifier: Modifier = Modifier, 색: Color = Local색.current.강조) {
+    val c = Local색.current
+    val 보일 by animateFloatAsState(비율.coerceIn(0f, 1f), tween(움직임.게이지, easing = 움직임.부드럽게), label = "진행막대")
+    Box(modifier.height(막대치수.높이).clip(CircleShape).background(c.면2)) {
+        if (보일 > 0f) Box(Modifier.fillMaxWidth(보일).fillMaxHeight().clip(CircleShape).background(색))
+    }
+}
+
+/**
+ * 중심색 띠(캘린더 년월 띠) 위의 작은 칩 — 테두리만, 글자는 강조글 (U1-2).
+ * 캘린더의 '대표 칭호 · 스탯' 단추 (10-02). 길면 이름이라 … 로 자른다 (U2-7)
+ */
+@Composable
+fun 띠칩(글자: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val c = Local색.current
+    val 손 = remember { MutableInteractionSource() }
+    val 배 = 눌림배율(손)
+    Box(
+        modifier
+            .height(높이.아주낮게)
+            .배율(배)
+            .clip(CircleShape)
+            .border(선굵기.보통, c.강조글, CircleShape)
+            .눌림손(손, onClick)
+            .padding(horizontal = 간격.좁게),
+        contentAlignment = Alignment.Center,
+    ) { 글(글자, 크기값 = 크기.조금작게, 색 = c.강조글, 굵기 = FontWeight.Bold) }
 }

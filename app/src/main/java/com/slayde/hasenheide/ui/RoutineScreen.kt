@@ -59,6 +59,8 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.slayde.hasenheide.data.앱데이터
+import com.slayde.hasenheide.data.세기더함
+import com.slayde.hasenheide.data.세기이름
 import com.slayde.hasenheide.data.플랜
 import com.slayde.hasenheide.data.플랜표
 import com.slayde.hasenheide.data.회처방
@@ -269,7 +271,11 @@ fun 루틴화면(상태: 앱상태, 폰: 폰기능) {
                         구분선()
                         Row(Modifier.padding(간격.좁게), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             입력칸(새이름, { 새이름 = it }, Modifier.weight(1f), 안내 = "루틴 이름")
-                            버튼("저장", { 상태.바꿈 { it.루틴바꿈(r.id) { x -> x.copy(이름 = 새이름.trim().ifEmpty { x.이름 }) } }; 이름고침 = null }, 작게 = true, 주요 = true)
+                            버튼("저장", { 상태.바꿈 { dd ->
+                                // 10-02: 이름이 실제로 바뀌었을 때만 센다 (업적 2-45)
+                                val 바뀜 = 새이름.trim().let { it.isNotEmpty() && it != r.이름 }
+                                dd.루틴바꿈(r.id) { x -> x.copy(이름 = 새이름.trim().ifEmpty { x.이름 }) }.let { if (바뀜) it.세기더함(세기이름.루틴이름바꿈) else it }
+                            }; 이름고침 = null }, 작게 = true, 주요 = true)
                             버튼("지우기", {
                                 이름고침 = null
                                 상태.지우고알림("${r.이름}을(를) 지웠습니다") { dd -> dd.copy(루틴들 = dd.루틴들.filter { it.id != r.id }).예정초기화(오늘) }

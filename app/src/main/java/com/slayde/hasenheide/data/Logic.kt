@@ -157,6 +157,9 @@ private fun 앱데이터.고정덮기(m: MutableMap<String, String>, 시작날: 
 fun 앱데이터.놓친날담기(오늘: String): 앱데이터 {
     val 놓친 = 예정.filter { it.key < 오늘 && !기록.containsKey(it.key) && !미실시.containsKey(it.key) }
         .mapNotNull { (k, rid) -> 루틴(rid)?.takeIf { !it.휴식일 }?.let { k to it.이름 } }
+    // 10-02 (스키마 14): 휴식일 예정이던 지난 날에 기록이 없으면 '쉰날' 로 남긴다 (업적 1-38 · 스탯명세 7-2)
+    val 쉼 = 예정.filter { it.key < 오늘 && !기록.containsKey(it.key) && it.key !in 쉰날 && 루틴(it.value)?.휴식일 == true }.keys
+    if (쉼.isNotEmpty()) return copy(쉰날 = 쉰날 + 쉼, 미실시 = 미실시 + 놓친)
     return if (놓친.isEmpty()) this else copy(미실시 = 미실시 + 놓친)
 }
 

@@ -118,6 +118,8 @@ import com.slayde.hasenheide.data.한세트수
 import com.slayde.hasenheide.data.흐른초
 import com.slayde.hasenheide.data.휴식고치기
 import com.slayde.hasenheide.data.휴식끝
+import com.slayde.hasenheide.data.세기더함
+import com.slayde.hasenheide.data.세기이름
 import com.slayde.hasenheide.data.휴식보임
 import com.slayde.hasenheide.data.휴식자리
 import com.slayde.hasenheide.data.남은초
@@ -667,7 +669,7 @@ private fun 세트줄(
                 Box(
                     Modifier.height(높이.아주낮게).clip(RoundedCornerShape(모서리.아주작게)).background(c.면2)
                         .border(1.dp, c.속선, RoundedCornerShape(모서리.아주작게))
-                        .눌림 { 발자취.적기("휴식 건너뛰기"); 바꿈 { it.다음으로(System.currentTimeMillis()) } }.padding(horizontal = 8.dp),
+                        .눌림 { 발자취.적기("휴식 건너뛰기"); 바꿈 { it.다음으로(System.currentTimeMillis()) }; 상태.바꿈 { it.세기더함(세기이름.연속건너뜀) } }.padding(horizontal = 8.dp),   // 10-02: 업적 2-17
                     contentAlignment = Alignment.Center,
                 ) { 글("건너뛰기", 크기값 = 크기.작게, 색 = c.흐림, 굵기 = FontWeight.Bold) }
             } else {

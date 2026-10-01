@@ -82,6 +82,10 @@ import com.slayde.hasenheide.data.콤마
 import com.slayde.hasenheide.data.시분초
 import com.slayde.hasenheide.data.대비
 import com.slayde.hasenheide.data.예정초기화
+import com.slayde.hasenheide.data.건너뜀남김
+import com.slayde.hasenheide.data.대표칭호이름
+import com.slayde.hasenheide.ui.theme.스탯치수
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.ui.draw.drawBehind
@@ -168,7 +172,7 @@ private fun 오늘시작루틴(d: 앱데이터, 오늘: String): 루틴? =
 private fun 날글(k: String): String = LocalDate.parse(날짜만(k)).let { "${it.monthValue}월 ${it.dayOfMonth}일" }
 
 @Composable
-fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: () -> Unit) {
+fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: () -> Unit, 스탯으로: () -> Unit = {}) {
     val c = Local색.current
     val d = 상태.d
     val 오늘 = 상태.오늘
@@ -189,6 +193,8 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
                     아이콘버튼(아이콘.왼쪽, "이전 달", { 보는달 = 보는달.minusMonths(1) }, 칠함 = false, 색 = c.강조글, 크기칸 = 높이.아주낮게)
                     띠글("${보는달.year}년 ${보는달.monthValue}월", Modifier.weight(1f), 가운데 = true)
                     아이콘버튼(아이콘.오른쪽, "다음 달", { 보는달 = 보는달.plusMonths(1) }, 칠함 = false, 색 = c.강조글, 크기칸 = 높이.아주낮게)
+                    // 10-02: 스탯 · 업적 — 대표 칭호가 있으면 그 칭호, 없으면 '스탯' [기본값 · 어느 탭에 둘지 홍겸 님 확인 대기]
+                    띠칩(d.대표칭호이름 ?: 스탯화면글.스탯, 스탯으로, Modifier.widthIn(max = 스탯치수.띠칩))
                 }
                 // 10-02: 달을 넘기면 다음 달은 오른쪽에서, 이전 달은 왼쪽에서 밀려 들어온다
                 AnimatedContent(
@@ -380,7 +386,8 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
                 val 미루기 = d.사흘미리(true, k); val 건너 = d.사흘미리(false, k)
                 버튼("이 루틴을 다음 날로 미루기", { 상태.바꿈 { it.날휴식(true, k, 오늘) }; 열린시트 = null }, Modifier.fillMaxWidth(), 주요 = true)
                 맞춤글("${날글(k)} 휴식 · 다음 ${미루기.joinToString(" · ")}", Modifier.padding(top = 4.dp, bottom = 12.dp), 색 = c.옅음)
-                버튼("이 루틴 건너뛰기", { 상태.바꿈 { it.날휴식(false, k, 오늘) }; 열린시트 = null }, Modifier.fillMaxWidth())
+                // 10-02: 건너뛴 날을 남긴다 (업적 2-11 '하체 날 건너뛰기')
+                버튼("이 루틴 건너뛰기", { 상태.바꿈 { it.건너뜀남김(k).날휴식(false, k, 오늘) }; 열린시트 = null }, Modifier.fillMaxWidth())
                 맞춤글("${날글(k)} 휴식 · 다음 ${건너.joinToString(" · ")}", Modifier.padding(top = 4.dp, bottom = 4.dp), 색 = c.옅음)
             }
         }

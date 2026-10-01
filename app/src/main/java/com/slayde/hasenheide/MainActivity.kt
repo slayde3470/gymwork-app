@@ -31,6 +31,8 @@ import com.slayde.hasenheide.ui.작은창
 import com.slayde.hasenheide.ui.Local번호
 import androidx.compose.runtime.CompositionLocalProvider
 import com.slayde.hasenheide.ui.앱상태
+import com.slayde.hasenheide.data.세기더함
+import com.slayde.hasenheide.data.세기이름
 import com.slayde.hasenheide.ui.폰기능
 import com.slayde.hasenheide.ui.theme.하젠하이데테마
 import java.io.File
@@ -55,6 +57,7 @@ class MainActivity : ComponentActivity() {
         val 됐나 = try {
             contentResolver.openOutputStream(uri)?.use { it.write(상태.백업글().toByteArray()) }; true
         } catch (e: Exception) { false }
+        if (됐나) 상태.바꿈 { it.세기더함(세기이름.백업) }   // 10-02: 백업 내보내기 성공 수 (업적 2-47)
         알림글(if (됐나) "백업 파일을 저장했습니다" else "저장하지 못했습니다")
     }
 

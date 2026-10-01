@@ -50,6 +50,13 @@ data class 색표(
     val 근육: Color = Color(0xFFD6DDD9),   // 칠하지 않은(0단계) 근육
     val 피부: Color = Color(0xFFB9C3BE),   // 머리 · 손 · 무릎 같은 바탕 조각
     val 결: Color = Color(0xFFAEB9B3),     // 근육 결 선
+    // 10-02 업적 칭호 테두리 — 등급 색 (12-5 '등급 색'. 값은 문서에 없음 → 기본값 · 홍겸 님 확인 전)
+    val 초보: Color = Color(0xFF3F8F2A),
+    val 중급: Color = Color(0xFF1F6FB2),
+    val 고급: Color = Color(0xFF6B3FA0),
+    val 미친자: Color = Color(0xFFB3261E),
+    val 유머: Color = Color(0xFFB7791F),   // 1-41 하나뿐 (말투 4단계 밖 · 스탯명세 8-4)
+    val 히든: Color = Color(0xFF00796B),   // 히든 업적 (등급 없음)
 )
 
 /**
@@ -65,6 +72,7 @@ val 밝은색표 = 색표(
     휴식 = Color(0xFF084B83), 휴식옅음 = Color(0xFFE1E9F0),
     오름 = Color(0xFFB3261E), 내림 = Color(0xFF084B83),
     근육 = Color(0xFFD6DDD9), 피부 = Color(0xFFB9C3BE), 결 = Color(0xFFAEB9B3),
+    초보 = Color(0xFF3F8F2A), 중급 = Color(0xFF1F6FB2), 고급 = Color(0xFF6B3FA0), 미친자 = Color(0xFFB3261E), 유머 = Color(0xFFB7791F), 히든 = Color(0xFF00796B),
 )
 
 val 어두운색표 = 색표(
@@ -75,6 +83,7 @@ val 어두운색표 = 색표(
     휴식 = Color(0xFF7FB3E6), 휴식옅음 = Color(0xFF1F3246),
     오름 = Color(0xFFE57368), 내림 = Color(0xFF7FB3E6),
     근육 = Color(0xFF4A5550), 피부 = Color(0xFF3A433F), 결 = Color(0xFF39423E),
+    초보 = Color(0xFF8FD46A), 중급 = Color(0xFF7FB3E6), 고급 = Color(0xFFB79BE0), 미친자 = Color(0xFFE57368), 유머 = Color(0xFFE8B45A), 히든 = Color(0xFF5FC4B4),
 )
 
 val Local색 = staticCompositionLocalOf { 밝은색표 }
@@ -131,6 +140,26 @@ object 모서리 {
     val 작게 = 8.dp       // 버튼 · 입력칸
     val 보통 = 16.dp      // 카드
     val 크게 = 16.dp      // 시트
+}
+
+/** 선 굵기 — 둘뿐 (11 지침 U3-5 · U7): 안쪽 상자 · 칩 · 입력칸 1 / 카드 · 고정 띠 2 */
+object 선굵기 {
+    val 보통 = 1.dp
+    val 굵게 = 2.dp
+}
+
+/** 진행 막대 — 하나로 (11 지침 U3-8): 높이 8 · 끝 둥글게(= 모서리 4) · 바탕 면2 · 채움 강조 */
+object 막대치수 {
+    val 높이 = 8.dp
+}
+
+/** 스탯 화면 한 줄의 칸 폭 (10-02) — 이름 · 값 · 7일 전 대비 */
+object 스탯치수 {
+    val 이름 = 104.dp
+    val 값 = 40.dp
+    val 증감 = 56.dp
+    /** 캘린더 년월 띠의 칭호 칩 — 넘으면 … (년월 글자 자리를 남긴다) */
+    val 띠칩 = 120.dp
 }
 
 // ───────────────────── 움직임 (10-02 · UI 동작 전부) ─────────────────────

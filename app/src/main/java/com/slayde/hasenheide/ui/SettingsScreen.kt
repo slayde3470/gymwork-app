@@ -24,6 +24,7 @@ import com.slayde.hasenheide.data.무게글
 import com.slayde.hasenheide.data.분초
 import com.slayde.hasenheide.data.설정값
 import com.slayde.hasenheide.data.근육표
+import com.slayde.hasenheide.data.체중기록잇기
 import com.slayde.hasenheide.ui.theme.Local색
 import com.slayde.hasenheide.ui.theme.간격
 import com.slayde.hasenheide.ui.theme.크기
@@ -51,7 +52,8 @@ fun 설정화면(상태: 앱상태, 폰: 폰기능) {
                 Column(Modifier.weight(1f)) {
                     글("체중 (kg)", 크기값 = 크기.아주작게, 색 = c.옅음)
                     입력칸(if (몸.체중 > 0) 무게글(몸.체중) else "", { v ->
-                        상태.바꿈 { d -> d.copy(몸 = d.몸.copy(체중 = v.trim().toDoubleOrNull()?.coerceIn(0.0, 400.0) ?: 0.0)) }
+                        // 10-02: 바꿀 때마다 체중기록에 한 줄 (치는 동안은 2분 안에 한 줄로 묶는다 · 업적 1-47 · 1-48 · 2-20)
+                        상태.바꿈 { d -> (v.trim().toDoubleOrNull()?.coerceIn(0.0, 400.0) ?: 0.0).let { kg -> d.copy(몸 = d.몸.copy(체중 = kg)).체중기록잇기(kg, System.currentTimeMillis()) } }
                     }, Modifier.fillMaxWidth(), 안내 = "예: 109", 숫자 = true)
                 }
             }

@@ -56,6 +56,14 @@ object 저장소 {
         // 근육 피로 (10-02, 스키마 13 · 07 근육지도 4·5절) — 잎 id → [lv0, 시작, 끝] · 잎 id → 이전 최대 볼륨
         o.put("피로", JSONObject().also { m -> d.피로.forEach { (k, f) -> m.put(k, JSONArray().put(f.lv0).put(f.시작).put(f.끝)) } })
         o.put("최대볼륨", JSONObject().also { m -> d.최대볼륨.forEach { (k, v) -> m.put(k, v) } })
+        // 스탯 · 업적 (10-02, 스키마 14 · 스탯명세 7-2)
+        o.put("업적", JSONObject().also { m -> d.업적.forEach { (k, v) -> m.put(k, v) } })
+        d.대표칭호?.let { o.put("대표칭호", it) }
+        o.put("세기", JSONObject().also { m -> d.세기.forEach { (k, v) -> m.put(k, v) } })
+        o.put("쉰날", JSONArray().also { a -> d.쉰날.sorted().forEach { a.put(it) } })
+        o.put("건너뜀", JSONObject().also { m -> d.건너뜀.forEach { (k, v) -> m.put(k, v) } })
+        o.put("체중기록", JSONArray().also { a -> d.체중기록.forEach { w -> a.put(JSONArray().put(w.시각).put(w.kg)) } })
+        o.put("스탯기록", JSONObject().also { m -> d.스탯기록.forEach { (날, 값) -> m.put(날, JSONObject().also { x -> 값.forEach { (k, v) -> x.put(k, v) } }) } })
         return o.toString(1)
     }
 
@@ -188,6 +196,14 @@ object 저장소 {
             // 스키마 13 (10-02) — 옛 파일에는 없다 → 빈 피로 · 빈 최대 (처음 운동하는 것처럼)
             피로 = 사전(o.optJSONObject("피로")) { m, k -> m.getJSONArray(k).let { a -> 피로상태(a.optDouble(0, 0.0), a.optLong(1, 0L), a.optLong(2, 0L)) } },
             최대볼륨 = 사전(o.optJSONObject("최대볼륨")) { m, k -> m.optDouble(k, 0.0) },
+            // 스키마 14 (10-02) — 옛 파일에는 없다 → 빈 업적 · 대표 칭호 없음 · 빈 기록 (다음 판정 때 지난 기록으로 소급한다)
+            업적 = 사전(o.optJSONObject("업적")) { m, k -> m.optLong(k, 0L) }.filterValues { it > 0 },
+            대표칭호 = 글또는널(o, "대표칭호"),
+            세기 = 사전(o.optJSONObject("세기")) { m, k -> m.optInt(k, 0) },
+            쉰날 = 목록(o.optJSONArray("쉰날")) { a, i -> a.getString(i) }.toSet(),
+            건너뜀 = 사전(o.optJSONObject("건너뜀")) { m, k -> m.getString(k) },
+            체중기록 = 목록(o.optJSONArray("체중기록")) { a, i -> a.getJSONArray(i).let { w -> 체중값(w.optLong(0, 0L), w.optDouble(1, 0.0)) } }.filter { it.kg > 0 },
+            스탯기록 = 사전(o.optJSONObject("스탯기록")) { m, k -> 사전(m.getJSONObject(k)) { x, s -> x.optDouble(s, 0.0) } },
         ).플랜줄정리()   // 10-01: 지운 플랜의 줄 · 슈퍼세트로 묶인 플랜 줄을 풀어 둔다
     }
 
