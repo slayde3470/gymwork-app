@@ -36,6 +36,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.size
 import com.slayde.hasenheide.data.강도들
+import com.slayde.hasenheide.data.플랜줄정리
 import com.slayde.hasenheide.data.목표단위
 import com.slayde.hasenheide.data.몸조건
 import com.slayde.hasenheide.data.보정배수
@@ -994,7 +995,7 @@ private fun 플랜한줄(상태: 앱상태, p: 플랜, 펼침: Boolean, 끌림: 
             Row(horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
                 버튼("고치기 · 지금 실력 넣기", { 플랜고침.value = p.id }, Modifier.weight(1.6f), 작게 = true, 주요 = true)
                 버튼("지우기", {
-                    상태.지우고알림("${p.이름} 플랜을 지웠습니다") { d -> d.copy(플랜들 = d.플랜들.filter { it.id != p.id }) }
+                    상태.지우고알림("${p.이름} 플랜을 지웠습니다") { d -> d.copy(플랜들 = d.플랜들.filter { it.id != p.id }).플랜줄정리() }
                 }, Modifier.weight(1f), 작게 = true, 글색 = c.나쁨)
             }
         }

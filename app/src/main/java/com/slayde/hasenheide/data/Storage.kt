@@ -82,7 +82,8 @@ object 저장소 {
         .put("종목들", JSONArray().also { a ->
             r.종목들.forEach { e ->
                 a.put(JSONObject().put("이름", e.이름).put("세트들", 세트들to(e.세트들)).put("임시", e.임시)
-                    .also { if (e.묶음 != null) it.put("묶음", e.묶음) })
+                    .also { if (e.묶음 != null) it.put("묶음", e.묶음) }
+                    .also { if (e.플랜id != null) it.put("플랜id", e.플랜id) })
             }
         })
 
@@ -100,6 +101,8 @@ object 저장소 {
         .put("측정들", JSONArray().also { a ->
             p.측정들.forEach { m -> a.put(JSONObject().put("회", m.회).put("날", m.날).put("무게", m.무게).put("횟수", m.횟수)) }
         })
+        // 스키마 12 (10-01) — 매 회차 자기조절의 출발점
+        .also { o -> p.재기준?.let { r -> o.put("재기준", JSONObject().put("회", r.회).put("날", r.날).put("값", r.값)) } }
 
     // 스키마 10 (09-30, 21 문서 5절)
     private fun 향상to(g: 향상기록) = JSONObject().put("날짜", g.날짜).put("종목", g.종목)
@@ -130,7 +133,8 @@ object 저장소 {
                     .put("무게", e.무게).put("횟수", e.횟수).put("휴식", e.휴식)
                     .put("기록", 세트들to(e.기록)).put("예정값", 세트들to(e.예정값))
                     .put("휴식들", JSONArray().also { h -> e.휴식들.forEach { h.put(it ?: JSONObject.NULL) } })
-                    .put("임시", e.임시).put("마감", e.마감).also { if (e.슈퍼 != null) it.put("슈퍼", e.슈퍼) })
+                    .put("임시", e.임시).put("마감", e.마감).also { if (e.슈퍼 != null) it.put("슈퍼", e.슈퍼) }
+                    .also { if (e.플랜id != null) it.put("플랜id", e.플랜id) })
             }
         })
         .also { o ->
@@ -174,7 +178,7 @@ object 저장소 {
             몸 = o.optJSONObject("몸")?.let { j -> 몸조건(j.optInt("나이", 0), j.optBoolean("남", true), j.optDouble("체중", 0.0)) } ?: 몸조건(),
             // 스키마 10 — 옛 파일에는 없다 → 빈 목록 (기본표를 쓴다)
             향상기록들 = 목록(o.optJSONArray("향상기록들")) { a, i -> 향상from(a.getJSONObject(i)) },
-        )
+        ).플랜줄정리()   // 10-01: 지운 플랜의 줄 · 슈퍼세트로 묶인 플랜 줄을 풀어 둔다
     }
 
     private fun <T> 목록(a: JSONArray?, f: (JSONArray, Int) -> T): List<T> =
@@ -241,6 +245,7 @@ object 저장소 {
             },
             워밍업수 = o.optInt("워밍업수", 0),
             켬 = o.optBoolean("켬", true),
+            재기준 = o.optJSONObject("재기준")?.let { r -> 재기준점(r.optInt("회"), r.optString("날"), r.optDouble("값", 0.0)) }?.takeIf { it.값 > 0 },
             // 홍겸 님 09-30 — 없으면 0 (강도 프리셋을 따른다)
             세트수 = o.optInt("세트수", 0),
             직접횟수 = o.optInt("직접횟수", 0),
@@ -263,7 +268,8 @@ object 저장소 {
         o.getString("루틴id"), o.optString("루틴이름"), o.optBoolean("달성"),
         목록(o.optJSONArray("종목들")) { a, i ->
             a.getJSONObject(i).let { e ->
-                종목기록(e.getString("이름"), 세트들from(e.optJSONArray("세트들")).filterNotNull(), e.optBoolean("임시"), 글또는널(e, "묶음"))
+                종목기록(e.getString("이름"), 세트들from(e.optJSONArray("세트들")).filterNotNull(), e.optBoolean("임시"), 글또는널(e, "묶음"),
+                    플랜id = 글또는널(e, "플랜id"))
             }
         },
         o.optInt("걸린초"),
@@ -303,6 +309,7 @@ object 저장소 {
                     e.optInt("휴식", 90), 세트들from(e.optJSONArray("기록")), 세트들from(e.optJSONArray("예정값")),
                     목록(e.optJSONArray("휴식들")) { h, j -> if (h.isNull(j)) null else h.getInt(j) },
                     e.optBoolean("임시"), e.optBoolean("마감"), 글또는널(e, "슈퍼"),
+                    플랜id = 글또는널(e, "플랜id"),
                 )
             }
         },

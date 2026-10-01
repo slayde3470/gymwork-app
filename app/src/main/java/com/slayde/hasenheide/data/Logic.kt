@@ -522,7 +522,7 @@ fun 운동시작(r: 루틴, 지금: Long): 운동세션? {
         val 첫 = it.목표(0)
         세션종목(it.이름, it.세트, it.세트, 첫.w, 첫.r, it.휴식,
             예정값 = if (it.세트값.isEmpty()) emptyList() else List(it.세트) { k -> it.목표(k) },
-            휴식들 = List(it.세트) { k -> it.휴식(k) }, 슈퍼 = it.슈퍼)
+            휴식들 = List(it.세트) { k -> it.휴식(k) }, 슈퍼 = it.슈퍼, 플랜id = it.플랜id)
     }
     return 운동세션(r.id, r.이름, 지금, 0, 0, 들[0].무게, 들[0].횟수, 들)
 }
@@ -766,7 +766,7 @@ fun 앱데이터.운동저장(오늘: String, 지금: Long): 앱데이터 {
     val S = 세션 ?: return this
     val 들 = S.종목들.mapNotNull { e ->
         val 찬 = e.찬것()
-        if (찬.isEmpty()) null else 종목기록(e.이름, 찬, e.임시, S.묶음이름(e))
+        if (찬.isEmpty()) null else 종목기록(e.이름, 찬, e.임시, S.묶음이름(e), 플랜id = e.플랜id)
     }
     val 끝 = S.끝시각 ?: 지금
     val 걸린 = S.흐른초(지금)
@@ -794,8 +794,8 @@ fun 앱데이터.운동저장(오늘: String, 지금: Long): 앱데이터 {
  */
 fun 앱데이터.운동저장하기(오늘: String, 지금: Long): 앱데이터 {
     val S = 세션 ?: return this
-    val 들 = S.종목들.mapNotNull { e -> e.찬것().takeIf { it.isNotEmpty() }?.let { 종목기록(e.이름, it, e.임시) } }
-    return 플랜반영(운동저장(오늘, 지금), 들, 오늘)
+    val 들 = S.종목들.mapNotNull { e -> e.찬것().takeIf { it.isNotEmpty() }?.let { 종목기록(e.이름, it, e.임시, 플랜id = e.플랜id) } }
+    return 플랜반영(운동저장(오늘, 지금), 들, 오늘, S.조절됨)
 }
 
 /**
@@ -824,6 +824,7 @@ fun 앱데이터.오래된운동정리(지금: Long, 한계: Long = 3 * 60 * 60 
 fun 루틴.볼륨올리기(s: 설정값): 루틴 {
     if (!s.볼륨켬) return this
     return copy(종목 = 종목.map { e ->
+        if (e.플랜id != null) return@map e   // 10-01: 플랜 줄은 플랜이 올린다
         val 목 = (0 until e.세트).map { e.목표(it) }
         if (목.isEmpty()) return@map e
         val 새목 = when (s.볼륨배분) {
@@ -851,9 +852,11 @@ fun 루틴.볼륨올리기(s: 설정값): 루틴 {
  * 같은 이름이 루틴에 두 번 있으면 나오는 순서대로 짝짓는다.
  */
 fun 루틴.오늘반영(S: 운동세션): 루틴 {
-    val 정식 = S.종목들.filter { !it.임시 }
+    // 10-01: 플랜 줄은 빼고 짝짓는다 — 플랜 줄의 값은 플랜이 정한다 (운동 중 바꾼 값은 플랜 계산에 들어간다)
+    val 정식 = S.종목들.filter { !it.임시 && it.플랜id == null }
     val 쓴 = mutableMapOf<String, Int>()
     return copy(종목 = 종목.map { re ->
+        if (re.플랜id != null) return@map re
         val n = 쓴.getOrDefault(re.이름, 0); 쓴[re.이름] = n + 1
         val e = 정식.filter { it.이름 == re.이름 }.getOrNull(n) ?: return@map re
         var 바뀜 = false
@@ -959,7 +962,9 @@ fun 루틴.종목옮기기(from: Int, to: Int, 뒤에: Boolean): 루틴 {
 /** 슈퍼세트로 묶기 — 대상(또는 그 묶음) 바로 뒤로 옮겨 붙인다 */
 fun 루틴.슈퍼묶기(from: Int, to: Int, 새이름: String): 루틴 {
     val 대상 = 종목.getOrNull(to) ?: return this
-    val 집은 = 종목[from]
+    val 집은 = 종목.getOrNull(from) ?: return this
+    // 플랜 종목은 슈퍼세트로 묶지 않는다 (01 ㉓-7 확정 · 10-01 감사에서 빠진 것을 찾음)
+    if (집은.플랜id != null || 대상.플랜id != null) return this
     if (집은.슈퍼 != null && 집은.슈퍼 == 대상.슈퍼) return this
     val g = 대상.슈퍼 ?: 새이름
     val 옮길 = (if (집은.슈퍼 != null) 종목.filter { it.슈퍼 == 집은.슈퍼 } else listOf(집은)).map { it.copy(슈퍼 = g) }

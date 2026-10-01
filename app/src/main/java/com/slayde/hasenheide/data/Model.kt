@@ -73,6 +73,8 @@ data class 종목기록(
     val 임시: Boolean = false,
     /** 슈퍼세트로 했으면 묶음 이름 "덤벨컬+해머컬". 같은 묶음끼리만 견준다 */
     val 묶음: String? = null,
+    /** 플랜에서 온 줄이면 그 플랜 id (10-01) — 플랜 반영은 이름이 아니라 이것으로 짝짓는다 */
+    val 플랜id: String? = null,
 )
 
 /** 하루 기록 */
@@ -162,6 +164,8 @@ data class 세션종목(
     /** '여기까지'로 마친 종목 */
     val 마감: Boolean = false,
     val 슈퍼: String? = null,
+    /** 플랜에서 온 줄이면 그 플랜 id (10-01) */
+    val 플랜id: String? = null,
 )
 
 /** 방금 끝낸 세트 줄 위에서 도는 휴식 */
@@ -242,7 +246,7 @@ data class 앱데이터(
 ) {
     companion object {
         /** 자료 구조가 바뀌면 올린다 — 옛 백업 파일을 읽을 때 구분하려고 */
-        const val 스키마 = 11
+        const val 스키마 = 12
         val 기본카테고리 = listOf("가슴", "등", "하체", "어깨", "팔", "복근")
     }
 }

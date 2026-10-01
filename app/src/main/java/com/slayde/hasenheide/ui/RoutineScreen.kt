@@ -149,7 +149,10 @@ fun 루틴화면(상태: 앱상태, 폰: 폰기능) {
         줄자리.entries.firstOrNull { (k, r) -> k.startsWith(g.rid + "|") && g.y >= r.top && g.y < r.bottom }?.let { (k, r) ->
             val j = k.substringAfter("|").toInt()
             val 비율 = (g.y - r.top) / max(1f, r.height)
-            if (j == g.j) null else 놓을곳(g.rid, j, if (비율 < 0.3f) 0 else if (비율 > 0.7f) 2 else 1)
+            val 모 = if (비율 < 0.3f) 0 else if (비율 > 0.7f) 2 else 1
+            // 10-01: 플랜 줄은 슈퍼세트로 묶지 않는다 (01 ㉓-7) → 가운데에 놓아도 앞·뒤 옮기기로
+            val 플랜끼 = 상태.d.루틴들.firstOrNull { it.id == g.rid }?.종목?.let { l -> l.getOrNull(j)?.플랜id != null || l.getOrNull(g.j)?.플랜id != null } == true
+            if (j == g.j) null else 놓을곳(g.rid, j, if (모 == 1 && 플랜끼) (if (비율 < 0.5f) 0 else 2) else 모)
         }
     }
     // 루틴을 놓을 곳 — 손가락 아래 머리줄. 위 30% 앞 / 가운데 합치기 / 아래 30% 뒤 (모드 0 · 1 · 2)

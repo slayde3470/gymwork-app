@@ -21,6 +21,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.unit.IntOffset
 import com.slayde.hasenheide.data.예정옮기기
+import com.slayde.hasenheide.data.플랜줄채움
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.height
@@ -235,7 +236,7 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
                 이름표("루틴")
                 d.루틴들.filter { !it.휴식일 && it.종목.isNotEmpty() }.forEach { r ->
                     고르기줄(r.이름, "${r.종목.size}종목 · ${총세트(r)}세트 · 예상 시간 ${시간글(예상초(r))}") {
-                        시작(운동시작(r, System.currentTimeMillis()))
+                        시작(운동시작(d.플랜줄채움(r), System.currentTimeMillis()))
                     }
                 }
                 이름표("종목 하나만", Modifier.padding(top = 8.dp))
