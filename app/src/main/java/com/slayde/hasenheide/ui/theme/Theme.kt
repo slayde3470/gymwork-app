@@ -1,5 +1,6 @@
 package com.slayde.hasenheide.ui.theme
 
+import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
@@ -45,6 +46,10 @@ data class 색표(
     val 휴식옅음: Color,
     val 오름: Color,      // 향상도 오름 = 빨강 (주식처럼)
     val 내림: Color,      // 향상도 내림 = 중심색 (09-27)
+    // 10-02 근육 그림 (07 근육지도) — 7일 체험 아티팩트 CSS --근육 --피부 --결 과 같은 값
+    val 근육: Color = Color(0xFFD6DDD9),   // 칠하지 않은(0단계) 근육
+    val 피부: Color = Color(0xFFB9C3BE),   // 머리 · 손 · 무릎 같은 바탕 조각
+    val 결: Color = Color(0xFFAEB9B3),     // 근육 결 선
 )
 
 /**
@@ -59,6 +64,7 @@ val 밝은색표 = 색표(
     좋음 = Color(0xFF4C9A1F), 좋음옅음 = Color(0xFFEAF3E4), 나쁨 = Color(0xFFB3261E),
     휴식 = Color(0xFF084B83), 휴식옅음 = Color(0xFFE1E9F0),
     오름 = Color(0xFFB3261E), 내림 = Color(0xFF084B83),
+    근육 = Color(0xFFD6DDD9), 피부 = Color(0xFFB9C3BE), 결 = Color(0xFFAEB9B3),
 )
 
 val 어두운색표 = 색표(
@@ -68,6 +74,7 @@ val 어두운색표 = 색표(
     좋음 = Color(0xFF9BE06B), 좋음옅음 = Color(0xFF243A22), 나쁨 = Color(0xFFE57368),
     휴식 = Color(0xFF7FB3E6), 휴식옅음 = Color(0xFF1F3246),
     오름 = Color(0xFFE57368), 내림 = Color(0xFF7FB3E6),
+    근육 = Color(0xFF4A5550), 피부 = Color(0xFF3A433F), 결 = Color(0xFF39423E),
 )
 
 val Local색 = staticCompositionLocalOf { 밝은색표 }
@@ -124,6 +131,56 @@ object 모서리 {
     val 작게 = 8.dp       // 버튼 · 입력칸
     val 보통 = 16.dp      // 카드
     val 크게 = 16.dp      // 시트
+}
+
+// ───────────────────── 움직임 (10-02 · UI 동작 전부) ─────────────────────
+
+/**
+ * 움직이는 시간(ms) · 크기 — 7일 체험 아티팩트 CSS `움직임 (UI 동작 전부)` 와 같은 값.
+ * 숫자가 올라가는 움직임은 Motion.kt (자릿수 시간) 가 따로 맡는다.
+ */
+object 움직임 {
+    const val 눌림 = 120          // 누르는 동안 작아지는 시간
+    const val 눌림배율 = 0.96f    // 누르면 이만큼 작아진다
+    const val 색 = 200            // 버튼 · 칩 색이 바뀌는 시간
+    const val 스위치 = 200        // 스위치 손잡이
+    const val 화면 = 200          // 탭 화면 바꿈 (페이드)
+    const val 시트 = 300          // 시트가 올라오는 시간
+    const val 시트닫기 = 170      // 시트가 내려가는 시간
+    const val 물음 = 200          // 물음창 페이드
+    const val 띠 = 240            // 아래띠가 올라오는 시간
+    const val 펼침 = 250          // 카드 · 상자가 늘고 줄어드는 시간
+    const val 게이지 = 700        // 게이지 폭
+    const val 달 = 260            // 캘린더 달 넘김
+    const val 근육색 = 600        // 근육 조각 색 (07 · 08 3절)
+    const val 배너높이 = 350      // 쉬는 동안 그림 칸이 커지는 시간
+    const val 사진접힘 = 250      // 나가는 사진이 오른쪽 끝으로 접히는 시간
+    const val 사진펼침 = 450      // 새 사진이 펼쳐지는 시간
+    const val 사진펼침늦춤 = 120  // 접히기 시작하고 이만큼 뒤에 펼친다
+    const val 접힌폭 = 0.03f      // 다 접혔을 때의 가로 배율
+    const val 톡시작 = 0.7f       // 세트 체크 — 작게 시작해
+    const val 톡탄성 = 0.35f      // 살짝 넘쳤다가 돌아온다 (스프링 감쇠비)
+    /** 빨리 나와 끝에서 부드럽게 멈춘다 — 아티팩트 cubic-bezier(.2,.8,.2,1) */
+    val 부드럽게 = CubicBezierEasing(0.2f, 0.8f, 0.2f, 1f)
+}
+
+/** 운동 중 위쪽 그림 칸 · 종목 사진 크기 (08 시안 3 · 4절) */
+object 그림칸 {
+    val 높이 = 124.dp           // 평소
+    val 쉬는높이 = 168.dp       // 쉬는 동안
+    val 사이 = 6.dp
+    val 모서리 = 12.dp
+    val 닫기 = 24.dp            // ✕ 단추
+    val 더미폭 = 3.dp           // 오른쪽 접힌 사진 더미 한 장
+    const val 더미최대 = 9
+    val 사진 = 72.dp            // 종목 탭 사진 칸
+    val 작은사진 = 28.dp        // 종목 줄 왼쪽
+    const val 사진긴변 = 1080   // 저장할 때 긴 변(px)
+    const val 사진품질 = 85     // JPEG
+    // 근육 그림 선 — 그림 좌표 단위 (아티팩트 CSS .몸근 · .몸결 과 같다)
+    const val 근육선 = 1.2f     // 근육 조각 사이 테두리 (바탕색 면)
+    const val 결선 = 0.7f       // 근육 결
+    const val 결진하기 = 0.8f   // 결의 불투명도
 }
 
 // ───────────────────────── 적용 ─────────────────────────

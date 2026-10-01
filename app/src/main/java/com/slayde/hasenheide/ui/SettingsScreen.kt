@@ -23,6 +23,7 @@ import com.slayde.hasenheide.data.진동시간목록
 import com.slayde.hasenheide.data.무게글
 import com.slayde.hasenheide.data.분초
 import com.slayde.hasenheide.data.설정값
+import com.slayde.hasenheide.data.근육표
 import com.slayde.hasenheide.ui.theme.Local색
 import com.slayde.hasenheide.ui.theme.간격
 import com.slayde.hasenheide.ui.theme.크기
@@ -138,6 +139,23 @@ fun 설정화면(상태: 앱상태, 폰: 폰기능) {
                     칩줄(listOf(8, 10, 12, 15, 20).map { "$it" }, "${s.횟수상한}", { t -> 고침 { it.copy(횟수상한 = t.toInt()) } })
                 }
             }
+        }
+
+        // 운동 중 그림 (10-02 · 08 시안 3절 · 07 근육지도 4·5절)
+        이름표("운동 중 그림", Modifier.padding(top = 18.dp, bottom = 8.dp))
+        카드(Modifier.번호("설5"), 안쪽 = 14.dp) {
+            설정줄("보기", "위쪽 그림 칸") {}
+            칩줄(근육표.배너목록, s.배너, { t -> 고침 { it.copy(배너 = t) } })
+            Box(Modifier.height(12.dp)); 구분선()
+            설정줄("근육 회복 시간", "가장 빨갛던 근육이 원래 색으로 돌아오는 시간") {}
+            칩줄(근육표.회복시간목록.map { 근육표.회복시간글(it) }, 근육표.회복시간글(s.회복시간), { t ->
+                val v = 근육표.회복시간목록.first { 근육표.회복시간글(it) == t }; 고침 { it.copy(회복시간 = v) }
+            })
+            Box(Modifier.height(12.dp)); 구분선()
+            설정줄("색") {}
+            칩줄(근육표.색표목록.map { it.second }, 근육표.색표목록.firstOrNull { it.first == s.색표 }?.second, { t ->
+                val v = 근육표.색표목록.first { it.second == t }.first; 고침 { it.copy(색표 = v) }
+            })
         }
 
         이름표("데이터", Modifier.padding(top = 18.dp, bottom = 8.dp))

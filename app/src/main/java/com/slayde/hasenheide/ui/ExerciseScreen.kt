@@ -100,6 +100,9 @@ private fun 종목한줄(상태: 앱상태, e: 종목, 열림: Boolean, on열기
     val 볼pct = if (지표 != null && 지표.과거 != null) 퍼센트(지표.지금.볼륨, 지표.과거.볼륨) else null
     Column(Modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth().눌림(on열기).padding(start = 16.dp, end = 8.dp, top = 12.dp, bottom = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+            // 10-02 (08 4절): 줄 왼쪽에 작은 사진 — 없으면 빈 칸
+            작은사진(e)
+            Box(Modifier.width(8.dp))
             Row(Modifier.weight(1f), verticalAlignment = Alignment.Bottom) {
                 글(e.이름, Modifier.weight(1f, fill = false), 굵기 = FontWeight.Medium)
                 Box(Modifier.width(8.dp))
@@ -112,6 +115,9 @@ private fun 종목한줄(상태: 앱상태, e: 종목, 열림: Boolean, on열기
             펼침단추(열림, on열기)
         }
         if (열림) Column(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp)) {
+            // 10-02 (08 4절): 펼치면 맨 위에 사진 줄 (72 · 첫 칸 '사진 추가' · 넘치면 옆으로) + 근육 한 줄
+            종목사진줄(상태, e)
+            Box(Modifier.height(12.dp))
             if (지표 == null) 글("아직 기록이 없습니다", 크기값 = 크기.조금작게, 색 = c.옅음)
             else {
                 val 과 = 지표.과거

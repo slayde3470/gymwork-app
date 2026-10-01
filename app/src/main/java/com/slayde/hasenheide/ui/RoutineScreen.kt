@@ -428,8 +428,11 @@ private fun <T> 자리바꿈(l: List<T>, a: Int, b: Int): List<T> {
 @Composable
 fun 펼침단추(열림: Boolean, onClick: () -> Unit) {
     val c = Local색.current
+    // 10-02: 화살표가 돌아간다 (전에는 한 번에 뒤집혔다)
+    val 각 by androidx.compose.animation.core.animateFloatAsState(if (열림) 180f else 0f,
+        androidx.compose.animation.core.tween(com.slayde.hasenheide.ui.theme.움직임.펼침), label = "펼침단추")
     Box(Modifier.size(높이.낮게).눌림(onClick), contentAlignment = Alignment.Center) {
-        Icon(아이콘.아래, if (열림) "접기" else "펼치기", Modifier.size(18.dp).rotate(if (열림) 180f else 0f), tint = c.옅음)
+        Icon(아이콘.아래, if (열림) "접기" else "펼치기", Modifier.size(18.dp).rotate(각), tint = c.옅음)
     }
 }
 
