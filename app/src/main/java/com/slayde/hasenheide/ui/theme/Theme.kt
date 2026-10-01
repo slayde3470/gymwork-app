@@ -57,6 +57,8 @@ data class 색표(
     val 미친자: Color = Color(0xFFB3261E),
     val 유머: Color = Color(0xFFB7791F),   // 1-41 하나뿐 (말투 4단계 밖 · 스탯명세 8-4)
     val 히든: Color = Color(0xFF00796B),   // 히든 업적 (등급 없음)
+    // 10-02 워밍업 세트 줄의 왼쪽 띠 — 20 B-4 · E-1 9번 '연두색' (감시관: 초록 '좋음' 은 달성에만 · D2-6)
+    val 워밍업: Color = Color(0xFF7CB342),
 )
 
 /**
@@ -73,6 +75,7 @@ val 밝은색표 = 색표(
     오름 = Color(0xFFB3261E), 내림 = Color(0xFF084B83),
     근육 = Color(0xFFD6DDD9), 피부 = Color(0xFFB9C3BE), 결 = Color(0xFFAEB9B3),
     초보 = Color(0xFF3F8F2A), 중급 = Color(0xFF1F6FB2), 고급 = Color(0xFF6B3FA0), 미친자 = Color(0xFFB3261E), 유머 = Color(0xFFB7791F), 히든 = Color(0xFF00796B),
+    워밍업 = Color(0xFF7CB342),
 )
 
 val 어두운색표 = 색표(
@@ -84,6 +87,7 @@ val 어두운색표 = 색표(
     오름 = Color(0xFFE57368), 내림 = Color(0xFF7FB3E6),
     근육 = Color(0xFF4A5550), 피부 = Color(0xFF3A433F), 결 = Color(0xFF39423E),
     초보 = Color(0xFF8FD46A), 중급 = Color(0xFF7FB3E6), 고급 = Color(0xFFB79BE0), 미친자 = Color(0xFFE57368), 유머 = Color(0xFFE8B45A), 히든 = Color(0xFF5FC4B4),
+    워밍업 = Color(0xFFB5E08A),
 )
 
 val Local색 = staticCompositionLocalOf { 밝은색표 }
@@ -197,10 +201,11 @@ object 움직임 {
 object 그림칸 {
     val 높이 = 124.dp           // 평소
     val 쉬는높이 = 168.dp       // 쉬는 동안
-    val 사이 = 6.dp
-    val 모서리 = 12.dp
+    val 사이 = 8.dp             // 11 지침 U3-1 (4 · 8 · 12 · 16 · 24)
+    val 모서리 = 8.dp           // 안쪽 상자 (U3-4)
     val 닫기 = 24.dp            // ✕ 단추
-    val 더미폭 = 3.dp           // 오른쪽 접힌 사진 더미 한 장
+    val 더미폭 = 3.dp           // 오른쪽 접힌 사진 더미 한 장 (줄 굵기 — 여백이 아니다)
+    val 더미사이 = 1.dp         // 더미 줄 사이 (줄 굵기)
     const val 더미최대 = 9
     val 사진 = 72.dp            // 종목 탭 사진 칸
     val 작은사진 = 28.dp        // 종목 줄 왼쪽

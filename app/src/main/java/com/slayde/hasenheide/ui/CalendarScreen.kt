@@ -114,6 +114,9 @@ import com.slayde.hasenheide.data.운동세션
 import com.slayde.hasenheide.data.무게글
 import com.slayde.hasenheide.data.무게반올림
 import androidx.compose.animation.AnimatedContent
+import kotlin.math.abs
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -196,17 +199,24 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
                     // 10-02: 스탯 · 업적 — 대표 칭호가 있으면 그 칭호, 없으면 '스탯' [기본값 · 어느 탭에 둘지 홍겸 님 확인 대기]
                     띠칩(d.대표칭호이름 ?: 스탯화면글.스탯, 스탯으로, Modifier.widthIn(max = 스탯치수.띠칩))
                 }
-                // 10-02: 달을 넘기면 다음 달은 오른쪽에서, 이전 달은 왼쪽에서 밀려 들어온다
-                AnimatedContent(
-                    targetState = 보는달,
-                    transitionSpec = {
-                        val 앞으로 = targetState > initialState
-                        (slideInHorizontally(tween(움직임.달)) { w -> if (앞으로) w else -w } + fadeIn(tween(움직임.달))) togetherWith
-                            (slideOutHorizontally(tween(움직임.달)) { w -> if (앞으로) -w else w } + fadeOut(tween(움직임.달)))
-                    },
-                    label = "달",
-                ) { 그달 ->
-                Column(Modifier.padding(start = 6.dp, end = 6.dp, top = 4.dp, bottom = 6.dp)) {
+                // 10-02: 달을 넘기면 다음 달은 오른쪽에서, 이전 달은 왼쪽에서 살짝 밀려 들어온다.
+                // 감시관: AnimatedContent 는 달마다 화면 조각을 새로 만들어 **꾹 눌러 끄는 중에 달이 넘어가면 끌기가 끊겼다**.
+                // → 달력 조각은 하나로 두고, 넘길 때 그 조각만 옆에서 밀어 넣는다 (끌기 상태가 그대로 산다)
+                val 그달 = 보는달
+                val 밀기 = remember { Animatable(0f) }
+                var 앞달 by remember { mutableStateOf(보는달) }
+                LaunchedEffect(보는달) {
+                    if (보는달 != 앞달) {
+                        val 앞으로 = 보는달 > 앞달
+                        앞달 = 보는달
+                        밀기.snapTo(if (앞으로) 1f else -1f)
+                        밀기.animateTo(0f, tween(움직임.달))
+                    }
+                }
+                Column(Modifier.graphicsLayer {
+                    translationX = 밀기.value * size.width * 0.25f
+                    alpha = 1f - abs(밀기.value) * 0.6f
+                }.padding(start = 6.dp, end = 6.dp, top = 4.dp, bottom = 6.dp)) {
                     달력(d, 오늘, 그달, 고른날, Modifier.번호("캘2"),
                         on고름 = { 날 ->
                             val 원 = 집은날
@@ -221,7 +231,6 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
                         on옮김 = { 원, 새날 -> 상태.바꿈 { it.예정옮기기(원, 새날, 오늘) }; 고른날 = 새날 },
                         on집음 = { 원, 달이동 -> 집은날 = 원; if (달이동 != 0) 보는달 = 보는달.plusMonths(달이동.toLong()) },
                         on달넘김 = { 보는달 = 보는달.plusMonths(it.toLong()) })
-                }
                 }
             }
             Box(Modifier.height(8.dp))

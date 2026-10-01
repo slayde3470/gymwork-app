@@ -226,7 +226,7 @@ object 근육시험 {
         val 턱 = 근육계산.확대상자("턱걸이", null)
         참("턱걸이 확대는 뒷모습 쪽", 턱 != null && 턱[0] + 턱[2] / 2 > 240f)
         참("모르는 종목은 확대 없음", 근육계산.확대상자("머신 X", null) == null)
-        참("근육 글", 근육계산.근육글(mapOf("biceps" to "P", "brachialis" to "S", "forearm_flexors" to "Y")) == "주동근 이두 · 보조근 상완근 · 협응근 전완 앞")
+        참("근육 글 — 협응근은 한 줄을 넘겨 뺀다", 근육계산.근육글(mapOf("biceps" to "P", "brachialis" to "S", "forearm_flexors" to "Y")) == "주동근 이두 · 보조근 상완근")
         참("근육 정보 없음", 근육계산.근육글(emptyMap()) == "근육 정보 없음")
     }
 

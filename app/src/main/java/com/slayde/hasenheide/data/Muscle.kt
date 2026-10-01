@@ -210,7 +210,8 @@ object 근육계산 {
 
     /** "주동근 가슴 가운데 · 보조근 가슴 윗부분, 어깨 앞" — 괄호 속 풀이는 뺀다 */
     fun 근육글(m: Map<String, String>): String {
-        val 묶 = 근육표.역할이름.mapNotNull { (r, n) ->
+        // 감시관: 협응근까지 쓰면 한 줄(D1-4)을 넘는다 → 주동근 · 보조근만
+        val 묶 = 근육표.역할이름.filter { it.first != "Y" }.mapNotNull { (r, n) ->
             val l = m.filter { it.value == r }.keys.map { (근육자료.이름[it] ?: it).replace(Regex(" \\(.*\\)"), "") }
             if (l.isEmpty()) null else "$n ${l.joinToString(", ")}"
         }

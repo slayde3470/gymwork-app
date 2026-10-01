@@ -184,6 +184,13 @@ fun 앱(상태: 앱상태, 폰: 폰기능) {
 
     // 앱을 켤 때 한 번, 그 뒤로 1분마다 날짜가 바뀌었는지 본다
     LaunchedEffect(Unit) { while (true) { 상태.날짜확인(); delay(60_000) } }
+    // 10-02 감시관: 어느 종목에도 없는 사진 파일을 앱을 켤 때 치운다 (지운 종목 · 되돌리기를 기다리다 떠난 경우)
+    val 앱맥락 = androidx.compose.ui.platform.LocalContext.current
+    LaunchedEffect(Unit) {
+        val 쓰는 = 상태.d.종목표.flatMap { it.사진 }.toSet()
+        // 기록 파일을 못 읽어 빈 데이터로 켜졌을 때는 치우지 않는다 (사진을 다 지우게 된다)
+        if (상태.d.종목표.isNotEmpty()) kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { 사진함.정리(앱맥락, 쓰는) }
+    }
     // 되돌리기 띠는 5초 뒤 사라진다
     LaunchedEffect(상태.되돌림) { if (상태.되돌림 != null) { delay(5_000); 상태.되돌림치움() } }
     // 업적 알림 띠도 5초 뒤 (10-02)

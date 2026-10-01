@@ -172,14 +172,14 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
         if (S.끝화면) 마무리(상태, S) else Column(Modifier.fillMaxSize()) {
             // 10-02 위쪽 그림 칸 (08 3절) — ✕ 로 감추면 이 운동 동안 감추고, 머리줄 '그림' 으로 다시 보인다
             val 그림켬 = d.설정.배너 != "숨김"
-            val 그림숨김 = 그림칸기억.숨긴운동 == S.시작시각
+            val 그림숨김 = 그림칸기억.숨긴운동 == S.루틴id
             Box(Modifier.번호("운1")) {
-                머리줄(S, 지금, 그림보기 = if (그림켬 && 그림숨김) ({ 발자취.적기("그림 칸 다시 보임"); 그림칸기억.숨긴운동 = -1L }) else null) {
+                머리줄(S, 지금, 그림보기 = if (그림켬 && 그림숨김) ({ 발자취.적기("그림 칸 다시 보임"); 그림칸기억.숨긴운동 = "" }) else null) {
                     바꿈 { it.끝냄(System.currentTimeMillis()) }
                 }
             }
             AnimatedVisibility(visible = 그림켬 && !그림숨김) {
-                운동그림칸(상태, S, 지금) { 그림칸기억.숨긴운동 = S.시작시각 }
+                운동그림칸(상태, S, 지금) { 그림칸기억.숨긴운동 = S.루틴id }
             }
             val 스크롤 = rememberScrollState()
             var 화면틀 by remember { mutableStateOf(Rect.Zero) }
@@ -228,6 +228,8 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
                 var 처음 = true
                 var 전목표 = -100000
                 var 같음 = 0
+                // 10-02 감시관 (U5-6 애니메이션 중에 재지 않는다): 쉬기 시작/끝에 위쪽 그림 칸 높이가 바뀌는 동안은 기다렸다가 잰다
+                delay(움직임.배너높이.toLong())
                 while (n < 40 && 조용 < 3) {   // 최대 약 1.6초, 제자리에 세 번 연속 있으면 끝
                     delay(40); n++
                     // 10-01: 전에는 지금 묶음을 접으면 여기서 멈춰, 끝낸 종목(벤치)이 띠 아래에 그대로 보였다.
@@ -625,7 +627,7 @@ private fun 세트줄(
             .clip(RoundedCornerShape(모서리.작게))
             .background(if (지금칸) c.강조옅음 else Color.Transparent)
             // 10-02: 워밍업 세트 줄은 왼쪽에 연두 띠 (20 B-4 · E-1 9번 '연두색') — 볼륨 · 1RM · 플랜 반영에서 빠지는 줄
-            .then(if (v.종류 == com.slayde.hasenheide.data.세트종류.워밍업) Modifier.왼띠(c.좋음) else Modifier)
+            .then(if (v.종류 == com.slayde.hasenheide.data.세트종류.워밍업) Modifier.왼띠(c.워밍업) else Modifier)
             .padding(horizontal = 4.dp, vertical = 4.dp)
             .alpha(if (rec == null && !지금칸 && !쉬는중) 0.55f else 1f),
     ) {

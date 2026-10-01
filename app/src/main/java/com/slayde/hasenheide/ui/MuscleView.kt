@@ -169,7 +169,19 @@ fun 몸그림(단계: Map<String, Double>, 색표이름: String, 자르기: Floa
  */
 object 사진함 {
     private const val 폴더이름 = "photos"
-    fun 파일(ctx: Context, 이름: String): File = File(File(ctx.filesDir, 폴더이름).also { it.mkdirs() }, 이름)
+    // 감시관: 백업 파일의 이름에 '../' 가 있어도 photos 폴더 밖을 가리키지 않게 마지막 이름만 쓴다
+    fun 파일(ctx: Context, 이름: String): File = File(File(ctx.filesDir, 폴더이름).also { it.mkdirs() }, File(이름).name)
+
+    /**
+     * 남은 파일 치우기 — 앱을 켤 때 한 번 (감시관: 지운 종목 · 되돌리기 기다리다 화면을 떠난 경우 · 넣다가 접은 경우 파일이 남았다).
+     * 어느 종목에도 없는 사진 중 2분보다 오래된 것만 지운다 (방금 넣는 중인 파일은 둔다)
+     */
+    fun 정리(ctx: Context, 쓰는: Set<String>) {
+        try {
+            val 기준 = System.currentTimeMillis() - 2 * 60_000L
+            File(ctx.filesDir, 폴더이름).listFiles()?.forEach { f -> if (f.name !in 쓰는 && f.lastModified() < 기준) f.delete() }
+        } catch (_: Exception) { }
+    }
 
     /** 읽은 사진 — 이름@크기 → 그림 (약 24MB) */
     private val 기억 = object : LruCache<String, ImageBitmap>(24 * 1024 * 1024) {
@@ -235,6 +247,8 @@ fun 사진그림(이름: String, 최대: androidx.compose.ui.unit.Dp, modifier: 
     val ctx = LocalContext.current
     val px = with(LocalDensity.current) { 최대.roundToPx() }.coerceAtLeast(1)
     val 그림 by produceState(사진함.기억값(이름, px), 이름, px) {
+        // 감시관: produceState 는 키가 바뀌어도 앞 값을 들고 있다 → 먼저 이 이름의 값으로 바꾸고 없으면 읽는다
+        value = 사진함.기억값(이름, px)
         if (value == null) value = withContext(Dispatchers.IO) { 사진함.읽기(ctx, 이름, px) }
     }
     val b = 그림
@@ -246,8 +260,9 @@ fun 사진그림(이름: String, 최대: androidx.compose.ui.unit.Dp, modifier: 
 
 /** 그림 칸 기억 — 세션 동안만 (파일에 적지 않는다. 앱을 다시 켜면 처음으로) */
 object 그림칸기억 {
-    /** ✕ 로 감춘 운동(시작 시각). 다른 운동을 시작하면 다시 보인다 */
-    var 숨긴운동 by mutableLongStateOf(-1L)
+    /** ✕ 로 감춘 운동(루틴 id). 다른 루틴으로 운동하면 다시 보인다.
+     *  감시관: 시작 시각으로 기억하면 '운동 끝내기 → 돌아가기' 때 시작 시각이 바뀌어 다시 나타났다 */
+    var 숨긴운동 by mutableStateOf("")
     private var 마지막키 = ""
     private var 씨값 = intArrayOf(0, 1)
 
@@ -294,7 +309,7 @@ fun 운동그림칸(상태: 앱상태, S: 운동세션, 지금: Long, on숨김: 
         else -> listOf(사진판(0), 사진판(1))
     }
     val 더미수 = (사진들.size - (if (모 == "사진 2장") 2 else 1)).coerceIn(0, 그림칸.더미최대)
-    Box(Modifier.fillMaxWidth().height(높).번호("운그림").padding(start = 12.dp, end = 12.dp, top = 6.dp)) {
+    Box(Modifier.fillMaxWidth().height(높).번호("운1.1").padding(start = 간격.보통, end = 간격.보통, top = 간격.좁게)) {
         Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(그림칸.사이)) {
             칸들.forEachIndexed { 칸, p0 ->
                 key(칸) {
@@ -308,10 +323,10 @@ fun 운동그림칸(상태: 앱상태, S: 운동세션, 지금: Long, on숨김: 
         val 손 = remember { MutableInteractionSource() }
         val 배 = 눌림배율(손)
         Box(
-            Modifier.align(Alignment.TopEnd).padding(top = 4.dp, end = 4.dp).size(그림칸.닫기).배율(배).clip(CircleShape)
-                .background(c.면.copy(alpha = 0.85f)).눌림손(손) { 발자취.적기("그림 칸 감춤"); on숨김() },
+            Modifier.align(Alignment.TopEnd).padding(top = 간격.아주좁게, end = 간격.아주좁게).size(그림칸.닫기).배율(배).clip(CircleShape)
+                .background(c.면).눌림손(손) { 발자취.적기("그림 칸 감춤"); on숨김() },
             contentAlignment = Alignment.Center,
-        ) { Icon(아이콘.닫기, "그림 감추기", Modifier.size(12.dp), tint = c.흐림) }
+        ) { Icon(아이콘.닫기, "그림 감추기", Modifier.size(16.dp), tint = c.흐림) }
     }
 }
 
@@ -348,20 +363,17 @@ private fun 그림판(p: 판, 단계: Map<String, Double>, 색표이름: String,
     val 모양 = RoundedCornerShape(그림칸.모서리)
     Box(Modifier.fillMaxSize().clip(모양).background(c.면).border(1.dp, c.선, 모양)) {
         when (p.종류) {
-            "전신" -> 몸그림(단계, 색표이름, null, Modifier.fillMaxSize().padding(4.dp))
-            "확대" -> 몸그림(단계, 색표이름, remember(p.종목, 부위) { 근육계산.확대상자(p.종목, 부위) }, Modifier.fillMaxSize().padding(4.dp))
+            "전신" -> 몸그림(단계, 색표이름, null, Modifier.fillMaxSize().padding(간격.아주좁게))
+            "확대" -> 몸그림(단계, 색표이름, remember(p.종목, 부위) { 근육계산.확대상자(p.종목, 부위) }, Modifier.fillMaxSize().padding(간격.아주좁게))
             "사진" -> 사진그림(p.사진 ?: "", 그림칸.쉬는높이 * 2, Modifier.fillMaxSize(), "${p.종목} 사진")
-            else -> Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
-                글("사진 없음", 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)
-                글("종목 탭에서 넣기", 크기값 = 크기.아주작게, 색 = c.옅음, 가운데 = true)
-            }
+            else -> 글("사진 없음", Modifier.align(Alignment.Center), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)   // 설명 글은 한 줄
         }
-        // 이름 — 지금 종목 이름은 자르지 않고 글자를 줄인다 (맞춤글)
+        // 이름 — 지금 종목 이름은 잘리면 안 된다 (U5-8): 두 줄까지 쓴다
         val 제목 = when (p.종류) { "전신" -> "지금 몸"; "사진" -> "${p.번호 + 1}/${p.수}"; else -> p.종목 }
         Box(
-            Modifier.align(Alignment.BottomStart).padding(start = 6.dp, bottom = 4.dp, end = 20.dp)
-                .clip(RoundedCornerShape(4.dp)).background(c.면.copy(alpha = 0.82f)).padding(horizontal = 4.dp),
-        ) { 맞춤글(제목, 최대 = 크기.아주작게, 색 = c.흐림) }
+            Modifier.align(Alignment.BottomStart).padding(start = 간격.좁게, bottom = 간격.아주좁게, end = 간격.아주넓게)
+                .clip(RoundedCornerShape(그림칸.모서리)).background(c.면).padding(horizontal = 간격.아주좁게),
+        ) { 글(제목, 크기값 = 크기.아주작게, 색 = c.흐림, 줄 = 2) }
         if (더미 > 0) 사진더미(더미)
     }
 }
@@ -371,10 +383,10 @@ private fun 그림판(p: 판, 단계: Map<String, Double>, 색표이름: String,
 private fun BoxScope.사진더미(n: Int) {
     val c = Local색.current
     Row(
-        Modifier.align(Alignment.CenterEnd).fillMaxHeight().padding(end = 2.dp, top = 8.dp, bottom = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(1.dp),
+        Modifier.align(Alignment.CenterEnd).fillMaxHeight().padding(end = 그림칸.더미폭, top = 간격.좁게, bottom = 간격.좁게),
+        horizontalArrangement = Arrangement.spacedBy(그림칸.더미사이),
     ) {
-        repeat(n) { Box(Modifier.width(그림칸.더미폭).fillMaxHeight().clip(RoundedCornerShape(1.dp)).background(c.속선.copy(alpha = 0.75f))) }
+        repeat(n) { Box(Modifier.width(그림칸.더미폭).fillMaxHeight().background(c.속선)) }
     }
 }
 
@@ -384,7 +396,7 @@ private fun BoxScope.사진더미(n: Int) {
 @Composable
 fun 작은사진(e: 종목) {
     val c = Local색.current
-    val 모양 = RoundedCornerShape(6.dp)
+    val 모양 = RoundedCornerShape(그림칸.모서리)
     val 첫 = e.사진.firstOrNull()
     if (첫 != null) 사진그림(첫, 그림칸.작은사진 * 2, Modifier.size(그림칸.작은사진).clip(모양))
     else Box(Modifier.size(그림칸.작은사진).clip(모양).background(c.면2).border(1.dp, c.속선, 모양))
@@ -412,8 +424,9 @@ fun 종목사진줄(상태: 앱상태, e: 종목) {
             넣는중 = false
         }
     }
-    val 모양 = RoundedCornerShape(10.dp)
-    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+    val 모양 = RoundedCornerShape(그림칸.모서리)
+    val 넘김 = rememberScrollState()
+    Row(Modifier.fillMaxWidth().오른끝흐림(넘김).horizontalScroll(넘김), horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
         if (남은칸 > 0) {
             val 손 = remember { MutableInteractionSource() }
             val 배 = 눌림배율(손)
@@ -424,40 +437,36 @@ fun 종목사진줄(상태: 앱상태, e: 종목) {
                     },
                 horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center,
             ) {
-                Icon(아이콘.더하기, null, Modifier.size(20.dp), tint = c.강조)
+                Icon(아이콘.더하기, null, Modifier.size(18.dp), tint = c.강조)
                 글(if (넣는중) "넣는 중" else "사진 추가", 크기값 = 크기.아주작게, 색 = c.흐림)
             }
         }
         e.사진.forEach { 이름 ->
             key(이름) {
                 Box(
-                    Modifier.size(그림칸.사진).clip(모양).눌림길게(
-                        onClick = { if (지울것 == 이름) 사진지우기(상태, ctx, 일꾼, e.이름, 이름) else 지울것 = null },
-                        onLongClick = { 지울것 = 이름 },
-                    ),
+                    // 감시관: 꾹 누르기는 어디서나 '집기'(U5-1) → 지우기는 누르면 '지우기' 표시 · 한 번 더 누르면 지움
+                    Modifier.size(그림칸.사진).clip(모양).눌림 {
+                        if (지울것 == 이름) { 사진지우기(상태, e.이름, 이름); 지울것 = null } else 지울것 = 이름
+                    },
                 ) {
                     사진그림(이름, 그림칸.사진 * 2, Modifier.fillMaxSize(), "${e.이름} 사진")
                     val 보임 by animateFloatAsState(if (지울것 == 이름) 1f else 0f, tween(움직임.색), label = "지우기표")
                     if (보임 > 0f) Box(
-                        Modifier.fillMaxSize().graphicsLayer { alpha = 보임 }.background(Color.Black.copy(alpha = 0.62f)),
+                        Modifier.fillMaxSize().graphicsLayer { alpha = 보임 }.background(c.나쁨),
                         contentAlignment = Alignment.Center,
-                    ) { 글("지우기", 크기값 = 크기.작게, 색 = Color.White, 굵기 = FontWeight.Bold) }
+                    ) { 글("지우기", 크기값 = 크기.작게, 색 = c.면, 굵기 = FontWeight.Bold) }
                 }
             }
         }
     }
     // 근육 한 줄 — 넘치면 자르지 않고 글자를 줄인다
-    맞춤글(상태.d.종목근육글(e.이름), Modifier.fillMaxWidth().padding(top = 6.dp), 최대 = 크기.작게, 색 = c.흐림)
+    맞춤글(상태.d.종목근육글(e.이름), Modifier.fillMaxWidth().padding(top = 간격.좁게), 최대 = 크기.작게, 색 = c.흐림)
 }
 
-/** 사진 지우기 — 목록에서 빼고(5초 되돌리기), 되돌리지 않으면 파일도 지운다 */
-private fun 사진지우기(상태: 앱상태, ctx: Context, 일꾼: kotlinx.coroutines.CoroutineScope, 종목이름: String, 이름: String) {
+/** 사진 지우기 — 목록에서 빼고 아래띠로 되돌린다 (U5-4). 파일은 다음에 앱을 켤 때 `사진함.정리` 가 치운다 */
+private fun 사진지우기(상태: 앱상태, 종목이름: String, 이름: String) {
     발자취.적기("$종목이름 사진 지움")
     상태.지우고알림("$종목이름 사진을 지웠습니다") { d ->
         d.copy(종목표 = d.종목표.map { if (it.이름 == 종목이름) it.copy(사진 = it.사진 - 이름) else it })
-    }
-    일꾼.launch {
-        delay(6_000)
-        if (상태.d.종목표.none { 이름 in it.사진 }) withContext(Dispatchers.IO) { 사진함.지우기(ctx, 이름) }
     }
 }
