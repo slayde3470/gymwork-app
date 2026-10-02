@@ -1,0 +1,192 @@
+<title>업적 편집판</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{--바탕:#F8FAFB;--면:#FFFFFF;--면2:#F0F4F8;--선:#D3DFE9;--속선:#B5C9DA;--글:#0B1620;--흐림:#35495B;--옅음:#5E6B77;--강조:#084B83;--강조글:#FFFFFF;--강조옅음:#E1E9F0;--좋음:#3F7F1A;--나쁨:#B42318;
+--초보:#94612A;--중급:#5A6E82;--고급:#8F6A00;--미친자:#7B2CBF;--유머:#0F7B6C;--숨은:#3E3A78;
+--본문:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;--고정폭:"IBM Plex Mono",ui-monospace,Menlo,monospace;}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--바탕:#07121E;--면:#111F2E;--면2:#172738;--선:#253A50;--속선:#37526E;--글:#E5F0FA;--흐림:#C5D1DB;--옅음:#9BA7B3;--강조:#7FB3E6;--강조글:#04213D;--강조옅음:#1F3246;--좋음:#9BE06B;--나쁨:#FF8A80;--초보:#D9A066;--중급:#A9BACB;--고급:#E2BE55;--미친자:#C79BF2;--유머:#5CC9B7;--숨은:#AFA9F0;color-scheme:dark}}
+:root[data-theme="dark"]{--바탕:#07121E;--면:#111F2E;--면2:#172738;--선:#253A50;--속선:#37526E;--글:#E5F0FA;--흐림:#C5D1DB;--옅음:#9BA7B3;--강조:#7FB3E6;--강조글:#04213D;--강조옅음:#1F3246;--좋음:#9BE06B;--나쁨:#FF8A80;--초보:#D9A066;--중급:#A9BACB;--고급:#E2BE55;--미친자:#C79BF2;--유머:#5CC9B7;--숨은:#AFA9F0;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--바탕);color:var(--글);font-family:var(--본문);font-size:15px;line-height:1.45;letter-spacing:-.01em;padding:16px 12px 24px}
+.틀{max-width:1080px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+h1{margin:0;font-size:22px;letter-spacing:-.02em}
+.윗{font-size:11px;color:var(--옅음);font-weight:700;letter-spacing:.04em}
+.안내{margin:0;font-size:13px;color:var(--흐림);max-width:72ch}
+.상자{font-size:13px;color:var(--흐림);background:var(--면);border:1px solid var(--선);border-radius:16px;padding:12px 14px}
+.상자 p{margin:0 0 4px}.상자 p:last-child{margin:0}
+.조작{position:sticky;top:0;z-index:5;background:var(--바탕);padding:8px 0;display:flex;flex-wrap:wrap;gap:8px;align-items:center;border-bottom:1px solid var(--선)}
+.고름{display:inline-flex;border:1px solid var(--속선);border-radius:8px;overflow:hidden}
+.고름 button{font:inherit;font-size:13px;height:40px;padding:0 12px;border:0;background:var(--면);color:var(--흐림);cursor:pointer}
+.고름 button[aria-pressed="true"]{background:var(--강조);color:var(--강조글);font-weight:700}
+input[type=search]{flex:1 1 180px;min-width:0;font:inherit;font-size:15px;height:40px;padding:0 12px;border:1px solid var(--속선);border-radius:8px;background:var(--면);color:var(--글)}
+.상태{font-size:13px;color:var(--흐림);margin-left:auto;white-space:nowrap}.상태.저장중{color:var(--고급)}.상태.오류{color:var(--나쁨)}.상태.됨{color:var(--좋음)}
+nav{display:flex;flex-wrap:wrap;gap:4px}
+nav a{font-size:11px;color:var(--흐림);text-decoration:none;border:1px solid var(--선);border-radius:8px;padding:4px 8px;background:var(--면)}nav a b{color:var(--글)}
+.묶음{display:flex;flex-direction:column;gap:8px;scroll-margin-top:72px}
+h2{margin:0;font-size:18px;letter-spacing:-.02em;display:flex;align-items:baseline;gap:8px}
+.셈{font-size:11px;font-weight:400;color:var(--옅음)}
+.분류메모{display:flex;flex-direction:column;gap:4px;background:var(--면2);border-radius:16px;padding:12px 14px}
+.분류메모 label{font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--옅음)}
+.판{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:8px}
+.카드{background:var(--면);border:1px solid var(--선);border-left:2px solid var(--등급색,var(--속선));border-radius:16px;padding:14px;margin:0;display:flex;flex-direction:column;gap:4px}
+.카드.숨은{border-left-color:var(--숨은)}
+.메타{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:11px}
+.번{font-family:var(--고정폭);font-weight:500;color:var(--글)}
+.칭번{font-family:var(--고정폭);color:var(--옅음)}
+.메타 select{font:inherit;font-size:11px;font-weight:700;height:28px;padding:0 4px;border:1px solid var(--속선);border-radius:8px;background:var(--면);color:var(--등급색,var(--흐림))}
+.숨김칸{display:inline-flex;align-items:center;gap:4px;height:28px;padding:0 8px;border:1px solid var(--속선);border-radius:8px;color:var(--흐림);cursor:pointer;font-weight:700}
+.숨김칸 input{accent-color:var(--숨은);width:16px;height:16px;margin:0}
+.카드.숨은 .숨김칸{color:var(--숨은);border-color:var(--숨은)}
+.이름표{font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--옅음);margin-top:8px}
+.칸{width:100%;font:inherit;color:var(--글);background:transparent;border:1px solid transparent;border-radius:8px;padding:4px 8px;margin:0 -8px;width:calc(100% + 16px);resize:vertical}
+.칸:hover{border-color:var(--선)}
+.칸:focus{outline:none;border-color:var(--강조);background:var(--면)}
+.칭호칸{font-size:15px;font-weight:700;letter-spacing:-.02em}
+.이름칸{font-size:13px;color:var(--흐림)}
+.조건칸{font-size:13px;color:var(--흐림)}
+.설명칸{font-size:13px;color:var(--흐림)}
+.플칸{font-size:11px;font-style:italic;color:var(--옅음)}
+.대기칸{font-size:13px;color:var(--흐림);background:var(--면2)}
+.플줄{display:flex;flex-direction:column;gap:4px}
+.플줄 select{font:inherit;font-size:11px;height:28px;border:1px solid var(--속선);border-radius:8px;background:var(--면);color:var(--흐림);max-width:100%}
+.없음{font-size:11px;color:var(--숨은);font-weight:700;margin-top:8px}
+.바뀐{border-color:var(--좋음)!important}
+.등급-초보{--등급색:var(--초보)}.등급-중급{--등급색:var(--중급)}.등급-고급{--등급색:var(--고급)}
+.등급-미친자{--등급색:var(--미친자)}.등급-유머{--등급색:var(--유머)}
+.이야기{list-style:none;margin:0;padding:0;background:var(--면);border:1px solid var(--선);border-radius:16px}
+.이야기 li{display:flex;gap:12px;padding:12px 14px;border-bottom:1px solid var(--선)}.이야기 li:last-child{border-bottom:0}
+.이야기 p{margin:0}.이플{font-size:13px;font-style:italic}.이곳{font-size:11px;color:var(--옅음);margin-top:4px}.이곳.남음{color:var(--고급);font-weight:700}
+.빈화면{padding:24px;text-align:center;color:var(--옅음);font-size:13px}
+[hidden]{display:none!important}
+button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:2px solid var(--강조);outline-offset:2px}
+@media (max-width:640px){h1{font-size:18px}.판{grid-template-columns:1fr}}
+</style>
+<div class="틀">
+<header style="display:flex;flex-direction:column;gap:8px">
+<div class="윗">하젠하이데 · 업적 편집판</div>
+<h1>업적 107개 — 고치면 바로 저장됩니다</h1>
+<p class="안내">글자를 누르면 고칠 수 있습니다. 칸을 벗어나면 저장됩니다. <b>숨은</b> 칸을 켜면 그 업적의 플레이버가 빠져 '남은 조각'으로 돌아가고, 끄면 남은 조각 하나가 붙습니다. 분류마다 맨 위에 메모 칸이 있습니다.</p>
+</header>
+<div class="상자" id="요약"><p>불러오는 중…</p></div>
+<div class="조작">
+<div class="고름" role="group" aria-label="보기"><button type="button" data-보기="업적" aria-pressed="true">업적</button><button type="button" data-보기="이야기" aria-pressed="false">조각</button></div>
+<div class="고름" role="group" aria-label="거르기"><button type="button" data-거름="전체" aria-pressed="true">전체</button><button type="button" data-거름="일반" aria-pressed="false">일반</button><button type="button" data-거름="숨은" aria-pressed="false">숨은</button></div>
+<input id="찾기" type="search" placeholder="번호 · 칭호 · 낱말로 찾기" autocomplete="off">
+<span class="상태" id="상태">연결 중</span>
+</div>
+<div id="업적보기"><nav id="분류줄"></nav><div id="묶음들" style="display:flex;flex-direction:column;gap:24px;margin-top:16px"></div></div>
+<div id="이야기보기" hidden><ol class="이야기" id="조각줄"></ol></div>
+</div>
+<script>
+"use strict";
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const 등급목록=["초보","중급","고급","미친자","유머","(히든 · 등급 없음)"];
+const 상태={업적:new Map(),조각:new Map(),메모:new Map(),받음:{업적:false,조각:false,메모:false},그림:false,보기:"업적",거름:"전체",쓰기:true};
+let db=null, 대기중=0;
+const num=n=>{const [a,b]=String(n).split("-").map(Number);return a*1000+b;};
+const 짧은=c=>String(c||"").split(" (")[0];
+function 상태표시(t,cls){const el=$("#상태");el.textContent=t;el.className="상태 "+(cls||"");}
+function el(tag,attrs,...kids){const e=document.createElement(tag);for(const [k,v] of Object.entries(attrs||{})){if(k==="class")e.className=v;else if(k.startsWith("data-"))e.setAttribute(k,v);else if(k in e)e[k]=v;else e.setAttribute(k,v);}for(const k of kids){if(k==null)continue;e.append(k.nodeType?k:document.createTextNode(k));}return e;}
+function 쓰는조각(){const s=new Set();for(const a of 상태.업적.values()){if(!a.숨김&&a.사실번호)s.add(a.사실번호);}return s;}
+function 남은조각(){const 씀=쓰는조각();return [...상태.조각.entries()].filter(([id])=>!씀.has(id)).sort((a,b)=>a[0]<b[0]?-1:1);}
+async function 쓰기(path,body,merge){
+  if(!db||!상태.쓰기)return;
+  대기중++;상태표시("저장 중…","저장중");
+  try{ merge? await db.doc(path).update(body) : await db.doc(path).set(body); 대기중--; if(!대기중)상태표시("저장됨","됨"); return true; }
+  catch(e){ 대기중--; if(e&&e.code==="invalid_argument"){상태.쓰기=false;상태표시("읽기만 가능합니다","오류");$$(".칸,select,input[type=checkbox]").forEach(x=>x.disabled=true);} else 상태표시("저장 못 함 ("+(e&&e.code||"오류")+") — 다시 해 주세요","오류"); return false; }
+}
+function 표시(e){e.classList.add("바뀐");setTimeout(()=>e.classList.remove("바뀐"),900);}
+function 글칸(id,field,cls,multi,label){
+  const e=multi?el("textarea",{class:"칸 "+cls,rows:2,"data-id":id,"data-field":field,"aria-label":label}):el("input",{class:"칸 "+cls,type:"text","data-id":id,"data-field":field,"aria-label":label});
+  e.addEventListener("change",async()=>{const v=e.value.trim();const a=상태.업적.get(id);if(!a||(a[field]||"")===v)return;if(await 쓰기("achievements/"+id,{[field]:v,고친때:new Date().toISOString()},true))표시(e);});
+  return e;
+}
+function 카드(a){
+  const id=a.번호;
+  const 등급=el("select",{"data-id":id,"data-field":"등급","aria-label":"등급"},...등급목록.map(g=>el("option",{value:g},g==="(히든 · 등급 없음)"?"등급 없음":g)));
+  등급.addEventListener("change",async()=>{await 쓰기("achievements/"+id,{등급:등급.value,고친때:new Date().toISOString()},true);});
+  const 숨=el("input",{type:"checkbox","data-id":id,"data-field":"숨김"});
+  숨.addEventListener("change",()=>숨김바꿈(id,숨.checked));
+  const 조각고름=el("select",{"data-id":id,"aria-label":"남은 조각에서 바꾸기"});
+  조각고름.addEventListener("change",async()=>{const fid=조각고름.value;if(!fid)return;const f=상태.조각.get(fid);if(!f)return;await 쓰기("achievements/"+id,{플레이버:f.text,사실번호:fid,고친때:new Date().toISOString()},true);조각고름.value="";});
+  const c=el("article",{class:"카드","data-id":id},
+    el("div",{class:"메타"},el("span",{class:"번"},id),el("span",{class:"칭번"},"칭호 "+(a.칭호번호||"")),등급,el("label",{class:"숨김칸"},숨,"숨은")),
+    글칸(id,"칭호","칭호칸",false,"칭호"),
+    el("div",{class:"이름표"},"이름 · 조건"),글칸(id,"이름","이름칸",false,"이름"),글칸(id,"조건","조건칸",true,"조건"),
+    el("div",{class:"이름표"},"설명"),글칸(id,"설명","설명칸",true,"설명"),
+    el("div",{class:"플줄"},el("div",{class:"이름표"},"플레이버"),글칸(id,"플레이버","플칸",true,"플레이버"),조각고름),
+    el("div",{class:"없음"},"숨은 업적 — 플레이버 없음"),
+    el("div",{class:"이름표"},"대기"),글칸(id,"대기","대기칸",true,"대기 — 빼 둔 글"));
+  return c;
+}
+async function 숨김바꿈(id,켬){
+  const 몸={숨김:켬,고친때:new Date().toISOString()};
+  if(켬){몸.플레이버="";몸.사실번호="";}
+  else{const 남=남은조각();if(남.length){const [fid,f]=남[Math.floor(Math.random()*남.length)];몸.플레이버=f.text;몸.사실번호=fid;}}
+  await 쓰기("achievements/"+id,몸,true);
+}
+function 칸채움(c,a){
+  c.classList.toggle("숨은",!!a.숨김);
+  c.className=c.className.replace(/등급-\S+/g,"").trim()+" 등급-"+(a.등급||"");
+  for(const e of c.querySelectorAll("[data-field]")){if(e===document.activeElement)continue;const f=e.dataset.field;
+    if(e.type==="checkbox")e.checked=!!a[f]; else { const v=a[f]??""; if(e.value!==v)e.value=v; }}
+  c.querySelector(".플줄").hidden=!!a.숨김; c.querySelector(".없음").hidden=!a.숨김;
+  const g=c.querySelector('select[data-field="등급"]'); g.style.setProperty("--등급색",`var(--${a.등급||"x"})`);
+}
+function 조각고름채움(){
+  const 남=남은조각();
+  for(const s of $$('.플줄 select')){ s.replaceChildren(el("option",{value:""},`남은 조각에서 바꾸기 (${남.length}개)`),...남.map(([fid,f])=>el("option",{value:fid},fid+" · "+f.text.slice(0,28)+(f.text.length>28?"…":"")))); }
+}
+function 처음그림(){
+  const 목록=[...상태.업적.values()].sort((a,b)=>num(a.번호)-num(b.번호));
+  if(!목록.length){$("#묶음들").replaceChildren(el("div",{class:"빈화면"},"아직 데이터가 없습니다. Claude 가 채워 넣을 때까지 기다려 주세요."));return;}
+  const 순서=[];for(const a of 목록)if(!순서.includes(a.분류))순서.push(a.분류);
+  const nav=[],secs=[];
+  순서.forEach((cat,i)=>{const cid="c"+String(i+1).padStart(2,"0");const rs=목록.filter(a=>a.분류===cat);
+    nav.push(el("a",{href:"#"+cid},짧은(cat)+" ",el("b",{},String(rs.length))));
+    const 메모칸=el("textarea",{class:"칸 설명칸",rows:2,"data-memo":cid,placeholder:"이 분류에 대한 메모 (예: 조건 기준을 모두 바꾸자)","aria-label":짧은(cat)+" 메모"});
+    메모칸.addEventListener("change",async()=>{const v=메모칸.value;const m=상태.메모.get(cid);if((m&&m.메모||"")===v)return;if(await 쓰기("memos/"+cid,{분류:cat,메모:v,고친때:new Date().toISOString()},false))표시(메모칸);});
+    const sec=el("section",{class:"묶음",id:cid},el("h2",{},짧은(cat),el("span",{class:"셈"},rs.length+"개")),el("div",{class:"분류메모"},el("label",{},"분류 메모"),메모칸),el("div",{class:"판"},...rs.map(카드)));
+    secs.push(sec);});
+  $("#분류줄").replaceChildren(...nav);$("#묶음들").replaceChildren(...secs);상태.그림=true;
+}
+function 다시그림(){
+  if(!상태.그림)처음그림(); if(!상태.그림)return;
+  for(const a of 상태.업적.values()){const c=document.querySelector(`.카드[data-id="${a.번호}"]`);if(c)칸채움(c,a);}
+  for(const t of $$("[data-memo]")){if(t===document.activeElement)continue;const m=상태.메모.get(t.dataset.memo);const v=m?m.메모||"":"";if(t.value!==v)t.value=v;}
+  조각고름채움(); 조각목록(); 요약(); 거르기();
+  if(!대기중) 상태표시(상태.쓰기?(상태.업적.size?"저장됨":"데이터 없음"):"읽기만 가능합니다", 상태.쓰기&&상태.업적.size?"됨":"오류");
+}
+function 조각목록(){
+  const 누가={};for(const a of 상태.업적.values())if(!a.숨김&&a.사실번호)누가[a.사실번호]=a;
+  const ids=[...상태.조각.keys()].sort();
+  $("#조각줄").replaceChildren(...ids.map(fid=>{const a=누가[fid];return el("li",{},el("span",{class:"번"},fid),el("div",{},el("p",{class:"이플"},상태.조각.get(fid).text),el("p",{class:"이곳"+(a?"":" 남음")},a?("→ "+a.번호+" "+a.칭호):"남은 조각")));}));
+}
+function 요약(){
+  const all=[...상태.업적.values()];const 숨=all.filter(a=>a.숨김).length;const 남=남은조각().length;const 메모수=[...상태.메모.values()].filter(m=>(m.메모||"").trim()).length;
+  const 대기수=all.filter(a=>(a.대기||"").trim()).length;
+  $("#요약").replaceChildren(el("p",{},`업적 ${all.length}개 · 일반 ${all.length-숨} · 숨은 ${숨} — 플레이버가 붙은 업적 ${all.length-숨}개 · 남은 조각 ${남}개 · 대기 칸이 찬 업적 ${대기수}개 · 분류 메모 ${메모수}개`));
+}
+function 거르기(){
+  const q=$("#찾기").value.trim().toLowerCase();
+  if(상태.보기==="업적"){for(const c of $$(".카드")){const a=상태.업적.get(c.dataset.id);if(!a)continue;const 글=[a.번호,a.칭호,a.이름,a.조건,a.설명,a.플레이버,a.대기].join(" ").toLowerCase();
+      const ok=(!q||글.includes(q))&&(상태.거름==="전체"||(상태.거름==="숨은")===!!a.숨김);c.hidden=!ok;}
+    for(const s of $$(".묶음"))s.hidden=!s.querySelector(".카드:not([hidden])");}
+  else for(const l of $$("#조각줄 li"))l.hidden=!!q&&!l.textContent.toLowerCase().includes(q);
+}
+for(const b of $$("[data-보기]"))b.addEventListener("click",()=>{상태.보기=b.dataset.보기;for(const x of $$("[data-보기]"))x.setAttribute("aria-pressed",x===b);$("#업적보기").hidden=상태.보기!=="업적";$("#이야기보기").hidden=상태.보기!=="이야기";거르기();});
+for(const b of $$("[data-거름]"))b.addEventListener("click",()=>{상태.거름=b.dataset.거름;for(const x of $$("[data-거름]"))x.setAttribute("aria-pressed",x===b);거르기();});
+$("#찾기").addEventListener("input",거르기);
+function 받기(이름,snap,맵,키){맵.clear();for(const d of snap.docs){const v=d.data();if(v)맵.set(키?v[키]||d.id:d.id,{...v});}상태.받음[이름]=true;if(상태.받음.업적&&상태.받음.조각&&상태.받음.메모)다시그림();}
+(async()=>{
+  db=await claude.use("db");
+  if(!db){상태표시("저장소를 열 수 없습니다","오류");$("#요약").replaceChildren(el("p",{},"이 화면에서는 저장소가 열리지 않습니다. claude.ai 에서 이 아티팩트를 열어 주세요."));return;}
+  상태표시("불러오는 중…");
+  try{const user=await claude.use("user");const can=user?await user.can("data.write"):null;if(can===false){상태.쓰기=false;}}catch(e){}
+  const 끊김=e=>상태표시("연결이 끊겼습니다 ("+(e&&e.code||"오류")+") — 새로 고쳐 주세요","오류");
+  db.collection("achievements").onSnapshot(s=>받기("업적",s,상태.업적,"번호"),끊김);
+  db.collection("fragments").onSnapshot(s=>받기("조각",s,상태.조각,null),끊김);
+  db.collection("memos").onSnapshot(s=>받기("메모",s,상태.메모,null),끊김);
+})();
+</script>
