@@ -8,7 +8,7 @@
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--바탕:#07121E;--면:#111F2E;--면2:#172738;--선:#253A50;--속선:#37526E;--글:#E5F0FA;--흐림:#C5D1DB;--옅음:#9BA7B3;--강조:#7FB3E6;--강조글:#04213D;--강조옅음:#1F3246;--좋음:#9BE06B;--나쁨:#FF8A80;--초보:#D9A066;--중급:#A9BACB;--고급:#E2BE55;--미친자:#C79BF2;--유머:#5CC9B7;--숨은:#AFA9F0;color-scheme:dark}}
 :root[data-theme="dark"]{--바탕:#07121E;--면:#111F2E;--면2:#172738;--선:#253A50;--속선:#37526E;--글:#E5F0FA;--흐림:#C5D1DB;--옅음:#9BA7B3;--강조:#7FB3E6;--강조글:#04213D;--강조옅음:#1F3246;--좋음:#9BE06B;--나쁨:#FF8A80;--초보:#D9A066;--중급:#A9BACB;--고급:#E2BE55;--미친자:#C79BF2;--유머:#5CC9B7;--숨은:#AFA9F0;color-scheme:dark}
 *{box-sizing:border-box}
-body{margin:0;background:var(--바탕);color:var(--글);font-family:var(--본문);font-size:15px;line-height:1.45;letter-spacing:-.01em;padding:16px 12px 24px}
+body{margin:0;background:var(--바탕);color:var(--글);font-family:var(--본문);font-size:15px;line-height:1.45;letter-spacing:-.01em;padding:16px 12px 80px}
 .틀{max-width:1080px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
 h1{margin:0;font-size:22px;letter-spacing:-.02em}
 .윗{font-size:11px;color:var(--옅음);font-weight:700;letter-spacing:.04em}
@@ -57,6 +57,16 @@ h2{margin:0;font-size:18px;letter-spacing:-.02em;display:flex;align-items:baseli
 .이야기{list-style:none;margin:0;padding:0;background:var(--면);border:1px solid var(--선);border-radius:16px}
 .이야기 li{display:flex;gap:12px;padding:12px 14px;border-bottom:1px solid var(--선)}.이야기 li:last-child{border-bottom:0}
 .이야기 p{margin:0}.이플{font-size:13px;font-style:italic}.이곳{font-size:11px;color:var(--옅음);margin-top:4px}.이곳.남음{color:var(--고급);font-weight:700}
+.더함{display:flex;gap:8px;flex-wrap:wrap}
+.단추{font:inherit;font-size:13px;height:32px;padding:0 12px;border:1px solid var(--강조);border-radius:8px;background:var(--면);color:var(--강조);cursor:pointer;font-weight:700}
+.단추:disabled{opacity:.5;cursor:default}
+.지움{font:inherit;font-size:11px;font-weight:700;height:28px;padding:0 8px;border:1px solid var(--나쁨);border-radius:8px;background:var(--면);color:var(--나쁨);cursor:pointer;margin-left:auto}
+.새표{font-size:11px;font-weight:700;color:var(--좋음)}
+.더하기줄{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start;background:var(--면);border:1px dashed var(--속선);border-radius:16px;padding:12px 14px}
+.더하기줄 .칸{flex:1 1 220px;margin:0;width:auto;border-color:var(--선)}
+.빈판{font-size:13px;color:var(--옅음);padding:12px 0}
+.아래띠{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:20;display:flex;gap:12px;align-items:center;background:var(--글);color:var(--바탕);border-radius:16px;padding:8px 8px 8px 14px;font-size:13px;max-width:calc(100% - 24px)}
+.아래띠 button{font:inherit;font-size:13px;font-weight:700;height:32px;padding:0 12px;border:0;border-radius:8px;background:var(--바탕);color:var(--글);cursor:pointer}
 .빈화면{padding:24px;text-align:center;color:var(--옅음);font-size:13px}
 [hidden]{display:none!important}
 button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:2px solid var(--강조);outline-offset:2px}
@@ -66,7 +76,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{ou
 <header style="display:flex;flex-direction:column;gap:8px">
 <div class="윗">하젠하이데 · 업적 편집판</div>
 <h1>업적 107개 — 고치면 바로 저장됩니다</h1>
-<p class="안내">글자를 누르면 고칠 수 있습니다. 칸을 벗어나면 저장됩니다. <b>숨은</b> 칸을 켜면 그 업적의 플레이버가 빠져 '남은 조각'으로 돌아가고, 끄면 남은 조각 하나가 붙습니다. 분류마다 맨 위에 메모 칸이 있습니다.</p>
+<p class="안내">글자를 누르면 고칠 수 있습니다. 칸을 벗어나면 저장됩니다. <b>숨은</b> 칸을 켜면 그 업적의 플레이버가 빠져 '남은 조각'으로 돌아가고, 끄면 남은 조각 하나가 붙습니다. 분류마다 맨 위에 메모 칸이 있습니다. 분류마다 <b>+ 업적</b> 단추로 새 업적을, 맨 아래에서 <b>새 분류</b>를, '조각' 보기에서 <b>새 조각</b>을 더할 수 있습니다. 번호는 만들 때 정해지고 숨은 여부를 바꿔도 그대로입니다 — 앱에 옮길 때 다시 맞춥니다.</p>
 </header>
 <div class="상자" id="요약"><p>불러오는 중…</p></div>
 <div class="조작">
@@ -76,13 +86,14 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{ou
 <span class="상태" id="상태">연결 중</span>
 </div>
 <div id="업적보기"><nav id="분류줄"></nav><div id="묶음들" style="display:flex;flex-direction:column;gap:24px;margin-top:16px"></div></div>
-<div id="이야기보기" hidden><ol class="이야기" id="조각줄"></ol></div>
+<div id="이야기보기" hidden><div class="더하기줄" style="margin-bottom:16px"><textarea class="칸 플칸" id="새조각글" rows="2" placeholder="새 플레이버 조각 (1~2문장 · ~다 · 이름 없이)" aria-label="새 조각"></textarea><button type="button" class="단추" id="조각더함">조각 더하기</button></div><ol class="이야기" id="조각줄"></ol></div>
+<div class="아래띠" id="아래띠" hidden role="status"><span id="아래띠글"></span><button type="button" id="되돌림">되돌리기</button></div>
 </div>
 <script>
 "use strict";
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const 등급목록=["초보","중급","고급","미친자","유머","(히든 · 등급 없음)"];
-const 상태={업적:new Map(),조각:new Map(),메모:new Map(),받음:{업적:false,조각:false,메모:false},그림:false,보기:"업적",거름:"전체",쓰기:true};
+const 상태={업적:new Map(),조각:new Map(),메모:new Map(),받음:{업적:false,조각:false,메모:false},그림:false,보기:"업적",거름:"전체",쓰기:true,서명:""};
 let db=null, 대기중=0;
 const num=n=>{const [a,b]=String(n).split("-").map(Number);return a*1000+b;};
 const 짧은=c=>String(c||"").split(" (")[0];
@@ -94,8 +105,20 @@ async function 쓰기(path,body,merge){
   if(!db||!상태.쓰기)return;
   대기중++;상태표시("저장 중…","저장중");
   try{ merge? await db.doc(path).update(body) : await db.doc(path).set(body); 대기중--; if(!대기중)상태표시("저장됨","됨"); return true; }
-  catch(e){ 대기중--; if(e&&e.code==="invalid_argument"){상태.쓰기=false;상태표시("읽기만 가능합니다","오류");$$(".칸,select,input[type=checkbox]").forEach(x=>x.disabled=true);} else 상태표시("저장 못 함 ("+(e&&e.code||"오류")+") — 다시 해 주세요","오류"); return false; }
+  catch(e){ 대기중--; if(e&&e.code==="invalid_argument"){상태.쓰기=false;상태표시("읽기만 가능합니다","오류");$$(".칸,select,input[type=checkbox],.단추,.지움").forEach(x=>x.disabled=true);} else 상태표시("저장 못 함 ("+(e&&e.code||"오류")+") — 다시 해 주세요","오류"); return false; }
 }
+function 다음번호(숨){const p=숨?2:1;let m=0;for(const k of 상태.업적.keys()){const [a,b]=k.split("-").map(Number);if(a===p&&b>m)m=b;}return {번호:p+"-"+(m+1),칭호번호:(숨?4:3)+"-"+(m+1)};}
+function 다음조각(){let m=0;for(const k of 상태.조각.keys()){if(k[0]!=="N")continue;const n=Number(k.slice(1));if(n>m)m=n;}return "N"+String(m+1).padStart(3,"0");}
+function 다음분류(){let m=0;for(const k of 상태.메모.keys()){const n=Number(k.slice(1));if(n>m)m=n;}return "c"+String(m+1).padStart(2,"0");}
+function 분류순서(){const out=[];for(const [id,m] of [...상태.메모.entries()].sort((a,b)=>a[0]<b[0]?-1:1))out.push({id,분류:m.분류});
+  const 있음=new Set(out.map(x=>x.분류));const 남=[...상태.업적.values()].sort((a,b)=>num(a.번호)-num(b.번호));for(const a of 남)if(!있음.has(a.분류)){있음.add(a.분류);out.push({id:null,분류:a.분류});}return out;}
+let 띠시계=null,되돌릴=null;
+function 띠(글,되){$("#아래띠글").textContent=글;$("#되돌림").hidden=!되;되돌릴=되||null;$("#아래띠").hidden=false;clearTimeout(띠시계);띠시계=setTimeout(()=>{$("#아래띠").hidden=true;되돌릴=null;},6000);}
+async function 업적더함(분류,숨){const {번호,칭호번호}=다음번호(숨);const 몸={번호,칭호번호,이름:"",칭호:"새 업적",등급:숨?"(히든 · 등급 없음)":"초보",숨김:!!숨,분류,조건:"",설명:"",플레이버:"",사실번호:"",대기:"",새로:true,고친때:new Date().toISOString()};
+  if(!숨){const 남=남은조각();if(남.length){const [fid,f]=남[Math.floor(Math.random()*남.length)];몸.플레이버=f.text;몸.사실번호=fid;}}
+  if(await 쓰기("achievements/"+번호,몸,false)){띠(번호+" 을 만들었습니다");setTimeout(()=>{const c=document.querySelector(`.카드[data-id="${번호}"] .칭호칸`);if(c){c.scrollIntoView({block:"center"});c.focus();c.select();}},300);}}
+async function 업적지움(id){const a=상태.업적.get(id);if(!a)return;const 옛={...a};if(await 쓰기삭제("achievements/"+id))띠(id+" 을 지웠습니다",async()=>{await 쓰기("achievements/"+id,옛,false);띠(id+" 을 되돌렸습니다");});}
+async function 쓰기삭제(path){if(!db||!상태.쓰기)return false;대기중++;상태표시("저장 중…","저장중");try{await db.doc(path).delete();대기중--;if(!대기중)상태표시("저장됨","됨");return true;}catch(e){대기중--;상태표시("지우지 못함 ("+(e&&e.code||"오류")+")","오류");return false;}}
 function 표시(e){e.classList.add("바뀐");setTimeout(()=>e.classList.remove("바뀐"),900);}
 function 글칸(id,field,cls,multi,label){
   const e=multi?el("textarea",{class:"칸 "+cls,rows:2,"data-id":id,"data-field":field,"aria-label":label}):el("input",{class:"칸 "+cls,type:"text","data-id":id,"data-field":field,"aria-label":label});
@@ -111,7 +134,7 @@ function 카드(a){
   const 조각고름=el("select",{"data-id":id,"aria-label":"남은 조각에서 바꾸기"});
   조각고름.addEventListener("change",async()=>{const fid=조각고름.value;if(!fid)return;const f=상태.조각.get(fid);if(!f)return;await 쓰기("achievements/"+id,{플레이버:f.text,사실번호:fid,고친때:new Date().toISOString()},true);조각고름.value="";});
   const c=el("article",{class:"카드","data-id":id},
-    el("div",{class:"메타"},el("span",{class:"번"},id),el("span",{class:"칭번"},"칭호 "+(a.칭호번호||"")),등급,el("label",{class:"숨김칸"},숨,"숨은")),
+    el("div",{class:"메타"},el("span",{class:"번"},id),el("span",{class:"칭번"},"칭호 "+(a.칭호번호||"")),등급,el("label",{class:"숨김칸"},숨,"숨은"),a.새로?el("span",{class:"새표"},"새로"):null,a.새로?(()=>{const b=el("button",{type:"button",class:"지움"},"지우기");b.addEventListener("click",()=>업적지움(id));return b;})():null),
     글칸(id,"칭호","칭호칸",false,"칭호"),
     el("div",{class:"이름표"},"이름 · 조건"),글칸(id,"이름","이름칸",false,"이름"),글칸(id,"조건","조건칸",true,"조건"),
     el("div",{class:"이름표"},"설명"),글칸(id,"설명","설명칸",true,"설명"),
@@ -140,19 +163,30 @@ function 조각고름채움(){
 }
 function 처음그림(){
   const 목록=[...상태.업적.values()].sort((a,b)=>num(a.번호)-num(b.번호));
-  if(!목록.length){$("#묶음들").replaceChildren(el("div",{class:"빈화면"},"아직 데이터가 없습니다. Claude 가 채워 넣을 때까지 기다려 주세요."));return;}
-  const 순서=[];for(const a of 목록)if(!순서.includes(a.분류))순서.push(a.분류);
+  if(!목록.length&&!상태.메모.size){$("#묶음들").replaceChildren(el("div",{class:"빈화면"},"아직 데이터가 없습니다. Claude 가 채워 넣을 때까지 기다려 주세요."));return;}
   const nav=[],secs=[];
-  순서.forEach((cat,i)=>{const cid="c"+String(i+1).padStart(2,"0");const rs=목록.filter(a=>a.분류===cat);
+  let 빈번호=Number(다음분류().slice(1));
+  분류순서().forEach(({id:mid,분류:cat},i)=>{const cid=mid||("x"+i);const rs=목록.filter(a=>a.분류===cat);
     nav.push(el("a",{href:"#"+cid},짧은(cat)+" ",el("b",{},String(rs.length))));
-    const 메모칸=el("textarea",{class:"칸 설명칸",rows:2,"data-memo":cid,placeholder:"이 분류에 대한 메모 (예: 조건 기준을 모두 바꾸자)","aria-label":짧은(cat)+" 메모"});
-    메모칸.addEventListener("change",async()=>{const v=메모칸.value;const m=상태.메모.get(cid);if((m&&m.메모||"")===v)return;if(await 쓰기("memos/"+cid,{분류:cat,메모:v,고친때:new Date().toISOString()},false))표시(메모칸);});
-    const sec=el("section",{class:"묶음",id:cid},el("h2",{},짧은(cat),el("span",{class:"셈"},rs.length+"개")),el("div",{class:"분류메모"},el("label",{},"분류 메모"),메모칸),el("div",{class:"판"},...rs.map(카드)));
+    const 메모id=mid||("c"+String(빈번호++).padStart(2,"0"));
+    const 메모칸=el("textarea",{class:"칸 설명칸",rows:2,"data-memo":메모id,placeholder:"이 분류에 대한 메모 (예: 조건 기준을 모두 바꾸자)","aria-label":짧은(cat)+" 메모"});
+    메모칸.addEventListener("change",async()=>{const v=메모칸.value;const m=상태.메모.get(메모id);if((m&&m.메모||"")===v)return;if(await 쓰기("memos/"+메모id,{...(m||{}),분류:cat,메모:v,고친때:new Date().toISOString()},false))표시(메모칸);});
+    const 더1=el("button",{type:"button",class:"단추"},"+ 업적"),더2=el("button",{type:"button",class:"단추"},"+ 숨은 업적");
+    더1.addEventListener("click",()=>업적더함(cat,false));더2.addEventListener("click",()=>업적더함(cat,true));
+    const sec=el("section",{class:"묶음",id:cid},el("h2",{},짧은(cat),el("span",{class:"셈"},rs.length+"개")),el("div",{class:"분류메모"},el("label",{},"분류 메모"),메모칸),
+      rs.length?el("div",{class:"판"},...rs.map(카드)):el("div",{class:"빈판"},"아직 업적이 없습니다."),el("div",{class:"더함"},더1,더2));
     secs.push(sec);});
+  const 새이름=el("input",{class:"칸 설명칸",type:"text",placeholder:"새 분류 이름 (예: 유산소)","aria-label":"새 분류 이름"});
+  const 새단추=el("button",{type:"button",class:"단추"},"분류 더하기");
+  새단추.addEventListener("click",async()=>{const v=새이름.value.trim();if(!v)return;if([...상태.메모.values()].some(m=>m.분류===v)||[...상태.업적.values()].some(a=>a.분류===v)){띠("이미 있는 분류입니다");return;}
+    const nid=다음분류();if(await 쓰기("memos/"+nid,{분류:v,메모:"",새로:true,고친때:new Date().toISOString()},false)){새이름.value="";띠("분류 '"+v+"' 를 만들었습니다");setTimeout(()=>{const s=document.getElementById(nid);if(s)s.scrollIntoView({block:"start"});},300);}});
+  secs.push(el("div",{class:"더하기줄"},새이름,새단추));
   $("#분류줄").replaceChildren(...nav);$("#묶음들").replaceChildren(...secs);상태.그림=true;
+  if(!상태.쓰기)$$(".칸,select,input[type=checkbox],.단추,.지움").forEach(x=>x.disabled=true);
 }
 function 다시그림(){
-  if(!상태.그림)처음그림(); if(!상태.그림)return;
+  const 서명=[...상태.업적.keys()].sort().join(",")+"|"+분류순서().map(x=>(x.id||"")+":"+x.분류).join(",")+"|"+[...상태.업적.values()].filter(a=>a.새로).map(a=>a.번호).sort().join(",");
+  if(!상태.그림||서명!==상태.서명){처음그림();상태.서명=서명;} if(!상태.그림)return;
   for(const a of 상태.업적.values()){const c=document.querySelector(`.카드[data-id="${a.번호}"]`);if(c)칸채움(c,a);}
   for(const t of $$("[data-memo]")){if(t===document.activeElement)continue;const m=상태.메모.get(t.dataset.memo);const v=m?m.메모||"":"";if(t.value!==v)t.value=v;}
   조각고름채움(); 조각목록(); 요약(); 거르기();
@@ -161,7 +195,9 @@ function 다시그림(){
 function 조각목록(){
   const 누가={};for(const a of 상태.업적.values())if(!a.숨김&&a.사실번호)누가[a.사실번호]=a;
   const ids=[...상태.조각.keys()].sort();
-  $("#조각줄").replaceChildren(...ids.map(fid=>{const a=누가[fid];return el("li",{},el("span",{class:"번"},fid),el("div",{},el("p",{class:"이플"},상태.조각.get(fid).text),el("p",{class:"이곳"+(a?"":" 남음")},a?("→ "+a.번호+" "+a.칭호):"남은 조각")));}));
+  $("#조각줄").replaceChildren(...ids.map(fid=>{const a=누가[fid],f=상태.조각.get(fid);
+    const 지움=(f.새로&&!a)?(()=>{const b=el("button",{type:"button",class:"지움"},"지우기");b.addEventListener("click",async()=>{const 옛={...f};if(await 쓰기삭제("fragments/"+fid))띠(fid+" 을 지웠습니다",async()=>{await 쓰기("fragments/"+fid,옛,false);띠(fid+" 을 되돌렸습니다");});});return b;})():null;
+    return el("li",{},el("span",{class:"번"},fid),el("div",{style:"flex:1"},el("p",{class:"이플"},f.text),el("p",{class:"이곳"+(a?"":" 남음")},(a?("→ "+a.번호+" "+a.칭호):"남은 조각")+(f.새로?" · 새로":""))),지움);}));
 }
 function 요약(){
   const all=[...상태.업적.values()];const 숨=all.filter(a=>a.숨김).length;const 남=남은조각().length;const 메모수=[...상태.메모.values()].filter(m=>(m.메모||"").trim()).length;
@@ -172,12 +208,14 @@ function 거르기(){
   const q=$("#찾기").value.trim().toLowerCase();
   if(상태.보기==="업적"){for(const c of $$(".카드")){const a=상태.업적.get(c.dataset.id);if(!a)continue;const 글=[a.번호,a.칭호,a.이름,a.조건,a.설명,a.플레이버,a.대기].join(" ").toLowerCase();
       const ok=(!q||글.includes(q))&&(상태.거름==="전체"||(상태.거름==="숨은")===!!a.숨김);c.hidden=!ok;}
-    for(const s of $$(".묶음"))s.hidden=!s.querySelector(".카드:not([hidden])");}
+    const 거름켬=!!q||상태.거름!=="전체";for(const s of $$(".묶음"))s.hidden=거름켬&&!s.querySelector(".카드:not([hidden])");}
   else for(const l of $$("#조각줄 li"))l.hidden=!!q&&!l.textContent.toLowerCase().includes(q);
 }
 for(const b of $$("[data-보기]"))b.addEventListener("click",()=>{상태.보기=b.dataset.보기;for(const x of $$("[data-보기]"))x.setAttribute("aria-pressed",x===b);$("#업적보기").hidden=상태.보기!=="업적";$("#이야기보기").hidden=상태.보기!=="이야기";거르기();});
 for(const b of $$("[data-거름]"))b.addEventListener("click",()=>{상태.거름=b.dataset.거름;for(const x of $$("[data-거름]"))x.setAttribute("aria-pressed",x===b);거르기();});
 $("#찾기").addEventListener("input",거르기);
+$("#조각더함").addEventListener("click",async()=>{const t=$("#새조각글");const v=t.value.trim();if(!v)return;const fid=다음조각();if(await 쓰기("fragments/"+fid,{text:v,새로:true,고친때:new Date().toISOString()},false)){t.value="";띠(fid+" 을 남은 조각에 더했습니다");}});
+$("#되돌림").addEventListener("click",async()=>{const f=되돌릴;$("#아래띠").hidden=true;되돌릴=null;if(f)await f();});
 function 받기(이름,snap,맵,키){맵.clear();for(const d of snap.docs){const v=d.data();if(v)맵.set(키?v[키]||d.id:d.id,{...v});}상태.받음[이름]=true;if(상태.받음.업적&&상태.받음.조각&&상태.받음.메모)다시그림();}
 (async()=>{
   db=await claude.use("db");
