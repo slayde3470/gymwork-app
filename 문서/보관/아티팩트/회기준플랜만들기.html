@@ -1,0 +1,861 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>회 기준 플랜 만들기</title>
+<style>
+/* 레이아웃: 눌러 보는 폰 하나 + 옆에 설명. 색·글자 규격은 앱 Theme.kt 와 같다 */
+:root{
+  --바탕:#F8FAFB; --면:#FFFFFF; --면2:#F0F4F8; --선:#D3DFE9; --속선:#B5C9DA;
+  --글:#000000; --흐림:#35495B; --옅음:#5E6B77;
+  --강조:#084B83; --강조글:#FFFFFF; --강조옅음:#E1E9F0;
+  --좋음:#4C9A1F; --좋음옅음:#E8F5DE; --나쁨:#B3261E; --경고:#8A5A00; --경고옅음:#FBF1DC;
+  --밴드1:#06304F; --밴드2:#0A5490;   /* 훈련 방식 밴드 — 중심색 하나로 통일 */
+  --본:-apple-system,"Segoe UI",Roboto,"Noto Sans KR",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --바탕:#07121E; --면:#111F2E; --면2:#172738; --선:#253A50; --속선:#37526E;
+  --글:#E5F0FA; --흐림:#C5D1DB; --옅음:#9BA7B3;
+  --강조:#7FB3E6; --강조글:#04213D; --강조옅음:#1F3246;
+  --좋음:#9BE06B; --좋음옅음:#1E3313; --나쁨:#E57368; --경고:#E8C271; --경고옅음:#33280F;
+  --밴드1:#0A3A5E; --밴드2:#11649F; color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --바탕:#07121E; --면:#111F2E; --면2:#172738; --선:#253A50; --속선:#37526E;
+  --글:#E5F0FA; --흐림:#C5D1DB; --옅음:#9BA7B3;
+  --강조:#7FB3E6; --강조글:#04213D; --강조옅음:#1F3246;
+  --좋음:#9BE06B; --좋음옅음:#1E3313; --나쁨:#E57368; --경고:#E8C271; --경고옅음:#33280F;
+  --밴드1:#0A3A5E; --밴드2:#11649F; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--바탕);color:var(--글);font-family:var(--본);margin:0}
+.랩{padding-inline:16px;padding-block:20px 48px;max-width:1180px;margin:0 auto}
+h1{font-size:20px;margin:0 0 4px;text-wrap:balance}
+.안내{color:var(--옅음);font-size:13px;margin:0 0 18px;line-height:1.6;max-width:66ch}
+.줄{display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start}
+.폰{width:360px;flex:0 0 auto;min-width:0;display:flex;flex-direction:column;gap:8px}
+.화면{width:360px;max-width:100%;height:680px;background:var(--바탕);border:2px solid var(--강조);border-radius:18px;
+      overflow:hidden;display:flex;flex-direction:column;position:relative}
+.몸{flex:1 1 auto;min-height:0;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
+.제목{font-size:22px;font-weight:700;padding:2px 0}
+.탭바{border-top:1px solid var(--선);background:var(--면);display:flex;flex:0 0 auto}
+.탭{flex:1;padding:6px 0;text-align:center;font-size:9.5px;color:var(--옅음);border:none;background:none;font-family:inherit;cursor:pointer}
+.탭.on{color:var(--강조);font-weight:700}
+.탭:focus-visible{outline:2px solid var(--강조);outline-offset:-2px}
+.카드{background:var(--면);border:2px solid var(--강조);border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:8px;position:relative}
+.라벨{font-size:11px;color:var(--옅음)}
+.칸{background:var(--면);border:1px solid var(--속선);border-radius:8px;min-height:40px;display:flex;align-items:center;
+    justify-content:space-between;padding:0 8px;font-size:15px;font-weight:700;width:100%;color:var(--글);font-family:inherit}
+select.칸,input.칸,button.칸{-webkit-appearance:none;appearance:none;height:40px;cursor:pointer}
+input.칸{font-variant-numeric:tabular-nums;cursor:text}
+.칸:focus-visible,button:focus-visible{outline:2px solid var(--강조);outline-offset:1px}
+.둘{display:flex;gap:8px}.둘>*{flex:1;min-width:0}
+.곁{flex:0 0 auto;width:92px;min-height:40px;border-radius:8px;background:var(--강조옅음);border:1px solid var(--강조);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2px 4px;gap:1px}
+.곁.빔{background:var(--면2);border-color:var(--속선)}
+.곁 b{font-size:14px;color:var(--강조);line-height:1.15;text-align:center}
+.곁.빔 b{color:var(--옅음)}
+.곁 i{font-size:9px;color:var(--옅음);font-style:normal}
+.입력줄{display:flex;gap:8px;align-items:flex-end}
+.입력줄>.자란{flex:1;min-width:0}
+.칩줄{display:flex;gap:6px;flex-wrap:wrap}
+.칩줄.한줄{flex-wrap:nowrap}
+.칩{font-size:13px;border:1px solid var(--속선);border-radius:8px;padding:5px 10px;color:var(--흐림);
+    background:transparent;font-family:inherit;cursor:pointer;white-space:nowrap}
+.칩.on{background:var(--강조);color:var(--강조글);border-color:var(--강조);font-weight:700}
+.칩.작{font-size:11px;padding:3px 7px}
+.칩.빈도{flex:1;padding:6px 0;text-align:center;font-size:12px;min-width:0}
+.단추{min-height:44px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;
+      border:1px solid var(--속선);background:var(--면);color:var(--글);flex:1;font-family:inherit;cursor:pointer;padding:0 8px;text-align:center;position:relative}
+.단추.주{background:var(--강조);color:var(--강조글);border-color:var(--강조)}
+.단추줄{display:flex;gap:8px}
+.베타{position:absolute;top:-6px;right:-4px;background:#C62828;color:#fff;font-size:8px;font-weight:700;
+      border-radius:3px;padding:1px 4px;letter-spacing:.04em;line-height:1.4}
+.번호{position:absolute;font-size:8px;font-weight:700;color:var(--강조);background:var(--바탕);
+      border:1px solid var(--강조);border-radius:3px;padding:0 2px;top:-7px;left:6px}
+.메모{font-size:11px;color:var(--옅음);line-height:1.55}
+.주의{font-size:11.5px;color:var(--나쁨);line-height:1.6}
+.경고박스{background:var(--경고옅음);border:1px solid var(--경고);border-radius:8px;padding:8px;font-size:11.5px;color:var(--글);line-height:1.65}
+.체크{display:flex;align-items:flex-start;gap:6px;font-size:12px;color:var(--흐림);cursor:pointer;line-height:1.4}
+.흐림처리{opacity:.32;pointer-events:none}
+.근{font-style:italic;text-decoration:underline;text-underline-offset:2px;color:var(--강조);
+    background:none;border:none;padding:0;font-family:inherit;font-size:inherit;cursor:pointer}
+/* 훈련 방식 밴드 — 배경은 중심색 하나 */
+.방목록{display:flex;flex-direction:column;gap:2px}
+.방행{position:relative;overflow:hidden;border:none;padding:0;width:100%;font-family:inherit;cursor:pointer;text-align:left;
+      background:linear-gradient(103deg, var(--밴드1) 0%, var(--밴드1) 44%, var(--밴드2) 100%);display:block}
+.방행.골름{box-shadow:inset 0 0 0 2.5px #fff}
+.방그림{position:absolute;right:0;top:0;bottom:0;width:168px;
+        -webkit-mask-image:linear-gradient(90deg,transparent,#000 42%);mask-image:linear-gradient(90deg,transparent,#000 42%)}
+.방글{position:relative;padding:9px 11px;display:flex;flex-direction:column;gap:1px}
+.방윗줄{display:flex;align-items:center;gap:6px}
+.방이름{font-size:16px;font-weight:700;color:#fff;line-height:1.25}
+.방수준{font-size:9.5px;color:rgba(255,255,255,.75);border:1px solid rgba(255,255,255,.4);border-radius:4px;padding:0 4px;white-space:nowrap}
+.방특징{font-size:10.5px;color:rgba(255,255,255,.84)}
+.방아래{background:rgba(3,25,44,.55);padding:10px 11px;display:flex;flex-direction:column;gap:6px}
+.방아래 p{margin:0;font-size:11.5px;line-height:1.7;color:rgba(255,255,255,.93)}
+.방아래 .키{font-size:9.5px;color:rgba(255,255,255,.6);letter-spacing:.04em}
+.방아래 .근{color:#BFDCF5}
+.듦{animation:듦 .34s cubic-bezier(.22,.61,.36,1) both}
+.듦2{animation:듦 .34s cubic-bezier(.22,.61,.36,1) .07s both}
+.듦3{animation:듦 .34s cubic-bezier(.22,.61,.36,1) .14s both}
+.듦4{animation:듦 .34s cubic-bezier(.22,.61,.36,1) .21s both}
+@keyframes 듦{from{opacity:0;transform:translateX(5px)}to{opacity:1;transform:none}}
+.딸림{margin-left:14px;border-left:3px solid rgba(255,255,255,.45)}
+/* 표 */
+.블록{border:1px solid var(--속선);border-radius:8px;overflow:hidden}
+.블머리{width:100%;border:none;background:var(--면2);font-family:inherit;color:var(--글);cursor:pointer;
+        display:flex;align-items:center;gap:6px;padding:7px 9px;font-size:11.5px;font-variant-numeric:tabular-nums;
+        border-bottom:1px solid var(--속선)}
+.블머리.측{background:var(--강조옅음);font-weight:700}
+.표{width:100%;border-collapse:collapse;font-size:11px;font-variant-numeric:tabular-nums}
+.표 th{text-align:right;font-weight:700;color:var(--옅음);padding:4px 5px;border-bottom:1px solid var(--속선);font-size:10px}
+.표 th:first-child,.표 td:first-child{text-align:left}
+.표 td{text-align:right;padding:4px 5px;border-bottom:1px solid var(--면2)}
+.표 tr.측 td{background:var(--강조옅음);font-weight:700}
+.그래프{height:70px;display:flex;align-items:flex-end;gap:1px}
+.그래프 i{flex:1;background:var(--강조옅음);border-top:2px solid var(--강조);border-radius:2px 2px 0 0;min-width:1px}
+.그래프 i.측{background:var(--강조);border-top-color:var(--강조)}
+/* 팝업 */
+.덮개{position:absolute;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:10px;z-index:5}
+.팝업{width:100%;max-height:100%;background:var(--면);border:2px solid var(--강조);border-radius:16px;display:flex;flex-direction:column;overflow:hidden}
+.팝업.좁{max-width:300px}
+.팝업.꽉{height:100%}
+.팝머리{min-height:40px;background:var(--강조);color:var(--강조글);display:flex;align-items:center;gap:8px;padding:8px 12px;font-size:15px;font-weight:700;flex:0 0 auto}
+.팝몸{flex:1 1 auto;min-height:0;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:9px}
+.팝몸.빈{padding:0;gap:0}
+.팝발{border-top:1px solid var(--선);padding:10px 12px;display:flex;gap:8px;flex:0 0 auto}
+.띠{border:2px solid var(--강조);border-radius:10px;padding:9px;display:flex;flex-direction:column;gap:5px;background:var(--강조옅음)}
+.띠줄{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;font-variant-numeric:tabular-nums}
+.띠줄 b{font-size:15px}
+.알약{font-size:9px;font-weight:700;border:1px solid var(--속선);border-radius:4px;padding:1px 5px;color:var(--강조);white-space:nowrap}
+.목박스{font-size:9px;font-weight:700;background:var(--강조);color:var(--강조글);border-radius:4px;padding:1px 5px;white-space:nowrap}
+/* 계산 중 */
+.로딩{position:absolute;inset:0;background:var(--강조);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:8}
+.로딩 b{color:#fff;font-size:16px}
+.봉{animation:봉 1.1s ease-in-out infinite alternate}
+@keyframes 봉{from{transform:translateX(-26px) rotate(-6deg)}to{transform:translateX(26px) rotate(6deg)}}
+@media (prefers-reduced-motion:reduce){.봉,.듦,.듦2,.듦3,.듦4{animation:none!important}}
+/* 종목 탭 */
+.평{border-bottom:1px solid var(--면2);padding:9px 10px;display:flex;align-items:center;gap:6px;font-size:15px}
+.플줄{border:2px solid var(--강조);border-radius:10px;background:var(--강조옅음);padding:8px 9px;margin:6px}
+.플머리{display:flex;align-items:center;gap:5px;font-size:13px;white-space:nowrap;cursor:pointer;background:none;border:none;
+        font-family:inherit;color:var(--글);width:100%;padding:0;text-align:left}
+.플머리 b{overflow:hidden;text-overflow:ellipsis;min-width:0}
+.큰게이지{height:20px;border-radius:10px;background:var(--면2);border:1px solid var(--속선);margin-top:7px;position:relative;overflow:hidden}
+.큰게이지 span.차{display:block;height:100%;background:var(--강조)}
+.큰게이지 span.퍼{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+                 font-size:11px;font-weight:700;color:var(--글);font-variant-numeric:tabular-nums;
+                 text-shadow:0 0 3px var(--면),0 0 3px var(--면)}
+.가로줄{border-top:1px solid var(--속선);margin-top:8px}
+.여축{height:4px;border-radius:2px;background:var(--면2);border:1px solid var(--속선);position:relative;margin:16px 0 3px}
+.여축 .찬{position:absolute;left:0;top:0;bottom:0;background:var(--강조);border-radius:2px}
+.여축 .점{position:absolute;top:-5px;width:12px;height:12px;border-radius:50%;background:var(--강조);border:2px solid var(--면);transform:translateX(-50%)}
+.여축 .끝{position:absolute;top:-5px;right:-1px;width:12px;height:12px;border-radius:50%;background:var(--면2);border:2px solid var(--속선)}
+.여글{display:flex;justify-content:space-between;font-size:10px;color:var(--옅음);font-variant-numeric:tabular-nums}
+.타일줄{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.타일{background:var(--면);border:1px solid var(--속선);border-radius:8px;padding:6px 6px;display:flex;flex-direction:column;gap:3px;min-width:0}
+.타일 b{font-size:15px;font-variant-numeric:tabular-nums;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.타일 .밑{font-size:9px;color:var(--옅음);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.작게이지{height:4px;border-radius:2px;background:var(--면2);overflow:hidden}
+.작게이지 span{display:block;height:100%;background:var(--강조)}
+.한줄{display:flex;justify-content:space-between;font-size:11px;color:var(--흐림);margin-top:7px}
+/* 운동 중 */
+.세줄{display:flex;align-items:center;gap:8px;border:1px solid var(--속선);border-radius:8px;padding:7px 8px;font-size:13px;position:relative;background:var(--면)}
+.세줄.워{background:var(--좋음옅음);border-color:var(--좋음)}
+.세줄.측{background:var(--강조옅음);border-color:var(--강조)}
+.박{width:22px;height:22px;border-radius:5px;border:2px solid var(--속선);flex:0 0 auto;background:var(--면)}
+.세줄.워 .박{border-color:var(--좋음)}
+.세줄.측 .박{border-color:var(--강조)}
+.딱지{position:absolute;top:-6px;left:12px;font-size:7.5px;font-weight:700;border-radius:3px;padding:0 3px;white-space:nowrap;background:var(--좋음);color:#fff;line-height:1.5}
+.세줄.측 .딱지{background:var(--강조);color:var(--강조글)}
+.볼륨줄{display:flex;justify-content:space-between;font-size:12px;padding:8px;border-radius:8px;background:var(--면2);border:1px solid var(--속선);font-variant-numeric:tabular-nums}
+.토스트{position:absolute;left:12px;right:12px;bottom:56px;background:var(--강조);color:var(--강조글);border-radius:8px;padding:9px 11px;font-size:12px;z-index:9;text-align:center}
+.복귀띠{background:var(--경고옅음);border-bottom:1px solid var(--경고);padding:7px 10px;font-size:12px;display:flex;align-items:center;gap:8px;flex:0 0 auto}
+/* 설명 */
+.설명{width:420px;flex:1 1 320px;min-width:0;font-size:12.5px;color:var(--흐림);line-height:1.65}
+.설명 h2{font-size:13px;margin:16px 0 6px;color:var(--강조)}
+.설명 h2:first-child{margin-top:0}
+.설명 ul,.설명 ol{margin:0 0 10px;padding-left:18px}
+.설명 li{margin-bottom:4px}
+.설명 .q{border-left:3px solid var(--나쁨);padding-left:8px;margin-bottom:9px}
+</style>
+
+<div class="랩">
+  <h1>회 기준 플랜 만들기</h1>
+  <p class="안내">모든 칸이 비어 있습니다. 종목을 고르고 직접 넣어 보세요. <strong>훈련 방식</strong> 칸을 누르면 방식 목록이 한 화면에 뜹니다. 실행하면 종목 탭에 플랜 종목이 생기고, 거기서 <strong>운동 중 화면</strong>과 <strong>워밍업 세트(beta)</strong> 까지 볼 수 있습니다.</p>
+  <div class="줄">
+    <div class="폰">
+      <div class="화면">
+        <div id="복귀"></div>
+        <div class="몸" id="몸"></div>
+        <div class="탭바" id="탭바"></div>
+      </div>
+      <p class="메모" style="text-align:center">폰 가로 360 · 세로 680 — 실제 비율</p>
+    </div>
+    <div class="설명" id="설명"></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+const 플랜표 = {
+  기대속도: {입문:5.0, 초급:3.0, 중급:1.5, 고급:2.0, 상급:1.5},
+  측정주기: {입문:4, 초급:4, 중급:8, 고급:12, 상급:12},
+  처방비율: 0.90, 무게폭: 1, 최대회: 6000,
+  기본무게: {바벨:20, 맨몸:null, 머신:10, 덤벨:5},
+};
+const 종목들 = [
+  {이름:"벤치프레스",      장비:"바벨", 부위:"상체", 경계:[0.6,0.9,1.25,1.6],    배수:1.0, 합의:true},
+  {이름:"백 스쿼트",       장비:"바벨", 부위:"하체", 경계:[0.8,1.2,1.75,2.25],   배수:1.2, 합의:true},
+  {이름:"데드리프트",      장비:"바벨", 부위:"하체", 경계:[1.0,1.5,2.0,2.6],     배수:1.2, 합의:true},
+  {이름:"오버헤드 프레스", 장비:"바벨", 부위:"상체", 경계:[0.35,0.50,0.60,0.75], 배수:1.0, 합의:true},
+  {이름:"펜들레이 로우",   장비:"바벨", 부위:"상체", 경계:[0.70,0.90,1.10,1.35], 배수:1.0, 합의:true},
+  {이름:"턱걸이(맨몸)",    장비:"맨몸", 부위:"상체", 경계:null, 배수:1.0, 합의:false},
+  {이름:"딥스",            장비:"맨몸", 부위:"상체", 경계:null, 배수:1.0, 합의:false},
+];
+const 빈도세기 = {상체:1.0, 하체:0.2};
+
+const 근거 = {
+  pelland:{제목:"The Resistance Training Dose Response: Meta-Regressions Exploring the Effects of Weekly Volume and Frequency on Muscle Hypertrophy and Strength Gains",
+    저자:"Pelland, Remmert, Robinson, Hinson, Zourdos", 연도:"2026", 실은곳:"Sports Medicine 56:481–505",
+    무엇:"67편 2,058명 메타회귀. 빈도의 양의 효과는 확실(사후확률 100%)하지만 수익이 줄어들고, 근력의 수익 감소가 근육보다 심하다", 등급:"심사 논문"},
+  grgic:{제목:"Effect of Resistance Training Frequency on Gains in Muscular Strength", 저자:"Grgic, Schoenfeld, Davies, Lazinica, Krieger, Pedisic",
+    연도:"2018", 실은곳:"Sports Medicine 48:1207–1220", 무엇:"메타 22편. 볼륨을 맞추면 빈도 효과 없음. 상체 p=0.004 유의 · 하체 p=0.070 유의하지 않음", 등급:"심사 논문"},
+  schoenfeld16:{제목:"Effects of Resistance Training Frequency on Measures of Muscle Hypertrophy", 저자:"Schoenfeld, Ogborn, Krieger",
+    연도:"2016", 실은곳:"Sports Medicine 46:1689–1697", 무엇:"메타 10편. 주1회 +3.7% vs 주2~3회 +6.8%", 등급:"심사 논문"},
+  nuckols:{제목:"Training Frequency for Strength Development: What the Data Say", 저자:"Nuckols", 연도:"—", 실은곳:"Stronger by Science",
+    무엇:"훈련일 1일 추가당 상체 +0.51 %/주 · 하체 +0.10 %/주 → 하체가 상체의 약 1/5", 등급:"⚠ 심사 받지 않은 자체 메타분석"},
+  meeusen:{제목:"Prevention, Diagnosis and Treatment of the Overtraining Syndrome (ECSS/ACSM 합의문)", 저자:"Meeusen 외", 연도:"2013",
+    실은곳:"European Journal of Sport Science 13(1):1–24", 무엇:"저항운동 과훈련은 지속적 피로와 근육통이 거의 모든 사례에서 먼저 나타나고 최대근력이 가장 나중에 떨어진다", 등급:"심사 합의문"},
+  acsm:{제목:"Progression Models in Resistance Training for Healthy Adults (ACSM 입장문)", 저자:"Ratamess 외", 연도:"2009",
+    실은곳:"Medicine & Science in Sports & Exercise 41(3):687–708", 무엇:"목표보다 1~2회 더 할 수 있는 상태가 2세션 연속이면 부하 2~10% 증량. 인용 4,268회. ACSM 스스로 근거 등급 B", 등급:"심사 입장문 · 근거 등급 B"},
+  harries:{제목:"Systematic Review and Meta-Analysis of Linear and Undulating Periodized Resistance Training Programs on Muscular Strength",
+    저자:"Harries, Lubans, Callister", 연도:"2015", 실은곳:"Journal of Strength and Conditioning Research",
+    무엇:"17편 510명. 선형과 파동 사이에 근력 효과 차이 없음", 등급:"심사 논문"},
+  rhea:{제목:"A Comparison of Linear and Daily Undulating Periodized Programs with Equated Volume and Intensity for Strength",
+    저자:"Rhea, Ball, Phillips, Burkett", 연도:"2002", 실은곳:"J Strength Cond Res 16(2):250–255",
+    무엇:"벤치 +28.8% vs 선형 +14.4%. ⚠ 단일 연구이고 이후 메타분석에서 재현되지 않았다", 등급:"심사 논문 · 단일 연구"},
+  nsca:{제목:"Essentials of Strength Training and Conditioning — 1RM 측정 절차", 저자:"NSCA", 연도:"—", 실은곳:"Human Kinetics",
+    무엇:"가벼운 무게 5~10회 →1분 / +5~10% 3~5회 →2분 / +5~10% 2~3회 →2~4분 / 1회 시도", 등급:"교재 · 프로토콜(연구 아님)"},
+  생략:{제목:"Warming up to improved performance?", 저자:"—", 연도:"2025", 실은곳:"SportRxiv 프리프린트",
+    무엇:"10RM 부하에서 워밍업 2세트 / 1세트 / 없음 → 반복수·볼륨·피로 모두 차이 무시할 만함", 등급:"⚠ 프리프린트(심사 전)"},
+  delorme:{제목:"Progressive Resistance Exercise — 3세트 × 10회의 기원", 저자:"DeLorme · Watkins", 연도:"1945 · 1948 · 1951", 실은곳:"—",
+    무엇:"10RM 의 50% / 75% / 100% 로 3세트 × 10회를 체계화. 오늘날 헬스장 표준의 뿌리", 등급:"원전"},
+  ss:{제목:"Starting Strength: Basic Barbell Training", 저자:"Rippetoe, Kilgore", 연도:"2005", 실은곳:"—",
+    무엇:"3세트 × 5회, 매 운동 증량. 초급 선형은 보통 3~9개월", 등급:"코치 프로토콜(연구 아님)"},
+  sl:{제목:"StrongLifts 5×5", 저자:"Mehdi Hadim", 연도:"2007", 실은곳:"stronglifts.com",
+    무엇:"계보는 Reg Park(1958) → Bill Starr(1976) → Pendlay → Mehdi. 앱 Google Play 1M+ 설치", 등급:"⚠ 자사 출처"},
+  madcow:{제목:"Bill Starr 5×5 linear version for intermediate lifters", 저자:"익명 'Madcow'", 연도:"2005년경", 실은곳:"Geocities 아카이브",
+    무엇:"주당 월요일 top set 의 2.5% 증량. 본명은 확인하지 못했다", 등급:"⚠ 익명 · 연도 확정 불가"},
+  pendlay:{제목:"Glenn Pendlay: The Texas Method", 저자:"Glenn Pendlay", 연도:"2004~05 고안 · 2006 활자화", 실은곳:"On Target Publications",
+    무엇:"이름은 Rippetoe·Kilgore 가 붙였다. 펜들레이 로우를 만든 그 사람이다", 등급:"창시자 본인 글"},
+  wendler:{제목:"5/3/1: How to Build Pure Strength", 저자:"Jim Wendler", 연도:"2009-07-07", 실은곳:"T-Nation",
+    무엇:"훈련최대 = 1RM 의 90%. 4주 주기 65/75/85 → 70/80/90 → 75/85/95%", 등급:"창시자 본인 글"},
+  gzclp:{제목:"The GZCL Method / GZCLP", 저자:"Cody Lefever", 연도:"2012-11 · 2016-02", 실은곳:"—",
+    무엇:"T1 = 5RM 의 85% · T2 = 1RM 의 70% · T3 자율. Boostcamp 사용자 39,460명", 등급:"코치 프로토콜(연구 아님)"},
+  gvt:{제목:"German Volume Training Plans: The 10 Sets Method", 저자:"Poliquin", 연도:"1996", 실은곳:"—",
+    무엇:"1RM 의 약 60% 로 10세트 10회. 6주 수행 후 다음 단계로. 원형이 Vince Gironda 라는 설은 교차검증하지 못했다", 등급:"⚠ 코치 프로토콜 · 계보 미확인"},
+  phat:{제목:"PHAT: Power Hypertrophy Adaptive Training", 저자:"Layne Norton (PHAT) · Brandon Campbell (PHUL)", 연도:"확인하지 못함", 실은곳:"—",
+    무엇:"Boostcamp PHUL 32,339명 · PHAT 16,051명. 창시 연도는 1차 출처에서 확인하지 못했다", 등급:"⚠ 연도 확정 불가"},
+};
+
+/* 실루엣 — 사진을 만들 수는 없어서 조명·비네트를 얹은 실루엣으로 그렸다 */
+const 실루엣 = {
+  스쿼트:'<circle cx="86" cy="30" r="11"/><path d="M68 46h36l7 27-11 4-4-14v18l9 31h-12l-9-27-9 27h-12l9-31v-18l-4 14-11-4z"/><rect x="24" y="40" width="124" height="7" rx="3.5"/><rect x="18" y="22" width="13" height="43" rx="5"/><rect x="141" y="22" width="13" height="43" rx="5"/>',
+  벤치:'<rect x="30" y="78" width="112" height="11" rx="5"/><rect x="52" y="89" width="9" height="22" rx="3"/><rect x="118" y="89" width="9" height="22" rx="3"/><circle cx="48" cy="64" r="11"/><path d="M62 57h44v22H62z"/><path d="M72 58l12-28M98 58L86 30" stroke="currentColor" stroke-width="9" fill="none" stroke-linecap="round"/><rect x="34" y="26" width="112" height="7" rx="3.5"/><rect x="28" y="12" width="13" height="36" rx="5"/><rect x="139" y="12" width="13" height="36" rx="5"/>',
+  데드:'<circle cx="74" cy="24" r="11"/><path d="M62 37q22-5 33 11l7 25-13 4-6-17v15l7 33H79l-9-27-9 27H50l9-33V50z"/><rect x="22" y="97" width="130" height="7" rx="3.5"/><circle cx="28" cy="100" r="18"/><circle cx="146" cy="100" r="18"/>',
+  프레스:'<circle cx="88" cy="58" r="11"/><path d="M74 72h28v34l5 17H96l-8-23-8 23H69l5-17z"/><rect x="26" y="20" width="124" height="7" rx="3.5"/><rect x="20" y="6" width="13" height="36" rx="5"/><rect x="143" y="6" width="13" height="36" rx="5"/><path d="M76 72l-4-44M100 72l4-44" stroke="currentColor" stroke-width="9" fill="none" stroke-linecap="round"/>',
+  로우:'<circle cx="46" cy="40" r="11"/><path d="M58 37h50l5 36h-13l-3-24H62z"/><rect x="26" y="90" width="128" height="7" rx="3.5"/><circle cx="32" cy="93" r="16"/><circle cx="148" cy="93" r="16"/><path d="M80 50v38" stroke="currentColor" stroke-width="9" fill="none" stroke-linecap="round"/>',
+  원판:'<circle cx="52" cy="66" r="38"/><circle cx="110" cy="74" r="28"/><circle cx="152" cy="80" r="20"/>',
+  랙:'<rect x="34" y="14" width="13" height="104" rx="5"/><rect x="132" y="14" width="13" height="104" rx="5"/><rect x="26" y="44" width="128" height="8" rx="4"/><rect x="20" y="30" width="13" height="38" rx="5"/><rect x="147" y="30" width="13" height="38" rx="5"/>',
+  덤벨:'<rect x="40" y="46" width="98" height="13" rx="6"/><rect x="24" y="26" width="22" height="53" rx="9"/><rect x="132" y="26" width="22" height="53" rx="9"/><rect x="60" y="86" width="60" height="9" rx="4"/><rect x="48" y="76" width="14" height="30" rx="6"/><rect x="118" y="76" width="14" height="30" rx="6"/>',
+  두사람:'<circle cx="52" cy="30" r="10"/><path d="M40 44h24l6 26-9 3-3-12v15l7 30H54l-6-24-6 24H31l7-30V61l-3 12-9-3z"/><circle cx="122" cy="34" r="10"/><path d="M110 48h24l6 26-9 3-3-12v15l7 30h-11l-6-24-6 24h-11l7-30V74l-3 12-9-3z"/>',
+  계단바벨:'<circle cx="80" cy="30" r="11"/><path d="M66 46h28v32l6 34H88l-8-24-8 24H60l6-34z"/><path d="M66 54L44 66M94 54l22 12" stroke="currentColor" stroke-width="9" fill="none" stroke-linecap="round"/><rect x="18" y="60" width="30" height="12" rx="6"/><rect x="112" y="60" width="30" height="12" rx="6"/>',
+};
+
+const 방식들 = [
+  {n:1, 이름:"꾸준히 늘리기", 특징:"근육과 기초 근력을 함께 · 3~5세트 × 8~12회", 수준:"입문~초급", 그림:"계단바벨", 강도단계:true,
+   상세:["헬스장에서 가장 흔히 보는 구성입니다. 3~5세트를 8~12회로 하고 무게만 조금씩 올립니다.",
+         "3세트 × 10회의 뿌리는 DeLorme 과 Watkins 가 1945~1951년에 정리한 점진적 저항운동입니다. 8~12회라는 구간은 ACSM 이 2009년 입장문에서 권고한 범위이고, 그 문서는 4,268회 인용됐습니다.",
+         "주기화를 하든 안 하든 초보자에게는 차이가 거의 없다는 것이 근거로 확인됩니다. 여기서 시작해도 잃는 것이 거의 없습니다."],
+   기간:"기간 제한 없음 — 기본값으로 계속 써도 됩니다", 증량:"목표보다 1~2회 더 할 수 있는 상태가 2세션 연속이면 2~10% 증량", 근:["delorme","acsm"], 주당:"2~3",
+   세트:(T,st)=>[{세트:st.강도, 횟수:st.횟수, 무게:되ep(T,st.횟수)*0.90}]},
+  {n:2, 이름:"3×5 스타팅 스트렝스", 특징:"가장 빠른 초보 근력 · 매 운동 증량", 수준:"입문~초급", 그림:"스쿼트",
+   상세:["3세트 × 5회. 매 운동마다 무게를 올립니다. 초보 근력 프로그램 중 가장 널리 알려진 것입니다.",
+         "Mark Rippetoe 와 Lon Kilgore 가 2005년에 낸 책에서 나왔습니다. 전용 커뮤니티 구독자가 99,190명입니다.",
+         "다만 r/Fitness 위키는 추천 목록에서 빼고 '왜 추천하지 않는가' 문서를 따로 둡니다 — 상체 볼륨이 적고, 정체 시 볼륨을 줄이라는 처방이 문헌과 어긋난다는 이유입니다."],
+   기간:"3~9개월. 스쿼트 리셋 2회 + 데드 리셋 1회, 또는 여러 종목이 동시에 막히면 넘어갈 때", 증량:"스쿼트 +4.5kg → +2.5kg · 데드 +7kg → +4.5kg · 벤치·프레스 +2.5kg → +1.25kg", 근:["ss"], 주당:"3",
+   세트:T=>[{세트:3, 횟수:5, 무게:되ep(T,5)*0.90}]},
+  {n:3, 이름:"5×5 스트롱리프트", 특징:"볼륨을 얹은 초보 근력 · A/B 두 날", 수준:"입문~초급", 그림:"랙", 아래:4,
+   상세:["5세트 × 5회를 A·B 두 날로 번갈아 합니다. 3×5 보다 세트가 많아 볼륨이 큽니다.",
+         "Mehdi Hadim 이 2007년 6월에 공개했습니다. 계보는 Reg Park(1958) → Bill Starr(1976) → Glenn Pendlay → Mehdi 로 이어집니다.",
+         "앱 다운로드가 Google Play 기준 100만 건이 넘습니다. 제가 확인한 것 중 사용자 수치가 가장 큽니다."],
+   기간:"3~9개월", 증량:"하체 2.5~5kg · 상체 1.25~2.5kg. 3세션 연속 실패하면 10% 감량", 근:["sl"], 주당:"3",
+   세트:T=>[{세트:5, 횟수:5, 무게:되ep(T,5)*0.90}]},
+  {n:4, 이름:"매드카우 5×5", 특징:"5×5 가 막혔을 때 넘어가는 곳", 수준:"중급", 그림:"원판", 딸림:true,
+   상세:["한 주 안에서 무거운 날·가벼운 날·중간 날을 나눕니다. 월 5×5 램핑 → 수 가볍게 → 금 4×5 에 3회·8회를 덧붙입니다.",
+         "2005년경 'Madcow' 라는 익명이 정리했습니다. 본명은 찾지 못했습니다. 이 이름은 Mehdi 가 Bill Starr 원본과 구분하려고 붙인 것입니다.",
+         "원문이 스스로 \"초보자 프로그램이 아니다\"라고 적어 두었습니다."],
+   기간:"5×5 에서 매 세션 증량이 막힌 뒤", 증량:"주당 월요일 top set 의 2.5%", 근:["madcow"], 주당:"3",
+   세트:T=>[{세트:5, 횟수:5, 무게:되ep(T,5)*0.90, 라벨:"월"},{세트:4, 횟수:5, 무게:되ep(T,5)*0.765, 라벨:"수"},{세트:4, 횟수:5, 무게:되ep(T,5)*0.90, 라벨:"금"}]},
+  {n:5, 이름:"텍사스 메서드", 특징:"주 단위로 밀어붙이는 근력", 수준:"중급", 그림:"데드",
+   상세:["월요일에 볼륨(5×5), 수요일에 가볍게, 금요일에 5RM 한 세트로 최대를 노립니다. 하루가 아니라 주 단위로 올라갑니다.",
+         "Glenn Pendlay 가 2004~05년경 우연히 발견했습니다 — 선수들이 수요일에 몰래 무게를 속여 쉬고 금·토에 기록을 노렸는데, 그쪽이 오히려 더 잘 늘었습니다.",
+         "펜들레이 로우를 만든 그 사람이고, Mehdi 에게 5×5 를 알려준 사람이기도 합니다. 이름은 Rippetoe 와 Kilgore 가 붙였습니다."],
+   기간:"초급 선형이 끝난 뒤. 회복 요구가 커서 35~40세 이상 취미 리프터에게는 권하지 않습니다", 증량:"강도일 초기 주당 +4.5kg → 이후 5~10% 범위로 변동", 근:["pendlay"], 주당:"3",
+   세트:T=>[{세트:5, 횟수:5, 무게:되ep(T,5)*0.81, 라벨:"월 볼륨일"},{세트:3, 횟수:5, 무게:되ep(T,5)*0.675, 라벨:"수 가볍게"},{세트:1, 횟수:5, 무게:되ep(T,5), 라벨:"금 강도일"}]},
+  {n:6, 이름:"5/3/1 웬들러", 특징:"오래 끌고 가는 근력 · 4주 주기", 수준:"중급~상급", 그림:"프레스",
+   상세:["4주를 한 묶음으로 봅니다. 훈련최대(1RM 의 90%)를 기준으로 주차마다 65~95% 를 오르내리고, 마지막 세트는 할 수 있는 만큼 더 합니다.",
+         "Jim Wendler 가 2009년 7월 7일 T-Nation 기사로 처음 내놓았습니다. 변형이 매우 많고 r/Fitness 위키에는 네 개가 실려 있습니다 — 제가 본 열 개 중 가장 두껍게 다뤄집니다.",
+         "Wendler 본인은 \"훈련 나이와 상관없이 그냥 그대로 하라\"고 합니다. '중급부터'는 커뮤니티 통념이지 저자 입장이 아닙니다."],
+   기간:"길게 씁니다. 사이클마다 훈련최대를 조금씩 올립니다", 증량:"사이클당 훈련최대 상체 +2.5kg · 하체 +5kg. 기록을 세웠다고 자동으로 올리지 말 것", 근:["wendler"], 주당:"3~4",
+   세트:T=>{const TM=T*0.90; return [{세트:1, 횟수:5, 무게:TM*0.65, 라벨:"65%"},{세트:1, 횟수:5, 무게:TM*0.75, 라벨:"75%"},{세트:1, 횟수:"5+", 무게:TM*0.85, 라벨:"85% 최대"}];}},
+  {n:8, 이름:"GZCLP", 특징:"무겁게·중간·가볍게 세 층을 한 번에", 수준:"입문~중급", 그림:"로우",
+   상세:["한 세션을 세 층으로 나눕니다. T1 은 무겁고 적게, T2 는 중간, T3 는 가볍고 많이.",
+         "Cody Lefever 가 GZCL 방법론을 2012년 11월에, 초보자용 GZCLP 를 2016년 2월에 내놓았습니다.",
+         "Boostcamp 기준 39,460명이 이 프로그램을 하고 있습니다 — 제가 확인한 수치 중 가장 많습니다. 지금 r/Fitness 생태계에서 초보자 표준에 가장 가깝습니다."],
+   기간:"초보~중급. T1 마지막 단계에서 10회를 못 채우면 5RM 을 다시 재고 그 85% 로 재시작", 증량:"T1·T2 매 세션 상체 +2.5kg 하체 +5kg · T3 는 최대 반복이 25회를 넘으면 증량", 근:["gzclp"], 주당:"3~4",
+   세트:T=>[{세트:5, 횟수:"3+", 무게:되ep(T,5)*0.85, 라벨:"T1"},{세트:3, 횟수:10, 무게:T*0.70, 라벨:"T2"},{세트:3, 횟수:"15+", 무게:T*0.45, 라벨:"T3"}]},
+  {n:9, 이름:"DUP 파도형", 특징:"주 안에서 강도를 흔든다", 수준:"중급 이상", 그림:"벤치",
+   상세:["같은 주 안에서 날마다 횟수와 강도를 바꿉니다. 월 5×3, 수 4×4, 금 3×5 처럼요.",
+         "개념은 Charles Poliquin 이 1988년에 먼저 말했고, 대표 논문은 Rhea 외 2002 입니다. 그 논문에서 벤치가 +28.8% 로 선형(+14.4%)의 두 배였습니다.",
+         "다만 그 차이는 이후 메타분석(17편 510명)에서 재현되지 않았습니다. '파도형이 더 좋다'고 단정할 수는 없습니다.",
+         "엔진이 1RM 기준으로 돌기 때문에 퍼센트만 곱하면 되어서, 열 개 중 가장 쉽게 붙습니다."],
+   기간:"중급 이상. 같은 구조를 유지하며 주마다 무게를 올립니다", 증량:"세트·횟수 구조를 유지하며 주당 2.5~5kg", 근:["rhea","harries"], 주당:"3",
+   세트:T=>[{세트:5, 횟수:3, 무게:T*0.80, 라벨:"월 80%"},{세트:4, 횟수:4, 무게:T*0.75, 라벨:"수 75%"},{세트:3, 횟수:5, 무게:T*0.70, 라벨:"금 70%"}]},
+  {n:10, 이름:"10×10 저먼 볼륨", 특징:"짧고 굵게 근육량 · 6주만", 수준:"중급", 그림:"덤벨",
+   상세:["1RM 의 60% 한 무게로 10세트 10회를 채웁니다. 휴식은 60~90초로 짧습니다. 근력보다 근육량을 노립니다.",
+         "Charles Poliquin 이 1996년에 이 이름을 붙인 것으로 보입니다. 원형은 Vince Gironda 가 1960년대 초에 쓴 것이라는 설이 있으나 출처 한 곳에서만 확인돼 단정하지 못합니다.",
+         "열 개 중 유일하게 영문 위키백과에 독립 항목이 있습니다 — 리프팅 커뮤니티 안보다 일반 대중 인지도가 높은 특이한 위치입니다."],
+   기간:"6주. 그 뒤에는 다음 단계로 넘어가라고 원문이 지정합니다", 증량:"10세트 10회를 전부 완수하면 4~5% 증량", 근:["gvt"], 주당:"1~2",
+   세트:T=>[{세트:10, 횟수:10, 무게:T*0.60}]},
+  {n:12, 이름:"PHUL / PHAT", 특징:"근력과 근육을 같은 주에", 수준:"중급 이상", 그림:"두사람",
+   상세:["한 주를 근력일과 근육일로 나눕니다. 근력일은 무겁고 적게, 근육일은 가볍고 많이.",
+         "PHAT 은 Layne Norton, PHUL 은 Brandon Campbell 이 만들었습니다. 창시 연도는 1차 출처에서 확인하지 못했습니다.",
+         "Boostcamp 기준 PHUL 32,339명 · PHAT 16,051명으로, 위키에 실린 쪽(PHAT)보다 안 실린 쪽(PHUL)이 두 배 많습니다."],
+   기간:"중급 이상", 증량:"확인하지 못했습니다", 근:["phat"], 주당:"4~5",
+   세트:T=>[{세트:4, 횟수:4, 무게:T*0.85, 라벨:"근력일"},{세트:3, 횟수:10, 무게:T*0.70, 라벨:"근육일"}]},
+];
+const 강도들 = [{키:"여유", 이름:"여유있게", 강도:3, 횟수:12},{키:"보통", 이름:"보통", 강도:4, 횟수:10},{키:"힘들게", 이름:"힘들게", 강도:5, 횟수:8}];
+
+const ep   = (w,r) => r<=1 ? w : w*(1+r/30);
+const 되ep = (rm,r) => r<=1 ? rm : rm/(1+r/30);
+const kg   = v => (Math.round(v*10)/10).toString().replace(/\.0$/,"");
+const 콤마 = v => Math.round(v).toLocaleString("ko-KR");
+const 내림 = (v,폭) => Math.max(폭, Math.round(v/폭)*폭);
+/* kg 으로 통일. 박스를 넘칠 만큼 커지면 t 로 */
+const 운동량글 = v => v >= 1e6 ? (v/1e6).toFixed(1)+"kt" : v >= 100000 ? (v/1000).toFixed(1)+"t" : 콤마(v)+"kg";
+const 포화 = f => (1 - Math.exp(-f/2)) / (1 - Math.exp(-1));
+const 빈도배수 = (f, 부위) => 1 + 빈도세기[부위] * (포화(f) - 1);
+const 수준 = (경계, rm, 체중) => { const x = rm/체중;
+  return x<경계[0]?"입문":x<경계[1]?"초급":x<경계[2]?"중급":x<경계[3]?"고급":"상급"; };
+
+function 계산(종목, 지금1RM, 목표1RM, f, 체중){
+  const rows = [];
+  if (!(지금1RM>0) || !(목표1RM>지금1RM)) return {rows, 회:0, 주:0, 넘음:목표1RM>0 && 목표1RM<=지금1RM};
+  let v = 지금1RM, n = 0;
+  while (v < 목표1RM && n < 플랜표.최대회){
+    n++;
+    const L = 수준(종목.경계, v, 체중);
+    const 넉주 = 플랜표.기대속도[L] * 종목.배수 * 빈도배수(f, 종목.부위);
+    v *= (1 + Math.pow(1 + 넉주/100, 1/(4*f)) - 1);
+    const 간격 = Math.max(1, Math.round(플랜표.측정주기[L]*f));
+    rows.push({회:n, 주:Math.ceil(n/f), rm:v, 수준:L, 측정일: n % 간격 === 0});
+  }
+  return {rows, 회:n, 주:Math.ceil(n/f), 넘음:false};
+}
+/** 측정일 워밍업 — NSCA 절차 수준 (총 9회) */
+const 측정워밍업 = (W,폭) => [[0.40,5],[0.60,3],[0.90,1]].map(([p,r]) => ({무게:내림(W*p,폭), 횟수:r}));
+/** 보통 날 워밍업 — 사용자가 1~5세트 중 고른 만큼만 (beta) */
+const 보통워밍업표 = {
+  1:[[0.60,5]],
+  2:[[0.50,5],[0.75,3]],
+  3:[[0.40,5],[0.60,3],[0.80,2]],
+  4:[[0.40,5],[0.55,5],[0.70,3],[0.85,2]],
+  5:[[0.35,5],[0.50,5],[0.65,3],[0.75,3],[0.85,2]],
+};
+const 보통워밍업 = (W,n,폭) => (보통워밍업표[n]||[]).map(([p,r]) => ({무게:내림(W*p,폭), 횟수:r}));
+
+function 경고(f, 부위){
+  const 배 = x => 빈도배수(x, 부위);
+  const pp = x => Math.round((배(x) - 배(x-1)) * 100);
+  if (f === 1) return `주 1회도 운동 효과가 분명히 있지만, ${근("향상 속도가 절반 정도로 느려질 수 있습니다","schoenfeld16")}.`;
+  if (f === 2) return "";
+  if (f === 3) return `주 3회는 흔히 권장되는 범위이지만, <b>휴식과 컨디션 조절에 능숙한 경우에만</b> 권장합니다.`;
+  if (f === 4) return `운동 횟수를 늘리면 근력은 좋아지지만 ${근("얻을 수 있는 효율이 줄어듭니다","pelland")}. 운동 횟수를 주 4회로 늘려 얻는 추가적인 이득은 <b>+${pp(4)}%</b> 정도입니다. 휴식과 컨디션 조절에 유의해야 합니다.`;
+  if (f === 5) return `운동 횟수를 주 5회로 늘려 얻는 추가적인 이득이 <b>+${pp(5)}%</b> 정도로 현저히 줄어듭니다. 휴식과 컨디션 조절이 매우 어렵습니다.`;
+  if (f === 6) return `운동 횟수를 주 6회로 늘려 얻는 추가적인 이득이 단 <b>+${pp(6)}%</b> 이며, 회복이 따라오지 못하면 지속적인 피로와 근육통이 나타날 수 있습니다.`;
+  return `운동 횟수를 주 7회로 늘려 얻는 추가적인 이득은 단 <b>+${pp(7)}%</b> 뿐입니다. <b>쉬는 날이 하루도 없다는 뜻입니다.</b> 이 정도를 실제로 지켜 낸 사례는 연구에서도 드뭅니다. 회복이 따라오지 못하면 ${근("지속적인 피로와 근육통이 먼저 나타나고, 최대근력은 가장 나중에 떨어집니다","meeusen")}. 정말 주 7회까지 필요한지 한 번 더 생각해 보세요.`;
+}
+const 근 = (글, 키) => `<button class="근" data-근거="${키}">${글}</button>`;
+
+/* ─── 상태 — 모든 입력 칸은 비어서 시작한다 ─── */
+const S = {
+  탭:"플랜", 돌아갈곳:null, 설정:{나이:35, 남:true, 체중:109},
+  고른:"", 현재방식:"무게횟수", 현w:"", 현r:"", 현rm:"", 안넣기:false,
+  목표방식:"1RM", 목w:"", 목r:"", 목rm:"",
+  방식:1, 강도:"보통", f:2,
+  팝업:null, 근거키:null, 방펼침:null, 블록:null,
+  이름:"", 토스트:"", 플랜들:[], 펼친:null, 운동:null, 계산중:false,
+  측정일보기:true, 워밍업켬:false, 워밍업수:3,
+};
+const 몸 = () => (S.설정.나이 > 0 && S.설정.체중 > 0) ? S.설정 : null;
+const 체중 = () => (몸() ? 몸().체중 : 73);
+const 고른종목 = () => 종목들.find(x => x.이름 === S.고른);
+const 방식 = () => 방식들.find(m => m.n === S.방식);
+const 강도 = () => 강도들.find(x => x.키 === S.강도);
+const 수 = v => { const n = parseFloat(v); return isNaN(n) ? 0 : n; };
+const 기본무게 = e => { const b = 플랜표.기본무게[e.장비]; return b === null ? 체중() : b; };
+function 현재1RM(){ const e = 고른종목(); if (!e) return 0;
+  if (S.안넣기) return 기본무게(e);
+  return S.현재방식 === "1RM" ? 수(S.현rm) : (수(S.현w)>0 && 수(S.현r)>0 ? ep(수(S.현w), 수(S.현r)) : 0); }
+const 목표1RM = () => S.목표방식 === "1RM" ? 수(S.목rm) : (수(S.목w)>0 && 수(S.목r)>0 ? ep(수(S.목w), 수(S.목r)) : 0);
+const 목표글 = () => S.목표방식 === "1RM" ? `1RM ${kg(수(S.목rm))}kg` : `${kg(수(S.목w))}kg × ${수(S.목r)}회`;
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function 빠른예상(){ const e = 고른종목(); if (!e || !몸()) return null;
+  const r = 계산(e, 현재1RM(), 목표1RM(), S.f, 체중()); return r.rows.length ? r : null; }
+
+/* ─── 그리기 ─── */
+const 탭목록 = ["캘린더","루틴","플랜","종목","설정","메모"];
+function 그리기(){
+  const 몸칸 = document.getElementById("몸");
+  const 초점 = document.activeElement && document.activeElement.id;
+  document.getElementById("탭바").innerHTML = 탭목록.map(t => `<button class="탭 ${S.탭===t?"on":""}" data-탭="${t}">${t}</button>`).join("");
+  document.getElementById("복귀").innerHTML = S.돌아갈곳
+    ? `<div class="복귀띠"><button class="칩 작" id="뒤로">← 뒤로</button><span>${몸()
+        ? `다 넣었습니다 — <b>${esc(S.돌아갈곳)}</b> 탭으로 돌아가세요`
+        : `신체 정보를 넣고 <b>${esc(S.돌아갈곳)}</b> 탭으로 돌아갑니다`}</span></div>` : "";
+  몸칸.innerHTML = S.탭==="플랜" ? 플랜화면() : S.탭==="종목" ? 종목화면() : S.탭==="설정" ? 설정화면() : 빈화면(S.탭);
+  if (S.운동 !== null) 몸칸.insertAdjacentHTML("beforeend", 운동화면());
+  if (S.팝업 === "방식") 몸칸.insertAdjacentHTML("beforeend", 방식팝업());
+  else if (S.팝업 === "결과") 몸칸.insertAdjacentHTML("beforeend", 결과팝업());
+  else if (S.팝업 === "이름") 몸칸.insertAdjacentHTML("beforeend", 이름팝업());
+  if (S.근거키) 몸칸.insertAdjacentHTML("beforeend", 근거팝업());
+  if (S.계산중) 몸칸.insertAdjacentHTML("beforeend", 로딩());
+  if (S.토스트) 몸칸.insertAdjacentHTML("beforeend", `<div class="토스트">${esc(S.토스트)}</div>`);
+  설명그리기(); 묶기();
+  if (초점){ const el = document.getElementById(초점); if (el && el.focus){ try { el.focus(); } catch(_){} } }
+}
+const 빈화면 = t => `<div class="제목">${t}</div><div class="카드"><div class="메모">이 시안은 <b>플랜 · 종목 · 설정</b> 세 탭만 만들었습니다.</div></div>`;
+const 로딩 = () => `<div class="로딩">
+  <svg class="봉" width="112" height="44" viewBox="0 0 112 44" aria-hidden="true"><g fill="#fff">
+  <rect x="8" y="10" width="9" height="24" rx="3"/><rect x="20" y="4" width="11" height="36" rx="3"/>
+  <rect x="31" y="19" width="50" height="6" rx="3"/><rect x="81" y="4" width="11" height="36" rx="3"/>
+  <rect x="95" y="10" width="9" height="24" rx="3"/></g></svg><b>계산 중…</b></div>`;
+
+function 플랜화면(){
+  const e = 고른종목();
+  let h = `<div class="제목">플랜</div>
+  <div class="카드"><span class="번호">플1</span>
+    <select class="칸" id="고르기">
+      <option value="">종목 고르기…</option>
+      ${종목들.map(x => `<option value="${esc(x.이름)}" ${x.합의?"":"disabled"} ${x.이름===S.고른?"selected":""}>${esc(x.이름)}${x.합의?"":" — 근거 합의 전"}</option>`).join("")}
+    </select>
+  </div>`;
+  if (!e) return h;
+  if (!몸()){
+    const 빈 = [S.설정.나이>0?null:"나이", S.설정.체중>0?null:"체중"].filter(Boolean).join(" · ");
+    return h + `<div class="카드" style="border-color:var(--경고)"><span class="번호">플5</span>
+      <div class="경고박스"><b>신체 정보를 먼저 넣어 주세요.</b><br>지금 <b>${빈}</b> 이(가) 비어 있습니다.</div>
+      <div class="단추줄"><button class="단추 주" id="설정가기">설정에서 입력하기</button></div></div>`;
+  }
+  const 지금 = 현재1RM(), 있 = 지금 > 0, m = 방식(), 예상 = 빠른예상();
+  h += `<div class="카드"><span class="번호">플2</span>
+    <div class="라벨">나의 수행능력</div>
+    <div class="칩줄">
+      <button class="칩 ${!S.안넣기&&S.현재방식==="1RM"?"on":""}" data-현방식="1RM">1RM</button>
+      <button class="칩 ${!S.안넣기&&S.현재방식==="무게횟수"?"on":""}" data-현방식="무게횟수">무게 × 횟수</button>
+      <button class="칩 ${S.안넣기?"on":""}" id="안넣기">입력하지 않음</button>
+    </div>
+    <div class="입력줄 ${S.안넣기?"흐림처리":""}">
+      ${S.현재방식==="1RM"
+        ? `<div class="자란"><div class="라벨">1RM (kg)</div><input class="칸" type="number" inputmode="decimal" id="현rm" value="${esc(S.현rm)}" placeholder="—"></div>`
+        : `<div class="자란 둘">
+             <div><div class="라벨">무게 (kg)</div><input class="칸" type="number" inputmode="decimal" id="현w" value="${esc(S.현w)}" placeholder="—"></div>
+             <div><div class="라벨">횟수</div><input class="칸" type="number" inputmode="numeric" id="현r" value="${esc(S.현r)}" placeholder="—"></div>
+           </div>`}
+      <div class="곁 ${있?"":"빔"}"><b>${있 ? 수준(e.경계, 지금, 체중()) : "—"}</b><i>${있 ? kg(지금)+"kg" : "수준"}</i></div>
+    </div>
+    ${S.안넣기 ? `<div class="메모">${e.장비} 기준 <b>${kg(기본무게(e))}kg</b> 으로 시작합니다</div>` : ""}
+  </div>
+
+  <div class="카드"><span class="번호">플3</span>
+    <div class="라벨">운동 목표</div>
+    <div class="칩줄">
+      <button class="칩 ${S.목표방식==="1RM"?"on":""}" data-목방식="1RM">1RM</button>
+      <button class="칩 ${S.목표방식==="무게횟수"?"on":""}" data-목방식="무게횟수">무게 × 횟수</button>
+    </div>
+    <div class="입력줄">
+      ${S.목표방식==="1RM"
+        ? `<div class="자란"><div class="라벨">목표 1RM (kg)</div><input class="칸" type="number" inputmode="decimal" id="목rm" value="${esc(S.목rm)}" placeholder="—"></div>`
+        : `<div class="자란 둘">
+             <div><div class="라벨">무게 (kg)</div><input class="칸" type="number" inputmode="decimal" id="목w" value="${esc(S.목w)}" placeholder="—"></div>
+             <div><div class="라벨">횟수</div><input class="칸" type="number" inputmode="numeric" id="목r" value="${esc(S.목r)}" placeholder="—"></div>
+           </div>`}
+      <div class="곁 ${예상?"":"빔"}"><b>${예상 ? 콤마(예상.주)+"주" : "—"}</b><i>예상</i></div>
+    </div>
+  </div>
+
+  <div class="카드"><span class="번호">플4</span>
+    <div class="라벨">훈련 방식</div>
+    <button class="칸" id="방식열기"><span>${esc(m.이름)}</span>
+      <span style="display:flex;align-items:center;gap:6px"><span class="알약">${esc(m.수준)}</span>
+      <span style="font-size:11px;color:var(--옅음);font-weight:400">바꾸기 ›</span></span></button>
+  </div>
+
+  <div class="카드"><span class="번호">플5</span>
+    <div class="라벨">신체 정보</div>
+    <div class="칸" style="justify-content:flex-start;gap:10px">${몸().나이}세 · ${몸().남?"남":"여"} · ${kg(몸().체중)}kg</div>
+    <label class="체크"><input type="checkbox" id="설정빔"> 설정을 비워 보기 — 안내와 이동 흐름 확인용</label>
+  </div>
+
+  <div class="단추줄"><button class="단추 주" id="계산">계산해 보기</button></div>
+  <div style="height:4px"></div>`;
+  return h;
+}
+
+/* ─── 훈련 방식 팝업 — 열 개가 한 화면에 · 처음엔 아무것도 안 펼쳐져 있다 ─── */
+function 방식팝업(){
+  const 보임 = 방식들.filter(x => !x.딸림 || 방식들.some(y => y.아래===x.n && (S.방식===y.n || S.방식===x.n)));
+  return `<div class="덮개"><div class="팝업 꽉">
+    <div class="팝머리">훈련 방식 <span style="margin-left:auto;font-size:11px;font-weight:400">눌러서 펼치기</span></div>
+    <div class="팝몸 빈"><div class="방목록">${보임.map(방행).join("")}</div></div>
+    <div class="팝발"><button class="단추" data-닫기="1">그만두기</button>
+      <button class="단추 주" id="방식고름">이 방식으로</button></div></div></div>`;
+}
+function 방행(m){
+  const 열림 = S.방펼침 === m.n, 골름 = S.방식 === m.n;
+  return `<div class="${m.딸림?"딸림":""}">
+    <button class="방행 ${골름?"골름":""}" data-방펼침="${m.n}">
+      <svg class="방그림" viewBox="0 0 170 124" preserveAspectRatio="xMaxYMid slice" aria-hidden="true">
+        <defs><radialGradient id="빛${m.n}" cx="62%" cy="30%" r="70%">
+          <stop offset="0" stop-color="#8FC4F2" stop-opacity=".95"/><stop offset="1" stop-color="#8FC4F2" stop-opacity=".30"/>
+        </radialGradient></defs>
+        <g fill="url(#빛${m.n})" color="#8FC4F2">${실루엣[m.그림]}</g>
+      </svg>
+      <span class="방글">
+        <span class="방윗줄"><span class="방이름">${esc(m.이름)}</span><span class="방수준">${esc(m.수준)}</span></span>
+        <span class="방특징">${esc(m.특징)}</span>
+      </span>
+    </button>
+    ${열림 ? `<div class="방아래">
+      ${m.상세.map((p,i)=>`<p class="듦${i?i+1:""}">${esc(p)}</p>`).join("")}
+      <div class="듦4">
+        <div class="키">권장 기간</div><p style="margin-bottom:5px">${esc(m.기간)}</p>
+        <div class="키">자동 증량</div><p style="margin-bottom:5px">${esc(m.증량)}</p>
+        <div class="키">주당 편성</div><p style="margin-bottom:5px">${esc(m.주당)}회</p>
+        <div class="키">근거</div><p>${m.근.map(k=>근(근거[k].저자+" "+근거[k].연도, k)).join(" · ")}</p>
+      </div></div>` : ""}
+  </div>`;
+}
+
+function 결과팝업(){
+  const e = 고른종목(), 지금 = 현재1RM(), 목표 = 목표1RM();
+  const r = 계산(e, 지금, 목표, S.f, 체중());
+  if (!r.rows.length) return `<div class="덮개"><div class="팝업 좁">
+      <div class="팝머리">${esc(S.고른)}</div>
+      <div class="팝몸"><div class="주의">${r.넘음 ? "목표가 지금 실력보다 낮거나 같습니다. 목표를 올려 주세요." : "수행능력과 목표를 넣어 주세요."}</div></div>
+      <div class="팝발"><button class="단추" data-닫기="1">닫기</button></div></div></div>`;
+  const 끝 = new Date(); 끝.setDate(끝.getDate() + r.주*7);
+  const 최대rm = r.rows[r.rows.length-1].rm, 총 = r.rows.length, 걸음 = Math.max(1, Math.ceil(총/56));
+  let 막대 = "";
+  for (let i=0; i<총; i+=걸음){ const x = r.rows[i];
+    막대 += `<i class="${x.측정일?"측":""}" style="height:${Math.max(4, x.rm/최대rm*100)}%"></i>`; }
+  const 경고글 = 경고(S.f, e.부위);
+  return `<div class="덮개"><div class="팝업 꽉">
+    <div class="팝머리">${esc(S.고른)}</div>
+    <div class="팝몸">
+      <div class="라벨">주당 횟수</div>
+      <div class="칩줄 한줄">${[1,2,3,4,5,6,7].map(f=>`<button class="칩 빈도 ${S.f===f?"on":""}" data-빈도="${f}">${f}회</button>`).join("")}</div>
+      ${경고글 ? `<div class="경고박스">${경고글}</div>` : ""}
+      <div class="띠">
+        <div class="띠줄"><span>목표</span><b>${kg(목표)}kg</b></div>
+        <div class="띠줄"><span>예상 도달 시간</span><b>${콤마(r.주)}주</b></div>
+        <div class="띠줄"><span></span><span style="color:var(--옅음);font-size:11px">${끝.getFullYear()}년 ${끝.getMonth()+1}월쯤 · ${(r.주/52).toFixed(1)}년</span></div>
+        <div class="띠줄"><span>필요 운동 횟수</span><b>약 ${콤마(r.회)}회</b></div>
+      </div>
+      <div class="그래프">${막대}</div>
+      <div class="메모">진한 막대가 측정일입니다. 측정일에도 본 운동을 그대로 합니다.</div>
+      <div class="라벨">회차 — 측정일로 묶었습니다. 줄을 누르면 그 안이 펼쳐집니다</div>
+      ${블록들(r)}
+      <div class="메모">처방은 <b>${esc(방식().이름)}</b> 기준입니다.</div>
+      <div class="주의">가이드라인입니다. 성공·실패에 따라 목표까지의 회차가 달라집니다.</div>
+    </div>
+    <div class="팝발">
+      <button class="단추" id="이미지">이미지 저장</button>
+      <button class="단추 주" id="실행">이 플랜으로 실행</button>
+    </div></div></div>`;
+}
+function 블록들(r){
+  const 블 = []; let 시작 = 0;
+  r.rows.forEach((x,i) => { if (x.측정일 || i === r.rows.length-1){ 블.push(r.rows.slice(시작, i+1)); 시작 = i+1; } });
+  return `<div class="블록">${블.map((b,i) => {
+    const 첫 = b[0], 끝 = b[b.length-1], 열림 = S.블록 === i;
+    const 머리 = `<button class="블머리 ${끝.측정일?"측":""}" data-블록="${i}">
+        <span>${첫.회}~${끝.회}회</span><span style="color:var(--옅음)">${첫.주}~${끝.주}주</span>
+        <span style="margin-left:auto">${kg(첫.rm)} → ${kg(끝.rm)}kg</span>
+        <span class="알약">${끝.수준}</span><span style="color:var(--강조);font-size:10px">${열림?"▲":"▼"}</span></button>`;
+    if (!열림) return 머리;
+    return 머리 + `<table class="표"><thead><tr><th>회</th><th>주</th><th>목표1RM</th><th>처방</th></tr></thead>
+      <tbody>${b.map(x => `<tr class="${x.측정일?"측":""}"><td>${x.회}</td><td>${x.주}</td><td>${kg(x.rm)}</td>
+        <td>${x.측정일?"측정 + ":""}${처방(x.rm).요약}</td></tr>`).join("")}</tbody></table>`;
+  }).join("")}</div>`;
+}
+function 처방(T){
+  const m = 방식();
+  const 목 = m.세트(T, m.강도단계 ? 강도() : undefined).map(x => ({...x, 무게: 내림(x.무게, 플랜표.무게폭)}));
+  const 요약 = 목.length === 1 ? `${kg(목[0].무게)}kg × ${목[0].횟수}회 × ${목[0].세트}세트`
+    : 목.map(x => `${x.라벨?x.라벨+" ":""}${kg(x.무게)}×${x.횟수}×${x.세트}`).join(" / ");
+  return {목, 요약};
+}
+function 이름팝업(){
+  return `<div class="덮개"><div class="팝업">
+    <div class="팝머리">플랜 종목 만들기</div>
+    <div class="팝몸">
+      <div class="라벨">이름</div>
+      <input class="칸" id="이름칸" value="${esc(S.이름)}">
+      <div class="띠" style="background:var(--면2);border-color:var(--속선)">
+        <div class="메모">종목 탭에 이렇게 보입니다</div>
+        <div style="display:flex;align-items:center;gap:5px;font-size:13px">
+          <b>${esc(S.이름 || S.고른)}</b><span class="목박스">목표</span><span>${목표글()}</span></div>
+      </div>
+      <div class="메모">슈퍼세트·드랍세트로 묶을 수 없고, 무게는 플랜이 정합니다.</div>
+    </div>
+    <div class="팝발"><button class="단추" data-닫기="1">그만두기</button>
+      <button class="단추 주" id="확정">만들기</button></div></div></div>`;
+}
+function 근거팝업(){
+  const g = 근거[S.근거키]; if (!g) return "";
+  return `<div class="덮개" style="z-index:7"><div class="팝업 좁">
+    <div class="팝머리">근거</div>
+    <div class="팝몸">
+      <div style="font-size:12.5px;font-weight:700;line-height:1.5">${esc(g.제목)}</div>
+      <div class="메모"><b>${esc(g.저자)}</b> · ${esc(g.연도)}</div>
+      <div class="메모">${esc(g.실은곳)}</div>
+      <div class="띠" style="background:var(--면2);border-color:var(--속선)"><div class="메모" style="color:var(--흐림)">${esc(g.무엇)}</div></div>
+      <div class="메모">${g.등급.startsWith("⚠") ? `<span style="color:var(--나쁨)">${esc(g.등급)}</span>` : esc(g.등급)}</div>
+    </div>
+    <div class="팝발"><button class="단추" id="근거닫기">닫기</button></div></div></div>`;
+}
+
+/* ─── 종목 탭 ─── */
+function 종목화면(){
+  const 평범 = ["인클라인 벤치프레스","랫 풀다운","레그 익스텐션"];
+  return `<div class="제목">종목</div>
+  <div class="칩줄"><button class="칩 on">전체</button><button class="칩">가슴</button><button class="칩">등</button><button class="칩">하체</button></div>
+  <div class="카드" style="padding:0;gap:0"><span class="번호">종2</span>
+    ${S.플랜들.length ? S.플랜들.map((p,i)=>플줄(p,i)).join("")
+      : `<div class="메모" style="padding:12px">플랜 종목이 아직 없습니다. 플랜 탭에서 만들어 보세요.</div>`}
+    ${평범.map(n=>`<div class="평">${n}<span style="margin-left:auto;font-size:11px;color:var(--옅음)">—</span></div>`).join("")}
+  </div>`;
+}
+function 플줄(p, i){
+  const 진행 = Math.max(0, Math.min(1, (p.지금 - p.시작) / (p.목표 - p.시작)));
+  const 열림 = S.펼친 === i, 남은회 = p.총회 - p.성공, 남은주 = Math.ceil(남은회 / p.f);
+  const 타일 = (큰, 밑, 비) => `<div class="타일"><b>${큰}</b>
+    <div class="작게이지"><span style="width:${Math.max(2,Math.min(100,비*100))}%"></span></div><span class="밑">${밑}</span></div>`;
+  return `<div class="플줄">
+    <button class="플머리" data-플랜="${i}">
+      <b>${esc(p.이름)}</b><span class="목박스">목표</span><span style="font-size:12px">${esc(p.목표글)}</span>
+      <span style="margin-left:auto"></span>
+      <span class="알약">${p.성공}회</span><span class="알약">${p.주차}주차</span>
+      <span style="color:var(--강조);font-size:11px">${열림?"▲":"▼"}</span>
+    </button>
+    <div class="큰게이지"><span class="차" style="width:${진행*100}%"></span><span class="퍼">${Math.round(진행*100)}%</span></div>
+    ${열림 ? `<div class="가로줄"></div>
+      <div class="여축"><span class="찬" style="width:${진행*100}%"></span>
+        <span class="점" style="left:${진행*100}%"></span><span class="끝"></span></div>
+      <div class="여글"><span>시작 ${kg(p.시작)}kg</span><span>현재 <b style="color:var(--강조)">${kg(p.지금)}kg</b></span><span>목표 ${kg(p.목표)}kg</span></div>
+      <div class="타일줄">
+        ${타일(p.성공 + "회차", 콤마(남은회) + "회차 남음", p.성공/p.총회)}
+        ${타일(운동량글(p.볼륨), "누적 운동량", p.볼륨/p.예상총볼륨)}
+        ${타일(콤마(남은주) + "주 남음", "누적 " + p.주차 + "주", p.주차/(p.주차+남은주))}
+      </div>
+      <div class="한줄"><span>다음 측정일</span><span><b>${p.다음측정 - p.성공}회차 후</b> 예정 (${p.다음측정}회차)</span></div>
+      <div class="단추줄" style="margin-top:8px"><button class="단추" data-운동="${i}">운동 시작해 보기</button></div>
+    ` : ""}
+  </div>`;
+}
+
+/* ─── 운동 중 ─── */
+function 운동화면(){
+  const p = S.플랜들[S.운동]; if (!p) return "";
+  const 측 = S.측정일보기, W = p.본무게, R = p.본횟수, 세트수 = p.본세트;
+  const 업 = 측 ? 측정워밍업(W, 플랜표.무게폭) : (S.워밍업켬 ? 보통워밍업(W, S.워밍업수, 플랜표.무게폭) : []);
+  const 본볼륨 = W * R * 세트수;
+  const 뺀볼륨 = 업.reduce((a,x)=>a + x.무게*x.횟수, 0) + (측 ? W*5 : 0);
+  return `<div class="덮개"><div class="팝업 꽉">
+    <div class="팝머리">${esc(p.이름)} <span style="margin-left:auto;font-size:11px;font-weight:400">운1</span></div>
+    <div class="팝몸">
+      <div class="칩줄 한줄">
+        <button class="칩 빈도 ${측?"on":""}" data-측정일="1">측정일</button>
+        <button class="칩 빈도 ${측?"":"on"}" data-측정일="0">보통 날</button>
+      </div>
+      ${측 ? "" : `<div class="단추줄"><button class="단추 ${S.워밍업켬?"주":""}" id="워밍업켜기">워밍업 세트 ${S.워밍업켬?"끄기":"추가"}<span class="베타">beta</span></button></div>
+        ${S.워밍업켬 ? `<div class="라벨">몇 세트 추가할까요</div>
+          <div class="칩줄 한줄">${[1,2,3,4,5].map(n=>`<button class="칩 빈도 ${S.워밍업수===n?"on":""}" data-워밍업수="${n}">${n}세트</button>`).join("")}</div>
+          <div class="메모">본 세트 <b>${kg(W)}kg</b> 을 기준으로 자동 계산했습니다. 부상 예방이 목적이라 무게만 정하고 횟수는 줄여 둡니다.</div>` : ""}`}
+      ${업.map(x => `<div class="세줄 워"><span class="박"></span><span class="딱지">워밍업</span><span>${kg(x.무게)}kg × ${x.횟수}회</span></div>`).join("")}
+      ${측 ? `<div class="세줄 측"><span class="박"></span><span class="딱지">측정</span><span>${kg(W)}kg × 최대 반복</span>
+        <span style="margin-left:auto;font-size:10px;color:var(--옅음)">1RM 기록에</span></div>` : ""}
+      ${Array.from({length:세트수}, (_,i) => `<div class="세줄"><span class="박"></span><span>${kg(W)}kg × ${R}회</span>
+        <span style="margin-left:auto;font-size:11px;color:var(--옅음)">${i+1} / ${세트수}</span></div>`).join("")}
+      <div class="볼륨줄"><span>오늘 볼륨</span><b>${콤마(본볼륨)}kg</b></div>
+      ${뺀볼륨 ? `<div class="메모">워밍업${측?" · 측정 세트":""}는 <b>볼륨에 들어가지 않습니다</b> — 넣으면 ${콤마(본볼륨+뺀볼륨)}kg 이 되어 운동량이 부풀어 보입니다.</div>` : ""}
+      ${측 ? `<div class="메모">측정일 워밍업은 총 ${업.reduce((a,x)=>a+x.횟수,0)}회입니다. 워밍업은 기록에 남지 않고, 측정 세트는 볼륨에서는 빠지지만 <b>1RM 기록에는 들어갑니다</b>.</div>`
+           : `<div class="메모">보통 날 워밍업은 <b>앱이 처방하지 않습니다</b> — ${근("10RM 부하에서는 워밍업을 해도 안 해도 차이가 없었습니다","생략")}. 필요하면 위 버튼으로 켜세요.</div>`}
+    </div>
+    <div class="팝발"><button class="단추" data-닫기운동="1">닫기</button></div></div></div>`;
+}
+
+function 설정화면(){
+  const m = S.설정, 찬 = !!몸();
+  return `<div class="제목">설정</div>
+  <div class="카드" ${찬?"":'style="border-color:var(--경고)"'}><span class="번호">설1</span>
+    <div class="라벨">신체 정보</div>
+    <div class="둘">
+      <div><div class="라벨">나이</div><input class="칸" type="number" inputmode="numeric" id="설나이" value="${m.나이>0?m.나이:""}" placeholder="예: 35"></div>
+      <div><div class="라벨">체중 (kg)</div><input class="칸" type="number" inputmode="decimal" id="설체중" value="${m.체중>0?m.체중:""}" placeholder="예: 109"></div>
+    </div>
+    <div class="라벨">성별</div>
+    <div class="칩줄"><button class="칩 ${m.남?"on":""}" data-성별="남">남</button><button class="칩 ${m.남?"":"on"}" data-성별="여">여</button></div>
+    ${S.돌아갈곳 ? `<div class="단추줄"><button class="단추 ${찬?"주":""}" id="저장가기">넣고 ${esc(S.돌아갈곳)} 탭으로 돌아가기</button></div>` : ""}
+  </div>
+  <div class="카드"><div class="메모">이 시안에는 설정의 나머지 항목을 넣지 않았습니다.</div></div>`;
+}
+
+/* ─── 이벤트 ─── */
+function 묶기(){
+  const q = (s,f) => document.querySelectorAll(s).forEach(f);
+  const 글자 = (id, 넣기) => { const el = document.getElementById(id); if(!el) return;
+    el.addEventListener("input", () => 넣기(el.value));
+    el.addEventListener("change", () => 그리기()); };
+
+  q(".탭", b => b.onclick = () => { const t = b.dataset.탭;
+    if (S.돌아갈곳 && t === S.돌아갈곳) S.돌아갈곳 = null;
+    S.탭 = t; S.팝업 = null; S.근거키 = null; 그리기(); });
+  const back = document.getElementById("뒤로");
+  if (back) back.onclick = () => { S.탭 = S.돌아갈곳; S.돌아갈곳 = null; 그리기(); };
+  const g = document.getElementById("고르기");
+  if (g) g.addEventListener("change", () => { S.고른 = g.value; 그리기(); });
+  const an = document.getElementById("안넣기");
+  if (an) an.onclick = () => { S.안넣기 = !S.안넣기; 그리기(); };
+  const sb = document.getElementById("설정빔");
+  if (sb) sb.addEventListener("change", () => {
+    S.설정 = sb.checked ? {나이:0, 남:S.설정.남, 체중:0} : {나이:35, 남:S.설정.남, 체중:109}; 그리기(); });
+  const 가 = document.getElementById("설정가기");
+  if (가) 가.onclick = () => { S.돌아갈곳 = "플랜"; S.탭 = "설정"; 그리기(); };
+
+  q("[data-현방식]", b => b.onclick = () => { S.현재방식 = b.dataset.현방식; S.안넣기 = false; 그리기(); });
+  q("[data-목방식]", b => b.onclick = () => { S.목표방식 = b.dataset.목방식; 그리기(); });
+  q("[data-빈도]",   b => b.onclick = () => { S.f = +b.dataset.빈도; S.블록 = null; 그리기(); });
+  q("[data-성별]",   b => b.onclick = () => { S.설정.남 = b.dataset.성별 === "남"; 그리기(); });
+  q("[data-방펼침]", b => b.onclick = () => { const n = +b.dataset.방펼침; S.방펼침 = S.방펼침===n ? null : n; S.방식 = n; 그리기(); });
+  q("[data-블록]",   b => b.onclick = () => { const i = +b.dataset.블록; S.블록 = S.블록===i ? null : i; 그리기(); });
+  q("[data-근거]",   b => b.onclick = ev => { ev.stopPropagation(); S.근거키 = b.dataset.근거; 그리기(); });
+  q("[data-닫기]",   b => b.onclick = () => { S.팝업 = null; S.방펼침 = null; 그리기(); });
+  q("[data-닫기운동]", b => b.onclick = () => { S.운동 = null; 그리기(); });
+  q("[data-플랜]",   b => b.onclick = () => { const i = +b.dataset.플랜; S.펼친 = S.펼친===i ? null : i; 그리기(); });
+  q("[data-운동]",   b => b.onclick = () => { S.운동 = +b.dataset.운동; 그리기(); });
+  q("[data-측정일]", b => b.onclick = () => { S.측정일보기 = b.dataset.측정일 === "1"; 그리기(); });
+  q("[data-워밍업수]", b => b.onclick = () => { S.워밍업수 = +b.dataset.워밍업수; 그리기(); });
+  const wu = document.getElementById("워밍업켜기");
+  if (wu) wu.onclick = () => { S.워밍업켬 = !S.워밍업켬; 그리기(); };
+  const 근닫 = document.getElementById("근거닫기");
+  if (근닫) 근닫.onclick = () => { S.근거키 = null; 그리기(); };
+
+  ["현rm","현w","현r","목rm","목w","목r"].forEach(id => 글자(id, v => { S[id] = v; }));
+  const 설입력 = (id, 넣기) => { const el = document.getElementById(id); if(!el) return;
+    el.addEventListener("input", () => 넣기(수(el.value)));
+    el.addEventListener("change", () => 그리기()); };
+  설입력("설나이", v => S.설정.나이 = v);  설입력("설체중", v => S.설정.체중 = v);
+  const 저장 = document.getElementById("저장가기");
+  if (저장) 저장.onclick = () => { if (!몸()){ 알림("나이와 체중을 넣어 주세요"); return; }
+    S.탭 = S.돌아갈곳; S.돌아갈곳 = null; 그리기(); };
+
+  const 방열 = document.getElementById("방식열기");
+  if (방열) 방열.onclick = () => { S.팝업 = "방식"; S.방펼침 = null; 그리기(); };
+  const 방고 = document.getElementById("방식고름");
+  if (방고) 방고.onclick = () => { S.팝업 = null; S.방펼침 = null; 알림(방식().이름 + " 로 정했습니다"); 그리기(); };
+
+  const c = document.getElementById("계산");
+  if (c) c.onclick = () => {
+    if (!(현재1RM()>0)){ 알림("수행능력을 넣어 주세요"); return; }
+    if (!(목표1RM()>0)){ 알림("목표를 넣어 주세요"); return; }
+    S.계산중 = true; S.블록 = null; 그리기();
+    setTimeout(() => { S.계산중 = false; S.팝업 = "결과"; 그리기(); }, 1700); };
+  const im = document.getElementById("이미지");
+  if (im) im.onclick = () => 알림("갤러리에 PNG 로 저장합니다 (앱에서 동작)");
+  const ex = document.getElementById("실행");
+  if (ex) ex.onclick = () => { S.이름 = S.고른; S.팝업 = "이름"; 그리기(); };
+  const nm = document.getElementById("이름칸");
+  if (nm) nm.addEventListener("input", () => { S.이름 = nm.value; });
+  const ok = document.getElementById("확정");
+  if (ok) ok.onclick = 만들기;
+}
+
+function 만들기(){
+  const e = 고른종목(), 시작 = 현재1RM(), 목표 = 목표1RM();
+  const r = 계산(e, 시작, 목표, S.f, 체중());
+  if (!r.rows.length){ 알림("계산할 수 없습니다"); return; }
+  const 성공 = Math.min(12, r.rows.length), 주차 = Math.ceil(성공/S.f);
+  const 지금 = r.rows[성공-1].rm;
+  const 다음i = r.rows.findIndex((x,i) => i >= 성공 && x.측정일);
+  const 처 = 처방(r.rows[Math.min(성공, r.rows.length-1)].rm), 본 = 처.목[0];
+  const 회볼륨 = 처.목.reduce((a,x)=>a + x.무게 * (parseInt(x.횟수)||1) * x.세트, 0);
+  S.플랜들.unshift({
+    이름: S.이름 || S.고른, 목표글: 목표글(), 시작, 지금, 목표, 성공, 총회: r.회, 주차, f: S.f,
+    다음측정: 다음i >= 0 ? r.rows[다음i].회 : r.회,
+    본무게: 본.무게, 본횟수: parseInt(본.횟수) || 5, 본세트: 본.세트,
+    볼륨: Math.round(회볼륨 * 성공 * 0.94), 예상총볼륨: Math.round(회볼륨 * r.회 * 1.25),
+  });
+  S.팝업 = null; S.탭 = "종목"; S.펼친 = 0;
+  알림("종목 탭에 플랜 종목을 만들었습니다"); 그리기();
+}
+let 시계;
+function 알림(t){ S.토스트 = t; clearTimeout(시계);
+  시계 = setTimeout(() => { S.토스트 = ""; 그리기(); }, 2400); }
+
+function 설명그리기(){
+  document.getElementById("설명").innerHTML = `
+    <h2>이번에 바꾼 것</h2>
+    <ul>
+      <li><b>모든 입력 칸이 비어서 시작</b>합니다. 판정·예상 박스도 <b>—</b> 로 있다가 넣으면 채워집니다</li>
+      <li>"입력하지 않음"을 <b>1RM · 무게×횟수 옆 세 번째 버튼</b>으로 올렸습니다. 체크 한 줄을 없앴습니다</li>
+      <li>1번 방식 이름을 <b>꾸준히 늘리기</b>로 — 앱이 이미 쓰던 말입니다</li>
+      <li>훈련 방식과 고르기 버튼이 <b>한 칸</b>이 되었습니다</li>
+      <li>방식 목록은 <b>처음엔 아무것도 안 펼쳐져</b> 있고, 고른 것은 <b>흰 테두리</b>만. <b>열 개가 한 화면</b>에 들어갑니다</li>
+      <li>밴드 배경은 <b>중심색 하나</b>로 통일했습니다</li>
+      <li>주당 횟수는 <b>7개 버튼이 한 줄</b>에 들어갑니다</li>
+      <li>팝업 안이 <b>스크롤</b>됩니다 (잘리던 것)</li>
+      <li>종목 상세: 여정 바를 <b>가로줄 바로 아래</b>로 붙이고, <b>박스 3개가 한 줄</b>에</li>
+      <li>보통 날 <b>워밍업 세트 추가 (beta)</b> — 1~5세트 중 고르면 본 세트 무게로 자동 계산</li>
+    </ul>
+
+    <h2>beta 표시</h2>
+    <p style="margin:0 0 10px">버튼 우측 상단에 <b>빨간 박스 · 흰 글씨</b>로 <code>beta</code>. <b>나중에 홍겸 님이 결정할 기능</b>이라는 뜻으로, 앞으로 "beta 표시" 라고 하시면 같은 방식으로 붙이겠습니다.</p>
+
+    <h2>워밍업 세트 (beta)</h2>
+    <div class="감"><table>
+      <thead><tr><th>세트</th><th>구성 (본 세트 무게 기준)</th></tr></thead>
+      <tbody>
+        <tr><td>1세트</td><td>60% × 5</td></tr>
+        <tr><td>2세트</td><td>50% × 5 → 75% × 3</td></tr>
+        <tr><td>3세트</td><td>40% × 5 → 60% × 3 → 80% × 2</td></tr>
+        <tr><td>4세트</td><td>40% × 5 → 55% × 5 → 70% × 3 → 85% × 2</td></tr>
+        <tr><td>5세트</td><td>35% × 5 → 50% × 5 → 65% × 3 → 75% × 3 → 85% × 2</td></tr>
+      </tbody></table></div>
+    <p style="margin:0 0 10px">무게는 올리고 횟수는 줄입니다. 부상 예방이 목적이라 볼륨을 적게 두었습니다. 측정일은 이 버튼과 무관하게 항상 3세트가 붙습니다.</p>
+
+    <h2>그림에 대해 — 정직하게</h2>
+    <p style="margin:0 0 10px"><b>저는 사진을 만들 수 없습니다.</b> 실루엣에 조명 그라데이션을 얹어 사진처럼 보이게 그렸습니다. 스쿼트 · 벤치 · 데드 · 프레스 · 로우 · 원판 · 랙 · 덤벨 · 두 사람 · 바벨 든 사람 — 열 가지입니다. 진짜 사진이 필요하면 무료로 쓸 수 있는 사진을 홍겸 님이 골라 주시면 넣겠습니다.</p>
+
+    <h2>따로 만든 비교 시안</h2>
+    <p style="margin:0 0 10px">박스 게이지 두 가지(테두리 안 작은 바 / 박스 전체가 파랗게 차오름)와, 방식 상세를 펼치는 두 가지(줄 안에서 펼치기 / 오른쪽에서 덮으며 들어오기)를 나란히 놓은 페이지를 따로 올렸습니다.</p>
+
+    <h2>아직 물어볼 것</h2>
+    <div class="q"><b>블록 묶음 기준</b> — 측정일로 묶었습니다. 수준(입문·초급…) 기준이 나을까요?</div>
+    <div class="q"><b>1번 방식 이름</b> — 일단 "꾸준히 늘리기"로 넣었습니다. 나중에 고치기로</div>`;
+}
+그리기();
+</script>
+
+</body></html>

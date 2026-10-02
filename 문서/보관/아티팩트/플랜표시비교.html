@@ -1,0 +1,266 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>플랜 표시 비교</title>
+<style>
+/* 레이아웃: 두 가지씩 나란히 놓고 눌러 비교한다. 색 규격은 앱 Theme.kt 와 같다 */
+:root{
+  --바탕:#F8FAFB; --면:#FFFFFF; --면2:#F0F4F8; --선:#D3DFE9; --속선:#B5C9DA;
+  --글:#000000; --흐림:#35495B; --옅음:#5E6B77;
+  --강조:#084B83; --강조글:#FFFFFF; --강조옅음:#E1E9F0; --강조연함:#CBDCEA;
+  --밴드1:#06304F; --밴드2:#0A5490;
+  --본:-apple-system,"Segoe UI",Roboto,"Noto Sans KR",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --바탕:#07121E; --면:#111F2E; --면2:#172738; --선:#253A50; --속선:#37526E;
+  --글:#E5F0FA; --흐림:#C5D1DB; --옅음:#9BA7B3;
+  --강조:#7FB3E6; --강조글:#04213D; --강조옅음:#1F3246; --강조연함:#2C4966;
+  --밴드1:#0A3A5E; --밴드2:#11649F; color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --바탕:#07121E; --면:#111F2E; --면2:#172738; --선:#253A50; --속선:#37526E;
+  --글:#E5F0FA; --흐림:#C5D1DB; --옅음:#9BA7B3;
+  --강조:#7FB3E6; --강조글:#04213D; --강조옅음:#1F3246; --강조연함:#2C4966;
+  --밴드1:#0A3A5E; --밴드2:#11649F; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--바탕);color:var(--글);font-family:var(--본);margin:0}
+.랩{padding-inline:16px;padding-block:20px 48px;max-width:1180px;margin:0 auto}
+h1{font-size:20px;margin:0 0 4px;text-wrap:balance}
+h2{font-size:15px;margin:28px 0 4px;color:var(--강조)}
+.안내{color:var(--옅음);font-size:13px;margin:0 0 6px;line-height:1.6;max-width:70ch}
+.둘칸{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;margin-top:12px}
+.칸하나{flex:1 1 340px;min-width:0;display:flex;flex-direction:column;gap:8px}
+.이름표{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700}
+.배지{font-size:10px;font-weight:700;background:var(--강조);color:var(--강조글);border-radius:4px;padding:1px 6px}
+.설명글{font-size:12px;color:var(--옅음);line-height:1.6}
+.틀{border:2px solid var(--강조);border-radius:14px;background:var(--면2);padding:8px;overflow:hidden}
+/* 플랜 줄 */
+.플줄{border:2px solid var(--강조);border-radius:10px;background:var(--강조옅음);padding:8px 9px}
+.플머리{display:flex;align-items:center;gap:5px;font-size:13px;white-space:nowrap;background:none;border:none;
+        font-family:inherit;color:var(--글);width:100%;padding:0;text-align:left;cursor:pointer}
+.플머리 b{overflow:hidden;text-overflow:ellipsis;min-width:0}
+.목박스{font-size:9px;font-weight:700;background:var(--강조);color:var(--강조글);border-radius:4px;padding:1px 5px;white-space:nowrap}
+.알약{font-size:9px;font-weight:700;border:1px solid var(--속선);border-radius:4px;padding:1px 5px;color:var(--강조);white-space:nowrap}
+.큰게이지{height:20px;border-radius:10px;background:var(--면2);border:1px solid var(--속선);margin-top:7px;position:relative;overflow:hidden}
+.큰게이지 .차{display:block;height:100%;background:var(--강조)}
+.큰게이지 .퍼{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;
+             color:var(--글);font-variant-numeric:tabular-nums;text-shadow:0 0 3px var(--면),0 0 3px var(--면)}
+.가로줄{border-top:1px solid var(--속선);margin-top:8px}
+.여축{height:4px;border-radius:2px;background:var(--면2);border:1px solid var(--속선);position:relative;margin:16px 0 3px}
+.여축 .찬{position:absolute;left:0;top:0;bottom:0;background:var(--강조);border-radius:2px}
+.여축 .점{position:absolute;top:-5px;width:12px;height:12px;border-radius:50%;background:var(--강조);border:2px solid var(--면);transform:translateX(-50%)}
+.여축 .끝{position:absolute;top:-5px;right:-1px;width:12px;height:12px;border-radius:50%;background:var(--면2);border:2px solid var(--속선)}
+.여글{display:flex;justify-content:space-between;font-size:10px;color:var(--옅음);font-variant-numeric:tabular-nums}
+.타일줄{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.타일{border:1px solid var(--속선);border-radius:8px;padding:6px;display:flex;flex-direction:column;gap:3px;min-width:0;position:relative;overflow:hidden;background:var(--면)}
+.타일 b{font-size:15px;font-variant-numeric:tabular-nums;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:relative}
+.타일 .밑{font-size:9px;color:var(--옅음);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:relative}
+/* ㉮ 안 — 테두리 안 작은 바 */
+.작게이지{height:4px;border-radius:2px;background:var(--면2);overflow:hidden}
+.작게이지 span{display:block;height:100%;background:var(--강조)}
+/* ㉯ 안 — 박스 전체가 차오른다 */
+.타일.참{justify-content:center}
+.타일 .채움{position:absolute;left:0;top:0;bottom:0;background:var(--강조연함)}
+.한줄{display:flex;justify-content:space-between;font-size:11px;color:var(--흐림);margin-top:7px}
+/* 방식 밴드 */
+.방틀{position:relative;height:360px;overflow:hidden;border-radius:10px;background:var(--면)}
+.방목록{display:flex;flex-direction:column;gap:2px;height:100%;overflow-y:auto}
+.방행{position:relative;overflow:hidden;border:none;padding:0;width:100%;font-family:inherit;cursor:pointer;text-align:left;display:block;
+      background:linear-gradient(103deg,var(--밴드1) 0%,var(--밴드1) 44%,var(--밴드2) 100%)}
+.방행.골름{box-shadow:inset 0 0 0 2.5px #fff}
+.방그림{position:absolute;right:0;top:0;bottom:0;width:168px;
+        -webkit-mask-image:linear-gradient(90deg,transparent,#000 42%);mask-image:linear-gradient(90deg,transparent,#000 42%)}
+.방글{position:relative;padding:9px 11px;display:flex;flex-direction:column;gap:1px}
+.방윗줄{display:flex;align-items:center;gap:6px}
+.방이름{font-size:16px;font-weight:700;color:#fff;line-height:1.25}
+.방수준{font-size:9.5px;color:rgba(255,255,255,.75);border:1px solid rgba(255,255,255,.4);border-radius:4px;padding:0 4px;white-space:nowrap}
+.방특징{font-size:10.5px;color:rgba(255,255,255,.84)}
+.방아래{background:rgba(3,25,44,.55);padding:10px 11px;display:flex;flex-direction:column;gap:6px}
+.방아래 p{margin:0;font-size:11.5px;line-height:1.7;color:rgba(255,255,255,.93)}
+.방아래 .키{font-size:9.5px;color:rgba(255,255,255,.6);letter-spacing:.04em}
+/* 오른쪽에서 덮으며 들어오는 판 */
+.덮판{position:absolute;inset:0;background:linear-gradient(160deg,var(--밴드1),var(--밴드2));display:flex;flex-direction:column;
+      animation:밀기 .3s cubic-bezier(.22,.61,.36,1) both}
+@keyframes 밀기{from{transform:translateX(100%)}to{transform:none}}
+.덮머리{display:flex;align-items:center;gap:8px;padding:9px 11px;border-bottom:1px solid rgba(255,255,255,.22)}
+.덮머리 .방이름{font-size:15px}
+.덮몸{flex:1;min-height:0;overflow-y:auto;padding:10px 11px;display:flex;flex-direction:column;gap:6px}
+.덮몸 p{margin:0;font-size:11.5px;line-height:1.7;color:rgba(255,255,255,.93)}
+.덮몸 .키{font-size:9.5px;color:rgba(255,255,255,.6);letter-spacing:.04em}
+.뒤로{background:rgba(255,255,255,.16);color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:11px;
+      font-family:inherit;cursor:pointer}
+.듦{animation:듦 .34s cubic-bezier(.22,.61,.36,1) both}
+.듦2{animation:듦 .34s cubic-bezier(.22,.61,.36,1) .07s both}
+.듦3{animation:듦 .34s cubic-bezier(.22,.61,.36,1) .14s both}
+.듦4{animation:듦 .34s cubic-bezier(.22,.61,.36,1) .21s both}
+@keyframes 듦{from{opacity:0;transform:translateX(5px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.듦,.듦2,.듦3,.듦4,.덮판{animation:none!important}}
+button:focus-visible{outline:2px solid var(--강조);outline-offset:1px}
+.고름줄{display:flex;gap:8px;font-size:12px;color:var(--옅음);align-items:center;flex-wrap:wrap}
+</style>
+
+<div class="랩">
+  <h1>플랜 표시 비교</h1>
+  <p class="안내">두 가지씩 나란히 놓았습니다. 직접 눌러 보고 골라 주세요. 같은 데이터·같은 글씨 크기이고 표시 방법만 다릅니다.</p>
+
+  <h2>1. 상세 박스의 게이지</h2>
+  <p class="안내">진행 정도를 어떻게 보여줄지. 왼쪽은 지금 시안, 오른쪽은 홍겸 님이 말씀하신 "박스 전체가 파랗게 차오르는" 방식입니다.</p>
+  <div class="둘칸">
+    <div class="칸하나">
+      <div class="이름표"><span class="배지">㉮</span> 테두리 안 작은 바 <span style="font-weight:400;color:var(--옅음);font-size:11px">— 지금 시안</span></div>
+      <div class="틀" id="틀A"></div>
+      <p class="설명글">숫자와 게이지가 분리되어 있어 <b>값을 읽기 쉽습니다</b>. 대신 세 박스의 진행 정도를 한눈에 비교하려면 가느다란 바를 봐야 합니다.</p>
+    </div>
+    <div class="칸하나">
+      <div class="이름표"><span class="배지">㉯</span> 박스 전체가 차오름</div>
+      <div class="틀" id="틀B"></div>
+      <p class="설명글">박스 자체가 채워져서 <b>멀리서도 진행 정도가 보입니다</b>. 대신 글씨가 채워진 곳과 빈 곳에 걸쳐 놓이므로 배경을 연하게 잡아야 읽힙니다.</p>
+    </div>
+  </div>
+
+  <h2>2. 훈련 방식 상세를 여는 방법</h2>
+  <p class="안내">방식 목록에서 줄을 눌렀을 때. 두 안 모두 글씨는 <b>오른쪽 5px 에서 제자리로 밀려들며 페이드인</b>합니다.</p>
+  <div class="둘칸">
+    <div class="칸하나">
+      <div class="이름표"><span class="배지">㉮</span> 줄 안에서 펼치기 <span style="font-weight:400;color:var(--옅음);font-size:11px">— 지금 시안</span></div>
+      <div class="방틀"><div class="방목록" id="목록A"></div></div>
+      <p class="설명글">목록이 계속 보여서 <b>다른 방식과 견주기 쉽습니다</b>. 대신 펼치면 아래가 밀려 내려가고, 긴 설명은 스크롤이 필요합니다.</p>
+    </div>
+    <div class="칸하나">
+      <div class="이름표"><span class="배지">㉯</span> 오른쪽에서 덮으며 들어오기</div>
+      <div class="방틀" id="틀목록B"><div class="방목록" id="목록B"></div></div>
+      <p class="설명글">상세가 <b>화면을 꽉 쓰므로 읽기 편합니다</b>. 대신 다른 방식과 견주려면 뒤로 나왔다 다시 들어가야 합니다.</p>
+    </div>
+  </div>
+
+  <h2>같은 데이터입니다</h2>
+  <p class="안내">벤치프레스 · 시작 70kg → 현재 84kg → 목표 140kg · 12회차 완료 / 총 279회 · 6주 경과 · 누적 운동량 12,480kg. 방식 목록은 본 시안과 같은 열 개입니다.</p>
+</div>
+
+<script>
+"use strict";
+const p = {이름:"벤치프레스", 목표글:"1RM 140kg", 시작:70, 지금:84, 목표:140,
+           성공:12, 총회:279, 주차:6, f:2, 볼륨:12480, 예상총볼륨:290000, 다음측정:16};
+const 콤마 = v => Math.round(v).toLocaleString("ko-KR");
+const kg = v => (Math.round(v*10)/10).toString().replace(/\.0$/,"");
+const 운동량글 = v => v >= 1e6 ? (v/1e6).toFixed(1)+"kt" : v >= 1e5 ? (v/1000).toFixed(1)+"t" : 콤마(v)+"kg";
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const 진행 = (p.지금 - p.시작) / (p.목표 - p.시작);
+const 남은회 = p.총회 - p.성공, 남은주 = Math.ceil(남은회 / p.f);
+const 값들 = [
+  {큰: p.성공 + "회차",              밑: 콤마(남은회) + "회차 남음", 비: p.성공/p.총회},
+  {큰: 운동량글(p.볼륨),             밑: "누적 운동량",             비: p.볼륨/p.예상총볼륨},
+  {큰: 콤마(남은주) + "주 남음",      밑: "누적 " + p.주차 + "주",    비: p.주차/(p.주차+남은주)},
+];
+const 머리 = `<button class="플머리">
+    <b>${esc(p.이름)}</b><span class="목박스">목표</span><span style="font-size:12px">${esc(p.목표글)}</span>
+    <span style="margin-left:auto"></span>
+    <span class="알약">${p.성공}회</span><span class="알약">${p.주차}주차</span>
+    <span style="color:var(--강조);font-size:11px">▲</span></button>
+  <div class="큰게이지"><span class="차" style="width:${진행*100}%"></span><span class="퍼">${Math.round(진행*100)}%</span></div>
+  <div class="가로줄"></div>
+  <div class="여축"><span class="찬" style="width:${진행*100}%"></span>
+    <span class="점" style="left:${진행*100}%"></span><span class="끝"></span></div>
+  <div class="여글"><span>시작 ${kg(p.시작)}kg</span><span>현재 <b style="color:var(--강조)">${kg(p.지금)}kg</b></span><span>목표 ${kg(p.목표)}kg</span></div>`;
+const 꼬리 = `<div class="한줄"><span>다음 측정일</span><span><b>${p.다음측정 - p.성공}회차 후</b> 예정 (${p.다음측정}회차)</span></div>`;
+const 퍼 = v => Math.max(2, Math.min(100, v*100));
+
+document.getElementById("틀A").innerHTML = `<div class="플줄">${머리}
+  <div class="타일줄">${값들.map(v => `<div class="타일"><b>${v.큰}</b>
+    <div class="작게이지"><span style="width:${퍼(v.비)}%"></span></div>
+    <span class="밑">${v.밑}</span></div>`).join("")}</div>${꼬리}</div>`;
+
+document.getElementById("틀B").innerHTML = `<div class="플줄">${머리}
+  <div class="타일줄">${값들.map(v => `<div class="타일 참"><span class="채움" style="width:${퍼(v.비)}%"></span>
+    <b>${v.큰}</b><span class="밑">${v.밑}</span></div>`).join("")}</div>${꼬리}</div>`;
+
+/* ── 훈련 방식 목록 ── */
+const 실루엣 = {
+  계단바벨:'<circle cx="80" cy="30" r="11"/><path d="M66 46h28v32l6 34H88l-8-24-8 24H60l6-34z"/><path d="M66 54L44 66M94 54l22 12" stroke="currentColor" stroke-width="9" fill="none" stroke-linecap="round"/><rect x="18" y="60" width="30" height="12" rx="6"/><rect x="112" y="60" width="30" height="12" rx="6"/>',
+  스쿼트:'<circle cx="86" cy="30" r="11"/><path d="M68 46h36l7 27-11 4-4-14v18l9 31h-12l-9-27-9 27h-12l9-31v-18l-4 14-11-4z"/><rect x="24" y="40" width="124" height="7" rx="3.5"/><rect x="18" y="22" width="13" height="43" rx="5"/><rect x="141" y="22" width="13" height="43" rx="5"/>',
+  랙:'<rect x="34" y="14" width="13" height="104" rx="5"/><rect x="132" y="14" width="13" height="104" rx="5"/><rect x="26" y="44" width="128" height="8" rx="4"/><rect x="20" y="30" width="13" height="38" rx="5"/><rect x="147" y="30" width="13" height="38" rx="5"/>',
+  원판:'<circle cx="52" cy="66" r="38"/><circle cx="110" cy="74" r="28"/><circle cx="152" cy="80" r="20"/>',
+  데드:'<circle cx="74" cy="24" r="11"/><path d="M62 37q22-5 33 11l7 25-13 4-6-17v15l7 33H79l-9-27-9 27H50l9-33V50z"/><rect x="22" y="97" width="130" height="7" rx="3.5"/><circle cx="28" cy="100" r="18"/><circle cx="146" cy="100" r="18"/>',
+  프레스:'<circle cx="88" cy="58" r="11"/><path d="M74 72h28v34l5 17H96l-8-23-8 23H69l5-17z"/><rect x="26" y="20" width="124" height="7" rx="3.5"/><rect x="20" y="6" width="13" height="36" rx="5"/><rect x="143" y="6" width="13" height="36" rx="5"/><path d="M76 72l-4-44M100 72l4-44" stroke="currentColor" stroke-width="9" fill="none" stroke-linecap="round"/>',
+  로우:'<circle cx="46" cy="40" r="11"/><path d="M58 37h50l5 36h-13l-3-24H62z"/><rect x="26" y="90" width="128" height="7" rx="3.5"/><circle cx="32" cy="93" r="16"/><circle cx="148" cy="93" r="16"/><path d="M80 50v38" stroke="currentColor" stroke-width="9" fill="none" stroke-linecap="round"/>',
+  벤치:'<rect x="30" y="78" width="112" height="11" rx="5"/><rect x="52" y="89" width="9" height="22" rx="3"/><rect x="118" y="89" width="9" height="22" rx="3"/><circle cx="48" cy="64" r="11"/><path d="M62 57h44v22H62z"/><path d="M72 58l12-28M98 58L86 30" stroke="currentColor" stroke-width="9" fill="none" stroke-linecap="round"/><rect x="34" y="26" width="112" height="7" rx="3.5"/><rect x="28" y="12" width="13" height="36" rx="5"/><rect x="139" y="12" width="13" height="36" rx="5"/>',
+  덤벨:'<rect x="40" y="46" width="98" height="13" rx="6"/><rect x="24" y="26" width="22" height="53" rx="9"/><rect x="132" y="26" width="22" height="53" rx="9"/><rect x="60" y="86" width="60" height="9" rx="4"/><rect x="48" y="76" width="14" height="30" rx="6"/><rect x="118" y="76" width="14" height="30" rx="6"/>',
+  두사람:'<circle cx="52" cy="30" r="10"/><path d="M40 44h24l6 26-9 3-3-12v15l7 30H54l-6-24-6 24H31l7-30V61l-3 12-9-3z"/><circle cx="122" cy="34" r="10"/><path d="M110 48h24l6 26-9 3-3-12v15l7 30h-11l-6-24-6 24h-11l7-30V74l-3 12-9-3z"/>',
+};
+const 방식들 = [
+  {n:1, 이름:"꾸준히 늘리기", 특징:"근육과 기초 근력을 함께 · 3~5세트 × 8~12회", 수준:"입문~초급", 그림:"계단바벨",
+   상세:["헬스장에서 가장 흔히 보는 구성입니다. 3~5세트를 8~12회로 하고 무게만 조금씩 올립니다.",
+         "3세트 × 10회의 뿌리는 DeLorme 과 Watkins 가 1945~1951년에 정리한 점진적 저항운동입니다. 8~12회 구간은 ACSM 2009 입장문이 권고한 범위이고, 그 문서는 4,268회 인용됐습니다."],
+   기간:"기간 제한 없음 — 기본값", 증량:"목표보다 1~2회 더 가능한 상태가 2세션 연속이면 2~10% 증량"},
+  {n:2, 이름:"3×5 스타팅 스트렝스", 특징:"가장 빠른 초보 근력 · 매 운동 증량", 수준:"입문~초급", 그림:"스쿼트",
+   상세:["3세트 × 5회. 매 운동마다 무게를 올립니다.","Rippetoe 와 Kilgore 가 2005년에 낸 책에서 나왔습니다. 전용 커뮤니티 구독자가 99,190명입니다."],
+   기간:"3~9개월", 증량:"스쿼트 +4.5kg → +2.5kg · 데드 +7kg → +4.5kg"},
+  {n:3, 이름:"5×5 스트롱리프트", 특징:"볼륨을 얹은 초보 근력 · A/B 두 날", 수준:"입문~초급", 그림:"랙",
+   상세:["5세트 × 5회를 A·B 두 날로 번갈아 합니다.","Mehdi Hadim, 2007년 6월. 계보는 Reg Park(1958) → Bill Starr(1976) → Pendlay → Mehdi."],
+   기간:"3~9개월", 증량:"하체 2.5~5kg · 상체 1.25~2.5kg"},
+  {n:4, 이름:"매드카우 5×5", 특징:"5×5 가 막혔을 때 넘어가는 곳", 수준:"중급", 그림:"원판",
+   상세:["한 주 안에서 무거운 날·가벼운 날·중간 날을 나눕니다.","2005년경 'Madcow' 라는 익명이 정리했습니다. 본명은 찾지 못했습니다."],
+   기간:"5×5 가 막힌 뒤", 증량:"주당 월요일 top set 의 2.5%"},
+  {n:5, 이름:"텍사스 메서드", 특징:"주 단위로 밀어붙이는 근력", 수준:"중급", 그림:"데드",
+   상세:["월 볼륨 → 수 가볍게 → 금 5RM 한 세트.","Glenn Pendlay 가 2004~05년경 만들었습니다. 펜들레이 로우를 만든 그 사람입니다."],
+   기간:"초급 선형이 끝난 뒤", 증량:"강도일 주당 +4.5kg"},
+  {n:6, 이름:"5/3/1 웬들러", 특징:"오래 끌고 가는 근력 · 4주 주기", 수준:"중급~상급", 그림:"프레스",
+   상세:["훈련최대(1RM 의 90%) 기준으로 주차마다 65~95% 를 오르내립니다.","Jim Wendler, 2009년 7월 7일 T-Nation 기사."],
+   기간:"길게", 증량:"사이클당 훈련최대 상체 +2.5kg · 하체 +5kg"},
+  {n:8, 이름:"GZCLP", 특징:"무겁게·중간·가볍게 세 층을 한 번에", 수준:"입문~중급", 그림:"로우",
+   상세:["T1 은 무겁고 적게, T2 는 중간, T3 는 가볍고 많이.","Cody Lefever. Boostcamp 기준 39,460명 — 확인한 수치 중 최다입니다."],
+   기간:"초보~중급", 증량:"T1·T2 매 세션 상체 +2.5kg 하체 +5kg"},
+  {n:9, 이름:"DUP 파도형", 특징:"주 안에서 강도를 흔든다", 수준:"중급 이상", 그림:"벤치",
+   상세:["월 5×3, 수 4×4, 금 3×5 처럼 날마다 바꿉니다.","Rhea 2002 에서 선형의 두 배였지만, 이후 메타분석에서 재현되지 않았습니다."],
+   기간:"중급 이상", 증량:"주당 2.5~5kg"},
+  {n:10, 이름:"10×10 저먼 볼륨", 특징:"짧고 굵게 근육량 · 6주만", 수준:"중급", 그림:"덤벨",
+   상세:["1RM 의 60% 한 무게로 10세트 10회.","Poliquin 이 1996년에 이름을 붙인 것으로 보입니다."],
+   기간:"6주", 증량:"10세트 10회 전부 완수하면 4~5%"},
+  {n:12, 이름:"PHUL / PHAT", 특징:"근력과 근육을 같은 주에", 수준:"중급 이상", 그림:"두사람",
+   상세:["한 주를 근력일과 근육일로 나눕니다.","PHAT 은 Layne Norton, PHUL 은 Brandon Campbell. 창시 연도는 확인하지 못했습니다."],
+   기간:"중급 이상", 증량:"확인하지 못했습니다"},
+];
+
+let 펼침A = null, 고름A = 1, 판B = null, 고름B = 1;
+const 그림칠 = (m, 어디) => `<svg class="방그림" viewBox="0 0 170 124" preserveAspectRatio="xMaxYMid slice" aria-hidden="true">
+  <defs><radialGradient id="빛${어디}${m.n}" cx="62%" cy="30%" r="70%">
+    <stop offset="0" stop-color="#8FC4F2" stop-opacity=".95"/><stop offset="1" stop-color="#8FC4F2" stop-opacity=".30"/>
+  </radialGradient></defs><g fill="url(#빛${어디}${m.n})" color="#8FC4F2">${실루엣[m.그림]}</g></svg>`;
+const 방글 = m => `<span class="방글">
+    <span class="방윗줄"><span class="방이름">${esc(m.이름)}</span><span class="방수준">${esc(m.수준)}</span></span>
+    <span class="방특징">${esc(m.특징)}</span></span>`;
+
+function 그리기A(){
+  document.getElementById("목록A").innerHTML = 방식들.map(m => {
+    const 열림 = 펼침A === m.n;
+    return `<div><button class="방행 ${고름A===m.n?"골름":""}" data-a="${m.n}">${그림칠(m,"a")}${방글(m)}</button>
+      ${열림 ? `<div class="방아래">
+        ${m.상세.map((s,i)=>`<p class="듦${i?i+1:""}">${esc(s)}</p>`).join("")}
+        <div class="듦3"><div class="키">권장 기간</div><p style="margin-bottom:5px">${esc(m.기간)}</p>
+          <div class="키">자동 증량</div><p>${esc(m.증량)}</p></div></div>` : ""}</div>`;
+  }).join("");
+  document.querySelectorAll("[data-a]").forEach(b => b.onclick = () => {
+    const n = +b.dataset.a; 펼침A = 펼침A===n ? null : n; 고름A = n; 그리기A(); });
+}
+function 그리기B(){
+  document.getElementById("목록B").innerHTML = 방식들.map(m =>
+    `<button class="방행 ${고름B===m.n?"골름":""}" data-b="${m.n}">${그림칠(m,"b")}${방글(m)}</button>`).join("");
+  const 틀 = document.getElementById("틀목록B");
+  const 옛 = 틀.querySelector(".덮판"); if (옛) 옛.remove();
+  if (판B !== null){
+    const m = 방식들.find(x => x.n === 판B);
+    틀.insertAdjacentHTML("beforeend", `<div class="덮판">
+      <div class="덮머리"><button class="뒤로" id="뒤로B">← 목록</button>
+        <span class="방이름">${esc(m.이름)}</span><span class="방수준" style="margin-left:auto">${esc(m.수준)}</span></div>
+      <div class="덮몸">
+        ${m.상세.map((s,i)=>`<p class="듦${i?i+1:""}">${esc(s)}</p>`).join("")}
+        <div class="듦3"><div class="키">권장 기간</div><p style="margin-bottom:5px">${esc(m.기간)}</p>
+          <div class="키">자동 증량</div><p>${esc(m.증량)}</p></div></div></div>`);
+    document.getElementById("뒤로B").onclick = () => { 판B = null; 그리기B(); };
+  }
+  document.querySelectorAll("[data-b]").forEach(b => b.onclick = () => {
+    const n = +b.dataset.b; 고름B = n; 판B = n; 그리기B(); });
+}
+그리기A(); 그리기B();
+</script>
+
+</body></html>

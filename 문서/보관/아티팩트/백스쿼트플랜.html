@@ -1,0 +1,316 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>백 스쿼트 플랜</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap">
+<style>
+:root{
+  --main:#084B83; --main-soft:#E6EEF6; --line:#B5C9DA; --ink:#000; --ink-2:#44505C; --bg:#F6F8FA; --card:#FFFFFF;
+  --red:#B3261E; --green:#4C9A1F; --goal:#E8930C; --goal-soft:#FFF3DC; --grid:#E3EAF1;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --main:#7FB3E6; --main-soft:#16283A; --line:#35506A; --ink:#EEF2F6; --ink-2:#A9B7C4; --bg:#0E141A; --card:#151D25;
+  --red:#F2867E; --green:#8CCB62; --goal:#F5AE3D; --goal-soft:#3A2A10; --grid:#23313F; color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --main:#7FB3E6; --main-soft:#16283A; --line:#35506A; --ink:#EEF2F6; --ink-2:#A9B7C4; --bg:#0E141A; --card:#151D25;
+  --red:#F2867E; --green:#8CCB62; --goal:#F5AE3D; --goal-soft:#3A2A10; --grid:#23313F; color-scheme:dark;}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 "IBM Plex Sans KR",system-ui,sans-serif;margin:0}
+.wrap{max-width:980px;margin:0 auto;padding-inline:16px;padding-block:16px 40px;display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
+.card,.grid2>*{min-width:0}
+h1{font-size:22px;margin:0;color:var(--main);text-wrap:balance}
+h2{font-size:17px;margin:0 0 8px;color:var(--main)}
+.sub{color:var(--ink-2);font-size:13px}
+.card{background:var(--card);border:2px solid var(--main);border-radius:16px;padding:14px}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:14px}
+@media (max-width:760px){.grid2{grid-template-columns:1fr}}
+.form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+label{display:grid;gap:4px;font-size:13px;color:var(--ink-2)}
+input,select{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px;width:100%;font-variant-numeric:tabular-nums}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--main);outline-offset:2px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font:inherit;font-size:14px;border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:999px;padding:6px 12px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--main);border-color:var(--main);color:var(--card);font-weight:700}
+.full{grid-column:1/-1}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+@media (max-width:520px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.stat{border:1px solid var(--line);border-radius:8px;padding:8px}
+.stat b{display:block;font-size:20px;font-variant-numeric:tabular-nums}
+.stat span{font-size:12px;color:var(--ink-2)}
+.pill{display:inline-block;border-radius:6px;padding:0 7px;font-size:12px;font-weight:700}
+.p-main{background:var(--main);color:var(--card)} .p-red{background:var(--red);color:#fff} .p-soft{background:var(--main-soft);color:var(--main)}
+.tag{font-size:11px;color:var(--ink-2);border:1px solid var(--line);border-radius:4px;padding:0 4px;margin-left:4px;vertical-align:1px;font-weight:400}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{padding:6px 6px;border-bottom:1px solid var(--grid);text-align:left;font-size:13.5px;white-space:nowrap}
+th{color:var(--ink-2);font-weight:500;font-size:12px}
+tr.dl td{background:var(--main-soft)} tr.ts td{color:var(--red);font-weight:700}
+svg text{fill:var(--ink-2);font-size:11px}
+.adj{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;align-items:end}
+@media (max-width:520px){.adj{grid-template-columns:1fr}}
+.arrow{font-size:18px;font-weight:700;font-variant-numeric:tabular-nums}
+details summary{cursor:pointer;color:var(--main);font-weight:700}
+.params td input{width:70px;padding:4px 6px}
+.note{font-size:12.5px;color:var(--ink-2)}
+.rows{display:grid;gap:8px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:8px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--card)}
+.row .nm{font-weight:700}
+.optA .row.goal{border:2px solid var(--goal);background:var(--goal-soft)}
+.optA .row.goal .badge{background:var(--goal);color:#000}
+.optB .row.goal{border:2px solid var(--main);border-left-width:8px}
+.optB .row.goal .badge{background:var(--main);color:var(--card)}
+.badge{font-size:11px;font-weight:700;border-radius:6px;padding:1px 7px}
+.row:not(.goal) .badge{display:none}
+.cols2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (max-width:520px){.cols2{grid-template-columns:1fr}}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>운동 플랜 뼈대 · 백 스쿼트</h1>
+    <div class="sub">시안 · 14 문서 확정값 (09-28) · 값을 바꾸면 바로 다시 계산</div>
+  </header>
+
+  <div class="grid2">
+    <section class="card" aria-labelledby="h-in">
+      <h2 id="h-in">① 입력 <span class="tag">앱 안 입력 화면</span></h2>
+      <div class="form">
+        <label>나이 <input id="age" type="number" min="15" max="90" value="35"></label>
+        <label>성별 <select id="sex"><option value="m">남</option><option value="f">여</option></select></label>
+        <label>체중 (kg) <input id="bw" type="number" step="0.1" value="109"></label>
+        <label>지금 스쿼트 1RM (kg) <input id="rm" type="number" step="2.5" value="100"></label>
+        <label>목표 무게 (kg) <input id="goal" type="number" step="2.5" value="140"></label>
+        <label>목표 횟수 (1 = 1RM) <input id="greps" type="number" min="1" max="30" value="10"></label>
+        <label>개인 상한 (4주당 %) <input id="cap" type="number" step="0.5" placeholder="없음"></label>
+        <div class="full"><div class="note" style="margin-bottom:4px">속도</div>
+          <div class="chips" role="group" aria-label="속도">
+            <button class="chip" data-sp="0.5">천천히</button>
+            <button class="chip" data-sp="0.75">여유있게</button>
+            <button class="chip" data-sp="1" aria-pressed="true">보통</button>
+            <button class="chip" data-sp="1.25">강도 높게</button>
+            <button class="chip" data-sp="1.5">극한</button>
+          </div></div>
+        <label class="full">진행 방식 <select id="mode">
+          <option value="lin">꾸준히 늘리기 (기본) — 같은 세트·횟수, 무게만 조금씩</option>
+          <option value="f5">5×5 — 5회 5세트, 성공하면 다음번 무게 올림</option>
+          <option value="hl">무거운 날 · 가벼운 날 나누기</option></select></label>
+        <div class="full note" id="o-conv"></div>
+        <div class="full note">개인 상한 = 무릎 · 허리 같은 조건 때문에 스스로 낮추는 칸</div>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="h-out">
+      <h2 id="h-out">② 계산 결과</h2>
+      <div class="stats">
+        <div class="stat"><span>체중 대비</span><b id="o-ratio">–</b><span id="o-level">–</span></div>
+        <div class="stat"><span>기대 속도 (4주당)</span><b id="o-rate">–</b><span id="o-mult">–</span></div>
+        <div class="stat"><span>목표까지</span><b id="o-weeks">–</b><span id="o-date">–</span></div>
+        <div class="stat"><span>측정 주기</span><b id="o-test">–</b><span>수준이 오르면 바뀜</span></div>
+      </div>
+      <div class="scroll" style="margin-top:10px"><svg id="chart" width="100%" viewBox="0 0 560 200" role="img" aria-label="계획선"></svg></div>
+      <div class="note"><span style="color:var(--main)">━</span> 처음 계획 · <span style="color:var(--goal)">━</span> 측정 후 다시 계산 · <span style="color:var(--red)">●</span> 측정일</div>
+    </section>
+  </div>
+
+  <section class="card" aria-labelledby="h-adj">
+    <h2 id="h-adj">③ 측정일 → 주 단위 자동 조정</h2>
+    <div class="adj">
+      <label>첫 측정일 예상 1RM <input id="exp" type="text" readonly></label>
+      <label>실제로 잰 1RM (kg) <input id="act" type="number" step="2.5"></label>
+      <div><div class="note">달성비 → 앞으로의 속도</div><div class="arrow" id="o-ratio2">–</div></div>
+    </div>
+    <p style="margin:10px 0 0" id="o-adj">–</p>
+    <div class="note">규칙 (벤치와 같음): 예상과 원판 한 장(2.5kg) 안쪽 차이는 그대로 · 그보다 크면 달성비 = 실제 향상 ÷ 예상 향상 (0.5~1.5 로 제한) · 기준 1RM 은 실제 값으로 · 이전 측정보다 낮으면 속도는 그대로 두고 직전 2주 반복</div>
+  </section>
+
+  <section class="card" aria-labelledby="h-wk">
+    <h2 id="h-wk">④ 주차별 처방 (처음 16주)</h2>
+    <div class="scroll"><table id="weeks"><thead><tr><th>주</th><th>시작</th><th>기준 1RM</th><th>수준</th><th id="th1">1번째 날</th><th id="th2">2번째 날</th><th></th></tr></thead><tbody></tbody></table></div>
+    <div class="note" id="wk-note"></div>
+  </section>
+
+  <section class="card" aria-labelledby="h-col">
+    <h2 id="h-col">⑤ 목표 운동 구별 — B안 (벤치와 같음 · A안으로 바꿀 수 있게)</h2>
+    <div class="cols2">
+      <div><div class="note" style="margin-bottom:6px"><b>A안</b> 노랑~주황</div>
+        <div class="rows optA">
+          <div class="row goal"><span class="nm">백 스쿼트</span><span class="badge">목표 · 12주차</span><span class="note">3×10 @ 67.5kg</span></div>
+          <div class="row"><span class="nm">백 스쿼트</span><span class="badge"></span><span class="note">3×5 @ 80kg</span></div>
+          <div class="row"><span class="nm">레그 프레스</span><span class="badge"></span><span class="note">3×12</span></div>
+        </div></div>
+      <div><div class="note" style="margin-bottom:6px"><b>B안</b> 예일 블루 · 두꺼운 왼쪽 띠</div>
+        <div class="rows optB">
+          <div class="row goal"><span class="nm">백 스쿼트</span><span class="badge">목표 · 12주차</span><span class="note">3×10 @ 67.5kg</span></div>
+          <div class="row"><span class="nm">백 스쿼트</span><span class="badge"></span><span class="note">3×5 @ 80kg</span></div>
+          <div class="row"><span class="nm">레그 프레스</span><span class="badge"></span><span class="note">3×12</span></div>
+        </div></div>
+    </div>
+    <div class="note" style="margin-top:6px">맨몸 스쿼트 고반복(500 목표)은 바벨 스쿼트와 다른 날 · 두 종목 간섭은 맨몸 스쿼트 차례에 조사</div>
+  </section>
+
+  <section class="card">
+    <details open>
+      <summary>⑥ 계산식 표 — 이 표 한 곳만 고치면 전부 바뀜</summary>
+      <div class="scroll" style="margin-top:8px"><table class="params" id="params"></table></div>
+      <div class="note">스쿼트 확정값: 수준 기준 S1 1안 · 속도와 상한은 벤치의 1.2배 (S2) · 환산은 에플리 (S3) · 근거는 14 문서 E-S1~S3</div>
+    </details>
+  </section>
+</div>
+
+<script>
+// ── 계산식 표 (앱에서도 이 한 곳에 모음) · 백 스쿼트 ──────────
+const P = {
+  levels: [ // 이름, 남 기준(1RM/체중 이상), 여 기준, 4주당 속도 %, 상한 %, 측정 주기(주)
+    ["입문", 0,    0,    6.0,  8.4,  4],
+    ["초급", 0.8,  0.6,  3.6,  5.4,  4],
+    ["중급", 1.2,  0.95, 1.8,  3.0,  8],
+    ["고급", 1.75, 1.4,  0.96, 1.44, 12],
+    ["상급", 2.25, 1.8,  0.48, 0.72, 12],
+  ],
+  age: [[40,1.0],[50,0.9],[60,0.8],[70,0.65],[200,0.5]], // 이 나이 미만이면 배수
+  sex: {m:1.0, f:1.0},
+  clamp: [0.5, 1.5],
+  slack: 2.5, // 측정 오차 여유 (kg)
+};
+// 참고용 · Nuzzo 2023 전체 운동용 표 (1RM %, 평균 반복)
+const NUZZO = [[95,3.28],[90,4.94],[85,7.15],[80,9.75],[75,12.37],[70,14.80],[65,17.11],[60,19.53]];
+function nuzzoPct(r){ for (let i=0;i<NUZZO.length-1;i++){ const [p1,r1]=NUZZO[i],[p2,r2]=NUZZO[i+1];
+  if (r>=r1 && r<=r2) return p1 + (p2-p1)*(r-r1)/(r2-r1); } return null; }
+const START = new Date(2026,8,28);
+let speed = 1, actualTouched = false;
+
+const $ = id => document.getElementById(id);
+const r25 = x => Math.round(x/2.5)*2.5;
+const fmtD = d => `${d.getFullYear()}.${d.getMonth()+1}.${d.getDate()}`;
+const addW = w => new Date(START.getTime() + w*7*864e5);
+const ageMul = a => P.age.find(([lim]) => a < lim)[1];
+function levelOf(rm, bw, sex){ const r = rm/bw; let L = 0;
+  P.levels.forEach((l,i)=>{ if (r >= (sex==="f"?l[2]:l[1])) L = i; }); return L; }
+function rate4(L, inp, mul){ const l = P.levels[L];
+  let r = l[3] * ageMul(inp.age) * P.sex[inp.sex] * speed * mul;
+  r = Math.min(r, l[4] * Math.max(1, speed));
+  if (inp.cap > 0) r = Math.min(r, inp.cap);
+  return r/100; }
+function simulate(inp, from, rm0, mul, maxW=520){
+  const pts=[[from, rm0]]; let rm=rm0, w=from, doneW=null;
+  while (w < from+maxW){ const L = levelOf(rm, inp.bw, inp.sex);
+    rm = rm * Math.pow(1 + rate4(L, inp, mul), 1/4); w++;
+    pts.push([w, rm]); if (doneW===null && rm >= inp.goal){ doneW=w; break; } }
+  return {pts, doneW}; }
+function testWeeks(inp, pts){ const out=[]; let last=0;
+  for (const [w,rm] of pts){ if (w===0) continue; const L=levelOf(rm,inp.bw,inp.sex);
+    if (w-last >= P.levels[L][5]){ out.push(w); last=w; } } return out; }
+function presc(L, rm, p, mode, reps){
+  const W = f => r25(rm*f);
+  if (mode==="lin"){ const r = Math.min(Math.max(reps,5),12); const w = r25(rm/(1+r/30)*0.9);
+    return ["3×"+r+" @ "+w+"kg", "3×"+r+" @ "+w+"kg", false]; }
+  if (mode==="f5"){ const w = W(.8); return ["5×5 @ "+w+"kg", "5×5 @ "+w+"kg", false]; }
+  if (p===3) return ["3×5 @ "+W(.6)+"kg", "3×5 @ "+W(.55)+"kg", true];
+  if (L<=1) return ["3×8 @ "+W(.675)+"kg", "3×10 @ "+W(.6)+"kg", false];
+  if (L===2) return [["5×5 @ "+W(.75),"4×4 @ "+W(.8),"5×3 @ "+W(.85)][p]+"kg", (p===2?"3×6 @ "+W(.7):"3×8 @ "+W(.65))+"kg", false];
+  return [["5×5 @ "+W(.8),"4×4 @ "+W(.85),"5×3 @ "+W(.9)][p]+"kg", "3×6 @ "+W(.7)+"kg", false];
+}
+const MODE_NOTE = {
+  lin: "무게가 매주 조금씩만 올라가요 · 정해진 가벼운 주 없음 — 같은 무게를 3번 연속 못 채우면 10% 내리고 다시 · 빨간 줄 = 측정 주",
+  f5:  "5×5: 두 날 모두 5회 5세트 · 다 채우면 다음번 무게 올림, 3번 연속 실패하면 10% 내림 · 빨간 줄 = 측정 주",
+  hl:  "4주째 = 가벼운 주 · 월 무거운 날 / 목 가벼운 날 · 빨간 줄 = 측정 주"
+};
+const epley = (w,r) => r<=1 ? w : w*(1+r/30);
+function read(){ const gw=+$('goal').value||1, gr=Math.max(1,+$('greps').value||1);
+  return {age:+$('age').value||35, sex:$('sex').value, bw:+$('bw').value||1, rm:+$('rm').value||1,
+  goal:epley(gw,gr), gw, gr, cap:+$('cap').value||0}; }
+
+function render(){
+  const inp = read();
+  const L0 = levelOf(inp.rm, inp.bw, inp.sex);
+  const np = inp.gr>1 ? nuzzoPct(inp.gr) : null;
+  $('o-conv').innerHTML = inp.gr>1 ? `목표 ${inp.gw}kg × ${inp.gr}회 ≈ <b>1RM ${Math.round(inp.goal)}kg</b> (에플리 식)${np ? ` · 참고: 연구 평균표로는 약 ${Math.round(inp.gw/np*100)}kg` : ''}${inp.gr>10 ? ' — 10회가 넘으면 사람마다 차이가 큼' : ''}` : `목표 1RM ${inp.gw}kg`;
+  const base = simulate(inp, 0, inp.rm, 1);
+  const tests = testWeeks(inp, base.pts);
+  $('o-ratio').textContent = (inp.rm/inp.bw).toFixed(2)+"배";
+  $('o-level').textContent = "수준: "+P.levels[L0][0];
+  $('o-rate').textContent = "+"+(rate4(L0,inp,1)*100).toFixed(1)+"%";
+  $('o-mult').textContent = `나이 ×${ageMul(inp.age)} · 속도 ×${speed}`;
+  $('o-weeks').textContent = base.doneW ? base.doneW+"주" : "10년+";
+  $('o-date').textContent = base.doneW ? fmtD(addW(base.doneW))+" 예상" : "목표를 낮추거나 속도를 올려 보세요";
+  $('o-test').textContent = P.levels[L0][5]+"주";
+
+  const t1 = tests[0] || 4; const expRaw = base.pts[Math.min(t1, base.pts.length-1)][1]; const exp = r25(expRaw);
+  $('exp').value = exp+" kg ("+t1+"주차)";
+  if (!actualTouched) $('act').value = r25(expRaw + 5);
+  const act = +$('act').value || exp;
+  let adj, msg, ratioTxt;
+  if (act < inp.rm){
+    adj = simulate(inp, t1+2, act, 1); ratioTxt = "직전 2주 반복";
+    msg = `이전 기록(${inp.rm}kg)보다 낮아요 → 속도는 그대로, 직전 2주를 한 번 더 합니다.`;
+  } else if (Math.abs(act - expRaw) <= P.slack){
+    adj = simulate(inp, t1, act, 1); ratioTxt = "예상대로 → 속도 ×1";
+    msg = `예상과 ${P.slack}kg 안쪽 차이는 '예상대로'로 봐요.`;
+  } else {
+    const ratio = Math.min(P.clamp[1], Math.max(P.clamp[0], (act-inp.rm)/Math.max(0.01, expRaw-inp.rm)));
+    adj = simulate(inp, t1, act, ratio); ratioTxt = `${ratio.toFixed(2)} → 속도 ×${ratio.toFixed(2)}`;
+    msg = "";
+  }
+  $('o-ratio2').textContent = ratioTxt;
+  if (base.doneW && adj.doneW){
+    const d = adj.doneW - base.doneW;
+    $('o-adj').innerHTML = (msg?msg+" ":"") + `목표일 <b>${fmtD(addW(base.doneW))}</b> → <b>${fmtD(addW(adj.doneW))}</b> ` +
+      (d===0? "<span class='pill p-soft'>그대로</span>" : d>0? `<span class='pill p-main'>+${d}주 늦춤</span>` : `<span class='pill p-red'>${d}주 당김</span>`) +
+      ` · 다음 주 처방 기준 1RM = <b>${act}kg</b>`;
+  } else $('o-adj').textContent = msg || "목표가 10년 안에 닿지 않아요.";
+
+  drawChart(inp, base, adj, tests);
+
+  const md = $('mode').value; $('wk-note').textContent = MODE_NOTE[md] + " · 무게는 2.5kg 단위 · 쉬는 시간 2~3분 · 무릎·허리 통증이 다음 날까지 남으면 그 주 반복";
+  $('th1').textContent = md==="hl" ? "월 · 무거운 날" : "월"; $('th2').textContent = md==="hl" ? "목 · 가벼운 날" : "목";
+  const tb = $('weeks').tBodies[0]; tb.innerHTML = "";
+  for (let w=0; w<16 && w < base.pts.length; w++){
+    const rm = base.pts[w][1], L = levelOf(rm, inp.bw, inp.sex), p = w%4;
+    const [hv, lt, dl] = presc(L, rm, p, md, inp.gr); const ts = tests.includes(w+1) && w+1<=16;
+    const tr = document.createElement('tr'); if (dl) tr.className = 'dl'; if (ts) tr.className = 'ts';
+    tr.innerHTML = `<td>${w+1}</td><td>${fmtD(addW(w)).slice(5)}</td><td>${r25(rm)}kg</td><td>${P.levels[L][0]}</td>`+
+      `<td>${ts? "1RM 측정 · 50%×5 → 70%×3 → 85%×1 → "+r25(base.pts[w+1]?.[1]||rm)+"kg" : hv}</td><td>${ts?"쉼":lt}</td><td>${dl?"<span class='pill p-soft'>가벼운 주</span>":ts?"<span class='pill p-red'>측정</span>":""}</td>`;
+    tb.appendChild(tr);
+  }
+}
+
+function drawChart(inp, base, adj, tests){
+  const s = $('chart'); const W=560,H=200, L=40, R=12, T=12, B=26;
+  const maxW = Math.max(base.doneW||52, adj.doneW||52, 8);
+  const maxY = Math.max(inp.goal, ...base.pts.map(p=>p[1])) * 1.05, minY = Math.min(inp.rm, ...adj.pts.map(p=>p[1])) * 0.95;
+  const x = w => L + (W-L-R) * w / maxW, y = v => T + (H-T-B) * (1 - (v-minY)/(maxY-minY));
+  const path = pts => pts.map((p,i)=>(i?"L":"M")+x(p[0]).toFixed(1)+","+y(p[1]).toFixed(1)).join("");
+  let g = "";
+  const ticks = [minY, (minY+maxY)/2, maxY].map(v=>Math.round(v/5)*5);
+  ticks.forEach(v=>{ g += `<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--grid)"/><text x="${L-6}" y="${y(v)+4}" text-anchor="end">${v}</text>`; });
+  [0, Math.round(maxW/2), maxW].forEach(w=>{ g += `<text x="${x(w)}" y="${H-8}" text-anchor="middle">${w}주</text>`; });
+  g += `<line x1="${L}" x2="${W-R}" y1="${y(inp.goal)}" y2="${y(inp.goal)}" stroke="var(--red)" stroke-dasharray="4 4"/><text x="${W-R}" y="${y(inp.goal)-5}" text-anchor="end" style="fill:var(--red)">목표 ${inp.gr>1? inp.gw+'kg×'+inp.gr+' ≈ ':''}${Math.round(inp.goal)}kg</text>`;
+  g += `<path d="${path(base.pts)}" fill="none" stroke="var(--main)" stroke-width="2.5"/>`;
+  g += `<path d="${path(adj.pts)}" fill="none" stroke="var(--goal)" stroke-width="2.5"/>`;
+  tests.filter(w=>w<=maxW).forEach(w=>{ const p = base.pts[w]; if (p) g += `<circle cx="${x(w)}" cy="${y(p[1])}" r="3.5" fill="var(--red)"/>`; });
+  s.innerHTML = g;
+}
+
+function drawParams(){
+  const t = $('params'); let h = "<tr><th>수준</th><th>남 (1RM/체중)</th><th>여</th><th>4주당 속도 %</th><th>상한 %</th><th>측정 주기(주)</th></tr>";
+  P.levels.forEach((l,i)=>{ h += `<tr><td>${l[0]}</td>` + [1,2,3,4,5].map(k=>`<td><input id="p-${i}-${k}" type="number" step="0.05" value="${l[k]}" data-i="${i}" data-k="${k}"></td>`).join("") + "</tr>"; });
+  h += `<tr><th>나이 배수</th><td colspan="5">` + P.age.map(([lim,m],i)=>`${i?P.age[i-1][0]:""}~${lim<200?lim-1:"+"}세 <input id="pa-${i}" type="number" step="0.05" value="${m}" data-a="${i}">`).join(" ") + `</td></tr>`;
+  h += `<tr><th>조정 제한</th><td colspan="5">달성비 <input id="pc-0" type="number" step="0.1" value="${P.clamp[0]}" data-c="0"> ~ <input id="pc-1" type="number" step="0.1" value="${P.clamp[1]}" data-c="1"> · 오차 여유 <input id="ps" type="number" step="0.5" value="${P.slack}" data-s="1">kg</td></tr>`;
+  t.innerHTML = h;
+  t.querySelectorAll('input').forEach(el=>el.addEventListener('input', ()=>{
+    const v = +el.value; if (isNaN(v)) return;
+    if (el.dataset.i) P.levels[+el.dataset.i][+el.dataset.k] = v;
+    if (el.dataset.a) P.age[+el.dataset.a][1] = v;
+    if (el.dataset.c) P.clamp[+el.dataset.c] = v;
+    if (el.dataset.s) P.slack = v;
+    render(); }));
+}
+
+document.querySelectorAll('[data-sp]').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('[data-sp]').forEach(x=>x.setAttribute('aria-pressed','false'));
+  b.setAttribute('aria-pressed','true'); speed = +b.dataset.sp; render(); }));
+['age','sex','bw','rm','goal','greps','cap','mode'].forEach(id=>$(id).addEventListener('input', ()=>{ actualTouched=false; render(); }));
+$('act').addEventListener('input', ()=>{ actualTouched=true; render(); });
+drawParams(); render();
+</script>
+
+</body></html>

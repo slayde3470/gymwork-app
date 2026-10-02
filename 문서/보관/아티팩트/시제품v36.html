@@ -1,0 +1,4172 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>하젠하이데</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap">
+<style>
+  :root{
+    --ground:#EDEFEE;
+    --bg:#F7F8F7;
+    --surface:#FFFFFF;
+    --surface-2:#F0F2F1;
+    --line:#DDE2E0;
+    --text:#1A1C1B;
+    --muted:#6B7F76;
+    --faint:#9AA8A2;
+    --accent:#2E5E4E;
+    --accent-ink:#FFFFFF;
+    --accent-soft:#E2EEE8;
+    --ok:#2E7D57;
+    --miss:#B3261E;
+    --rest:#B06A1F;
+    --rest-soft:#FBEEDD;
+    /* 향상도 전용 색 — 오르면 빨강, 내리면 파랑 (주식 보듯이).
+       달성/미달성 칩의 초록·빨강과는 쓰이는 자리가 다르다. */
+    --up:#D92D20;
+    --down:#1668DC;
+    /* 그래프 선 색 — validate_palette.js 로 확인한 조합 (light, surface #fff)
+       색맹 인접 분리가 7.9(ΔE)라 '점선 무늬 + 범례 + 끝 이름표'를 함께 쓴다 */
+    --s1:#1B7F5E; --s2:#7A4BD0; --s3:#C2610A; --s4:#0C7FA8; --s5:#B32178;
+    --shadow:0 1px 2px rgba(26,28,27,.06), 0 8px 24px rgba(26,28,27,.06);
+    --r-xs:7px; --r-s:10px; --r-m:16px; --r-l:24px;
+    /* ── 글자 크기 단계 (이 아홉 가지만 쓴다) ── */
+    --fs-2xs:10px;   /* 단위 · 아주 작은 이름표 */
+    --fs-xs:11px;    /* 설명 · 보조 글 */
+    --fs-s:12px;     /* 작은 본문 · 칩 */
+    --fs-m:13px;     /* 조작 버튼 · 목록 보조 */
+    --fs-b:14px;     /* 본문 · 목록 이름 */
+    --fs-l:16px;     /* 카드 · 시트 제목 */
+    --fs-xl:20px;    /* 화면 제목 */
+    --fs-2xl:24px;   /* 큰 숫자 */
+    --fs-3xl:32px;   /* 마무리 화면 큰 숫자 */
+    /* ── 줄 간격 · 자간 ── */
+    --lh-tight:1.2; --lh-ui:1.4; --lh-text:1.5;
+    --ls-tight:-.02em; --ls-ui:-.01em; --ls-caps:.06em;
+    /* ── 조작부 높이 ── */
+    --h-xs:28px; --h-s:32px; --h-m:40px; --h-l:48px;
+    --ui:"Noto Sans KR", system-ui, sans-serif;
+    /* 숫자도 같은 글꼴 — 폭이 고른 숫자(tabular)로만 맞춘다. 두 글꼴을 섞지 않는다 */
+    --num:"Noto Sans KR", system-ui, sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ground:#0B0C0C; --bg:#121413; --surface:#1E211F; --surface-2:#272B29;
+      --line:#343936; --text:#E2E3E1; --muted:#9FB2A9; --faint:#6F7F78;
+      --accent:#8FD0B8; --accent-ink:#00382A; --accent-soft:#213029;
+      --ok:#8FD0B8; --miss:#F2B8B5; --rest:#E8B87A; --rest-soft:#302819;
+      --up:#FF7A6B; --down:#66B0FF;
+      --s1:#2FA57F; --s2:#8E6FE0; --s3:#C9822F; --s4:#3F9CC4; --s5:#D4589B;
+      --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#0B0C0C; --bg:#121413; --surface:#1E211F; --surface-2:#272B29;
+    --line:#343936; --text:#E2E3E1; --muted:#9FB2A9; --faint:#6F7F78;
+    --accent:#8FD0B8; --accent-ink:#00382A; --accent-soft:#213029;
+    --ok:#8FD0B8; --miss:#F2B8B5; --rest:#E8B87A; --rest-soft:#302819;
+    --up:#FF7A6B; --down:#66B0FF;
+    --s1:#2FA57F; --s2:#8E6FE0; --s3:#C9822F; --s4:#3F9CC4; --s5:#D4589B;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+  }
+
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:var(--ground); color:var(--text);
+    font-family:var(--ui); font-size:var(--fs-b); line-height:var(--lh-text);
+    display:flex; align-items:center; justify-content:center;
+    -webkit-font-smoothing:antialiased;
+  }
+  button{font:inherit; color:inherit; cursor:pointer; border:0; background:none}
+  :focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:var(--r-xs)}
+
+  /* ── 기기 틀 ── */
+  .device{
+    position:relative; width:100%; height:100%; max-width:440px;
+    background:var(--bg); display:flex; flex-direction:column; overflow:hidden;
+  }
+  @media (min-width:520px) and (min-height:620px){
+    .device{
+      height:min(960px, calc(100vh - 32px));
+      border-radius:var(--r-l); box-shadow:var(--shadow);
+      border:1px solid var(--line);
+    }
+  }
+
+  .appbar{
+    flex:0 0 auto; padding:14px 16px 10px;
+    display:flex; align-items:baseline; justify-content:space-between; gap:12px;
+    background:var(--bg);
+  }
+  .appbar h1{margin:0; font-size:var(--fs-xl); font-weight:700; letter-spacing:var(--ls-ui)}
+  .appbar .sub{font-size:var(--fs-xs); color:var(--faint); font-family:var(--num); letter-spacing:var(--ls-caps)}
+
+  .screens{flex:1 1 auto; overflow-y:auto; overscroll-behavior:contain; padding:0 16px 20px}
+  .screen[hidden]{display:none !important}
+
+  .tabbar{
+    flex:0 0 auto; display:grid; grid-template-columns:repeat(5,1fr);
+    border-top:1px solid var(--line); background:var(--surface);
+    padding-bottom:env(safe-area-inset-bottom, 0px);
+  }
+  .tabbar button{
+    padding:9px 4px 11px; display:flex; flex-direction:column; align-items:center; gap:3px;
+    font-size:var(--fs-xs); color:var(--muted); font-weight:500;
+  }
+  .tabbar button svg{width:21px; height:21px; stroke:currentColor; fill:none; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round}
+  .tabbar button[aria-selected="true"]{color:var(--accent); font-weight:700}
+
+  /* ── 공통 ── */
+  .card{background:var(--surface); border-radius:var(--r-m); padding:14px; border:1px solid var(--line)}
+  .eyebrow{font-size:var(--fs-xs); letter-spacing:var(--ls-caps); text-transform:uppercase; color:var(--faint); font-weight:700; font-family:var(--num)}
+  .num{font-family:var(--num); font-variant-numeric:tabular-nums}
+  .stack{display:flex; flex-direction:column; gap:10px}
+  .row{display:flex; align-items:center; gap:10px}
+  .grow{flex:1 1 auto; min-width:0}
+  .btn{
+    background:var(--accent); color:var(--accent-ink); border-radius:var(--r-s);
+    padding:0 16px; height:var(--h-l); font-weight:700; font-size:var(--fs-l);
+    display:inline-flex; align-items:center; justify-content:center; gap:8px; width:100%;
+  }
+  .btn.ghost{background:var(--surface-2); color:var(--text); border:1px solid var(--line)}
+  .btn.sm{height:var(--h-m); font-size:var(--fs-b); padding:0 12px; width:auto}
+  .pill{
+    display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px;
+    font-size:var(--fs-xs); font-weight:700; background:var(--surface-2); color:var(--muted);
+  }
+  .pill.ok{background:var(--accent-soft); color:var(--ok)}
+  .pill.miss{background:color-mix(in srgb, var(--miss) 14%, transparent); color:var(--miss)}
+  .note{font-size:var(--fs-s); color:var(--faint); line-height:var(--lh-text)}
+  /* 폰 브라우저가 누를 때 칠하는 파란 빛을 끈다 */
+  *{-webkit-tap-highlight-color:transparent}
+  /* ── 아이콘: 한 벌(선 굵기 2, 둥근 끝)만 쓴다. 크기는 글자 크기를 따른다 ── */
+  .ic{width:1.15em; height:1.15em; flex:0 0 auto; fill:none; stroke:currentColor; stroke-width:2;
+    stroke-linecap:round; stroke-linejoin:round; vertical-align:-.2em; pointer-events:none}
+  .btn .ic, #exList2 .ic{width:1.05em; height:1.05em}
+  .rowgo{flex:0 0 auto; display:inline-flex; color:var(--accent); font-size:var(--fs-l)}
+  /* 설정 버튼 줄 — 세트 · 무게 · 횟수 · 휴식. 누른 것만 − ＋ */
+  .expand1.kset{gap:5px; padding:6px}
+  /* 작은 이름표(위) + 숫자(아래) 타일 — 폭 360px 에서도 넷이 한 줄에 들어가게 */
+  .kbtn{flex:1 1 0; min-width:0; height:var(--h-m); border-radius:var(--r-xs); background:var(--surface-2);
+    border:1px solid var(--line); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px;
+    padding:0 2px; white-space:nowrap; overflow:hidden; line-height:var(--lh-tight)}
+  .kbtn .kl{font-size:var(--fs-2xs); color:var(--faint)}
+  .kbtn b{font-size:var(--fs-m); font-weight:700; color:var(--text); font-family:var(--num)}
+  .kbtn.on{flex:2.3 1 0; background:var(--surface); border:1.5px solid var(--accent); padding:0; justify-content:space-between}
+  .kbtn.on > button{flex:0 0 30px; height:100%; font-size:var(--fs-l); font-weight:700; color:var(--accent)}
+  .kbtn.on{flex-direction:row}
+  .kbtn.on .kin{flex:1 1 auto; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px}
+  .kbtn.on .kv{display:flex; align-items:baseline; justify-content:center; gap:1px; min-width:0}
+  .kbtn.on .kin input{width:100%; min-width:0; max-width:52px; height:18px; border:0; background:transparent; text-align:center;
+    font-family:var(--num); font-size:var(--fs-b); font-weight:700; color:var(--text); padding:0; -moz-appearance:textfield}
+  .kbtn.on .kin input::-webkit-outer-spin-button, .kbtn.on .kin input::-webkit-inner-spin-button{-webkit-appearance:none; margin:0}
+  .kbtn.on .kv > span{font-size:var(--fs-2xs); color:var(--faint); flex:0 0 auto}
+  /* ★ 설명 글은 한 줄을 넘지 않는다 (2026-09-21 홍겸 님 요청 · 앱 전체).
+     넘치면 줄바꿈 대신 끝을 … 로 자른다 — 그래도 잘리지 않게 문장을 짧게 쓰는 것이 먼저다 */
+  .note, .hint, .proto, .ghelp, .gline, .item .d, .num,
+  .btn, .seg button, .chip{white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  /* 칩은 한 줄로 모으고, 넘치는 것은 좌우로 밀어서 꺼낸다 */
+  .chips{flex-wrap:nowrap !important; overflow-x:auto; scrollbar-width:none;
+    -webkit-mask-image:linear-gradient(90deg,#000 88%,transparent); mask-image:linear-gradient(90deg,#000 88%,transparent)}
+  .chips::-webkit-scrollbar{display:none}
+  .chips .chip{flex:0 0 auto; overflow:visible}
+  /* 종목 이름 옆에 흐린 글씨로 부위·장비 */
+  .nm1{display:flex !important; align-items:baseline; gap:6px; min-width:0}
+  .nm1 .t{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:0 1 auto; min-width:0}
+  .nm1 .d{flex:0 1 auto; min-width:0; font-size:var(--fs-xs)}
+  /* 루틴 안에서 바로 고르기 */
+  .ipick{margin-top:10px; border:1px solid var(--line); border-radius:var(--r-s); padding:9px 10px 4px; background:var(--surface-2)}
+  .iphd{display:flex; align-items:center; gap:8px; margin-bottom:8px}
+  .iphd b{font-size:var(--fs-m); flex:0 0 auto}
+  .iphd .ipn{flex:1 1 auto; min-width:0; font-size:var(--fs-xs); color:var(--faint); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .iphd .gear{flex:0 0 auto; width:30px; height:var(--h-s); border-radius:var(--r-xs); background:var(--surface); border:1px solid var(--line); color:var(--muted); font-size:var(--fs-m)}
+  .iphd .ipdone{flex:0 0 auto; height:var(--h-s); padding:0 13px; border-radius:var(--r-xs); background:var(--accent); color:var(--accent-ink); font-size:var(--fs-m); font-weight:700}
+  .ipick .chips{margin-bottom:4px}
+  .iplist{max-height:42vh; overflow-y:auto}
+  .iplist .item{width:100%; text-align:left; padding:10px 2px}
+  .iplist .item:last-child{border-bottom:0}
+  .iplist .item[disabled]{opacity:.45}
+  .iplist .ipm{flex:0 0 auto; min-width:34px; text-align:right; color:var(--accent); font-weight:700; font-size:var(--fs-l)}
+  .iplist .item[disabled] .ipm{font-size:var(--fs-xs); color:var(--faint); font-weight:500}
+  .iplist .item.ipon .t{color:var(--accent); font-weight:700}
+
+  /* ── 달력 ── */
+  .calhead{display:flex; align-items:center; justify-content:space-between; margin:2px 0 10px}
+  .calhead .m{font-size:var(--fs-l); font-weight:700}
+  .calhead button{width:34px; height:var(--h-s); border-radius:50%; background:var(--surface-2); display:grid; place-items:center; color:var(--muted)}
+  .dow{display:grid; grid-template-columns:repeat(7,1fr); gap:2px; margin-bottom:4px}
+  .dow span{text-align:center; font-size:var(--fs-xs); color:var(--faint); font-weight:700}
+  .grid{display:grid; grid-template-columns:repeat(7,1fr); gap:2px}
+  .card.cal{padding:12px 7px}
+  /* 평소에는 날짜 + 루틴 이름만 — 최대한 낮게.
+     오늘 칸만 내용만큼 늘어나고, 그 줄 전체가 따라 늘어난다. */
+  .day{
+    min-height:var(--h-l); border-radius:var(--r-xs); display:flex; flex-direction:column; gap:2px;
+    align-items:stretch; padding:4px 2px 5px; text-align:left;
+    background:transparent; position:relative; overflow:hidden;
+  }
+  .day.today{padding-bottom:7px}
+  .day.pad{visibility:hidden}
+  .day .n{
+    font-family:var(--num); font-size:var(--fs-s); font-weight:500; text-align:center;
+    color:var(--text); flex:0 0 auto; line-height:var(--lh-ui);
+  }
+  .day.future .n{color:var(--faint)}
+  .day .rou{
+    font-size:var(--fs-2xs); font-weight:700; line-height:var(--lh-ui); padding:1px 3px; border-radius:3px;
+    white-space:nowrap; overflow:hidden; text-overflow:clip;
+    background:var(--accent-soft); color:var(--ok);
+  }
+  .day.missed .rou{background:color-mix(in srgb, var(--miss) 15%, transparent); color:var(--miss)}
+  .day.plan .rou{background:transparent; color:var(--accent); box-shadow:inset 0 0 0 1px currentColor}
+  .day .ex{
+    font-size:var(--fs-2xs); line-height:var(--lh-text); color:var(--muted); padding-left:2px;
+    white-space:nowrap; overflow:hidden; text-overflow:clip;
+  }
+  .day .more{font-size:var(--fs-2xs); line-height:var(--lh-ui); color:var(--faint); padding-left:2px}
+  .day.today{background:var(--surface-2)}
+  .day.today .n{font-weight:700; color:var(--accent)}
+  .day[aria-pressed="true"]{box-shadow:inset 0 0 0 1.5px var(--accent)}
+
+  /* ── 날짜 상세 패널 (작게) ── */
+  /* 절반 크기로 (2026-09-21) */
+  .card.pan{padding:7px 10px 8px}
+  .pan .hd{display:flex; align-items:center; justify-content:space-between; gap:6px}
+  .pan .when{font-size:var(--fs-xs); color:var(--muted); font-weight:600}
+  .pan .pill{font-size:var(--fs-2xs); padding:2px 7px}
+  /* 루틴 이름과 종목·세트·예상시간을 한 줄에 */
+  .pan .titleline{display:flex; align-items:baseline; gap:7px; margin-top:1px; min-width:0}
+  .pan .title{font-size:var(--fs-b); font-weight:700; line-height:var(--lh-tight); flex:0 0 auto}
+  .pan .meta{font-size:var(--fs-2xs); color:var(--faint); font-weight:500; flex:1 1 auto; min-width:0;
+    white-space:nowrap; overflow:hidden; text-overflow:clip}
+  .pan .tip{font-size:var(--fs-2xs); color:var(--accent); font-weight:600; margin-top:4px; line-height:var(--lh-ui)}
+  .pan .acts{display:flex; gap:5px; margin-top:7px}
+  .pan .acts .btn{height:var(--h-s); font-size:var(--fs-m); border-radius:var(--r-xs); width:auto; flex:1 1 0; padding:0 8px}
+  .pan .acts .btn.ghost{font-size:var(--fs-s)}
+  .pan .item{padding:4px 0; gap:7px}
+  .pan .item .t{font-size:var(--fs-s)}
+  .pan .item .d{font-size:var(--fs-2xs)}
+  .pan .gline{font-size:var(--fs-xs); padding:5px 0}
+  .legend{font-size:var(--fs-2xs); gap:9px; margin-top:7px}
+
+  .legend{display:flex; gap:12px; margin-top:10px; padding:0 3px; font-size:var(--fs-xs); color:var(--faint); flex-wrap:wrap}
+  .legend i{
+    display:inline-block; width:13px; height:9px; border-radius:2px; margin-right:5px; vertical-align:0;
+  }
+
+  /* ── 목록 항목 ── */
+  .item{display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--line)}
+  .item:last-child{border-bottom:0}
+  .item .idx{
+    width:26px; height:var(--h-xs); border-radius:var(--r-xs); flex:0 0 auto; display:grid; place-items:center;
+    background:var(--surface-2); font-family:var(--num); font-size:var(--fs-s); font-weight:600; color:var(--muted);
+  }
+  .item .t{font-weight:500}
+  .item .d{font-size:var(--fs-s); color:var(--faint)}
+
+  .chips{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px}
+  .chip{padding:6px 12px; border-radius:999px; font-size:var(--fs-m); background:var(--surface-2); color:var(--muted); font-weight:500}
+  .chip[aria-pressed="true"]{background:var(--accent); color:var(--accent-ink); font-weight:700}
+
+  /* ── 설정 ── */
+  .set{display:flex; align-items:center; justify-content:space-between; gap:14px; padding:13px 0; border-bottom:1px solid var(--line)}
+  .set:last-child{border-bottom:0}
+  .set .lbl{font-weight:500}
+  .set .hint{font-size:var(--fs-s); color:var(--faint); margin-top:2px}
+  .sw{width:46px; height:var(--h-xs); border-radius:999px; background:var(--surface-2); position:relative; flex:0 0 auto; border:1px solid var(--line); transition:background .15s}
+  .sw::after{content:""; position:absolute; top:2px; left:2px; width:21px; height:21px; border-radius:50%; background:var(--surface); box-shadow:0 1px 2px rgba(0,0,0,.2); transition:transform .15s}
+  .sw[aria-pressed="true"]{background:var(--accent); border-color:var(--accent)}
+  .sw[aria-pressed="true"]::after{transform:translateX(19px)}
+  .seg{display:inline-flex; background:var(--surface-2); border-radius:var(--r-xs); padding:2px; border:1px solid var(--line)}
+  .seg button{padding:5px 13px; border-radius:var(--r-xs); font-size:var(--fs-m); font-weight:600; color:var(--muted)}
+  .seg button[aria-pressed="true"]{background:var(--surface); color:var(--text); box-shadow:0 1px 2px rgba(0,0,0,.08)}
+
+  /* ── 운동 실행 ── */
+  /* 운동 화면은 탭바 위 영역만 차지한다 — 아래 탭은 그대로 살아 있다 */
+  .overlay{flex:1 1 auto; min-height:0; background:var(--bg); display:flex; flex-direction:column}
+  .overlay[hidden]{display:none !important}
+  .ovhead{padding:12px 16px; display:flex; align-items:center; gap:12px; border-bottom:1px solid var(--line)}
+  .quit{font-size:var(--fs-s); color:var(--faint); font-weight:600; padding:8px; width:100%; text-align:center}
+  .ovbody{flex:1 1 auto; overflow-y:auto; padding:18px 16px; display:flex; flex-direction:column}
+  /* 내용이 길어져도 줄이 눌리지 않게 — 눌리면 세트 줄 글자가 겹친다 */
+  .ovbody > *{flex:0 0 auto}
+  .setlist > *{flex:0 0 auto}
+  .progress{height:4px; border-radius:2px; background:var(--surface-2); overflow:hidden}
+  .progress i{display:block; height:100%; background:var(--accent); border-radius:2px; transition:width .25s}
+
+  /* 달성도 · 향상도 칩 */
+  .stats{display:flex; gap:7px; margin-top:14px}
+  .statchip{
+    flex:1 1 0; min-width:0; display:flex; flex-direction:column; align-items:stretch; gap:1px;
+    padding:8px 11px 9px; border-radius:var(--r-s); background:var(--surface); border:1px solid var(--line); text-align:left;
+  }
+  .statchip .k{font-size:var(--fs-xs); color:var(--faint); font-weight:700; letter-spacing:.02em; white-space:nowrap; overflow:hidden}
+  .statchip .v{font-family:var(--num); font-size:var(--fs-xl); font-weight:600; font-variant-numeric:tabular-nums; line-height:var(--lh-tight)}
+  .statchip .v.up{color:var(--up)}
+  .statchip .v.down{color:var(--down)}
+  .statchip .v.flat{color:var(--faint)}
+  .bar{height:4px; border-radius:2px; background:var(--surface-2); overflow:hidden; margin-top:6px}
+  .bar i{display:block; height:100%; background:var(--accent); border-radius:2px; transition:width .25s}
+
+  .cmp{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 0; border-bottom:1px solid var(--line)}
+  .cmp:last-child{border-bottom:0}
+  .cmp .lab{font-size:var(--fs-m); font-weight:500}
+  .cmp .sub{font-size:var(--fs-xs); color:var(--faint)}
+  .cmp .pct{font-family:var(--num); font-size:var(--fs-b); font-weight:600; flex:0 0 auto}
+  .cmp .pct.up{color:var(--up)} .cmp .pct.down{color:var(--down)} .cmp .pct.flat{color:var(--faint)}
+  .mt{display:flex; flex-direction:column; gap:2px; flex:0 0 auto; align-items:flex-end}
+  .mrow{display:flex; align-items:baseline; gap:7px}
+  .mk{font-size:var(--fs-2xs); color:var(--faint); font-weight:700}
+  .mrow .pct{font-size:var(--fs-b); min-width:44px; text-align:right}
+  .md{font-family:var(--num); font-size:var(--fs-xs); color:var(--faint); min-width:56px; text-align:right}
+
+  .exname{font-size:var(--fs-2xl); font-weight:700; letter-spacing:var(--ls-tight); margin:16px 0 2px; text-wrap:balance}
+  .setline{color:var(--muted); font-size:var(--fs-b)}
+  .target{margin-top:14px; padding:10px 14px; background:var(--accent-soft); color:var(--ok); border-radius:var(--r-s); font-size:var(--fs-m); font-weight:600; display:inline-flex; align-self:flex-start}
+
+  /* ── 운동 중 맨 윗줄 — 루틴 정보 한 줄 ── */
+  .appbar{position:relative}
+  .workbar{
+    display:flex; align-items:center; gap:5px; width:100%; min-width:0;
+  }
+  .workbar[hidden]{display:none !important}
+  .workbar .rn{
+    font-size:var(--fs-m); font-weight:700; letter-spacing:var(--ls-ui); flex:0 0 auto;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .workbar .bit{
+    font-family:var(--num); font-size:var(--fs-2xs); font-variant-numeric:tabular-nums;
+    color:var(--muted); white-space:nowrap; flex:0 0 auto; line-height:var(--lh-tight);
+  }
+  .workbar .bit.pc{color:var(--accent); font-weight:700}
+  .workbar .bit .lb{color:var(--faint); margin-right:3px}
+  .workbar #wbVol{flex:0 1 auto; min-width:0; overflow:hidden}
+  .workbar .sep{color:var(--line); flex:0 0 auto; font-size:var(--fs-2xs)}
+  .workbar .endbox{
+    margin-left:auto; flex:0 0 auto; height:var(--h-xs); padding:0 7px; border-radius:var(--r-xs);
+    background:var(--surface-2); border:1px solid var(--line); color:var(--muted);
+    display:inline-flex; align-items:center; font-size:var(--fs-xs); font-weight:700; white-space:nowrap;
+  }
+  .topbar{height:3px; background:var(--surface-2); flex:0 0 auto}
+  .topbar[hidden]{display:none !important}
+  .topbar i{display:block; height:100%; background:var(--accent); transition:width .25s}
+
+  /* ── 운동 화면 종목 줄 ── */
+  .ovhead{padding:9px 16px 8px; display:flex; align-items:center; gap:7px; border-bottom:1px solid var(--line)}
+  .exline{display:flex; align-items:center; gap:7px; width:100%; min-width:0}
+  .exline .nm{
+    flex:1 1 auto; min-width:0; font-size:var(--fs-b); font-weight:700; letter-spacing:var(--ls-ui);
+    white-space:nowrap; overflow:hidden; text-overflow:clip;
+  }
+  .exline .nm .no{font-family:var(--num); font-size:var(--fs-s); font-weight:600; color:var(--muted); margin-right:3px}
+  .exline .ibtn{font-size:var(--fs-s); color:var(--faint); flex:0 0 auto; padding:0 1px}
+  .exline .m{
+    flex:0 0 auto; font-family:var(--num); font-size:var(--fs-xs); font-variant-numeric:tabular-nums;
+    color:var(--text); white-space:nowrap; line-height:var(--lh-tight);
+  }
+  .exline .m .lb{font-size:var(--fs-2xs); color:var(--faint); margin-right:4px; font-family:var(--ui)}
+  .exline .m.pc{color:var(--accent); font-weight:700; font-size:var(--fs-s)}
+  .exline.tight{gap:5px}
+  .exline.tight .m{font-size:var(--fs-2xs)}
+  .exline.tight .m.pc{font-size:var(--fs-xs)}
+  .exline.tight .m .lb{margin-right:2px; font-size:var(--fs-2xs)}
+  .exline .nm.ell{text-overflow:ellipsis}
+  .exline .swap{font-size:var(--fs-s); font-weight:700; color:var(--accent); flex:0 0 auto; padding:2px 0 2px 2px}
+  .ar{font-weight:700; margin-left:1px; font-size:var(--fs-2xs)}
+  .ar.up{color:var(--up)} .ar.down{color:var(--down)}
+  .dot{display:inline-block; width:5px; height:5px; border-radius:50%; background:var(--up); margin-left:3px; vertical-align:3px}
+
+  /* 종목 기록 시트 안의 세 칸 */
+  .stat3{display:grid; grid-template-columns:repeat(3,1fr); gap:8px}
+  .stat3 .st{min-width:0}
+  .stat3 .sk{font-size:var(--fs-xs); color:var(--muted); font-weight:600; white-space:nowrap}
+  .stat3 .sv{
+    font-family:var(--num); font-size:var(--fs-xl); font-weight:600; line-height:var(--lh-ui); margin-top:2px;
+    font-variant-numeric:tabular-nums; white-space:nowrap; overflow:hidden;
+  }
+  .stat3 .sv .x{font-size:var(--fs-m); color:var(--faint); margin:0 2px}
+  .stat3 .sv .u, .stat3 .sp .u{font-size:var(--fs-xs); color:var(--faint); margin-left:1px}
+  .stat3 .sp{font-family:var(--num); font-size:var(--fs-xs); color:var(--faint); line-height:var(--lh-text); white-space:nowrap; overflow:hidden}
+
+  /* ── 세트 줄 ── */
+  .setlist{display:flex; flex-direction:column; margin-top:6px}
+  /* 줄 간격은 예전의 절반 — 위아래 3px */
+  .srow2{border-bottom:1px solid var(--line); padding:3px 0}
+  .srow2:last-child{border-bottom:0}
+  .srow2.now{background:var(--accent-soft); border-radius:var(--r-xs); padding:3px 7px; border-bottom:0; margin:1px 0}
+  .srow2.todo{opacity:.55}
+  .sline{display:flex; align-items:center; gap:4px}
+  .chk2{
+    width:28px; height:var(--h-xs); flex:0 0 auto; border-radius:50%; display:grid; place-items:center;
+    background:var(--surface-2); color:var(--surface); font-size:var(--fs-b); font-weight:700;
+    border:1px solid var(--line);
+  }
+  .srow2.done .chk2{background:var(--accent); border-color:var(--accent); color:var(--accent-ink)}
+  /* 체크 옆 네모는 '몇 번째 세트'인지를 뜻한다 */
+  .setno{
+    flex:0 0 auto; width:34px; height:var(--h-xs); border-radius:var(--r-xs);
+    border:1px solid var(--line); background:var(--surface);
+    font-family:var(--num); font-size:var(--fs-m); font-weight:600;
+    display:inline-flex; align-items:center; justify-content:center;
+  }
+  .srow2 .cell{
+    flex:1 1 0; min-width:0; height:var(--h-xs); border-radius:var(--r-xs); background:transparent;
+    font-family:var(--num); font-size:var(--fs-b); font-weight:500; font-variant-numeric:tabular-nums;
+    color:var(--muted); display:inline-flex; align-items:baseline; justify-content:center; gap:2px;
+    white-space:nowrap; overflow:hidden;
+  }
+  .srow2.done .cell{color:var(--text)}
+  .srow2 .cell .u{font-size:var(--fs-xs); color:var(--faint)}
+  /* 휴지통 = 이 세트 줄을 지운다. 숫자와 붙지 않게 좌우로 띄운다 */
+  .del2{flex:0 0 auto; width:26px; margin-left:4px; font-size:var(--fs-m); opacity:.4; filter:grayscale(1)}
+  .cvbtn{flex:0 0 auto; width:24px; margin-left:2px; font-size:var(--fs-m); color:var(--faint); transition:transform .18s}
+  .srow2.open .cvbtn{transform:rotate(180deg)}
+  /* 휴식시간은 무게·횟수와 같은 줄 오른쪽에 붙는다 */
+  /* 이름을 .rest 로 두면 휴식 화면의 .rest{flex-direction:column} 과 부딪힌다 */
+  .srow2 .cell.wcell{flex:1.6 1 0}
+  .srow2 .cell.restcell{flex:0 0 auto; width:60px; font-size:var(--fs-m); color:var(--faint); justify-content:flex-end}
+  .srow2 .cell.restcell .u{font-size:var(--fs-2xs)}
+
+  /* 세트 줄을 펼쳤을 때 나오는 설정 칸 */
+  /* 무게 · 횟수 · 휴식을 한 줄에서 고친다 */
+  .expand1{
+    margin:5px 0 3px; padding:7px; border-radius:var(--r-s);
+    background:var(--surface); border:1px solid var(--line);
+    display:flex; align-items:center; gap:5px;
+  }
+  .mini{display:flex; align-items:center; gap:3px; flex:1 1 0; min-width:0}
+  .mini button{
+    flex:0 0 auto; width:26px; height:var(--h-s); border-radius:var(--r-xs);
+    background:var(--surface-2); border:1px solid var(--line);
+    font-size:var(--fs-b); color:var(--muted); line-height:1;
+  }
+  .mini .mv{
+    flex:1 1 0; min-width:0; height:var(--h-s); border-radius:var(--r-xs); background:var(--bg);
+    border:1px solid var(--line); display:flex; align-items:baseline; justify-content:center; gap:2px;
+    white-space:nowrap; overflow:hidden;
+  }
+  .mini .mv b{font-family:var(--num); font-size:var(--fs-b); font-weight:600; font-variant-numeric:tabular-nums}
+  /* 무게는 0.1 단위로 직접 쳐 넣을 수 있다 */
+  .mini .mv input{
+    width:100%; min-width:0; border:0; background:transparent; text-align:center;
+    font-family:var(--num); font-size:var(--fs-b); font-weight:600; font-variant-numeric:tabular-nums;
+    color:var(--text); padding:0; -moz-appearance:textfield;
+  }
+  .mini .mv input::-webkit-outer-spin-button,
+  .mini .mv input::-webkit-inner-spin-button{-webkit-appearance:none; margin:0}
+  .mini.wide{flex:1.15 1 0}
+  .mini.narrow{flex:.75 1 0}
+  .mini.restm{flex:1.15 1 0}
+  .mini .mv span{font-size:var(--fs-2xs); color:var(--faint); white-space:nowrap}
+
+  /* 세트 추가 — 목록 맨 아래 가운데 동그라미 */
+  .addwrap{display:flex; justify-content:center; padding:10px 0 4px}
+  .addset{
+    width:38px; height:var(--h-m); border-radius:50%; background:var(--surface);
+    border:1.5px dashed var(--line); color:var(--accent); font-size:var(--fs-xl); font-weight:600;
+    display:grid; place-items:center; line-height:1;
+  }
+
+  /* 남은 운동 목록 */
+  .restex{margin-top:6px; border-top:1px solid var(--line); padding-top:6px}
+  .restex .cap{font-size:var(--fs-2xs); color:var(--faint); font-weight:700; letter-spacing:var(--ls-caps); padding:2px 0 4px}
+  .rex{
+    display:flex; align-items:center; gap:8px; width:100%; text-align:left;
+    padding:6px 2px; font-size:var(--fs-m); color:var(--muted); border-bottom:1px solid var(--line);
+  }
+  .rex:last-child{border-bottom:0}
+  .rex .rn2{flex:1 1 auto; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:clip}
+  .rex .rs{font-family:var(--num); font-size:var(--fs-xs); color:var(--faint); flex:0 0 auto}
+
+  /* 마치고 다시 돌아왔을 때 */
+  .resume{
+    width:100%; height:var(--h-m); border-radius:var(--r-s); margin-bottom:8px;
+    background:var(--rest-soft); border:1px solid color-mix(in srgb, var(--rest) 30%, transparent);
+    color:var(--rest); font-size:var(--fs-m); font-weight:700;
+  }
+
+  .stepper{display:flex; flex-direction:column; gap:7px; margin-top:20px}
+  .stepper .cap{font-size:var(--fs-s); color:var(--faint); font-weight:700; letter-spacing:var(--ls-caps)}
+  .stepper .ctl{display:flex; align-items:center; gap:10px}
+  .stepper .ctl button{width:54px; height:64px; border-radius:var(--r-s); background:var(--surface-2); border:1px solid var(--line); font-size:var(--fs-xl); font-weight:600; color:var(--muted)}
+  .stepper .val{
+    flex:1 1 auto; height:64px; background:var(--surface); border:1px solid var(--line); border-radius:var(--r-s);
+    display:flex; align-items:baseline; justify-content:center; gap:4px;
+  }
+  .stepper .val b{font-family:var(--num); font-size:var(--fs-3xl); font-weight:600; font-variant-numeric:tabular-nums}
+  .stepper .val span{font-size:var(--fs-m); color:var(--faint)}
+
+  .ovfoot{padding:13px 16px 14px; border-top:1px solid var(--line); background:var(--surface); display:flex; flex-direction:column; gap:9px}
+  .minor{display:flex; gap:6px}
+  .minor button{
+    flex:1 1 0; min-width:0; height:var(--h-l); border-radius:var(--r-s);
+    background:var(--surface-2); border:1px solid var(--line);
+    font-size:var(--fs-s); line-height:var(--lh-tight); font-weight:600; color:var(--muted); padding:0 3px;
+  }
+  /* 세트 화면의 아래 줄 — 다섯 개를 한 줄에 넣으려고 낮고 작게 */
+  .minor.tight{gap:4px}
+  .minor.tight button{height:var(--h-m); font-size:var(--fs-xs); border-radius:var(--r-xs); padding:0 2px}
+  .ovfoot.slim{padding:8px 16px 10px; gap:0}
+
+  /* 휴식 — 전체화면이 아니라 '방금 끝낸 세트 줄' 위에만 덮인다 */
+  .srow2.resting{
+    background:var(--rest-soft); border:1px solid color-mix(in srgb, var(--rest) 28%, transparent);
+    border-radius:var(--r-xs); padding:4px 7px; margin:1px 0;
+  }
+  .rstrip{display:flex; align-items:center; gap:6px; height:var(--h-s)}
+  .rstrip .rlab{
+    font-size:var(--fs-2xs); font-weight:700; letter-spacing:var(--ls-caps); color:var(--rest);
+    flex:0 0 auto; text-transform:uppercase; font-family:var(--num);
+  }
+  .rstrip .rclock{
+    font-family:var(--num); font-size:var(--fs-xl); font-weight:600; font-variant-numeric:tabular-nums;
+    color:var(--rest); flex:0 0 auto; letter-spacing:var(--ls-ui);
+  }
+  .rstrip .rnext{
+    flex:1 1 auto; min-width:0; font-size:var(--fs-s); color:var(--rest);
+    white-space:nowrap; overflow:hidden; text-overflow:clip;
+  }
+  .rstrip .gap{flex:1 1 auto}
+  .rstrip .rbtn{
+    flex:0 0 auto; height:var(--h-xs); padding:0 9px; border-radius:var(--r-xs);
+    background:var(--surface); border:1px solid color-mix(in srgb, var(--rest) 30%, transparent);
+    color:var(--rest); font-size:var(--fs-xs); font-weight:700; white-space:nowrap;
+  }
+  .rstrip .rbtn.go{background:var(--rest); color:var(--surface); border-color:var(--rest)}
+
+  .ask{background:var(--surface); border:1px solid var(--line); border-radius:var(--r-m); padding:16px; text-align:center}
+  .ask p{margin:0 0 14px; font-size:var(--fs-b)}
+  .ask b{font-weight:700}
+
+  /* 마무리 화면. 예전 이름이 .done 이었는데 세트 줄의 .srow.done 과 부딪혀
+     완료된 세트 줄이 세로로 쌓이는 문제가 있었다. 이름을 따로 뗐다. */
+  .wrapup{flex:1 1 auto; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; text-align:center}
+  .wrapup .big{font-size:var(--fs-2xl); font-weight:700}
+  .summary{width:100%; margin-top:18px}
+
+  /* ── 루틴 탭 ── */
+  .rhead2{display:flex; align-items:center; gap:2px; padding:9px 10px 9px 12px}
+  .rtitle{display:flex; align-items:center; gap:10px; flex:1 1 auto; min-width:0; text-align:left}
+  .mvb{
+    flex:0 0 auto; width:30px; height:var(--h-s); border-radius:var(--r-xs); background:var(--surface-2);
+    border:1px solid var(--line); font-size:var(--fs-s); color:var(--muted); display:grid; place-items:center;
+  }
+  .mvb:disabled{opacity:.28}
+  .mvb.on{background:var(--accent); border-color:var(--accent); color:var(--accent-ink)}
+  .mvb.del{filter:grayscale(1); opacity:.5}
+  .mvb.cv3{background:transparent; border-color:transparent; transition:transform .18s}
+  .mvb.cv3.open{transform:rotate(180deg)}
+  .rset .btn{width:auto}
+  .rset{display:flex; align-items:flex-end; gap:7px; padding:0 12px 12px; border-top:1px solid var(--line); padding-top:12px}
+  .rbody{padding:2px 12px 13px; border-top:1px solid var(--line)}
+  .exrow3{border-bottom:1px solid var(--line); padding:5px 0}
+  .exrow3 .exline3, .day[data-d]{-webkit-user-select:none; user-select:none; -webkit-touch-callout:none}
+  .exrow3:last-of-type{border-bottom:0}
+  .exline3{display:flex; align-items:center; gap:3px}
+  /* 한 줄에 네 칸 — 세트수 · 무게 · 횟수 · 휴식 */
+  .expand1.four{gap:4px; padding:6px}
+  .expand1.four .mini4{display:flex; align-items:center; gap:2px; flex:1 1 0; min-width:0}
+  .expand1.four .mini4:nth-child(1){flex:.85 1 0}
+  .expand1.four .mini4:nth-child(3){flex:.85 1 0}
+  .expand1.four .mini4:nth-child(4){flex:1.3 1 0}
+  .expand1.four .mini4 button{
+    flex:0 0 auto; width:22px; height:var(--h-s); border-radius:var(--r-xs);
+    background:var(--surface-2); border:1px solid var(--line); font-size:var(--fs-m); color:var(--muted); line-height:1;
+  }
+  .expand1.four .mini4 .mv{
+    flex:1 1 0; min-width:0; height:var(--h-s); border-radius:var(--r-xs); background:var(--bg); border:1px solid var(--line);
+    display:flex; align-items:baseline; justify-content:center; gap:1px; white-space:nowrap; overflow:hidden;
+  }
+  .expand1.four .mini4 .mv input{
+    width:100%; min-width:0; border:0; background:transparent; text-align:center; padding:0;
+    font-family:var(--num); font-size:var(--fs-m); font-weight:600; font-variant-numeric:tabular-nums;
+    color:var(--text); -moz-appearance:textfield;
+  }
+  .expand1.four .mini4 .mv input::-webkit-outer-spin-button,
+  .expand1.four .mini4 .mv input::-webkit-inner-spin-button{-webkit-appearance:none; margin:0}
+  .expand1.four .mini4 .mv span{font-size:var(--fs-2xs); color:var(--faint)}
+
+  /* 시트 안 작은 스테퍼 */
+  .st2{display:flex; align-items:center; gap:8px}
+  .st2 button{width:46px; height:var(--h-l); border-radius:var(--r-xs); background:var(--surface-2); border:1px solid var(--line); font-size:var(--fs-xl); color:var(--muted)}
+  .st2 .v{flex:1 1 auto; height:var(--h-l); border:1px solid var(--line); border-radius:var(--r-xs); background:var(--bg); display:flex; align-items:baseline; justify-content:center; gap:4px}
+  .st2 .v b{font-family:var(--num); font-size:var(--fs-xl); font-weight:600; font-variant-numeric:tabular-nums}
+  .st2 .v span{font-size:var(--fs-s); color:var(--faint)}
+  .restchips{display:flex; gap:6px; flex-wrap:wrap}
+  .restchips button{padding:8px 13px; border-radius:999px; background:var(--surface-2); border:1px solid var(--line); font-size:var(--fs-m); font-weight:600; color:var(--muted)}
+  .restchips button[aria-pressed="true"]{background:var(--accent); color:var(--accent-ink); border-color:var(--accent)}
+  .danger{color:var(--miss); font-weight:700; font-size:var(--fs-b); text-align:center; padding:10px; width:100%}
+
+  /* ── 아래에서 올라오는 편집창 ── */
+  .sheet{position:absolute; inset:0; z-index:20; display:flex; align-items:flex-end}
+  .sheet[hidden]{display:none !important}
+  .sheet .veil{position:absolute; inset:0; background:rgba(10,14,12,.45)}
+  .sheet .panel{
+    position:relative; width:100%; background:var(--surface); border-radius:var(--r-l) var(--r-l) 0 0;
+    padding:18px 16px; padding-bottom:calc(18px + env(safe-area-inset-bottom, 0px));
+    border-top:1px solid var(--line); display:flex; flex-direction:column; gap:14px;
+    /* 내용이 길어지면(오늘 기록처럼) 시트 안에서 굴러가게 — 화면을 넘지 않는다 */
+    max-height:88%; overflow-y:auto; overscroll-behavior:contain;
+  }
+  .field{display:flex; flex-direction:column; gap:6px}
+  .field label{font-size:var(--fs-s); font-weight:700; color:var(--muted)}
+  .field input{
+    height:var(--h-l); border-radius:var(--r-s); border:1px solid var(--line); background:var(--bg);
+    color:var(--text); font:inherit; padding:0 12px; width:100%;
+  }
+  .field .hint{font-size:var(--fs-s); color:var(--faint); line-height:var(--lh-text)}
+  .preview{
+    display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:var(--r-s);
+    background:var(--surface-2); border:1px solid var(--line);
+  }
+  .preview .cellbox{
+    width:58px; flex:0 0 auto; border-radius:var(--r-xs); background:var(--surface);
+    border:1px solid var(--line); padding:4px 2px; overflow:hidden;
+  }
+
+
+  /* ── 휴식 날 ── */
+  .day.rest .rou{background:var(--surface-2); color:var(--faint); box-shadow:none}
+
+  /* ── 꾹 눌러 옮기기 ── */
+  .day[data-drag]{touch-action:none}
+  .day.dragging{opacity:.3}
+  .day.drop{box-shadow:inset 0 0 0 2px var(--accent); background:var(--accent-soft)}
+  .day.nodrop{opacity:.35}
+  .dragghost{
+    position:fixed; z-index:60; pointer-events:none; padding:5px 11px; border-radius:999px;
+    background:var(--accent); color:var(--accent-ink); font-size:var(--fs-s); font-weight:700;
+    box-shadow:var(--shadow); transform:translate(-50%,-150%); white-space:nowrap;
+  }
+
+  /* ── 성장 문장 ── */
+  .gline{font-size:var(--fs-m); line-height:var(--lh-text); color:var(--muted); padding:8px 0; border-bottom:1px solid var(--line)}
+  .gline:last-child{border-bottom:0}
+  .gline b{font-weight:700; color:var(--text)}
+  .gline .up{color:var(--up); font-weight:700}
+  .gline .down{color:var(--down); font-weight:700}
+  .gline .flat{color:var(--faint); font-weight:700}
+  .tag{
+    display:inline-block; font-size:var(--fs-2xs); font-weight:700; padding:1px 6px; border-radius:999px;
+    background:var(--rest-soft); color:var(--rest); margin-left:5px; vertical-align:1px;
+  }
+  .eta{font-size:var(--fs-xs); color:var(--faint); font-family:var(--num); white-space:nowrap}
+
+
+  /* ── 종목 탭: 줄을 펼쳐서 바로 고친다 (팝업 없이) ── */
+  .exrow2{border-bottom:1px solid var(--line)}
+  .exrow2:last-child{border-bottom:0}
+  .exhead2{display:flex; align-items:center; gap:9px; width:100%; text-align:left; padding:10px 0}
+  .exhead2 .t2{font-weight:500; font-size:var(--fs-b); white-space:nowrap; overflow:hidden; text-overflow:clip}
+  .exhead2 .d2{font-size:var(--fs-s); color:var(--faint); margin-top:1px}
+  .exhead2 .pcbox{flex:0 0 auto; text-align:right}
+  .exhead2 .pcbox .pv{display:block; font-family:var(--num); font-size:var(--fs-b); font-weight:600}
+  .exhead2 .pcbox .pk{display:block; font-size:var(--fs-2xs); color:var(--faint)}
+  .exhead2 .cv2{flex:0 0 auto; width:20px; color:var(--faint); font-size:var(--fs-m); transition:transform .18s}
+  .exhead2.open .cv2{transform:rotate(180deg)}
+  .exbody2{padding:2px 0 14px; display:flex; flex-direction:column; gap:12px}
+
+  /* 세 가지 지표 */
+  .mtab{display:flex; flex-direction:column; gap:0; border:1px solid var(--line); border-radius:var(--r-s); overflow:hidden}
+  .mrow2{display:flex; align-items:center; gap:8px; padding:8px 11px; border-bottom:1px solid var(--line)}
+  .mrow2:last-child{border-bottom:0}
+  .mrow2 .mk2{flex:1 1 auto; min-width:0; font-size:var(--fs-s); color:var(--muted); font-weight:600}
+  .mrow2 .mnow{font-family:var(--num); font-size:var(--fs-m); font-weight:600; flex:0 0 auto}
+  .mrow2 .mold{font-family:var(--num); font-size:var(--fs-xs); color:var(--faint); flex:0 0 auto; min-width:62px; text-align:right}
+  .mrow2 .mpct{font-family:var(--num); font-size:var(--fs-m); font-weight:700; flex:0 0 auto; min-width:52px; text-align:right}
+  .mrow2 .mpct.up{color:var(--up)} .mrow2 .mpct.down{color:var(--down)} .mrow2 .mpct.flat{color:var(--faint)}
+  .mrow2 .mpct{display:flex; flex-direction:column; align-items:flex-end; line-height:var(--lh-tight); min-width:62px}
+  .mrow2 .mdiff{font-size:var(--fs-2xs); font-weight:600; color:var(--faint); font-family:var(--num)}
+  .mrow2.mhead{background:var(--surface-2)}
+  .mrow2.mhead .mk2,.mrow2.mhead .mnow,.mrow2.mhead .mold,.mrow2.mhead .mpct{
+    font-size:var(--fs-2xs); font-weight:700; color:var(--faint); font-family:var(--ui);
+  }
+
+  .catbar{display:flex; align-items:center; gap:6px; margin-bottom:10px}
+  .catbar .chips{flex:1 1 auto; margin-bottom:0; overflow-x:auto; flex-wrap:nowrap; padding-bottom:2px}
+  .catbar .gear{
+    flex:0 0 auto; width:32px; height:var(--h-s); border-radius:var(--r-xs); background:var(--surface-2);
+    border:1px solid var(--line); color:var(--muted); font-size:var(--fs-b); display:grid; place-items:center;
+  }
+  .rowbtns{display:flex; gap:7px}
+  .rowbtns .btn{height:var(--h-m); font-size:var(--fs-m); border-radius:var(--r-xs)}
+
+
+  /* ── 영양 · 신체 ── */
+  .daynav{display:flex; align-items:center; gap:7px; margin:2px 0 12px}
+  .daynav button{
+    width:32px; height:var(--h-s); border-radius:var(--r-xs); background:var(--surface-2);
+    border:1px solid var(--line); color:var(--muted); font-size:var(--fs-b); display:grid; place-items:center;
+  }
+  .daynav .today{width:auto; padding:0 11px; font-size:var(--fs-s); font-weight:700; margin-left:auto}
+  .daynav #nutDay{font-size:var(--fs-b); font-weight:700; letter-spacing:var(--ls-ui)}
+
+  .nrow{display:flex; align-items:center; gap:9px; padding:10px 0; border-bottom:1px solid var(--line)}
+  .nrow:last-child{border-bottom:0}
+  .nrow .nk{flex:1 1 auto; min-width:0}
+  .nrow .nk b{font-size:var(--fs-b); font-weight:500; display:block}
+  .nrow .nk span{font-size:var(--fs-xs); color:var(--faint)}
+  .nbox{
+    flex:0 0 auto; display:flex; align-items:center; gap:3px;
+  }
+  .nbox button{
+    width:26px; height:var(--h-s); border-radius:var(--r-xs); background:var(--surface-2);
+    border:1px solid var(--line); color:var(--muted); font-size:var(--fs-b);
+  }
+  .nbox .nv{
+    width:62px; height:var(--h-s); border-radius:var(--r-xs); background:var(--bg); border:1px solid var(--line);
+    display:flex; align-items:baseline; justify-content:center; gap:2px;
+  }
+  .nbox .nv input{
+    width:100%; min-width:0; border:0; background:transparent; text-align:center; padding:0;
+    font-family:var(--num); font-size:var(--fs-b); font-weight:600; color:var(--text); -moz-appearance:textfield;
+  }
+  .nbox .nv input::-webkit-outer-spin-button,.nbox .nv input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  .nbox .nv span{font-size:var(--fs-2xs); color:var(--faint)}
+  .tick{
+    width:34px; height:var(--h-s); border-radius:50%; flex:0 0 auto; display:grid; place-items:center;
+    background:var(--surface-2); border:1px solid var(--line); color:var(--surface); font-size:var(--fs-l); font-weight:700;
+  }
+  .tick[aria-pressed="true"]{background:var(--accent); border-color:var(--accent); color:var(--accent-ink)}
+  .score{
+    display:flex; align-items:center; gap:9px; padding:10px 12px; border-radius:var(--r-s);
+    background:var(--accent-soft); margin-top:10px;
+  }
+  .score b{font-family:var(--num); font-size:var(--fs-xl); font-weight:700; color:var(--ok)}
+  .score span{font-size:var(--fs-s); color:var(--ok); font-weight:600}
+  .score.miss{background:color-mix(in srgb, var(--miss) 12%, transparent)}
+  .score.miss b, .score.miss span{color:var(--miss)}
+
+  .nchips{display:flex; gap:5px; flex-wrap:wrap; margin-top:8px}
+  .nchip{
+    font-size:var(--fs-xs); font-weight:600; padding:3px 8px; border-radius:999px;
+    background:var(--surface); color:var(--faint); border:1px solid var(--line);
+  }
+  .nchip.ok{color:var(--ok); border-color:color-mix(in srgb, var(--ok) 35%, transparent)}
+  .nchip b{font-family:var(--num); font-weight:700}
+
+  .chartbox{margin-top:8px}
+  .chartbox svg{display:block; width:100%; height:150px; overflow:visible}
+  .clegend{display:flex; gap:12px; flex-wrap:wrap; margin-top:7px; font-size:var(--fs-xs); color:var(--faint)}
+  .clegend i{display:inline-block; width:12px; height:2.5px; border-radius:2px; margin-right:5px; vertical-align:3px}
+
+
+  /* ── 성장 그래프 (마무리 화면) ── */
+  .gwrap{width:100%; margin-top:16px; text-align:left}
+  .gbar{display:flex; align-items:center; gap:5px; margin-bottom:8px; flex-wrap:wrap}
+  .gbtn{
+    height:var(--h-xs); padding:0 9px; border-radius:var(--r-xs); background:var(--surface-2);
+    border:1px solid var(--line); color:var(--muted); font-size:var(--fs-s); font-weight:700;
+  }
+  .gbtn[aria-pressed="true"]{background:var(--accent); border-color:var(--accent); color:var(--accent-ink)}
+  .gbar .sp{flex:1 1 auto}
+  .gzoom{display:flex; gap:4px}
+  .gzoom .gbtn{width:28px; padding:0; font-size:var(--fs-b)}
+  .gplot{
+    position:relative; background:var(--surface); border:1px solid var(--line);
+    border-radius:var(--r-s); padding:8px 8px 4px; touch-action:none; user-select:none;
+  }
+  .gplot svg{display:block; width:100%; height:190px}
+  .gplot .gaxis{font-family:var(--num); font-size:var(--fs-2xs); fill:var(--faint)}
+  .gplot .ggrid{stroke:var(--line); stroke-width:1}
+  .gplot .gzero{stroke:var(--faint); stroke-width:1; stroke-dasharray:3 3}
+  .gplot .gcross{stroke:var(--accent); stroke-width:1}
+  .gplot .gend{font-family:var(--ui); font-size:var(--fs-2xs); font-weight:700}
+  .gread{
+    margin-top:8px; border:1px solid var(--line); border-radius:var(--r-s); overflow:hidden;
+  }
+  .gread .gr{display:flex; align-items:center; gap:8px; padding:6px 10px; border-bottom:1px solid var(--line); font-size:var(--fs-s)}
+  .gread .gr:last-child{border-bottom:0}
+  .gread .gr.hd{background:var(--surface-2); font-weight:700; color:var(--faint); font-size:var(--fs-2xs)}
+  .gread .gn{flex:1 1 auto; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:clip; color:var(--muted)}
+  .gread .gv{font-family:var(--num); font-weight:600; flex:0 0 auto; min-width:64px; text-align:right}
+  .gread .gp{font-family:var(--num); font-weight:700; flex:0 0 auto; min-width:54px; text-align:right}
+  .gread .gp.up{color:var(--up)} .gread .gp.down{color:var(--down)} .gread .gp.flat{color:var(--faint)}
+  .gswatch{width:14px; height:0; border-top-width:3px; border-top-style:solid; flex:0 0 auto}
+  .ghelp{font-size:var(--fs-xs); color:var(--faint); line-height:var(--lh-text); margin-top:7px}
+  .gtable{max-height:220px; overflow:auto; margin-top:8px}
+  .gtable table{width:100%; border-collapse:collapse; font-family:var(--num); font-size:var(--fs-xs)}
+  .gtable th,.gtable td{padding:4px 6px; border-bottom:1px solid var(--line); text-align:right; white-space:nowrap}
+  .gtable th:first-child,.gtable td:first-child{text-align:left}
+  .gtable th{color:var(--faint); font-weight:700; position:sticky; top:0; background:var(--surface)}
+
+
+  /* ── 슈퍼세트 ── */
+  .sgroup{
+    border:1.5px solid var(--rest); border-radius:var(--r-s); margin:6px 0;
+    background:color-mix(in srgb, var(--rest) 5%, transparent); overflow:hidden;
+  }
+  .sgtag{
+    display:flex; align-items:center; gap:6px; padding:5px 9px;
+    font-size:var(--fs-xs); font-weight:700; color:var(--rest);
+  }
+  .sgtag .sgx{margin-left:auto; font-size:var(--fs-xs); font-weight:700; color:var(--rest); padding:2px 7px;
+    border:1px solid color-mix(in srgb, var(--rest) 35%, transparent); border-radius:999px}
+  .sgroup .exrow3{padding-left:9px; padding-right:9px}
+  .sgroup .exrow3:last-of-type{border-bottom:0}
+  /* 눌렀을 때 — 테두리만 생긴다 (안을 칠하지 않는다) */
+  .exrow3.press{box-shadow:inset 0 0 0 1.5px var(--accent); border-radius:var(--r-xs)}
+  .exrow3.lift{opacity:.35}
+  /* 가운데에 놓으면 슈퍼세트로 묶기 */
+  .exrow3.sgtarget{box-shadow:inset 0 0 0 2px var(--rest); border-radius:var(--r-xs)}
+  /* 위아래 경계에 놓으면 그 자리로 옮기기 */
+  .exrow3.dropbefore{box-shadow:inset 0 3px 0 0 var(--accent)}
+  .exrow3.dropafter{box-shadow:inset 0 -3px 0 0 var(--accent)}
+  /* 집어든 상태를 알려주는 띠 */
+  /* 집었을 때 뜨는 띠 — 목록을 밀어내면 손가락 밑의 줄이 움직이므로 화면 위에 떠 있게 한다 */
+  .pickbar{
+    position:fixed; z-index:55; left:50%; transform:translateX(-50%);
+    width:min(420px, calc(100% - 24px)); bottom:calc(70px + env(safe-area-inset-bottom, 0px));
+    box-shadow:var(--shadow);
+    display:flex; align-items:center; gap:7px; flex-wrap:wrap;
+    padding:9px 11px; border-radius:var(--r-s);
+    background:var(--surface); border:1px solid color-mix(in srgb, var(--rest) 30%, transparent);
+    font-size:var(--fs-s); color:var(--rest); line-height:var(--lh-text);
+  }
+  .pickbar b{font-weight:700}
+  .pickbar span{flex:1 1 auto; min-width:0}
+  .pickbar button{
+    flex:0 0 auto; padding:4px 10px; border-radius:999px; font-size:var(--fs-xs); font-weight:700;
+    background:var(--surface); border:1px solid color-mix(in srgb, var(--rest) 35%, transparent); color:var(--rest);
+  }
+  .exghost{
+    position:fixed; z-index:60; pointer-events:none; padding:6px 12px; border-radius:999px;
+    background:var(--rest); color:var(--surface); font-size:var(--fs-s); font-weight:700;
+    box-shadow:var(--shadow); transform:translate(-50%,-140%); white-space:nowrap;
+  }
+  .sbadge{
+    font-size:var(--fs-2xs); font-weight:700; padding:1px 6px; border-radius:999px;
+    background:var(--rest-soft); color:var(--rest); margin-left:5px;
+  }
+
+
+  /* ── 캘린더: 공휴일 · 일정 · 운동 요약 ── */
+  .day.hol .n{color:var(--miss)}
+  .day.sat .n{color:var(--down)}
+  .day .hn{font-size:var(--fs-2xs); line-height:var(--lh-ui); color:var(--miss); white-space:nowrap; overflow:hidden; text-overflow:clip}
+  .day .pl{font-size:var(--fs-2xs); line-height:var(--lh-ui); color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:clip}
+  .day .sum{font-size:var(--fs-2xs); line-height:var(--lh-ui); color:var(--faint); font-family:var(--num);
+    white-space:nowrap; overflow:hidden; text-overflow:clip}
+  .day .sum .up{color:var(--up)} .day .sum .down{color:var(--down)}
+  .planbox{margin-top:6px; padding-top:6px; border-top:1px solid var(--line)}
+  .planrow{display:flex; align-items:center; gap:7px; padding:3px 0; font-size:var(--fs-s); color:var(--muted)}
+
+
+  /* ── 종목 사진 ── */
+  .pics{display:flex; gap:6px; flex-wrap:wrap}
+  .pic{
+    width:58px; height:58px; border-radius:var(--r-xs); overflow:hidden; position:relative;
+    border:1px solid var(--line); background:var(--surface-2); flex:0 0 auto;
+  }
+  .pic img{width:100%; height:100%; object-fit:cover; display:block}
+  .pic .px{
+    position:absolute; top:2px; right:2px; width:18px; height:18px; border-radius:50%;
+    background:rgba(0,0,0,.55); color:#fff; font-size:var(--fs-xs); line-height:1;
+    display:grid; place-items:center; border:0;
+  }
+  .picadd{
+    width:58px; height:58px; border-radius:var(--r-xs); border:1.5px dashed var(--line);
+    background:var(--surface); color:var(--accent); font-size:var(--fs-xl); display:grid; place-items:center; flex:0 0 auto;
+  }
+  /* 운동 중 응원 사진 */
+  .cheer{
+    width:100%; margin:8px 0 2px; border-radius:var(--r-s); overflow:hidden;
+    border:1px solid var(--line); background:var(--surface-2); position:relative;
+  }
+  .cheer img{width:100%; height:140px; object-fit:cover; display:block}
+  .cheer .cx{
+    position:absolute; top:6px; right:6px; width:24px; height:24px; border-radius:50%;
+    background:rgba(0,0,0,.5); color:#fff; font-size:var(--fs-m); display:grid; place-items:center; border:0;
+  }
+
+  .proto{
+    margin:14px 0 0; padding:10px 12px; border-radius:var(--r-s);
+    background:var(--surface-2); border:1px dashed var(--line);
+    font-size:var(--fs-xs); color:var(--faint); line-height:var(--lh-text);
+  }
+  @media (prefers-reduced-motion: reduce){*{transition:none !important; animation:none !important}}
+
+  /* ═══════════ 통일 · 정돈 (2026-09-21 v36) ═══════════
+     크기는 토큰만 쓴다 — 글자 --fs-* · 높이 --h-* · 모서리 --r-* */
+  body{letter-spacing:var(--ls-ui); font-variant-numeric:tabular-nums}
+  h1,h2,h3,.big,.stitle{letter-spacing:var(--ls-tight)}
+
+  /* 아이콘 버튼 — 네모 32 · 안 칠한 것은 '지우기'와 '펼치기'뿐 */
+  .mvb, .gear, .catbar .gear, .iphd .gear{
+    width:var(--h-s); height:var(--h-s); display:inline-grid; place-items:center;
+    border-radius:var(--r-xs); font-size:var(--fs-b); color:var(--muted); padding:0}
+  .mvb.del, .del2{background:transparent; border-color:transparent; color:var(--faint); opacity:1; filter:none}
+  .mvb.del:active, .del2:active{color:var(--miss)}
+  .del2{width:var(--h-xs); height:var(--h-xs); display:inline-grid; place-items:center; font-size:var(--fs-b)}
+  /* 펼치기 화살표 — 어디서나 같은 모양, 열리면 뒤집힌다 */
+  .cv3, .cvbtn, .cv2{color:var(--faint); background:transparent; border-color:transparent;
+    display:inline-grid; place-items:center; font-size:var(--fs-b); transition:transform .18s}
+  .exrow3.open > .exline3 .cv3{transform:rotate(180deg)}
+  .cvbtn{width:var(--h-xs); height:var(--h-xs)}
+  /* 동그라미 버튼 — 진짜 동그라미로 */
+  .addset{width:var(--h-m); height:var(--h-m); display:grid; place-items:center; font-size:var(--fs-l)}
+  .chk2{width:var(--h-xs); height:var(--h-xs); font-size:var(--fs-s)}
+  .tick{width:var(--h-s); height:var(--h-s); font-size:var(--fs-b)}
+  .pic .px, .cheer .cx{font-size:var(--fs-2xs)}
+  .picadd{display:grid; place-items:center; font-size:var(--fs-l); color:var(--faint)}
+  #prevM, #nextM, [data-nday]{display:inline-grid; place-items:center; font-size:var(--fs-l)}
+  [data-close]{display:inline-grid; place-items:center; font-size:var(--fs-b); color:var(--muted)}
+  #exList2, #loadEx, #nextEx{display:inline-flex; align-items:center; justify-content:center; gap:5px}
+  #exList2 .ic, #loadEx .ic, #nextEx .ic{width:1.05em; height:1.05em}
+
+  /* 글 버튼 — 두 가지 크기만: 기본 48 · 작게 40 */
+  .btn{height:var(--h-l); font-size:var(--fs-b); gap:6px; letter-spacing:var(--ls-ui)}
+  .btn.sm{height:var(--h-m); font-size:var(--fs-m)}
+
+  /* 숫자칸 — 평소엔 값만, 누르면 좌우에 − ＋ */
+  .nbox{border-radius:var(--r-xs); gap:0}
+  .nbox:not(.on) > button{display:none}
+  .nbox:not(.on) .nv{background:var(--surface-2)}
+  .nbox.on .nv{border-color:var(--accent); background:var(--surface)}
+  .nbox.on > button{width:var(--h-s); background:transparent; color:var(--accent); font-size:var(--fs-l); display:grid; place-items:center}
+
+  /* 끌 때 따라오는 이름표 — 달력 · 루틴 같은 모양 */
+  .exghost{background:var(--accent); color:var(--accent-ink); padding:5px 11px; transform:translate(-50%,-150%)}
+
+  /* 이름표(작은 대문자 제목) */
+  .eyebrow{letter-spacing:var(--ls-caps)}
+  /* 되돌리기 띠 — 집기 안내띠와 같은 자리 · 같은 모양 */
+  .undobar{position:fixed; z-index:56; left:50%; transform:translateX(-50%);
+    width:min(420px, calc(100% - 24px)); bottom:calc(70px + env(safe-area-inset-bottom, 0px));
+    display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:var(--r-s);
+    background:var(--text); color:var(--surface); box-shadow:var(--shadow); font-size:var(--fs-m)}
+  .undobar span{flex:1 1 auto; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .undobar button{flex:0 0 auto; font-weight:700; color:var(--accent-soft); font-size:var(--fs-m)}
+  .planadd{display:flex; gap:6px; margin-top:6px}
+  .planadd input{flex:1 1 auto; min-width:0; height:var(--h-m); border-radius:var(--r-xs); border:1px solid var(--accent);
+    background:var(--surface); color:var(--text); padding:0 10px; font:inherit; font-size:var(--fs-b)}
+</style>
+
+<div class="device">
+  <header class="appbar">
+    <h1 id="scr-title">하젠하이데</h1>
+    <span class="sub" id="scr-sub">2026.09</span>
+    <div class="workbar" id="workbar" hidden></div>
+  </header>
+  <div class="topbar" id="topbar" hidden><i id="topFill"></i></div>
+
+  <main class="screens">
+
+    <!-- ═══ 캘린더 ═══ -->
+    <section class="screen" id="s-cal">
+      <div class="card cal">
+        <div class="calhead">
+          <button id="prevM" aria-label="이전 달"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <span class="m num" id="monthLabel">2026년 9월</span>
+          <button id="nextM" aria-label="다음 달"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button>
+        </div>
+        <div class="dow"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
+        <div class="grid" id="calGrid"></div>
+        <div class="legend">
+          <span><i style="background:var(--accent-soft)"></i>달성</span>
+          <span><i style="background:color-mix(in srgb, var(--miss) 15%, transparent)"></i>미달성</span>
+          <span><i style="box-shadow:inset 0 0 0 1px var(--accent)"></i>예정</span>
+        </div>
+      </div>
+
+      <div class="card pan" style="margin-top:10px" id="dayPanel"></div>
+
+      <p class="proto">시제품 · 기록은 이 브라우저에만 임시 저장</p>
+    </section>
+
+    <!-- ═══ 루틴 ═══ -->
+    <section class="screen" id="s-rou" hidden>
+      <p class="note" style="margin:2px 0 12px">순서대로 돌아갑니다 · 빠진 날은 이어서</p>
+      <div class="stack" id="routineList"></div>
+      <div style="display:flex;gap:7px;margin-top:12px">
+        <button class="btn ghost" style="flex:1 1 0" id="addRoutine"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>루틴 추가</button>
+        <button class="btn ghost" style="flex:0 0 42%" id="addRest"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>휴식일</button>
+      </div>
+    </section>
+
+    <!-- ═══ 종목 ═══ -->
+    <section class="screen" id="s-ex" hidden>
+      <div class="catbar">
+        <div class="chips" id="partChips"></div>
+        <button class="gear" id="catGear" aria-label="카테고리 관리"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></button>
+      </div>
+      <div class="card"><div id="exList"></div></div>
+      <button class="btn ghost" style="margin-top:12px" id="addEx"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>종목 추가</button>
+    </section>
+
+    <!-- ═══ 영양 · 신체 ═══ -->
+    <section class="screen" id="s-nut" hidden>
+      <div class="daynav">
+        <button data-nday="-1" aria-label="어제"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>
+        <span class="num" id="nutDay">9월 21일</span>
+        <button data-nday="1" aria-label="내일"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button>
+        <button class="today" data-nday="0">오늘</button>
+      </div>
+      <div id="nutBody"></div>
+      <div id="bodyBody"></div>
+      <p class="proto">시제품 · 이 브라우저에만 임시 저장</p>
+    </section>
+
+    <!-- ═══ 설정 ═══ -->
+    <section class="screen" id="s-set" hidden>
+      <p class="eyebrow" style="margin:6px 0 8px">운동 진행</p>
+      <div class="card">
+        <div class="set">
+          <div class="grow"><div class="lbl">자동 진행</div><div class="hint">휴식 끝나면 다음 세트로</div></div>
+          <button class="sw" id="sw-auto" aria-pressed="true" aria-label="자동 진행"></button>
+        </div>
+        <div class="set">
+          <div class="grow"><div class="lbl">넘어가기 전 확인</div><div class="hint">넘어가기 전에 한 번 묻기</div></div>
+          <button class="sw" id="sw-ask" aria-pressed="false" aria-label="넘어가기 전 확인"></button>
+        </div>
+        <div class="set">
+          <div class="grow"><div class="lbl">소리 · 진동</div><div class="hint">휴식이 끝나면 알립니다</div></div>
+          <button class="sw" id="sw-sound" aria-pressed="true" aria-label="소리 및 진동"></button>
+        </div>
+        <div class="set">
+          <div class="grow"><div class="lbl">휴식 중 화면 유지</div><div class="hint">타이머가 도는 동안 화면이 꺼지지 않습니다</div></div>
+          <button class="sw" id="sw-wake" aria-pressed="true" aria-label="휴식 중 화면 유지"></button>
+        </div>
+      </div>
+
+      <p class="eyebrow" style="margin:18px 0 8px">기록</p>
+      <div class="card">
+        <div class="set">
+          <div class="grow"><div class="lbl">무게 단위</div></div>
+          <div class="seg" id="seg-unit">
+            <button aria-pressed="true">kg</button><button aria-pressed="false">lb</button>
+          </div>
+        </div>
+        <div class="set" style="display:block">
+          <div class="lbl">무게 조절 폭</div>
+          <div class="hint" style="margin-bottom:9px">＋ − 한 번에 · 직접 입력은 0.1 단위</div>
+          <div class="chips" id="seg-step" style="margin-bottom:0">
+            <button class="chip" data-step="0.5">0.5</button>
+            <button class="chip" data-step="1">1</button>
+            <button class="chip" data-step="1.25">1.25</button>
+            <button class="chip" data-step="2.5">2.5</button>
+            <button class="chip" data-step="5">5</button>
+          </div>
+        </div>
+        <div class="set">
+          <div class="grow"><div class="lbl">기본 휴식</div><div class="hint">종목 값이 없을 때</div></div>
+          <div class="seg" id="seg-rest">
+            <button aria-pressed="false">1:00</button><button aria-pressed="true">1:30</button><button aria-pressed="false">2:00</button>
+          </div>
+        </div>
+        <div class="set" style="display:block">
+          <div class="lbl">향상도 기준</div>
+          <div class="hint" style="margin-bottom:9px">운동 화면에서 어느 시점과 비교해 보여줄지 정합니다</div>
+          <div class="chips" id="seg-base" style="margin-bottom:0">
+            <button class="chip" data-base="last" aria-pressed="true">직전</button>
+            <button class="chip" data-base="1" aria-pressed="false">1개월</button>
+            <button class="chip" data-base="3" aria-pressed="false">3개월</button>
+            <button class="chip" data-base="6" aria-pressed="false">6개월</button>
+            <button class="chip" data-base="12" aria-pressed="false">12개월</button>
+          </div>
+        </div>
+      </div>
+
+      <p class="eyebrow" style="margin:18px 0 8px">캘린더 표시</p>
+      <div class="card">
+        <div class="set">
+          <div class="grow"><div class="lbl">공휴일 이름</div><div class="hint">빨간날에 이름을 적습니다</div></div>
+          <button class="sw" data-cal="휴일" aria-pressed="true"></button>
+        </div>
+        <div class="set">
+          <div class="grow"><div class="lbl">내가 넣은 일정</div><div class="hint">날짜를 눌러 일정 추가에서 넣습니다</div></div>
+          <button class="sw" data-cal="일정" aria-pressed="true"></button>
+        </div>
+        <div class="set">
+          <div class="grow"><div class="lbl">운동한 날 요약</div><div class="hint">세트 · 볼륨 · 직전 같은 루틴 대비 증감</div></div>
+          <button class="sw" data-cal="요약" aria-pressed="true"></button>
+        </div>
+        <div class="set">
+          <div class="grow"><div class="lbl">운동 종목 이름</div><div class="hint">고른 날이 있는 줄에만 보입니다</div></div>
+          <button class="sw" data-cal="종목" aria-pressed="true"></button>
+        </div>
+        <div class="set">
+          <div class="grow"><div class="lbl">운동 중 사진 보여주기</div><div class="hint">종목에 넣어둔 사진 중 하나를 무작위로</div></div>
+          <button class="sw" data-cal="사진" aria-pressed="true"></button>
+        </div>
+      </div>
+
+      <p class="eyebrow" style="margin:18px 0 8px">영양 목표</p>
+      <div class="card">
+        <div class="set">
+          <div class="grow"><div class="lbl">하루 단백질</div><div class="hint">이상이면 달성</div></div>
+          <div class="nbox" data-nk="goal|단백질"><button data-goal="단백질|-10"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+            <span class="nv"><input type="number" step="10" min="0" data-goalin="단백질" value="120"><span>g</span></span>
+            <button data-goal="단백질|10"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button></div>
+        </div>
+        <div class="set">
+          <div class="grow"><div class="lbl">하루 크레아틴</div><div class="hint">흔한 유지량 5g</div></div>
+          <div class="nbox" data-nk="goal|크레아틴"><button data-goal="크레아틴|-1"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+            <span class="nv"><input type="number" step="1" min="0" data-goalin="크레아틴" value="5"><span>g</span></span>
+            <button data-goal="크레아틴|1"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button></div>
+        </div>
+      </div>
+      <p class="note" style="margin-top:7px">기본값은 임시 숫자 · <b>의학적 권고 아님</b></p>
+
+      <p class="eyebrow" style="margin:18px 0 8px">데이터</p>
+      <div class="card">
+        <div class="set"><div class="grow"><div class="lbl">내보내기</div><div class="hint">기록 전체를 파일 하나로 저장</div></div><span class="pill">다음 단계</span></div>
+        <div class="set"><div class="grow"><div class="lbl">가져오기</div><div class="hint">내보낸 파일로 복원</div></div><span class="pill">다음 단계</span></div>
+        <div class="set"><div class="grow"><div class="lbl">계정</div><div class="hint">기기 사이에서 기록을 맞춥니다</div></div><span class="pill">다음 단계</span></div>
+      </div>
+
+      <p class="eyebrow" style="margin:18px 0 8px">앱 정보</p>
+      <div class="card">
+        <div class="set"><div class="grow"><div class="lbl">버전</div></div><span class="num" style="color:var(--faint)">0.1.0 시제품</span></div>
+      </div>
+
+      <p class="proto">빈 항목은 차차 채웁니다</p>
+    </section>
+  </main>
+
+  <!-- ═══ 운동 실행 (탭바 위 영역만 차지) ═══ -->
+  <div class="overlay" id="workout" hidden>
+    <div class="ovhead" id="ovHead"></div>
+    <div class="ovbody" id="ovBody"></div>
+    <div class="ovfoot" id="ovFoot"></div>
+  </div>
+
+  <nav class="tabbar" id="tabbar">
+    <button data-tab="cal" aria-selected="true">
+      <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>캘린더
+    </button>
+    <button data-tab="nut" aria-selected="false">
+      <svg viewBox="0 0 24 24"><path d="M12 21c-4 0-7-3.2-7-7.5C5 9 8 4.5 12 3c4 1.5 7 6 7 10.5 0 4.3-3 7.5-7 7.5z"/><path d="M12 8v8M9 11h6"/></svg>영양
+    </button>
+    <button data-tab="rou" aria-selected="false">
+      <svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>루틴
+    </button>
+    <button data-tab="ex" aria-selected="false">
+      <svg viewBox="0 0 24 24"><path d="M6.5 8v8M17.5 8v8M3.5 10v4M20.5 10v4M6.5 12h11"/></svg>종목
+    </button>
+    <button data-tab="set" aria-selected="false">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/></svg>설정
+    </button>
+  </nav>
+
+  <!-- ═══ 루틴 편집용 공용 시트 ═══ -->
+  <div class="sheet" id="gSheet" hidden>
+    <div class="veil" data-close></div>
+    <div class="panel" id="gPanel"></div>
+  </div>
+</div>
+
+<script>
+/* ────────── 임시 데이터 (시제품용) ────────── */
+const 루틴들 = [
+  {id:'chest', 이름:'가슴날', 종목:[
+    {이름:'벤치프레스', 무게:60, 횟수:10, 세트:5, 휴식:180},
+    {이름:'인클라인 덤벨프레스', 무게:20, 횟수:12, 세트:4, 휴식:120},
+    {이름:'케이블 플라이', 무게:15, 횟수:15, 세트:3, 휴식:90},
+  ]},
+  {id:'leg', 이름:'하체날', 종목:[
+    {이름:'스쿼트', 무게:80, 횟수:8, 세트:5, 휴식:180},
+    {이름:'레그프레스', 무게:120, 횟수:12, 세트:4, 휴식:120},
+    {이름:'레그컬', 무게:40, 횟수:15, 세트:3, 휴식:90},
+  ]},
+  {id:'back', 이름:'등날', 종목:[
+    {이름:'랫풀다운', 무게:55, 횟수:10, 세트:4, 휴식:120},
+    {이름:'바벨로우', 무게:60, 횟수:10, 세트:4, 휴식:150},
+    {이름:'시티드로우', 무게:50, 횟수:12, 세트:3, 휴식:90},
+  ]},
+];
+
+const 종목표 = [
+  {이름:'벤치프레스', 부위:'가슴', 장비:'바벨'},
+  {이름:'인클라인 덤벨프레스', 부위:'가슴', 장비:'덤벨'},
+  {이름:'케이블 플라이', 부위:'가슴', 장비:'케이블'},
+  {이름:'딥스', 부위:'가슴', 장비:'맨몸'},
+  {이름:'랫풀다운', 부위:'등', 장비:'머신'},
+  {이름:'바벨로우', 부위:'등', 장비:'바벨'},
+  {이름:'시티드로우', 부위:'등', 장비:'케이블'},
+  {이름:'턱걸이', 부위:'등', 장비:'맨몸'},
+  {이름:'스쿼트', 부위:'하체', 장비:'바벨'},
+  {이름:'레그프레스', 부위:'하체', 장비:'머신'},
+  {이름:'레그컬', 부위:'하체', 장비:'머신'},
+  {이름:'루마니안 데드리프트', 부위:'하체', 장비:'바벨'},
+  {이름:'숄더프레스', 부위:'어깨', 장비:'덤벨'},
+  {이름:'사이드 레터럴 레이즈', 부위:'어깨', 장비:'덤벨'},
+  {이름:'페이스풀', 부위:'어깨', 장비:'케이블'},
+  {이름:'바벨컬', 부위:'팔', 장비:'바벨'},
+  {이름:'해머컬', 부위:'팔', 장비:'덤벨'},
+  {이름:'케이블 푸시다운', 부위:'팔', 장비:'케이블'},
+  {이름:'행잉 레그레이즈', 부위:'복근', 장비:'맨몸'},
+  {이름:'플랭크', 부위:'복근', 장비:'맨몸'},
+];
+
+/* 지난 기록 — 아래 기록씨앗()이 1년치를 만들어 넣는다 */
+const 기록 = {};
+
+const 오늘 = '2026-09-20';
+let 보는달 = {y:2026, m:9};
+let 고른날 = 오늘;
+/* 앱을 켠 직후에만 참. 달력에서 아무 날짜나 한 번 누르면 꺼진다. */
+let 첫상태 = true;
+const 설정 = {auto:true, ask:false, sound:true, wake:true, unit:'kg', 기준:3, 무게단위:2.5, 휴식단위:5};
+
+/* ────────── 공통 ────────── */
+const $ = s => document.querySelector(s);
+const 키 = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const 루틴 = id => 루틴들.find(r => r.id === id);
+const 날더하기 = (k,n) => { const [y,m,d] = k.split('-').map(Number); return 키(new Date(y, m-1, d+n)); };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const 콤마 = n => Math.round(n).toLocaleString('ko-KR');
+/* 무게는 0.1 단위까지 다룬다. 12.0 은 12 로, 12.5 는 12.5 로 보여준다. */
+const 무게글자 = w => (Math.round(w*10)/10).toFixed(1).replace(/\.0$/,'');
+const 무게반올림 = w => Math.max(0, Math.round(w*10)/10);
+/* 휴식 날도 '루틴 한 칸'으로 순서에 낀다. 다만 종목이 없다. */
+const 휴식인가 = r => !!(r && r.휴식일);
+
+/* 달력에 쓸 이름. 표시이름을 정해두지 않았으면 종목 이름을 그대로 따라간다. */
+function 표시(이름){
+  const t = 종목표.find(x => x.이름 === 이름);
+  return (t && t.표시이름) ? t.표시이름 : 이름;
+}
+
+/* ────────── 예상 시간 ────────── */
+/* 세트 한 번 수행에 걸리는 시간은 눈대중으로 40초, 종목을 바꾸는 데 1분으로 잡는다. */
+const 세트수행초 = 40, 종목전환초 = 60;
+function 예상초(r){
+  if(!r || 휴식인가(r)) return 0;
+  const 본 = r.종목.reduce((a,e) => a + e.세트*세트수행초 + Math.max(0, e.세트-1)*e.휴식, 0);
+  return 본 + Math.max(0, r.종목.length-1)*종목전환초;
+}
+function 시간글(초){
+  const m = Math.max(0, Math.round(초/60));
+  return m >= 60 ? `${Math.floor(m/60)}시간 ${String(m%60).padStart(2,'0')}분` : `${m}분`;
+}
+
+/* ────────── 예정표 — 순서를 '2회차'까지 미리 깔아둔다 ────────── */
+/* 가슴-등-하체 라면 가슴-등-하체-가슴-등-하체 (6일).
+   휴식을 끼워 가슴-등-하체-휴식 이라면 8일치가 깔린다. */
+let 예정 = {};
+const 회차 = 2;
+
+function 예정채우기(시작날, 시작idx){
+  const N = 루틴들.length; if(!N) return;
+  for(let i=0; i<N*회차; i++){
+    예정[날더하기(시작날, i)] = 루틴들[(((시작idx+i)%N)+N)%N].id;
+  }
+}
+function 예정초기화(){
+  예정 = {};
+  if(!루틴들.length) return;
+  /* 마지막으로 한 운동의 '다음'부터 시작한다 */
+  const 날들 = Object.keys(기록).sort();
+  let idx = 0;
+  if(날들.length){
+    const 마지막 = 기록[날들[날들.length-1]].루틴;
+    const i = 루틴들.findIndex(r => r.id === 마지막);
+    idx = i < 0 ? 0 : (i+1) % 루틴들.length;
+  }
+  예정채우기(기록[오늘] ? 날더하기(오늘,1) : 오늘, idx);
+}
+/* 꾹 눌러 옮기기 — 옮긴 날에 그 루틴을 꽂고, 그 날부터 순서를 다시 깐다.
+   옮긴 날보다 앞선 날들은 건드리지 않는다. */
+function 꽂기(rid, D){
+  if(D < 오늘) return false;                      /* ① 지난 날로는 못 옮긴다 */
+  const idx = 루틴들.findIndex(r => r.id === rid);
+  if(idx < 0) return false;
+  Object.keys(예정).forEach(k => { if(k >= D) delete 예정[k]; });
+  예정채우기(D, idx);
+  return true;
+}
+const 예정루틴 = k => 루틴(예정[k]);
+
+function 다음차례(){
+  const k = Object.keys(예정).sort().find(x => x >= 오늘);
+  return k ? 예정루틴(k) : 루틴들[0];
+}
+const 총세트 = r => 휴식인가(r) ? 0 : r.종목.reduce((a,e) => a + e.세트, 0);
+
+/* ────── 볼륨 · 달성도 · 향상도 ────── */
+const 볼륨 = 세트들 => (세트들 || []).reduce((a,x) => a + x.w * x.r, 0);
+const 합 = s => ({v: 볼륨(s), r: s.reduce((a,x) => a + x.r, 0)});
+/* 루틴 차원 계산에서는 '불러온 운동'을 뺀다 */
+const 정식세부 = rec => Object.entries(rec.세부 || {}).filter(([이름]) => !(rec.임시 || []).includes(이름));
+const 펼친세트 = rec => 정식세부(rec).flatMap(([,v]) => v);
+const 전체세트 = rec => Object.values(rec.세부 || {}).flat();
+
+/* 기록 칸은 비어 있을 수 있다 — 체크를 풀면 그 칸만 빈다. 그래서 '찬 칸'만 센다. */
+const 찬것 = ex => (ex.기록 || []).filter(Boolean);
+const 정식종목 = () => 세션.종목들.filter(e => !e.임시);
+const 한세트수 = () => 정식종목().reduce((a,e) => a + 찬것(e).length, 0);
+const 오늘볼륨 = () => 정식종목().reduce((a,e) => a + 볼륨(찬것(e)), 0);
+/* 1RM 추정 — 에플리(Epley) 식. 무게 × (1 + 횟수/30) */
+const 일RM = (w,r) => (r > 0 ? w * (1 + r/30) : 0);
+/* 달성도·향상도의 기준은 '루틴에 원래 정해둔 세트 수'(계획세트).
+   운동 중에 추가한 세트는 목표에 넣지 않는다 → 더 하면 100%를 넘는다. */
+const 목표볼륨 = () => 정식종목().reduce((a,e) => a + e.무게 * e.횟수 * e.계획세트, 0);
+const 목표세트 = () => 정식종목().reduce((a,e) => a + e.계획세트, 0);
+const 유효세트 = () => 정식종목().flatMap(e => 찬것(e).slice(0, e.계획세트));
+const 추가세트수 = () => 정식종목().reduce((a,e) => a + Math.max(0, 찬것(e).length - e.계획세트), 0);
+/* 달성도는 '세트 수' 기준이다 — 루틴 전체 세트를 100%로 놓는다 */
+const 종목달성도 = e => {
+  const 목 = e.계획세트 || e.세트;
+  return 목 ? Math.round(찬것(e).length / 목 * 100) : 0;
+};
+const 루틴달성도 = () => { const 목 = 목표세트(); return 목 ? Math.round(한세트수() / 목 * 100) : 0; };
+/* 00분 00초 / 1시간 00분 00초 */
+function 시분초(초){
+  초 = Math.max(0, Math.round(초));
+  const h = Math.floor(초/3600), m = Math.floor((초%3600)/60), x = 초%60;
+  const p = n => String(n).padStart(2,'0');
+  return h ? `${h}시간 ${p(m)}분 ${p(x)}초` : `${p(m)}분 ${p(x)}초`;
+}
+
+/* 두 묶음을 '같은 지점까지만' 잘라 견준다 */
+function 대비(현재, 과거){
+  const n = Math.min(현재.length, 과거.length);
+  if(!n) return null;
+  const a = 합(현재.slice(0,n)), b = 합(과거.slice(0,n));
+  const pc = (x,y) => y ? Math.round((x-y)/y*100) : null;
+  return {
+    n,
+    볼륨: {지금:a.v, 과거:b.v, pct: pc(a.v, b.v), diff: a.v - b.v},
+    횟수: {지금:a.r, 과거:b.r, pct: pc(a.r, b.r), diff: a.r - b.r},
+  };
+}
+function 개월전(n){
+  const [y,m,d] = 오늘.split('-').map(Number);
+  return 키(new Date(y, m-1-n, d));
+}
+const 기준목록 = [
+  {k:'last', 이름:'직전 같은 루틴', 짧:'직전', 기간:'직전 기록 대비', 날:() => 날더하기(오늘,-1)},
+  {k:1,  이름:'1개월 전',  짧:'1개월',  기간:'1개월 동안',  날:() => 개월전(1)},
+  {k:3,  이름:'3개월 전',  짧:'3개월',  기간:'3개월 동안',  날:() => 개월전(3)},
+  {k:6,  이름:'6개월 전',  짧:'6개월',  기간:'6개월 동안',  날:() => 개월전(6)},
+  {k:12, 이름:'12개월 전', 짧:'12개월', 기간:'12개월 동안', 날:() => 개월전(12)},
+];
+const 지금기준 = () => 기준목록.find(x => x.k === 설정.기준) || 기준목록[0];
+
+/* ── 루틴 차원 ── */
+/* 기준일(포함) 이전의 같은 루틴 기록 중 가장 최근 것 */
+function 과거루틴기록(rid, 기준일){
+  const 날들 = Object.keys(기록).filter(k => 기록[k].루틴 === rid && k <= 기준일).sort();
+  return 날들.length ? {날: 날들[날들.length-1], rec: 기록[날들[날들.length-1]]} : null;
+}
+/* 지금세트들을 주면 진행 중인 오늘과 견주고, 안 주면 가장 최근 기록과 견준다 */
+function 루틴성장(rid, 기준일, 지금세트들){
+  const p = 과거루틴기록(rid, 기준일); if(!p) return null;
+  let 현재 = 지금세트들, 현재날 = 오늘;
+  if(!현재){
+    const 날들 = Object.keys(기록).filter(k => 기록[k].루틴 === rid).sort();
+    if(!날들.length) return null;
+    현재날 = 날들[날들.length-1];
+    현재 = 펼친세트(기록[현재날]);
+  }
+  if(현재날 === p.날) return null;                 /* 견줄 상대가 자기 자신 */
+  const c = 대비(현재, 펼친세트(p.rec));
+  return c ? {...c, 날:p.날} : null;
+}
+
+/* ── 종목 차원 ── */
+/* 불러온 운동도 여기에는 쌓인다 */
+/* 슈퍼세트에서 한 종목은 단독으로 한 것과 몸이 받는 자극이 달라
+   성장율을 섞으면 안 된다. 그래서 '어느 묶음에서 했는지'까지 맞는 날만 센다.
+   묶음키가 null 이면 단독으로 한 날만 고른다. */
+function 종목기록들(이름, 묶음키){
+  return Object.keys(기록).sort()
+    .filter(k => {
+      const rec = 기록[k];
+      if(!rec.세부 || !rec.세부[이름]) return false;
+      const g = (rec.슈퍼 && rec.슈퍼[이름]) || null;
+      return (묶음키 === undefined) ? true : (g === 묶음키);
+    })
+    .map(k => ({날:k, 세트들: 기록[k].세부[이름]}));
+}
+/* 지금 세션에서 이 종목이 속한 묶음키 */
+function 지금묶음(e){
+  if(!세션 || !e || !e.슈퍼) return null;
+  return 세션.종목들.filter(x => x.슈퍼 === e.슈퍼).map(x => x.이름).sort().join('+');
+}
+function 종목성장(이름, 기준일, 지금세트들, 묶음키){
+  const 들 = 종목기록들(이름, 묶음키);
+  const 과거 = [...들].reverse().find(x => x.날 <= 기준일);
+  const 최근 = (지금세트들 && 지금세트들.length) ? {날:오늘, 세트들:지금세트들} : 들[들.length-1];
+  if(!과거 || !최근 || 과거.날 === 최근.날) return null;
+  const c = 대비(최근.세트들, 과거.세트들);
+  return c ? {...c, 날:과거.날} : null;
+}
+
+/* ── 표시용 ── */
+function 퍼센트칠(p){
+  if(p === null || p === undefined) return {cls:'flat', t:'—'};
+  if(p > 0) return {cls:'up',   t:`+${p}%`};
+  if(p < 0) return {cls:'down', t:`−${Math.abs(p)}%`};
+  return {cls:'flat', t:'±0%'};
+}
+const 부호 = (n, 단위) => (n > 0 ? '+' : n < 0 ? '−' : '±') + 콤마(Math.abs(n)) + 단위;
+/* "벤치프레스, 3개월 동안 +8% 성장했습니다" */
+function 성장문(대상, c){
+  const g = 지금기준();
+  if(!c || c.볼륨.pct === null) return `<b>${esc(대상)}</b> · ${g.기간} 비교 기록 없음`;
+  const p = c.볼륨.pct, q = 퍼센트칠(p);
+  const 말 = p > 0 ? `<span class="up">${p}% 성장</span>했습니다`
+           : p < 0 ? `<span class="down">${Math.abs(p)}% 줄었</span>습니다`
+                   : `<span class="flat">변화가 없</span>습니다`;
+  return `<b>${esc(대상)}</b>, ${g.기간} ${말}`;
+}
+
+/* 시제품용 1년치 기록을 만든다. 조금씩 무게가 오르고, 가끔 쉬거나 덜 채운다. */
+function 기록씨앗(){
+  const 순 = ['chest','leg','back'];
+  const 시작 = new Date(2025, 8, 20), 끝 = new Date(2026, 8, 19);
+  const d = new Date(시작);
+  let i = 0;
+  while(d <= 끝){
+    if(i % 7 !== 3){
+      const rid = 순[i % 3], r = 루틴(rid);
+      const 주차 = Math.floor((d - 시작) / (7*864e5));
+      const 오름 = Math.floor(주차 / 7) * 2.5;
+      const 미달 = (i % 11 === 5);
+      const 세부 = {};
+      r.종목.forEach(e => {
+        const 개수 = 미달 ? Math.max(1, e.세트 - 2) : e.세트;
+        const w = Math.max(5, Math.round((e.무게 - 18 + 오름) / 2.5) * 2.5);
+        세부[e.이름] = Array.from({length:개수}, (_,k) => ({w, r: Math.max(4, e.횟수 - (k > 2 ? 1 : 0))}));
+      });
+      기록[키(d)] = {루틴:rid, 달성:!미달, 세부, 임시:[]};
+    }
+    i++; d.setDate(d.getDate() + 2);
+  }
+}
+
+/* ────────── 탭 ────────── */
+const 제목 = {cal:['하젠하이데',''], nut:['영양 · 신체',''], rou:['루틴','순서대로'], ex:['종목',''], set:['설정','']};
+let 현재탭 = 'cal';
+
+function 탭그리기(){
+  const 운동보기 = (현재탭 === 'cal' && 세션);
+  $('#workout').hidden = !운동보기;
+  $('.screens').hidden = 운동보기;
+  ['cal','nut','rou','ex','set'].forEach(k => $('#s-'+k).hidden = (k !== 현재탭));
+  [...$('#tabbar').children].forEach(x => x.setAttribute('aria-selected', String(x.dataset.tab === 현재탭)));
+  /* 운동 중에는 앱 이름 자리를 '루틴 한 줄'이 차지한다 */
+  $('#scr-title').hidden = 운동보기;
+  $('#scr-sub').hidden = 운동보기;
+  $('#workbar').hidden = !운동보기;
+  $('#topbar').hidden = !운동보기;
+  if(운동보기) 머리줄그리기();
+  else {
+    $('#scr-title').textContent = 제목[현재탭][0];
+    $('#scr-sub').textContent = 현재탭 === 'cal'
+      ? `${보는달.y}.${String(보는달.m).padStart(2,'0')}` : 제목[현재탭][1];
+  }
+}
+
+$('#tabbar').addEventListener('click', e => {
+  const b = e.target.closest('button[data-tab]'); if(!b) return;
+  현재탭 = b.dataset.tab;
+  if(현재탭 === 'nut') 영양그리기();
+  탭그리기();
+  $('.screens').scrollTop = 0;
+});
+
+/* ── 공휴일 ──
+   아티팩트는 바깥에서 자료를 받아올 수 없다. 그래서 코드에 적어두는 수밖에 없다.
+   ⚠ 해마다 손으로 갱신해야 한다. 설·추석은 음력을 따라 해마다 날짜가 바뀐다.
+   2026년 19일은 time.is/ko/calendar/2026/South%20Korea 로 확인했다 (2026-09-21). */
+const 공휴일 = {
+  '2026-01-01':'신정',
+  '2026-02-16':'설 연휴', '2026-02-17':'설날', '2026-02-18':'설 연휴',
+  '2026-03-01':'삼일절', '2026-03-02':'대체휴일',
+  '2026-05-05':'어린이날', '2026-05-24':'부처님오신날', '2026-05-25':'대체휴일',
+  '2026-06-06':'현충일',
+  '2026-08-15':'광복절', '2026-08-17':'대체휴일',
+  '2026-09-24':'추석 연휴', '2026-09-25':'추석', '2026-09-26':'추석 연휴',
+  '2026-10-03':'개천절', '2026-10-05':'대체휴일', '2026-10-09':'한글날',
+  '2026-12-25':'성탄절',
+};
+/* 일정[날짜] = ['성묘가기', ...] */
+const 일정 = {};
+const 캘표시 = {휴일:true, 일정:true, 요약:true, 종목:true, 사진:true};
+
+/* 운동한 날 한 줄 요약 — 세트 · 볼륨 · 직전 같은 루틴 대비 */
+function 날요약(k, rec){
+  const 세트 = 펼친세트(rec).length;
+  const 벌 = 볼륨(펼친세트(rec));
+  const 앞 = Object.keys(기록).filter(x => 기록[x].루틴 === rec.루틴 && x < k).sort().pop();
+  let 증 = '';
+  if(앞){
+    const c = 대비(펼친세트(rec), 펼친세트(기록[앞]));
+    if(c && c.볼륨.pct !== null){
+      const p = c.볼륨.pct;
+      증 = ` <span class="${p>0?'up':p<0?'down':''}">${p>0?'+':''}${p}%</span>`;
+    }
+  }
+  return `${세트}세트 ${콤마(벌)}${증}`;
+}
+
+/* ────────── 캘린더 ────────── */
+function 달력그리기(){
+  const {y,m} = 보는달;
+  $('#monthLabel').textContent = `${y}년 ${m}월`;
+  if(!세션) $('#scr-sub').textContent = `${y}.${String(m).padStart(2,'0')}`;
+  const 첫날 = new Date(y, m-1, 1), 첫요일 = 첫날.getDay(), 일수 = new Date(y, m, 0).getDate();
+
+  /* 고른 날이 들어 있는 '주' 한 줄만 펼치고, 나머지 줄은 루틴 이름까지만 보인다 */
+  let 펼친줄 = -1;
+  {
+    const [gy,gm,gd] = 고른날.split('-').map(Number);
+    if(gy === y && gm === m) 펼친줄 = Math.floor((첫요일 + gd - 1) / 7);
+  }
+
+  let html = '';
+  for(let i=0;i<첫요일;i++) html += '<div class="day pad"></div>';
+  for(let d=1; d<=일수; d++){
+    const k = 키(new Date(y, m-1, d));
+    const rec = 기록[k];
+    const 줄 = Math.floor((첫요일 + d - 1) / 7);
+    const cls = ['day'];
+    const 요일n = new Date(y, m-1, d).getDay();
+    const 휴 = 공휴일[k];
+    if(k === 오늘) cls.push('today');
+    if(k > 오늘) cls.push('future');
+    if(휴 || 요일n === 0) cls.push('hol');
+    else if(요일n === 6) cls.push('sat');
+
+    let 속 = `<span class="n">${d}</span>`;
+    let r = null, 옮길수있음 = false;
+    if(rec){
+      r = 루틴(rec.루틴);
+      if(!rec.달성) cls.push('missed');
+    } else if(예정[k] && k >= 오늘){
+      r = 예정루틴(k); cls.push('plan'); 옮길수있음 = true;
+    }
+    if(휴식인가(r)) cls.push('rest');
+    if(휴 && 캘표시.휴일) 속 += `<span class="hn">${esc(휴)}</span>`;
+    if(r){
+      속 += `<span class="rou">${esc(r.이름)}</span>`;
+      if(rec && 캘표시.요약) 속 += `<span class="sum">${날요약(k, rec)}</span>`;
+      if(줄 === 펼친줄 && 캘표시.종목 && !휴식인가(r)){
+        r.종목.forEach(e => { 속 += `<span class="ex">${esc(표시(e.이름))}</span>`; });
+      }
+    }
+    if(캘표시.일정 && 일정[k]) 일정[k].forEach(x => { 속 += `<span class="pl">${esc(x)}</span>`; });
+    html += `<button class="${cls.join(' ')}" data-d="${k}"${옮길수있음 ? ' data-drag="1"' : ''} aria-pressed="${k===고른날}">${속}</button>`;
+  }
+  $('#calGrid').innerHTML = html;
+  날짜패널();
+}
+
+function 날짜패널(){
+  const rec = 기록[고른날];
+  const [Y,M,D] = 고른날.split('-');
+  const 요일 = ['일','월','화','수','목','금','토'][new Date(+Y, +M-1, +D).getDay()];
+  const 휴 = 공휴일[고른날];
+  const 날 = `${고른날===오늘 ? '오늘 · ' : ''}${+M}월 ${+D}일 (${요일})${휴 ? ` · ${휴}` : ''}`;
+  const 머리 = 배지 => `<div class="hd"><span class="when"${휴?' style="color:var(--miss)"':''}>${날}</span>${배지}</div>`;
+  /* 그날 일정 목록 + 추가 단추 — 어느 경우에나 아래에 붙는다 */
+  const 일정칸 = () => {
+    const 것 = 일정[고른날] || [];
+    return `<div class="planbox">
+      ${것.map((x,i) => `<div class="planrow"><span class="grow">${esc(x)}</span>
+        <button class="mvb del" data-plandel="${i}" aria-label="일정 지우기"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg></button></div>`).join('')}
+      <button class="btn ghost" id="addPlan" style="height:var(--h-s);font-size:var(--fs-s);margin-top:${것.length?'6px':'0'}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>일정 추가</button>
+    </div>`;
+  };
+
+  /* ① 이미 한 날 */
+  if(rec){
+    const r = 루틴(rec.루틴);
+    const 배지 = rec.달성 ? '<span class="pill ok">달성</span>' : '<span class="pill miss">미달성</span>';
+    const 총볼륨 = 볼륨(펼친세트(rec));
+    const 임시들 = rec.임시 || [];
+    const 줄 = Object.entries(rec.세부 || {}).map(([이름, 세트들]) => `
+      <div class="item"><div class="grow"><div class="t">${esc(이름)}${임시들.includes(이름) ? '<span class="tag">불러옴</span>' : ''}</div>
+      <div class="d num">${세트들.length}세트 · ${무게글자(세트들[0].w)}${설정.unit} × ${세트들[0].r}회 · 볼륨 ${콤마(볼륨(세트들))}</div></div></div>`).join('');
+    const c = 루틴성장(rec.루틴, 지금기준().날());
+    const 세트수 = 펼친세트(rec).length;
+    $('#dayPanel').innerHTML = `${머리(배지)}
+      <div class="titleline"><span class="title">${esc(r ? r.이름 : rec.루틴)}</span>
+        <span class="meta">${세트수}세트 · 볼륨 ${콤마(총볼륨)}${임시들.length ? ` · 추가 ${임시들.length}개 제외` : ''}</span></div>
+      <div class="gline">${성장문(r ? r.이름 : rec.루틴, c)}</div>
+      ${줄}${일정칸()}
+      <div class="acts"><button class="btn ghost" id="delRec" style="flex:1 1 0;color:var(--miss)">이 날 기록 삭제</button></div>`;
+    일정묶기();
+    $('#delRec').addEventListener('click', () => {
+      const 날2 = 고른날;
+      지우고알림(`${날} 기록을 지웠습니다`, () => { delete 기록[날2]; 예정초기화(); });
+      달력그리기(); 루틴그리기(); 종목그리기();
+    });
+    return;
+  }
+
+  /* ② 앞으로 할 날 */
+  const 예 = 예정루틴(고른날);
+  if(예 && 고른날 >= 오늘){
+    const 쉼 = 휴식인가(예);
+    const 배지 = 고른날 === 오늘 ? '<span class="pill">오늘 차례</span>' : '<span class="pill">예정</span>';
+    const 곁 = 쉼 ? '휴식일 · 순서에서 한 칸' : `${예.종목.length}종목 · ${총세트(예)}세트 · 약 ${시간글(예상초(예))}`;
+    let 속 = `${머리(배지)}
+      <div class="titleline"><span class="title">${esc(예.이름)}</span><span class="meta">${곁}</span></div>`;
+    if(고른날 === 오늘 && 첫상태 && !쉼) 속 += '<div class="tip">오늘 칸을 누르면 바로 시작됩니다</div>';
+    if(고른날 === 오늘 && !쉼){
+      속 += `<div class="acts">
+        <button class="btn" id="startBtn">운동 시작</button>
+        <button class="btn ghost" id="pickOther">다른 루틴</button>
+        <button class="btn ghost" id="restDay">휴식</button>
+      </div>`;
+    } else if(!쉼){
+      속 += `<div class="acts">
+        <button class="btn ghost" id="pickOther" style="flex:1 1 0">이 날 루틴 바꾸기</button>
+        ${고른날 === 오늘 ? '<button class="btn ghost" id="restDay">휴식</button>' : ''}
+      </div>`;
+    } else {
+      속 += `<div class="acts"><button class="btn ghost" id="pickOther" style="flex:1 1 0">이 날 루틴 넣기</button></div>`;
+    }
+    $('#dayPanel').innerHTML = 속 + 일정칸();
+    const sb = $('#startBtn'); if(sb) sb.addEventListener('click', () => 운동시작(예));
+    const pb = $('#pickOther'); if(pb) pb.addEventListener('click', () => 루틴고르기시트(고른날));
+    const rb = $('#restDay'); if(rb) rb.addEventListener('click', 휴식물음시트);
+    일정묶기();
+    return;
+  }
+
+  /* ③ 그 밖 */
+  if(고른날 > 오늘){
+    $('#dayPanel').innerHTML = `${머리('')}<div class="meta" style="margin-top:4px">예정이 깔려 있지 않은 날입니다.</div>
+      ${일정칸()}
+      <div class="acts"><button class="btn ghost" id="pickOther" style="flex:1 1 0">이 날 루틴 넣기</button></div>`;
+    $('#pickOther').addEventListener('click', () => 루틴고르기시트(고른날));
+  } else {
+    $('#dayPanel').innerHTML = `${머리('')}<div class="meta" style="margin-top:4px">운동하지 않은 날입니다.</div>${일정칸()}`;
+  }
+  일정묶기();
+}
+
+/* ── 지우기는 묻지 않고 바로 지우되, 5초 동안 '되돌리기'를 띄운다 ──
+   브라우저 확인 창(팝업)을 쓰지 않기 위해서다. 지우기 직전의 상태를 통째로 찍어 두었다가 되살린다 */
+let 되돌릴것 = null, 되돌리기타이머 = null;
+function 상태찍기(){
+  return JSON.stringify({루틴들, 종목표, 기록, 예정, 일정, 카테고리들});
+}
+function 지우고알림(글, 지우기){
+  const 전 = 상태찍기();
+  지우기();
+  되돌릴것 = 전;
+  document.querySelectorAll('.undobar').forEach(x => x.remove());
+  const 띠 = document.createElement('div');
+  띠.className = 'undobar';
+  띠.innerHTML = `<span>${esc(글)}</span><button data-undo="1">되돌리기</button>`;
+  document.body.appendChild(띠);
+  clearTimeout(되돌리기타이머);
+  되돌리기타이머 = setTimeout(() => { 띠.remove(); 되돌릴것 = null; }, 5000);
+}
+function 되돌리기(){
+  if(!되돌릴것) return;
+  const o = JSON.parse(되돌릴것); 되돌릴것 = null;
+  루틴들.splice(0, 루틴들.length, ...o.루틴들);
+  종목표.splice(0, 종목표.length, ...o.종목표);
+  for(const k in 기록) delete 기록[k]; Object.assign(기록, o.기록);
+  for(const k in 일정) delete 일정[k]; Object.assign(일정, o.일정);
+  예정 = o.예정; 카테고리들 = o.카테고리들;
+  document.querySelectorAll('.undobar').forEach(x => x.remove());
+  달력그리기(); 루틴그리기(); 종목그리기();
+}
+document.addEventListener('click', e => { if(e.target.closest('[data-undo]')) 되돌리기(); });
+
+/* 일정 넣기 · 빼기 */
+function 일정묶기(){
+  const add = document.getElementById('addPlan');
+  if(add) add.addEventListener('click', () => {
+    /* 버튼 자리에 바로 적는 칸이 열린다 (팝업 없음) */
+    const 칸 = document.createElement('div');
+    칸.className = 'planadd';
+    칸.innerHTML = `<input id="planIn" type="text" maxlength="30" placeholder="일정 적기" autocomplete="off">
+      <button class="btn sm" id="planSave">넣기</button>`;
+    add.replaceWith(칸);
+    const 입력 = 칸.querySelector('input'); 입력.focus();
+    const 넣기 = () => {
+      const t = 입력.value.trim();
+      if(t) (일정[고른날] = 일정[고른날] || []).push(t);
+      달력그리기();
+    };
+    칸.querySelector('button').addEventListener('click', 넣기);
+    입력.addEventListener('keydown', e => { if(e.key === 'Enter') 넣기(); if(e.key === 'Escape') 달력그리기(); });
+  });
+  document.querySelectorAll('[data-plandel]').forEach(b => b.addEventListener('click', () => {
+    const i = +b.dataset.plandel;
+    if(일정[고른날]){
+      const 날3 = 고른날, 글 = 일정[고른날][i];
+      지우고알림(`'${글}' 일정을 지웠습니다`, () => 일정[날3].splice(i,1));
+      if(!일정[고른날].length) delete 일정[고른날];
+      달력그리기();
+    }
+  }));
+}
+
+/* ⑮ 오늘 쉴 때 — 미루기 / 건너뛰기 / 취소 */
+/* 말만으로는 두 선택지의 차이가 안 떠오른다 — 고르면 앞으로 사흘이 어떻게 되는지 미리 보여준다 */
+function 사흘미리(시작idx){
+  const N = 루틴들.length; if(!N) return '';
+  return ['내일','모레','글피'].map((날, i) =>
+    `${날} <b>${esc(루틴들[(((시작idx+i)%N)+N)%N].이름)}</b>`).join(' · ');
+}
+function 휴식물음시트(){
+  const r = 예정루틴(오늘);
+  const idx = r ? 루틴들.findIndex(x => x.id === r.id) : -1;
+  const 미리 = 방식 => idx < 0 ? '' :
+    `<p class="note restpv" style="margin:-6px 0 0">오늘 휴식 · ${사흘미리(방식 === 'push' ? idx : idx + 1)}</p>`;
+  시트열기(`${시트머리('오늘 쉴까요?')}
+    <p class="note">오늘 차례 <b>${esc(r ? r.이름 : '없음')}</b></p>
+    <button class="btn" data-restday="push">오늘 루틴을 <b>내일로</b> 미루기</button>
+    ${미리('push')}
+    <button class="btn ghost" data-restday="skip">오늘 루틴 <b>건너뛰기</b></button>
+    ${미리('skip')}
+    <button class="btn ghost" data-close>아니오</button>`);
+}
+function 오늘휴식(방식){
+  const 오늘것 = 예정[오늘];
+  const idx = 루틴들.findIndex(r => r.id === 오늘것);
+  if(idx < 0) return;
+  Object.keys(예정).forEach(k => { if(k >= 오늘) delete 예정[k]; });
+  /* push = 오늘 루틴을 내일로 미룬다 / skip = 오늘을 버리고 다음 차례부터 */
+  const 시작 = 방식 === 'push' ? idx : (idx + 1) % 루틴들.length;
+  예정채우기(날더하기(오늘, 1), 시작);
+  달력그리기(); 루틴그리기();
+}
+
+/* 눌러서 루틴을 고르는 시트 — 꾹 누르기가 어려울 때를 위한 길 */
+function 루틴고르기시트(D){
+  시트열기(`${시트머리(`${+D.split('-')[1]}월 ${+D.split('-')[2]}일에 넣을 루틴`)}
+    <p class="note"><b>이 날부터</b> 순서를 다시 깝니다 · 앞선 날은 그대로</p>
+    <div style="max-height:46vh;overflow-y:auto">
+      ${루틴들.map(r => `<button class="item" style="width:100%;text-align:left" data-drop="${r.id}|${D}">
+        <span class="grow"><span class="t" style="display:block">${esc(r.이름)}</span>
+        <span class="d" style="display:block">${휴식인가(r) ? '휴식일' : `${r.종목.length}종목 · ${총세트(r)}세트 · ${시간글(예상초(r))}`}</span></span>
+        <span class="rowgo"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></span></button>`).join('')}
+    </div>`);
+}
+
+$('#calGrid').addEventListener('click', e => {
+  if(방금드래그){ 방금드래그 = false; return; }
+  const b = e.target.closest('.day[data-d]'); if(!b) return;
+  const k = b.dataset.d;
+  const 오늘것 = 예정루틴(오늘);
+  const 바로시작 = 첫상태 && k === 오늘 && !기록[오늘] && 오늘것 && !휴식인가(오늘것);
+  첫상태 = false;
+  고른날 = k;
+  달력그리기();
+  if(바로시작) 운동시작(오늘것);
+});
+$('#prevM').addEventListener('click', () => { 보는달.m--; if(보는달.m<1){보는달.m=12;보는달.y--;} 달력그리기(); });
+$('#nextM').addEventListener('click', () => { 보는달.m++; if(보는달.m>12){보는달.m=1;보는달.y++;} 달력그리기(); });
+
+/* ────────── 꾹 눌러 옮기기 ────────── */
+let 끌기 = null, 누름타이머 = null, 시작점 = null, 방금드래그 = false, 유령 = null;
+
+function 끌기시작(x, y){
+  if(!시작점) return;
+  끌기 = {rid: 시작점.rid, from: 시작점.k, over: null};
+  시작점.el.classList.add('dragging');
+  유령 = document.createElement('div');
+  유령.className = 'dragghost';
+  유령.textContent = 루틴(끌기.rid).이름;
+  document.body.appendChild(유령);
+  유령.style.left = x+'px'; 유령.style.top = y+'px';
+  if(navigator.vibrate){ try{ navigator.vibrate(18); }catch(err){} }
+}
+function 끌기이동(x, y){
+  if(!끌기) return;
+  유령.style.left = x+'px'; 유령.style.top = y+'px';
+  const el = document.elementFromPoint(x, y);
+  const cell = el && el.closest ? el.closest('.day[data-d]') : null;
+  if(끌기.over && 끌기.over !== cell) 끌기.over.classList.remove('drop','nodrop');
+  끌기.over = cell;
+  if(cell) cell.classList.add(cell.dataset.d >= 오늘 ? 'drop' : 'nodrop');
+}
+function 끌기끝(){
+  if(!끌기) return;
+  const cell = 끌기.over;
+  if(cell) cell.classList.remove('drop','nodrop');
+  const D = cell ? cell.dataset.d : null;
+  const rid = 끌기.rid;
+  유령.remove(); 유령 = null;
+  document.querySelectorAll('.day.dragging').forEach(x => x.classList.remove('dragging'));
+  끌기 = null; 방금드래그 = true;
+  if(D && D >= 오늘 && 꽂기(rid, D)){
+    고른날 = D; 첫상태 = false;
+    달력그리기(); 루틴그리기();
+  } else {
+    달력그리기();
+  }
+}
+function 누름해제(){ clearTimeout(누름타이머); 누름타이머 = null; 시작점 = null; }
+
+$('#calGrid').addEventListener('pointerdown', e => {
+  const b = e.target.closest('.day[data-drag]'); if(!b) return;
+  const k = b.dataset.d;
+  if(!예정[k] || k < 오늘) return;
+  시작점 = {x:e.clientX, y:e.clientY, k, rid: 예정[k], el:b};
+  clearTimeout(누름타이머);
+  누름타이머 = setTimeout(() => 끌기시작(시작점.x, 시작점.y), 500);
+});
+window.addEventListener('pointermove', e => {
+  if(끌기){ e.preventDefault(); 끌기이동(e.clientX, e.clientY); return; }
+  if(시작점 && Math.hypot(e.clientX-시작점.x, e.clientY-시작점.y) > 10) 누름해제();
+}, {passive:false});
+window.addEventListener('pointerup', () => { if(끌기) 끌기끝(); 누름해제(); });
+window.addEventListener('pointercancel', () => { if(끌기) 끌기끝(); 누름해제(); });
+
+/* ────────── 루틴 탭 ────────── */
+/* 팝업을 쓰지 않는다. 줄을 펼쳐서 그 자리에서 고친다. */
+let 열린루틴 = null;
+let 열린루틴종목 = null;   /* "루틴id|순번" */
+let 루틴설정연 = null;     /* 톱니를 누른 루틴 id */
+
+/* 세트수 · 무게 · 횟수 · 휴식 — 운동 화면과 같은 순서로 한 줄에 */
+/* 버튼 줄 — 누른 칸만 좌우에 − ＋ 가 붙고 가운데 숫자를 직접 칠 수 있다.
+   칸: {k, 라벨, 값(보이는 글), 입력(input html), 빼기, 더하기(버튼 속성), 단위} */
+function 칸버튼줄(칸들, 켠, 고르기속성){
+  return `<div class="expand1 kset">${칸들.map(c => c.k === 켠
+    ? `<span class="kbtn on"><button ${c.빼기} aria-label="${c.라벨} 빼기"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+         <span class="kin"><span class="kl">${c.라벨}</span><span class="kv">${c.입력}${c.단위 ? `<span>${c.단위}</span>` : ''}</span></span>
+         <button ${c.더하기} aria-label="${c.라벨} 더하기"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button></span>`
+    : `<button class="kbtn" ${고르기속성(c.k)}><span class="kl">${c.라벨}</span><b>${c.값}</b></button>`).join('')}</div>`;
+}
+let 루틴칸 = null;   /* 루틴 설정칸에서 지금 고치는 칸: s w r t */
+function 종목설정줄(rid, j, e){
+  const 걸음 = 설정.무게단위;
+  const t = `${Math.floor(e.휴식/60)}:${String(e.휴식%60).padStart(2,'0')}`;
+  return 칸버튼줄([
+    {k:'s', 라벨:'세트', 값:e.세트, 단위:'세트',
+     입력:`<input type="number" step="1" min="1" inputmode="numeric" data-rin2="${rid}|${j}|s" value="${e.세트}">`,
+     빼기:`data-rn="${rid}|${j}|s|-1"`, 더하기:`data-rn="${rid}|${j}|s|1"`},
+    {k:'w', 라벨:'무게', 값:무게글자(e.무게)+설정.unit, 단위:설정.unit,
+     입력:`<input type="number" step="0.1" min="0" inputmode="decimal" data-rin2="${rid}|${j}|w" value="${무게글자(e.무게)}">`,
+     빼기:`data-rn="${rid}|${j}|w|-${걸음}"`, 더하기:`data-rn="${rid}|${j}|w|${걸음}"`},
+    {k:'r', 라벨:'횟수', 값:e.횟수+'회', 단위:'회',
+     입력:`<input type="number" step="1" min="0" inputmode="numeric" data-rin2="${rid}|${j}|r" value="${e.횟수}">`,
+     빼기:`data-rn="${rid}|${j}|r|-1"`, 더하기:`data-rn="${rid}|${j}|r|1"`},
+    {k:'t', 라벨:'휴식', 값:t, 단위:'',
+     입력:`<input type="text" inputmode="numeric" data-rin2="${rid}|${j}|t" value="${t}">`,
+     빼기:`data-rn="${rid}|${j}|t|-${설정.휴식단위}"`, 더하기:`data-rn="${rid}|${j}|t|${설정.휴식단위}"`},
+  ], 루틴칸, k => `data-kpick="${rid}|${j}|${k}"`);
+}
+
+function 루틴그리기(){
+  const 다음 = 다음차례();
+  $('#routineList').innerHTML = 루틴들.map((r,i) => {
+    const 쉼 = 휴식인가(r);
+    const 열림 = 열린루틴 === r.id;
+    const c = 쉼 ? null : 루틴성장(r.id, 지금기준().날());
+
+    const 설정칸 = 루틴설정연 !== r.id ? '' : `
+      <div class="rset">
+        <div class="field" style="flex:1 1 auto">
+          <input type="text" data-rname="${r.id}" value="${esc(r.이름)}" autocomplete="off" aria-label="루틴 이름">
+        </div>
+        <button class="btn ghost" style="height:var(--h-l);flex:0 0 auto;padding:0 12px" data-rsave2="${r.id}">저장</button>
+        ${루틴들.length>1 ? `<button class="btn ghost" style="height:var(--h-l);flex:0 0 auto;padding:0 12px;color:var(--miss)" data-rdel2="${r.id}">삭제</button>` : ''}
+      </div>`;
+
+    /* 슈퍼세트로 묶인 것들은 한 상자 안에 모아 그린다 (서로 붙어 있게 유지한다) */
+    const 한줄 = (e, j) => {
+      const 펼침 = 열린루틴종목 === `${r.id}|${j}`;
+      return `<div class="exrow3 ${펼침?'open':''}" data-exrow="${r.id}|${j}">
+        <div class="exline3">
+          <button class="grow" style="text-align:left" data-redit="${r.id}|${j}">
+            <span style="display:block;font-size:var(--fs-b);font-weight:500">${esc(e.이름)}${e.슈퍼 ? '<span class="sbadge">슈퍼</span>' : ''}</span>
+            <span class="num" style="display:block;font-size:var(--fs-xs);color:var(--faint)">${무게글자(e.무게)}${설정.unit} × ${e.횟수}회 × ${e.세트}세트 · 휴식 ${Math.floor(e.휴식/60)}:${String(e.휴식%60).padStart(2,'0')}</span>
+          </button>
+          <button class="mvb del" data-rdrop="${r.id}|${j}" aria-label="이 루틴에서 빼기"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg></button>
+          <button class="mvb cv3" data-redit="${r.id}|${j}" aria-label="설정 열기"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+        </div>
+        ${펼침 ? 종목설정줄(r.id, j, e) : ''}
+      </div>`;
+    };
+    let 종목들 = '';
+    if(!쉼){
+      const 조각 = [];
+      let i2 = 0;
+      while(i2 < r.종목.length){
+        const g = r.종목[i2].슈퍼;
+        if(!g){ 조각.push(한줄(r.종목[i2], i2)); i2++; continue; }
+        const 묶 = [];
+        while(i2 < r.종목.length && r.종목[i2].슈퍼 === g){ 묶.push(한줄(r.종목[i2], i2)); i2++; }
+        조각.push(`<div class="sgroup" data-sg="${r.id}|${g}">
+          <div class="sgtag">슈퍼세트 · ${묶.length}종목을 번갈아
+            <button class="sgx" data-sgbreak="${r.id}|${g}">풀기</button></div>
+          ${묶.join('')}</div>`);
+      }
+      종목들 = 조각.join('') || '<p class="note" style="padding:10px 0">아직 종목이 없습니다.</p>';
+    }
+
+    const 몸통 = !열림 ? '' : `
+      <div class="rbody">
+        ${쉼 ? '<p class="note" style="padding:10px 0">휴식일 · 순서에서 한 칸 차지</p>' : ''}
+        ${쉼 ? '' : `<div class="gline" style="border-bottom:0;padding-top:8px">${성장문(r.이름, c)}</div>`}
+        ${종목들}
+        ${쉼 ? '' : (고르기열린 === r.id ? 안고르기(r)
+              : `<button class="btn ghost" style="height:var(--h-m);font-size:var(--fs-m);margin-top:10px" data-add="${r.id}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>종목 추가</button>`)}
+      </div>`;
+
+    return `<div class="card" style="padding:0;overflow:hidden">
+      <div class="rhead2">
+        <button class="rtitle ${열림?'open':''}" data-rou="${r.id}" aria-expanded="${열림}">
+          <span class="idx">${i+1}</span>
+          <span class="grow">
+            <span style="display:flex;align-items:center;gap:6px">
+              <b style="font-size:var(--fs-l)">${esc(r.이름)}</b>
+              ${r.id===다음.id ? '<span class="pill ok">다음</span>' : ''}
+            </span>
+            <span class="num" style="display:block;color:var(--faint);font-size:var(--fs-xs)">
+              ${쉼 ? '휴식일' : `${r.종목.length}종목 · ${총세트(r)}세트 · ${시간글(예상초(r))}`}
+            </span>
+          </span>
+        </button>
+        <button class="mvb" data-rmv2="${r.id}|-1" ${i===0?'disabled':''} aria-label="앞으로"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
+        <button class="mvb" data-rmv2="${r.id}|1" ${i===루틴들.length-1?'disabled':''} aria-label="뒤로"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M19 12l-7 7-7-7"/></svg></button>
+        <button class="mvb ${루틴설정연===r.id?'on':''}" data-rgear="${r.id}" aria-label="루틴 설정"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></button>
+        <button class="mvb cv3 ${열림?'open':''}" data-rou="${r.id}" aria-label="펼치기"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+      </div>
+      ${설정칸}${몸통}
+    </div>`;
+  }).join('');
+}
+
+/* 시트 열고 닫기 */
+function 시트열기(html){ $('#gPanel').innerHTML = html; $('#gSheet').hidden = false; }
+function 시트닫기2(){ $('#gSheet').hidden = true; }
+const 닫기버튼 = '<button data-close style="width:32px;height:var(--h-s);border-radius:50%;background:var(--surface-2)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>';
+const 시트머리 = t => `<div class="row" style="justify-content:space-between"><strong style="font-size:var(--fs-l)">${t}</strong>${닫기버튼}</div>`;
+
+let 고르기부위 = '전체';
+/* 종목 이름 옆에 부위·장비를 흐린 글씨로 — 한 줄 */
+const 종목글 = e => `<span class="grow nm1"><span class="t">${esc(e.이름)}</span><span class="d">${esc(e.부위)}·${esc(e.장비)}</span></span>`;
+
+/* ── 루틴 안에서 바로 고르는 칸 (팝업 아님) ──
+   누르면 바로 루틴에 들어가고 칸은 열린 채로 남는다. 방금 넣은 것을 다시 누르면 빠진다. */
+let 고르기열린 = null;          /* 루틴 id */
+let 고르기방금 = [];            /* 이번에 연 뒤로 넣은 종목 이름 (넣은 순서) */
+function 안고르기(r){
+  const 칩 = [...(숨김.전체 ? [] : ['전체']), ...카테고리들];
+  if(!칩.includes(고르기부위)) 고르기부위 = 칩[0] || '전체';
+  const 목록 = 종목표.filter(e => 고르기부위 === '전체' || e.부위 === 고르기부위);
+  const 있음 = new Set(r.종목.map(x => x.이름));
+  return `<div class="ipick">
+    <div class="iphd">
+      <b>종목 추가</b>
+      <span class="ipn">${고르기방금.length ? `${고르기방금.length}개 넣음` : '누르면 추가'}</span>
+      <button class="gear" data-pickset="${r.id}" aria-label="보기 설정"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></button>
+      <button class="ipdone" data-ipdone="1">완료</button>
+    </div>
+    <div class="chips">
+      ${칩.map(p => `<button class="chip" data-ipcat="${esc(p)}" aria-pressed="${p===고르기부위}">${esc(p)}</button>`).join('')}
+    </div>
+    <div class="iplist">
+      ${목록.map(e => {
+        const 방금 = 고르기방금.includes(e.이름);
+        const 원래 = 있음.has(e.이름) && !방금;
+        return `<button class="item ${방금?'ipon':''}" data-ipick="${r.id}|${esc(e.이름)}" ${원래?'disabled':''}>
+          ${종목글(e)}
+          <span class="ipm">${방금 ? '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>' : 원래 ? '있음' : '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>'}</span></button>`;
+      }).join('') || '<p class="note" style="padding:12px 0">이 부위에 종목이 없습니다</p>'}
+    </div>
+  </div>`;
+}
+/* 종목 추가를 열면 — 루틴 카드 머리부터 고르는 칸까지 한 화면에 들어오게 옮긴다.
+   다 안 들어가면 고르는 칸이 온전히 보이는 쪽을 택한다 */
+function 고르기보이기(rid){
+  const 판 = document.querySelector('.screens');
+  const 칸 = document.querySelector('.ipick');
+  const 카드 = 칸 && 칸.closest('.card');
+  if(!판 || !칸 || !카드) return;
+  const 틀 = 판.getBoundingClientRect(), 여백 = 8;
+  const 카드위 = 카드.getBoundingClientRect().top - 틀.top;
+  const 칸아래 = 칸.getBoundingClientRect().bottom - 틀.top;
+  let 움직 = 카드위 - 여백;                                    /* 카드 머리를 맨 위로 */
+  if(칸아래 - 움직 > 판.clientHeight - 여백) 움직 = 칸아래 - 판.clientHeight + 여백;  /* 넘치면 고르는 칸 기준 */
+  try{ 판.scrollTo({top: 판.scrollTop + 움직, behavior:'smooth'}); }
+  catch(e){ 판.scrollTop += 움직; }
+}
+/* 다시 그려도 고르던 자리가 움직이지 않게 — 목록 스크롤과 화면 위치를 되살린다 */
+function 고르기다시그리기(){
+  const 판 = document.querySelector('.screens');
+  const 전 = document.querySelector('.ipick');
+  const 전위 = 전 ? 전.getBoundingClientRect().top : null;
+  const 목록 = document.querySelector('.iplist'), 목록위 = 목록 ? 목록.scrollTop : 0;
+  루틴그리기(); 달력그리기();
+  const 후 = document.querySelector('.ipick');
+  if(후 && 전위 !== null && 판) 판.scrollTop += 후.getBoundingClientRect().top - 전위;
+  const 목록2 = document.querySelector('.iplist'); if(목록2) 목록2.scrollTop = 목록위;
+}
+function 고르기시트(rid){
+  const 칩 = [...(숨김.전체 ? [] : ['전체']), ...카테고리들];
+  if(!칩.includes(고르기부위)) 고르기부위 = 칩[0] || '전체';
+  const 목록 = 종목표.filter(e => 고르기부위 === '전체' || e.부위 === 고르기부위);
+  시트열기(`<div class="row" style="justify-content:space-between">
+      <strong style="font-size:var(--fs-l)">종목 고르기</strong>
+      <span style="display:flex;gap:6px">
+        <button class="gear" data-pickset="${rid}" aria-label="보기 설정"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></button>
+        ${닫기버튼}
+      </span>
+    </div>
+    <div class="chips" style="margin-bottom:0">
+      ${칩.map(p => `<button class="chip" data-pcat="${rid}|${esc(p)}" aria-pressed="${p===고르기부위}">${esc(p)}</button>`).join('')}
+    </div>
+    <div style="max-height:44vh;overflow-y:auto">
+      ${목록.map(e=>`<button class="item" style="width:100%;text-align:left" data-pick="${rid}|${esc(e.이름)}">
+        ${종목글(e)}
+        <span class="rowgo"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span></button>`).join('')
+        || '<p class="note" style="padding:12px 0">이 부위에 종목이 없습니다.</p>'}
+    </div>`);
+}
+function 고르기설정시트(rid){
+  시트열기(`${시트머리('종목 고르기 — 보기')}
+    <div class="card" style="padding:2px 12px">
+      <div class="set">
+        <div class="grow"><div class="lbl">'전체' 카테고리 숨기기</div>
+        <div class="hint">부위를 반드시 하나 고르게 됩니다</div></div>
+        <button class="sw" data-hide="전체" aria-pressed="${숨김.전체}"></button>
+      </div>
+      <div class="set">
+        <div class="grow"><div class="lbl">즐겨찾기 숨기기</div>
+        <div class="hint">즐겨찾기 기능은 아직 만들지 않았습니다</div></div>
+        <button class="sw" data-hide="즐겨" aria-pressed="${숨김.즐겨}"></button>
+      </div>
+    </div>
+    <button class="btn" data-pickback="${rid}">돌아가기</button>`);
+}
+
+/* 루틴 목록에서 일어나는 일 — 전부 그 자리에서, 팝업 없이 */
+$('#routineList').addEventListener('click', e => {
+  const b = e.target.closest('button'); if(!b || b.disabled) return;
+  const d = b.dataset;
+
+  if(슈방금){ 슈방금 = false; return; }
+  if(d.sgbreak){ const [rid, g] = d.sgbreak.split('|'); 슈퍼풀기(rid, g); return; }
+  if(d.rou){ 열린루틴 = (열린루틴 === d.rou) ? null : d.rou; 열린루틴종목 = null; 루틴그리기(); return; }
+  if(d.rgear){ 루틴설정연 = (루틴설정연 === d.rgear) ? null : d.rgear; 루틴그리기(); return; }
+  if(d.redit){
+    /* 누르고 뗐을 때만 연다 / 닫는다 (꾹 누르면 집기라서 여기 오지 않는다) */
+    if(!집기){ 루틴칸 = null; 설정칸토글(d.redit); }
+    return;
+  }
+  if(d.kpick){
+    const [rid, j, k] = d.kpick.split('|');
+    열린루틴종목 = `${rid}|${j}`;
+    루틴칸 = (루틴칸 === k) ? null : k;
+    루틴그리기();
+    return;
+  }
+  if(d.add){ 고르기열린 = d.add; 고르기방금 = []; 열린루틴종목 = null; 루틴그리기(); 고르기보이기(d.add); return; }
+  if(d.ipdone){ 고르기열린 = null; 고르기방금 = []; 루틴그리기(); 달력그리기(); return; }
+  if(d.ipcat !== undefined){ 고르기부위 = d.ipcat; 고르기다시그리기(); return; }
+  if(d.pickset){ 고르기설정시트(d.pickset); return; }
+  if(d.ipick){
+    const i = d.ipick.indexOf('|');
+    const r = 루틴(d.ipick.slice(0,i)), 이름 = d.ipick.slice(i+1);
+    const 자리 = 고르기방금.indexOf(이름);
+    if(자리 >= 0){
+      /* 방금 넣은 것을 다시 누르면 뺀다 (뒤에서부터 찾아 하나만) */
+      for(let k = r.종목.length-1; k >= 0; k--){ if(r.종목[k].이름 === 이름){ r.종목.splice(k,1); break; } }
+      고르기방금.splice(자리, 1);
+    } else {
+      r.종목.push({이름, 무게:20, 횟수:10, 세트:3, 휴식:90});
+      고르기방금.push(이름);
+    }
+    고르기다시그리기();
+    return;
+  }
+
+  if(d.mv){
+    const [rid,j,dd] = d.mv.split('|'); const arr = 루틴(rid).종목;
+    const a = +j, c = a + (+dd);
+    if(c>=0 && c<arr.length){ [arr[a],arr[c]] = [arr[c],arr[a]]; 열린루틴종목 = null; 루틴그리기(); 달력그리기(); }
+    return;
+  }
+  if(d.rdrop){
+    const [rid,j] = d.rdrop.split('|');
+    const 뺀 = 루틴(rid).종목[+j];
+    지우고알림(`${뺀 ? 뺀.이름 : '종목'}을(를) 루틴에서 뺐습니다`, () => 루틴(rid).종목.splice(+j,1));
+    열린루틴종목 = null; 루틴그리기(); 달력그리기();
+    return;
+  }
+  if(d.rmv2){
+    const [rid, delta] = d.rmv2.split('|');
+    const a = 루틴들.findIndex(r=>r.id===rid), c = a + (+delta);
+    if(c>=0 && c<루틴들.length){
+      [루틴들[a],루틴들[c]] = [루틴들[c],루틴들[a]];
+      예정초기화(); 루틴그리기(); 달력그리기();
+    }
+    return;
+  }
+  if(d.rsave2){
+    const r = 루틴(d.rsave2);
+    const inp = document.querySelector(`[data-rname="${CSS.escape(d.rsave2)}"]`);
+    const 새 = inp ? inp.value.trim() : '';
+    if(새) r.이름 = 새;
+    루틴설정연 = null; 루틴그리기(); 달력그리기();
+    return;
+  }
+  if(d.rdel2){
+    const r = 루틴(d.rdel2);
+    지우고알림(`${r.이름} 루틴을 지웠습니다`, () => 루틴들.splice(루틴들.findIndex(x=>x.id===d.rdel2), 1));
+    열린루틴 = null; 루틴설정연 = null; 열린루틴종목 = null;
+    예정초기화(); 루틴그리기(); 달력그리기();
+    return;
+  }
+  /* 세트수 · 무게 · 횟수 · 휴식 ± */
+  if(d.rn){
+    const [rid, j, k, delta] = d.rn.split('|');
+    const ex = 루틴(rid).종목[+j]; if(!ex) return;
+    const n = parseFloat(delta);
+    if(k === 's') ex.세트 = Math.max(1, ex.세트 + n);
+    if(k === 'w') ex.무게 = 무게반올림(Math.max(0, ex.무게 + n));
+    if(k === 'r') ex.횟수 = Math.max(0, ex.횟수 + n);
+    if(k === 't') ex.휴식 = Math.max(0, Math.min(3600, ex.휴식 + n));
+    루틴그리기(); 달력그리기();
+    return;
+  }
+});
+
+/* ── 루틴 안에서 꾹 눌러 옮기기 · 슈퍼세트 만들기 ──
+   누르면 테두리가 살고 0.5초 뒤 설정칸이 열린다. 1초 넘게 누르면 종목을 '집는다'.
+
+   집은 뒤에는 두 가지 길이 다 된다.
+     ① 손가락을 뗴지 않고 그대로 끌어서 놓기
+     ② 손을 떼고 목적지를 한 번 누르기
+   폰에서는 브라우저가 화면을 스크롤하려고 끌기를 중간에 끊어버리는 일이 잦다.
+   그래서 끊기더라도 '집은 상태'는 그대로 두고, 목적지를 눌러 끝낼 수 있게 했다.
+
+   놓는 자리에 따라 갈린다.
+     · 종목 가운데   → 슈퍼세트로 묶인다
+     · 종목 위아래 경계 → 그 자리로 순서가 옮겨진다 */
+let 슈누름 = null, 슈타이머 = null, 슈열기타이머 = null;
+let 집기 = null;        /* {rid, j, 그룹, 이름} — 집어든 종목 */
+let 슈유령 = null;      /* 손가락을 따라다니는 이름표 (끌고 있을 때만) */
+let 슈방금 = false;
+const 그룹수 = () => 'sg' + Math.random().toString(36).slice(2,7);
+
+function 유령치우기(){
+  document.querySelectorAll('.exghost').forEach(el => el.remove());
+  슈유령 = null;
+  const 판 = document.querySelector('.screens'); if(판) 판.style.overflowY = '';
+}
+function 표시치우기(){
+  document.querySelectorAll('.exrow3.sgtarget,.exrow3.dropbefore,.exrow3.dropafter')
+    .forEach(el => el.classList.remove('sgtarget','dropbefore','dropafter'));
+}
+/* 집어든 종목의 식구들 */
+function 집은식구(){
+  if(!집기) return [];
+  const r = 루틴(집기.rid); if(!r) return [];
+  return 집기.그룹 ? r.종목.filter(x => x.슈퍼 === 집기.그룹) : [r.종목[집기.j]].filter(Boolean);
+}
+function 집기표시(){
+  const 식구 = 집은식구();
+  const r = 루틴(집기 ? 집기.rid : null);
+  document.querySelectorAll('.exrow3[data-exrow]').forEach(el => {
+    const [r2, j2] = el.dataset.exrow.split('|');
+    el.classList.toggle('lift', !!(집기 && r && r2 === 집기.rid && 식구.includes(r.종목[+j2])));
+  });
+}
+
+function 집기시작(x, y){
+  if(집기 || !슈누름) return;
+  const [rid, j] = 슈누름.키.split('|');
+  const r = 루틴(rid), e = r && r.종목[+j]; if(!e) return;
+  const 식구 = e.슈퍼 ? r.종목.filter(x2 => x2.슈퍼 === e.슈퍼) : [e];
+  집기 = {rid, j:+j, 그룹: e.슈퍼 || null, 이름: 식구.map(x2 => x2.이름).join(' + '), 대상:null, 모드:null};
+
+  /* ⚠ 여기서 루틴그리기() 를 부르면 누르고 있던 칸이 사라져 포인터가 끊긴다.
+     그래서 다시 그리지 않고 열린 설정칸만 걷어낸다. */
+  열린루틴종목 = null;
+  document.querySelectorAll('#routineList .expand1').forEach(el => el.remove());
+  document.querySelectorAll('.exrow3.open').forEach(el => el.classList.remove('open'));
+  집기표시();
+  안내띠();
+
+  유령치우기();
+  /* 끄는 동안에는 화면이 밀려 올라가지 않게 스크롤을 잠근다 (손을 떼면 풀린다) */
+  const 판 = document.querySelector('.screens'); if(판) 판.style.overflowY = 'hidden';
+  슈유령 = document.createElement('div');
+  슈유령.className = 'exghost';
+  슈유령.textContent = 집기.이름;
+  document.body.appendChild(슈유령);
+  슈유령.style.left = x+'px'; 슈유령.style.top = y+'px';
+  if(navigator.vibrate){ try{ navigator.vibrate(20); }catch(err){} }
+}
+
+/* 집은 상태를 알려주는 띠 */
+function 안내띠(){
+  document.querySelectorAll('.pickbar').forEach(el => el.remove());
+  if(!집기) return;
+  const 띠 = document.createElement('div');
+  띠.className = 'pickbar';
+  띠.innerHTML = `<b>${esc(집기.이름)}</b> 를 집었습니다 ·
+    <span>가운데에 놓으면 슈퍼세트, 위아래 경계에 놓으면 순서 바꾸기</span>
+    <button data-pickcancel="1">취소</button>`;
+  const 목록 = document.getElementById('routineList');
+  목록.parentNode.insertBefore(띠, 목록);
+}
+
+/* 어느 자리에 놓을지 — 줄의 위 30% / 아래 30% / 가운데 */
+function 놓을자리(x, y){
+  const el = document.elementFromPoint(x, y);
+  const 줄 = el && el.closest ? el.closest('.exrow3[data-exrow]') : null;
+  if(!줄 || 줄.classList.contains('lift')) return null;
+  const r = 줄.getBoundingClientRect();
+  const 비 = (y - r.top) / Math.max(1, r.height);
+  return {줄, 모드: 비 < 0.3 ? 'before' : 비 > 0.7 ? 'after' : 'merge'};
+}
+function 집기이동(x, y){
+  if(!집기 || !슈유령) return;
+  슈유령.style.left = x+'px'; 슈유령.style.top = y+'px';
+  표시치우기();
+  const 자리 = 놓을자리(x, y);
+  /* 화면에 표시한 그 자리를 그대로 기억해 둔다.
+     손을 뗄 때 좌표로 다시 계산하면, 그 사이 칸이 조금만 움직여도
+     눈에 보이던 것과 다른 곳에 놓이게 된다. */
+  집기.대상 = 자리 ? 자리.줄.dataset.exrow : null;
+  집기.모드 = 자리 ? 자리.모드 : null;
+  if(!자리) return;
+  자리.줄.classList.add(자리.모드 === 'merge' ? 'sgtarget' : 자리.모드 === 'before' ? 'dropbefore' : 'dropafter');
+}
+
+/* 실제로 놓는다.
+   끌고 있었다면 '화면에 표시돼 있던 자리'를 쓰고, 그냥 눌러서 놓는 것이면 그 점으로 계산한다. */
+function 놓기(x, y, 표시된){
+  if(!집기) return false;
+  let 대상키 = null, 모드 = null;
+  if(표시된 && 집기.대상 && 집기.모드){
+    대상키 = 집기.대상; 모드 = 집기.모드;
+  } else if(x != null && y != null){
+    const 자리 = 놓을자리(x, y);
+    if(자리){ 대상키 = 자리.줄.dataset.exrow; 모드 = 자리.모드; }
+  }
+  if(!대상키 || !모드) return false;
+  const [r2, j2] = 대상키.split('|');
+  if(r2 !== 집기.rid) return false;
+  if(모드 === 'merge') 슈퍼묶기(집기.rid, 집기.j, +j2, 집기.그룹);
+  else 종목옮기기(집기.rid, 집기.j, +j2, 모드, 집기.그룹);
+  집기끝();
+  return true;
+}
+function 집기끝(){
+  집기 = null;
+  표시치우기(); 유령치우기();
+  document.querySelectorAll('.exrow3.lift').forEach(el => el.classList.remove('lift'));
+  document.querySelectorAll('.pickbar').forEach(el => el.remove());
+  루틴그리기();
+}
+
+/* 경계에 놓았을 때 — 그 자리로 순서만 옮긴다 (묶음이면 통째로) */
+function 종목옮기기(rid, from, to, 모드, 그룹){
+  const r = 루틴(rid);
+  const 대상 = r.종목[to]; if(!대상) return;
+  const 옮길 = 그룹 ? r.종목.filter(x => x.슈퍼 === 그룹) : [r.종목[from]];
+  if(!옮길.length || 옮길.includes(대상)) return;
+  const 나머지 = r.종목.filter(x => !옮길.includes(x));
+  let 자리 = 나머지.indexOf(대상);
+  if(모드 === 'after') 자리++;
+  r.종목 = [...나머지.slice(0, 자리), ...옮길, ...나머지.slice(자리)];
+  열린루틴종목 = null;
+}
+
+/* 끈 종목(또는 그 묶음 전체)을 놓인 자리의 종목과 한 묶음으로 만든다.
+   한 묶음은 언제나 서로 붙어 있어야 순서가 헷갈리지 않는다. */
+function 슈퍼묶기(rid, from, to, 그룹){
+  const r = 루틴(rid);
+  const 대상 = r.종목[to]; if(!대상) return;
+  const 옮길 = 그룹 ? r.종목.filter(x => x.슈퍼 === 그룹) : [r.종목[from]];
+  if(!옮길.length || 옮길.includes(대상)) return;
+
+  const 새그룹 = 대상.슈퍼 || 그룹 || 그룹수();
+  대상.슈퍼 = 새그룹;
+  옮길.forEach(x => { x.슈퍼 = 새그룹; });
+
+  const 식구 = r.종목.filter(x => x.슈퍼 === 새그룹);
+  const 나머지 = r.종목.filter(x => x.슈퍼 !== 새그룹);
+  let 자리 = 0, 센다 = 0;
+  for(let i = 0; i < r.종목.length; i++){
+    if(r.종목[i] === 대상){ 자리 = 센다; break; }
+    if(r.종목[i].슈퍼 !== 새그룹) 센다++;
+  }
+  r.종목 = [...나머지.slice(0, 자리), ...식구, ...나머지.slice(자리)];
+  열린루틴종목 = null;
+}
+function 슈퍼풀기(rid, 그룹){
+  루틴(rid).종목.forEach(x => { if(x.슈퍼 === 그룹) x.슈퍼 = null; });
+  루틴그리기();
+}
+function 슈누름해제(){
+  clearTimeout(슈타이머); clearTimeout(슈열기타이머);
+  슈타이머 = 슈열기타이머 = null; 슈누름 = null;
+  document.querySelectorAll('.exrow3.press').forEach(el => el.classList.remove('press'));
+}
+
+/* 설정칸 열고 닫기 — 목록을 다시 그리지 않고 그 줄에만 붙였다 뗀다 */
+let 슈열었음 = false;
+function 설정칸토글(키){
+  const 목록 = $('#routineList');
+  const 전 = 열린루틴종목;
+  목록.querySelectorAll('.exrow3 > .expand1').forEach(el => el.remove());
+  목록.querySelectorAll('.exrow3.open').forEach(el => el.classList.remove('open'));
+  열린루틴종목 = (전 === 키) ? null : 키;
+  if(!열린루틴종목) return;
+  const 줄 = 목록.querySelector(`.exrow3[data-exrow="${키}"]`);
+  const [rid, j] = 키.split('|');
+  const ex = 루틴(rid) && 루틴(rid).종목[+j];
+  if(!줄 || !ex){ 열린루틴종목 = null; return; }
+  줄.classList.add('open');
+  줄.insertAdjacentHTML('beforeend', 종목설정줄(rid, +j, ex));
+}
+
+$('#routineList').addEventListener('pointerdown', e => {
+  슈방금 = false; 슈열었음 = false;
+  if(e.target.closest('.expand1')) return;          /* 설정칸 안(숫자 입력 등)은 누르기로 치지 않는다 */
+  if(e.target.closest('button') && !e.target.closest('[data-redit]')) return;
+  const 줄 = e.target.closest('.exrow3[data-exrow]'); if(!줄) return;
+
+  /* 이미 집어든 것이 있으면, 이번 누름이 '놓기'다 */
+  if(집기){
+    슈방금 = true;
+    if(!놓기(e.clientX, e.clientY, false)) 집기끝();
+    return;
+  }
+
+  슈누름해제();
+  슈누름 = {키: 줄.dataset.exrow, x:e.clientX, y:e.clientY};
+  /* 짧게 누르고 떼면 → 설정칸 (click 에서 연다)
+     꾹 누르면(0.5초) → 집기 (옮기기 · 슈퍼세트). 누르는 동안 설정칸은 열지 않는다.
+     테두리는 0.15초 넘게 누르고 있을 때만 — 짧게 누를 때 번쩍이지 않게 */
+  슈열기타이머 = setTimeout(() => { if(슈누름 && !집기) 줄.classList.add('press'); }, 150);
+  슈타이머 = setTimeout(() => { if(슈누름) 집기시작(슈누름.x, 슈누름.y); }, 500);
+});
+
+window.addEventListener('pointermove', e => {
+  if(집기 && 슈유령){ 집기이동(e.clientX, e.clientY); return; }
+  if(슈누름 && Math.hypot(e.clientX-슈누름.x, e.clientY-슈누름.y) > 12) 슈누름해제();
+});
+/* 끌고 있는 동안에는 화면이 스크롤되지 않게 막는다 (폰) */
+window.addEventListener('touchmove', e => {
+  if(!집기 || !슈유령) return;
+  e.preventDefault();
+  const t = e.touches && e.touches[0];
+  if(t) 집기이동(t.clientX, t.clientY);
+}, {passive:false});
+
+/* 손을 뗐을 때 — 그 자리에 놓이면 끝내고, 아니면 '집은 상태'를 그대로 둔다 */
+function 손뗌(x, y){
+  슈누름해제();
+  if(!집기) return;
+  /* 끌고 있었으면(이름표가 떠 있으면) 표시돼 있던 자리에 놓는다 */
+  const 끌었나 = !!슈유령;
+  const 놓였나 = 놓기(x, y, 끌었나);
+  if(!놓였나){
+    /* 끌기가 끊겼거나 엉뚱한 곳에서 뗀 것 — 이름표만 치우고 집은 상태는 유지 */
+    유령치우기(); 표시치우기();
+    슈방금 = true;
+  }
+}
+window.addEventListener('pointerup', e => 손뗌(e.clientX, e.clientY));
+/* 폰에서 길게 누르면 뜨는 메뉴(복사·공유 등)가 터치를 가로채지 않게 */
+['#routineList', '#calGrid'].forEach(sel => $(sel).addEventListener('contextmenu', e => e.preventDefault()));
+window.addEventListener('pointercancel', () => 손뗌(null, null));
+window.addEventListener('touchcancel', () => 손뗌(null, null));
+
+/* 안내띠의 '취소' */
+document.addEventListener('click', e => {
+  if(e.target.closest('[data-pickcancel]')) 집기끝();
+});
+
+/* 루틴 안에서 숫자를 직접 쳐 넣었을 때 */
+$('#routineList').addEventListener('change', e => {
+  const inp = e.target.closest('input[data-rin2]'); if(!inp) return;
+  const [rid, j, k] = inp.dataset.rin2.split('|');
+  const ex = 루틴(rid).종목[+j]; if(!ex) return;
+  if(k === 't'){
+    const v = 초읽기(inp.value); if(v !== null) ex.휴식 = v;
+  } else {
+    const v = parseFloat(inp.value);
+    if(!isNaN(v)){
+      if(k === 's') ex.세트 = Math.max(1, Math.round(v));
+      if(k === 'w') ex.무게 = 무게반올림(Math.max(0, v));
+      if(k === 'r') ex.횟수 = Math.max(0, Math.round(v));
+    }
+  }
+  루틴그리기(); 달력그리기();
+});
+
+/* 시트 안에서 일어나는 일 */
+$('#gSheet').addEventListener('click', e => {
+  const b = e.target.closest('button'); if(!b) return;
+  const d = b.dataset;
+  if(d.close !== undefined || b.hasAttribute('data-close')){ 시트닫기2(); return; }
+  if(d.sheet2 === 'rm'){ rm시트(); return; }
+  /* 종목 추가 시트 */
+  if(d.ncat){
+    b.parentElement.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x===b)));
+    return;
+  }
+  if(d.newex){
+    const 이름 = ($('#n-name').value || '').trim();
+    const 장비 = ($('#n-gear').value || '').trim() || '기타';
+    const 고름 = $('#n-cat').querySelector('[aria-pressed="true"]');
+    const 부위 = 고름 ? 고름.dataset.ncat : (카테고리들[0] || '기타');
+    if(!이름){ alert('종목 이름을 적어주세요.'); return; }
+    if(종목표.some(x => x.이름 === 이름)){ alert('같은 이름의 종목이 이미 있습니다.'); return; }
+    종목표.push({이름, 부위, 장비});
+    if(!카테고리들.includes(부위)) 카테고리들.push(부위);
+    열린종목 = 이름; 고른부위 = '전체';
+    시트닫기2(); 종목그리기();
+    return;
+  }
+  /* 카테고리 관리 시트 */
+  if(d.catadd){
+    const 새 = ($('#c-new').value || '').trim();
+    if(!새){ alert('카테고리 이름을 적어주세요.'); return; }
+    if(카테고리들.includes(새)){ alert('이미 있는 카테고리입니다.'); return; }
+    카테고리들.push(새);
+    카테고리시트(); 종목그리기();
+    return;
+  }
+  if(d.catdel){
+    const 수 = 종목표.filter(e => e.부위 === d.catdel).length;
+    지우고알림(수 ? `${d.catdel} · 종목 ${수}개와 함께 지웠습니다` : `${d.catdel} 카테고리를 지웠습니다`, () => {
+    if(수){
+      const 이름들 = 종목표.filter(e => e.부위 === d.catdel).map(e => e.이름);
+      루틴들.forEach(r => { r.종목 = r.종목.filter(x => !이름들.includes(x.이름)); });
+      for(let i = 종목표.length - 1; i >= 0; i--) if(종목표[i].부위 === d.catdel) 종목표.splice(i,1);
+    }
+    카테고리들 = 카테고리들.filter(p => p !== d.catdel);
+    });
+    if(고른부위 === d.catdel) 고른부위 = '전체';
+    카테고리시트(); 종목그리기(); 루틴그리기(); 달력그리기();
+    return;
+  }
+  if(d.fin){ 시트닫기2(); 다음종목으로(d.fin === 'yes'); return; }
+
+  if(d.restday){ 시트닫기2(); 오늘휴식(d.restday); return; }
+  if(d.pcat){
+    const i = d.pcat.indexOf('|');
+    고르기부위 = d.pcat.slice(i+1);
+    고르기시트(d.pcat.slice(0,i));
+    return;
+  }
+  if(d.pickset){ 고르기설정시트(d.pickset); return; }
+  if(d.pickback){ if(고르기열린){ 시트닫기2(); 루틴그리기(); } else 고르기시트(d.pickback); return; }
+  if(d.hide){
+    숨김[d.hide] = b.getAttribute('aria-pressed') !== 'true';
+    b.setAttribute('aria-pressed', String(숨김[d.hide]));
+    return;
+  }
+  if(d.pick){
+    const i = d.pick.indexOf('|');
+    const rid = d.pick.slice(0,i), 이름 = d.pick.slice(i+1);
+    루틴(rid).종목.push({이름, 무게:20, 횟수:10, 세트:3, 휴식:90});
+    시트닫기2(); 루틴그리기(); 달력그리기();
+  }
+  /* 운동 중 불러오기 */
+  if(d.goex !== undefined){ 시트닫기2(); 종목으로(+d.goex); return; }
+  if(d.load){
+    불러오기(d.load);
+    시트닫기2(); 실행그리기();
+  }
+  /* 달력에서 이 날에 루틴 꽂기 */
+  if(d.drop){
+    const i = d.drop.indexOf('|');
+    const rid = d.drop.slice(0,i), D = d.drop.slice(i+1);
+    꽂기(rid, D);
+    시트닫기2(); 달력그리기(); 루틴그리기();
+  }
+});
+
+/* 루틴 · 휴식 날 추가 */
+$('#addRoutine').addEventListener('click', () => {
+  const id = 'r' + Date.now();
+  루틴들.push({id, 이름:`새 루틴 ${루틴들.length+1}`, 종목:[]});
+  열린루틴 = id; 예정초기화(); 루틴그리기(); 달력그리기();
+  $('.screens').scrollTop = 9999;
+});
+$('#addRest').addEventListener('click', () => {
+  const id = 'rest' + Date.now();
+  루틴들.push({id, 이름:'휴식', 휴식일:true, 종목:[]});
+  예정초기화(); 루틴그리기(); 달력그리기();
+  $('.screens').scrollTop = 9999;
+});
+
+/* ────────── 종목 사진 ──────────
+   동기부여용. 종목마다 최대 10장.
+   올린 사진은 '가운데를 정사각형으로 잘라 512px'로 줄여 넣는다 —
+   원본을 그대로 두면 사진 한 장이 몇 MB라 금방 버거워진다. */
+const 사진최대 = 10, 사진변 = 512;
+function 정사각형으로(file){
+  return new Promise((맞음, 틀림) => {
+    const fr = new FileReader();
+    fr.onerror = () => 틀림(new Error('읽지 못했습니다'));
+    fr.onload = () => {
+      const img = new Image();
+      img.onerror = () => 틀림(new Error('그림이 아닙니다'));
+      img.onload = () => {
+        const 변 = Math.min(img.width, img.height);
+        const sx = (img.width - 변)/2, sy = (img.height - 변)/2;
+        const c = document.createElement('canvas');
+        c.width = c.height = Math.min(사진변, 변);
+        const g = c.getContext('2d');
+        g.drawImage(img, sx, sy, 변, 변, 0, 0, c.width, c.height);
+        맞음(c.toDataURL('image/jpeg', 0.78));
+      };
+      img.src = fr.result;
+    };
+    fr.readAsDataURL(file);
+  });
+}
+function 사진넣기(이름, files){
+  const t = 종목표.find(x => x.이름 === 이름); if(!t) return;
+  t.사진 = t.사진 || [];
+  const 남은 = 사진최대 - t.사진.length;
+  if(남은 <= 0){ alert(`한 종목에 사진은 ${사진최대}장까지입니다.`); return; }
+  Promise.all([...files].slice(0, 남은).map(정사각형으로)).then(들 => {
+    t.사진.push(...들); 종목그리기();
+  }).catch(err => alert('사진을 넣지 못했습니다: ' + err.message));
+}
+
+/* ────────── 종목 탭 ────────── */
+/* 카테고리는 종목과 따로 가진다 — 종목이 하나도 없는 카테고리도 만들 수 있어야 한다.
+   여기서 만든 카테고리가 루틴 → 종목 고르기에도 그대로 나온다. */
+let 카테고리들 = [...new Set(종목표.map(e => e.부위))];
+let 고른부위 = '전체';
+let 열린종목 = null;
+const 숨김 = {전체:false, 즐겨:false};   /* 종목 고르기 시트의 보기 설정 */
+
+/* 그 종목의 날짜별 세션 요약 (오래된 것부터) */
+function 종목세션들(이름){
+  return 종목기록들(이름).map(x => ({날:x.날, v:세트요약(x.세트들)})).filter(x => x.v);
+}
+/* 세 가지 지표가 기준 시점 이후로 얼마나 늘었나 */
+function 지표성장(이름, 기준일){
+  const 들 = 종목세션들(이름);
+  if(들.length < 2) return null;
+  const 최근 = 들[들.length-1];
+  const 과거 = [...들].reverse().find(x => x.날 <= 기준일);
+  if(!과거 || 과거.날 === 최근.날) return null;
+  const 짝 = (a,b) => ({지금:a, 과거:b, diff:a-b, pct: b ? Math.round((a-b)/b*100) : null});
+  return {
+    날: 과거.날,
+    rm:   짝(최근.v.rm, 과거.v.rm),
+    /* 단일 세트 최고 = 그 날 한 세트 중 무게×횟수가 가장 큰 것 */
+    best: 짝(최근.v.무게*최근.v.횟수, 과거.v.무게*과거.v.횟수),
+    best글: {지금:`${무게글자(최근.v.무게)}×${최근.v.횟수}`, 과거:`${무게글자(과거.v.무게)}×${과거.v.횟수}`},
+    vol:  짝(최근.v.vol, 과거.v.vol),
+  };
+}
+function 지표줄(이름, 지금글, 과거글, 값, 단위){
+  const q = 퍼센트칠(값 ? 값.pct : null);
+  const 차 = (값 && 값.pct !== null)
+    ? (값.diff > 0 ? '+' : 값.diff < 0 ? '−' : '±') + 콤마(Math.abs(값.diff)) + (단위 || '')
+    : '';
+  return `<div class="mrow2">
+    <span class="mk2">${이름}</span>
+    <span class="mnow">${지금글}</span>
+    <span class="mold">${과거글}</span>
+    <span class="mpct ${q.cls}">${q.t}<span class="mdiff">${차}</span></span>
+  </div>`;
+}
+
+function 종목그리기(){
+  const 목록칩 = ['전체', ...카테고리들];
+  $('#partChips').innerHTML = 목록칩.map(p =>
+    `<button class="chip" data-p="${esc(p)}" aria-pressed="${p===고른부위}">${esc(p)}</button>`).join('');
+  const 목록 = 종목표.filter(e => 고른부위==='전체' || e.부위===고른부위);
+  const 기준 = 지금기준();
+
+  $('#exList').innerHTML = 목록.map(e => {
+    const 열림 = 열린종목 === e.이름;
+    const c = 종목성장(e.이름, 기준.날(), null, undefined);
+    const q = 퍼센트칠(c ? c.볼륨.pct : null);
+    const g = 지표성장(e.이름, 기준.날());
+    const 짧 = e.표시이름
+      ? `<span style="color:var(--ok);font-weight:600">${esc(e.표시이름)}</span>`
+      : `<span style="color:var(--faint)">이름 그대로</span>`;
+
+    const 몸통 = !열림 ? '' : `
+      <div class="exbody2">
+        ${g ? `<div class="mtab">
+          <div class="mrow2 mhead"><span class="mk2">지표</span>
+            <span class="mnow">지금</span><span class="mold">이전</span>
+            <span class="mpct">늘어난 값</span></div>
+          ${지표줄('최대 1RM', g.rm.지금.toFixed(1), g.rm.과거.toFixed(1), g.rm, 설정.unit)}
+          ${지표줄('단일세트 최고', g.best글.지금, g.best글.과거, g.best, '')}
+          ${지표줄('한 세션 볼륨', 콤마(g.vol.지금), 콤마(g.vol.과거), g.vol, '')}
+        </div>
+        <p class="note">${기준.이름}(${g.날})과 견준 값입니다.</p>`
+        : '<p class="note">견줄 기록이 아직 없습니다.</p>'}
+
+        <div class="field">
+          <label>종목 이름</label>
+          <input type="text" data-exname="${esc(e.이름)}" value="${esc(e.이름)}" autocomplete="off">
+        </div>
+        <div class="field">
+          <label>캘린더 표시 이름</label>
+          <input type="text" data-exshort="${esc(e.이름)}" value="${esc(e.표시이름 || '')}"
+            placeholder="비워두면 종목 이름을 따라갑니다" autocomplete="off">
+          <span class="hint">달력 칸에만 쓰는 짧은 이름</span>
+        </div>
+        <div class="field">
+          <label>부위</label>
+          <div class="chips" style="margin-bottom:0">
+            ${카테고리들.map(p => `<button class="chip" data-excat="${esc(e.이름)}|${esc(p)}"
+              aria-pressed="${p===e.부위}">${esc(p)}</button>`).join('')}
+          </div>
+        </div>
+        <div class="field">
+          <label>사진 <span style="color:var(--faint);font-weight:500">운동 중 무작위로 한 장 · 최대 ${사진최대}장</span></label>
+          <div class="pics">
+            ${(e.사진 || []).map((src,i) => `<span class="pic"><img src="${src}" alt="">
+              <button class="px" data-picdel="${esc(e.이름)}|${i}" aria-label="사진 빼기"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button></span>`).join('')}
+            ${(e.사진 || []).length < 사진최대
+              ? `<label class="picadd"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><input type="file" accept="image/*" multiple hidden data-picadd="${esc(e.이름)}"></label>`
+              : ''}
+          </div>
+          <span class="hint">정사각형 ${사진변}px로 잘라 넣습니다</span>
+        </div>
+        <div class="rowbtns">
+          <button class="btn ghost" style="flex:1 1 0" data-exsave="${esc(e.이름)}">저장</button>
+          <button class="btn ghost" style="flex:0 0 40%;color:var(--miss)" data-exdel="${esc(e.이름)}">종목 삭제</button>
+        </div>
+      </div>`;
+
+    return `<div class="exrow2">
+      <button class="exhead2 ${열림?'open':''}" data-exopen="${esc(e.이름)}" aria-expanded="${열림}">
+        <span class="grow">
+          <span class="t2" style="display:block">${esc(e.이름)}</span>
+          <span class="d2" style="display:block">${esc(e.부위)} · ${esc(e.장비)} &nbsp;·&nbsp; 달력 ${짧}</span>
+        </span>
+        <span class="pcbox">
+          <span class="pv" style="color:var(--${q.cls==='up'?'up':q.cls==='down'?'down':'faint'})">${q.t}</span>
+          <span class="pk">${기준.짧}</span>
+        </span>
+        <span class="cv2"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></span>
+      </button>${몸통}
+    </div>`;
+  }).join('') || '<p class="note" style="padding:12px 0">이 부위에 종목이 없습니다.</p>';
+}
+
+$('#exList').addEventListener('change', e => {
+  const inp = e.target.closest('input[data-picadd]');
+  if(inp && inp.files && inp.files.length) 사진넣기(inp.dataset.picadd, inp.files);
+});
+$('#partChips').addEventListener('click', e => {
+  const b = e.target.closest('[data-p]'); if(!b) return;
+  고른부위 = b.dataset.p; 열린종목 = null; 종목그리기();
+});
+
+/* 종목 줄에서 일어나는 일 — 팝업 없이 그 자리에서 */
+$('#exList').addEventListener('click', e => {
+  const b = e.target.closest('button'); if(!b) return;
+  const d = b.dataset;
+
+  if(d.exopen !== undefined){
+    열린종목 = (열린종목 === d.exopen) ? null : d.exopen;
+    종목그리기(); return;
+  }
+  if(d.excat){
+    const i = d.excat.lastIndexOf('|');
+    const 이름 = d.excat.slice(0, i), 부위 = d.excat.slice(i+1);
+    const t = 종목표.find(x => x.이름 === 이름);
+    if(t){ t.부위 = 부위; 종목그리기(); }
+    return;
+  }
+  if(d.exsave){
+    const t = 종목표.find(x => x.이름 === d.exsave); if(!t) return;
+    const 새이름 = ($('[data-exname="'+CSS.escape(d.exsave)+'"]') || {}).value;
+    const 짧 = ($('[data-exshort="'+CSS.escape(d.exsave)+'"]') || {}).value;
+    const n = (새이름 || '').trim() || t.이름;
+    if(n !== t.이름){
+      if(종목표.some(x => x !== t && x.이름 === n)){ alert('같은 이름의 종목이 이미 있습니다.'); return; }
+      루틴들.forEach(r => r.종목.forEach(x => { if(x.이름 === t.이름) x.이름 = n; }));
+      t.이름 = n; 열린종목 = n;
+    }
+    t.표시이름 = (짧 || '').trim() || null;
+    종목그리기(); 루틴그리기(); 달력그리기();
+    return;
+  }
+  if(d.picdel){
+    const i = d.picdel.lastIndexOf('|');
+    const 이름 = d.picdel.slice(0, i), k = +d.picdel.slice(i+1);
+    const t = 종목표.find(x => x.이름 === 이름);
+    if(t && t.사진){ t.사진.splice(k,1); 종목그리기(); }
+    return;
+  }
+  if(d.exdel){
+    const 쓰는곳 = 루틴들.filter(r => r.종목.some(x => x.이름 === d.exdel)).map(r => r.이름);
+    지우고알림(쓰는곳.length ? `${d.exdel} · ${쓰는곳.join('·')}에서도 뺐습니다` : `${d.exdel}을(를) 지웠습니다`, () => {
+      루틴들.forEach(r => { r.종목 = r.종목.filter(x => x.이름 !== d.exdel); });
+      const i = 종목표.findIndex(x => x.이름 === d.exdel);
+      if(i >= 0) 종목표.splice(i, 1);
+    });
+    열린종목 = null;
+    종목그리기(); 루틴그리기(); 달력그리기();
+    return;
+  }
+});
+
+/* ＋ 종목 추가 — 예전에는 버튼만 있고 아무 일도 안 했다 */
+$('#addEx').addEventListener('click', () => {
+  시트열기(`${시트머리('종목 추가')}
+    <div class="field"><label for="n-name">종목 이름</label>
+      <input id="n-name" type="text" autocomplete="off" placeholder="예: 인클라인 벤치프레스"></div>
+    <div class="field"><label>부위</label>
+      <div class="chips" id="n-cat" style="margin-bottom:0">
+        ${카테고리들.map((p,i) => `<button class="chip" data-ncat="${esc(p)}" aria-pressed="${i===0}">${esc(p)}</button>`).join('')}
+      </div></div>
+    <div class="field"><label for="n-gear">장비</label>
+      <input id="n-gear" type="text" autocomplete="off" placeholder="예: 바벨 / 덤벨 / 머신 / 케이블 / 맨몸"></div>
+    <button class="btn" data-newex="1">추가</button>`);
+});
+
+/* ⚙ 카테고리 관리 */
+function 카테고리시트(){
+  시트열기(`${시트머리('카테고리 관리')}
+    <p class="note">루틴의 종목 고르기에도 그대로 나옵니다</p>
+    <div style="max-height:40vh;overflow-y:auto">
+      ${카테고리들.map(p => {
+        const 수 = 종목표.filter(e => e.부위 === p).length;
+        return `<div class="item">
+          <span class="grow"><span class="t" style="display:block">${esc(p)}</span>
+          <span class="d" style="display:block">종목 ${수}개</span></span>
+          <button class="danger" style="width:auto;padding:6px 10px;font-size:var(--fs-s)"
+            data-catdel="${esc(p)}">${수 ? '비우고 삭제' : '삭제'}</button>
+        </div>`;
+      }).join('') || '<p class="note">카테고리가 없습니다.</p>'}
+    </div>
+    <div class="field"><label for="c-new">새 카테고리</label>
+      <input id="c-new" type="text" autocomplete="off" placeholder="예: 전완"></div>
+    <button class="btn" data-catadd="1">추가</button>`);
+}
+$('#catGear').addEventListener('click', 카테고리시트);
+
+
+/* ────────── 영양 · 신체 ────────── */
+/* 영양[날짜] = {비타민, 단백질, 크레아틴}  ·  신체[날짜] = {몸무게, 근육량, 체지방량, 체지방률} */
+const 영양 = {};
+const 신체 = {};
+let 영양날 = 오늘;
+/* 기본값이다. 의학적 권고가 아니라 '자리를 잡아둔 숫자'이고 설정에서 바꿀 수 있다. */
+const 영양목표 = {단백질:120, 크레아틴:5};
+let 키cm = 175;
+
+/* 시제품용 — 3개월치 몸무게·근육량·체지방률을 만들어 그래프가 보이게 한다 */
+function 신체씨앗(){
+  const 끝 = new Date(2026, 8, 20);
+  for(let i = 90; i >= 0; i -= 3){
+    const d = new Date(끝); d.setDate(d.getDate() - i);
+    const t = (90 - i) / 90;
+    const 몸 = Math.round((78 - t*3.2 + Math.sin(i/7)*0.4) * 10) / 10;
+    const 근 = Math.round((33 + t*1.6 + Math.cos(i/9)*0.2) * 10) / 10;
+    const 율 = Math.round((21 - t*3.1 + Math.sin(i/5)*0.3) * 10) / 10;
+    신체[키(d)] = {몸무게:몸, 근육량:근, 체지방률:율, 체지방량: Math.round(몸*율/10)/10};
+  }
+}
+
+const 영양값 = k => 영양[k] || {비타민:false, 단백질:0, 크레아틴:0};
+/* 세 가지 중 몇 개를 채웠나 — 종합비타민은 먹었나, 나머지는 목표 이상인가 */
+function 영양점수(k){
+  const v = 영양값(k);
+  let n = 0;
+  if(v.비타민) n++;
+  if(v.단백질 >= 영양목표.단백질) n++;
+  if(v.크레아틴 >= 영양목표.크레아틴) n++;
+  return n;
+}
+function 영양고치기(k, 무엇, 값){
+  if(!영양[k]) 영양[k] = {비타민:false, 단백질:0, 크레아틴:0};
+  영양[k][무엇] = 값;
+}
+
+/* 체지방량과 체지방률은 서로에게서 나온다. 근육량만으로는 계산할 수 없다. */
+function 체지방맞추기(b){
+  if(!b) return;
+  if(b.몸무게 > 0){
+    if(b.체지방량 > 0 && !(b.체지방률 > 0)) b.체지방률 = Math.round(b.체지방량 / b.몸무게 * 1000) / 10;
+    else if(b.체지방률 > 0) b.체지방량 = Math.round(b.몸무게 * b.체지방률 / 100 * 10) / 10;
+  }
+}
+
+function 영양그리기(){
+  const k = 영양날;
+  const [Y,M,D] = k.split('-');
+  const 요일 = ['일','월','화','수','목','금','토'][new Date(+Y,+M-1,+D).getDay()];
+  $('#nutDay').textContent = `${+M}월 ${+D}일 (${요일})${k===오늘?' · 오늘':''}`;
+
+  const v = 영양값(k);
+  const 점 = 영양점수(k);
+  const 칸 = (이름, 곁, 무엇, 값, 단위, 걸음) => `
+    <div class="nrow">
+      <span class="nk"><b>${이름}</b><span>${곁}</span></span>
+      <span class="nbox" data-nk="nut|${무엇}">
+        <button data-nut="${무엇}|-${걸음}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+        <span class="nv"><input type="number" step="${걸음}" min="0" inputmode="decimal"
+          data-nutin="${무엇}" value="${값}"><span>${단위}</span></span>
+        <button data-nut="${무엇}|${걸음}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+      </span>
+    </div>`;
+
+  $('#nutBody').innerHTML = `
+    <p class="eyebrow" style="margin:0 0 8px">영양 섭취</p>
+    <div class="card">
+      <div class="nrow">
+        <span class="nk"><b>종합비타민</b><span>먹었으면 눌러주세요</span></span>
+        <button class="tick" data-vit="1" aria-pressed="${v.비타민}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg></button>
+      </div>
+      ${칸('단백질', `목표 ${영양목표.단백질}g`, '단백질', v.단백질, 'g', 10)}
+      ${칸('크레아틴', `목표 ${영양목표.크레아틴}g`, '크레아틴', v.크레아틴, 'g', 1)}
+      <div class="score ${점 < 3 ? 'miss' : ''}">
+        <b>${점}/3</b><span>${점 === 3 ? '오늘 영양은 다 채웠습니다' : '아직 채우지 못한 것이 있습니다'}</span>
+      </div>
+    </div>
+    <p class="note" style="margin-top:7px">목표는 설정에서 변경 · 의학적 권고 아님</p>`;
+
+  신체그리기();
+}
+
+function 신체그리기(){
+  const k = 영양날;
+  const b = 신체[k] || {};
+  const 칸 = (이름, 무엇, 값, 단위, 걸음, 곁) => `
+    <div class="nrow">
+      <span class="nk"><b>${이름}</b><span>${곁 || ''}</span></span>
+      <span class="nbox" data-nk="bod|${무엇}">
+        <button data-bod="${무엇}|-${걸음}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+        <span class="nv"><input type="number" step="${걸음}" min="0" inputmode="decimal"
+          data-bodin="${무엇}" value="${값 > 0 ? 값 : ''}" placeholder="—"><span>${단위}</span></span>
+        <button data-bod="${무엇}|${걸음}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+      </span>
+    </div>`;
+
+  $('#bodyBody').innerHTML = `
+    <p class="eyebrow" style="margin:18px 0 8px">신체 기록</p>
+    <div class="card">
+      ${칸('키', '키', 키cm, 'cm', 1, '한 번 넣으면 계속 씁니다')}
+      ${칸('몸무게', '몸무게', b.몸무게 || 0, 'kg', 0.1, '')}
+      ${칸('근육량', '근육량', b.근육량 || 0, 'kg', 0.1, '인바디의 골격근량')}
+      ${칸('체지방량', '체지방량', b.체지방량 || 0, 'kg', 0.1, '')}
+      ${칸('체지방률', '체지방률', b.체지방률 || 0, '%', 0.1, '')}
+    </div>
+    <p class="note" style="margin-top:7px">체지방률 = 체지방량 ÷ 몸무게 × 100 <b>(자동)</b></p>
+    ${신체그래프()}`;
+}
+
+/* 몸무게 · 근육량 · 체지방률 추이 — 라이브러리 없이 SVG 로 직접 그린다 */
+function 신체그래프(){
+  const 날들 = Object.keys(신체).sort();
+  if(날들.length < 2) return '<p class="note">기록이 두 개 이상 쌓이면 그래프가 나옵니다.</p>';
+  const W = 360, H = 140, P = 6;
+  const 선들 = [
+    {키:'몸무게', 색:'var(--accent)', 축:'left'},
+    {키:'근육량', 색:'var(--up)', 축:'left'},
+    {키:'체지방률', 색:'var(--down)', 축:'right'},
+  ];
+  const 값들 = 키 => 날들.map(d => 신체[d][키]).filter(v => v > 0);
+  const 그리기 = (키, 색) => {
+    const vs = 날들.map(d => 신체[d][키]);
+    const 있 = vs.filter(v => v > 0);
+    if(있.length < 2) return '';
+    const lo = Math.min(...있), hi = Math.max(...있), 폭 = (hi - lo) || 1;
+    const pts = vs.map((v,i) => {
+      if(!(v > 0)) return null;
+      const x = P + i/(날들.length-1) * (W - P*2);
+      const y = P + (1 - (v - lo)/폭) * (H - P*2);
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    }).filter(Boolean);
+    return `<polyline points="${pts.join(' ')}" fill="none" stroke="${색}" stroke-width="2"
+      stroke-linejoin="round" stroke-linecap="round"/>`;
+  };
+  const 끝값 = 키 => { const v = 값들(키); return v.length ? v[v.length-1] : null; };
+  const 첫값 = 키 => { const v = 값들(키); return v.length ? v[0] : null; };
+  const 범례 = 선들.map(L => {
+    const a = 끝값(L.키), b0 = 첫값(L.키);
+    const 차 = (a != null && b0 != null) ? Math.round((a - b0)*10)/10 : null;
+    const 색 = 차 == null ? 'var(--faint)' : (차 > 0 ? 'var(--up)' : 차 < 0 ? 'var(--down)' : 'var(--faint)');
+    return `<span><i style="background:${L.색}"></i>${L.키} ${a != null ? a : '—'}
+      ${차 != null ? `<b style="color:${색}">${차 > 0 ? '+' : ''}${차}</b>` : ''}</span>`;
+  }).join('');
+  return `<div class="chartbox">
+    <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="신체 추이">
+      ${선들.map(L => 그리기(L.키, L.색)).join('')}
+    </svg>
+    <div class="clegend">${범례}</div>
+    <p class="note" style="margin-top:6px">${날들.length}회 · 선마다 기준이 달라 <b>높이 비교 불가</b></p>
+  </div>`;
+}
+
+/* 영양 · 신체 입력 */
+$('#s-nut').addEventListener('click', e => {
+  const b = e.target.closest('button'); if(!b) return;
+  const d = b.dataset;
+  if(d.nday !== undefined){
+    영양날 = (+d.nday === 0) ? 오늘 : 날더하기(영양날, +d.nday);
+    영양그리기(); return;
+  }
+  if(d.vit){
+    영양고치기(영양날, '비타민', !영양값(영양날).비타민);
+    영양그리기(); return;
+  }
+  if(d.nut){
+    const [무엇, 델타] = d.nut.split('|');
+    영양고치기(영양날, 무엇, Math.max(0, Math.round((영양값(영양날)[무엇] + parseFloat(델타))*10)/10));
+    영양그리기(); return;
+  }
+  if(d.bod){
+    const [무엇, 델타] = d.bod.split('|');
+    if(무엇 === '키'){ 키cm = Math.max(0, 키cm + parseFloat(델타)); 신체그리기(); return; }
+    if(!신체[영양날]) 신체[영양날] = {};
+    const cur = 신체[영양날][무엇] || 0;
+    신체[영양날][무엇] = Math.max(0, Math.round((cur + parseFloat(델타))*10)/10);
+    if(무엇 === '체지방량') 신체[영양날].체지방률 = 0;
+    체지방맞추기(신체[영양날]);
+    신체그리기(); return;
+  }
+});
+$('#s-nut').addEventListener('change', e => {
+  const inp = e.target.closest('input[data-nutin],input[data-bodin]'); if(!inp) return;
+  const v = parseFloat(inp.value);
+  if(inp.dataset.nutin){
+    영양고치기(영양날, inp.dataset.nutin, isNaN(v) ? 0 : Math.max(0, v));
+    영양그리기(); return;
+  }
+  const 무엇 = inp.dataset.bodin;
+  if(무엇 === '키'){ if(!isNaN(v)) 키cm = v; 신체그리기(); return; }
+  if(!신체[영양날]) 신체[영양날] = {};
+  신체[영양날][무엇] = isNaN(v) ? 0 : Math.max(0, v);
+  /* 체지방량을 직접 넣으면 률을 다시 계산하고, 률을 넣으면 량을 다시 계산한다 */
+  if(무엇 === '체지방량') 신체[영양날].체지방률 = 0;
+  if(무엇 === '체지방률') 신체[영양날].체지방량 = 0;
+  체지방맞추기(신체[영양날]);
+  신체그리기();
+});
+
+/* 마무리 화면에 붙는 영양 평가 */
+function 영양요약(){
+  const v = 영양값(오늘), 점 = 영양점수(오늘);
+  const 칸 = (이름, 됐나, 글) =>
+    `<span class="nchip ${됐나?'ok':''}">${됐나?'<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>':'—'} ${이름}${글?` <b>${글}</b>`:''}</span>`;
+  return `<div class="score ${점 < 3 ? 'miss' : ''}" style="width:100%;margin-top:14px;display:block">
+    <div style="display:flex;align-items:center;gap:9px">
+      <b>${점}/3</b><span>오늘 영양</span>
+    </div>
+    <div class="nchips">
+      ${칸('종합비타민', v.비타민, '')}
+      ${칸('단백질', v.단백질 >= 영양목표.단백질, `${v.단백질}/${영양목표.단백질}g`)}
+      ${칸('크레아틴', v.크레아틴 >= 영양목표.크레아틴, `${v.크레아틴}/${영양목표.크레아틴}g`)}
+    </div>
+  </div>`;
+}
+
+
+/* ────────── 성장 그래프 ──────────
+   외부 라이브러리를 쓸 수 없어 SVG 로 직접 그린다.
+   선들의 단위가 제각각(볼륨 kg / 1RM kg)이라 축을 두 개 두는 대신
+   전부 '처음 보이는 값 대비 몇 %' 로 바꿔 축 하나에 그린다. */
+const 그래프 = {
+  단위: 'day',            /* day | week | month | year */
+  개수: 90,               /* 화면에 보이는 칸 수 */
+  끝: 0,                  /* 오른쪽 끝에서 몇 칸 물러났나 */
+  지표: 'vol',            /* 종목 선의 지표: rm | best | vol */
+  고른칸: null,
+  표보기: false,
+};
+const 기본개수 = {day:90, week:52, month:24, year:10};
+const 단위이름 = {day:'일봉', week:'주봉', month:'월봉', year:'년봉'};
+const 지표이름 = {rm:'1RM', best:'단일세트 최고', vol:'한 세션 볼륨'};
+const 선무늬 = ['', '7 3', '2 3', '9 3 2 3', '4 2 1 2'];
+
+/* 날짜를 칸 이름으로 */
+function 칸키(날, 단위){
+  const [y,m,d] = 날.split('-').map(Number);
+  if(단위 === 'year') return `${y}`;
+  if(단위 === 'month') return `${y}-${String(m).padStart(2,'0')}`;
+  if(단위 === 'week'){
+    const dt = new Date(y, m-1, d);
+    dt.setDate(dt.getDate() - ((dt.getDay() + 6) % 7));   /* 그 주의 월요일 */
+    return 키(dt);
+  }
+  return 날;
+}
+
+/* 한 종목 · 한 루틴의 날짜별 값 */
+function 계열점들(종류, 이름, 지표){
+  const 점 = [];
+  Object.keys(기록).sort().forEach(k => {
+    const rec = 기록[k];
+    if(종류 === 'routine'){
+      if(rec.루틴 !== 이름) return;
+      점.push({날:k, v: 볼륨(펼친세트(rec))});
+    } else {
+      const 세트들 = rec.세부 && rec.세부[이름];
+      if(!세트들 || !세트들.length) return;
+      const v = 세트요약(세트들);
+      점.push({날:k, v: 지표 === 'rm' ? v.rm : 지표 === 'best' ? v.무게*v.횟수 : v.vol});
+    }
+  });
+  return 점;
+}
+
+/* 오늘 진행 중인 세션도 마지막 점으로 얹는다 */
+function 오늘점(종류, 이름, 지표){
+  const S = 세션; if(!S) return null;
+  if(종류 === 'routine'){
+    if(S.루틴.id !== 이름) return null;
+    const v = 볼륨(유효세트());
+    return v > 0 ? {날:오늘, v} : null;
+  }
+  const e = S.종목들.find(x => x.이름 === 이름 && 찬것(x).length);
+  if(!e) return null;
+  const v = 세트요약(찬것(e));
+  return {날:오늘, v: 지표 === 'rm' ? v.rm : 지표 === 'best' ? v.무게*v.횟수 : v.vol};
+}
+
+/* 그릴 선들을 모은다 — 루틴 하나 + 오늘 한 종목들 */
+function 계열들(){
+  const S = 세션; if(!S) return [];
+  const 지표 = 그래프.지표;
+  const 목록 = [];
+  const 얹기 = (종류, 이름, 보일이름, 색, 무늬, 굵기) => {
+    const 점 = 계열점들(종류, 이름, 지표);
+    const 오 = 오늘점(종류, 이름, 지표);
+    if(오){
+      const i = 점.findIndex(x => x.날 === 오늘);
+      if(i >= 0) 점[i] = 오; else 점.push(오);
+    }
+    if(점.length) 목록.push({이름:보일이름, 색, 무늬, 굵기, 점});
+  };
+  얹기('routine', S.루틴.id, S.루틴.이름 + ' 루틴', 'var(--s1)', 선무늬[0], 3);
+  정식종목().filter(e => 찬것(e).length).slice(0, 4).forEach((e, i) => {
+    얹기('exercise', e.이름, e.이름, `var(--s${i+2})`, 선무늬[i+1], 2);
+  });
+  return 목록;
+}
+
+/* 칸으로 묶는다 — 한 칸에 여러 번이면 가장 마지막 것 */
+function 칸으로(점들, 단위){
+  const m = new Map();
+  점들.forEach(p => m.set(칸키(p.날, 단위), p));
+  return m;
+}
+
+function 그래프그리기(){
+  const 상자 = document.getElementById('gwrap'); if(!상자) return;
+  const 선들 = 계열들();
+  if(!선들.length){ 상자.innerHTML = ''; return; }
+
+  const 단위 = 그래프.단위;
+  /* 모든 선의 칸을 합쳐 x축을 만든다 */
+  const 맵들 = 선들.map(L => 칸으로(L.점, 단위));
+  const 모든칸 = [...new Set(맵들.flatMap(m => [...m.keys()]))].sort();
+  if(모든칸.length < 2){
+    상자.innerHTML = `<div class="gwrap"><p class="note">${단위이름[단위]}로는 아직 점이 하나뿐입니다. 단위를 바꿔보세요.</p>${막대()}</div>`;
+    return;
+  }
+  const 총 = 모든칸.length;
+  const 개수 = Math.max(3, Math.min(그래프.개수, 총));
+  const 끝 = Math.max(0, Math.min(그래프.끝, 총 - 개수));
+  const 시작 = Math.max(0, 총 - 개수 - 끝);
+  const 보임 = 모든칸.slice(시작, 시작 + 개수);
+
+  /* 처음 보이는 값 대비 몇 % */
+  const 값 = 맵 => 보임.map(k => (맵.get(k) ? 맵.get(k).v : null));
+  const 계산 = 선들.map((L, i) => {
+    const vs = 값(맵들[i]);
+    const 첫 = vs.find(v => v != null);
+    return {...L, vs, 첫, pcs: vs.map(v => (v == null || !첫) ? null : (v/첫 - 1) * 100)};
+  });
+  const 모든pc = 계산.flatMap(c => c.pcs).filter(v => v != null);
+  let lo = Math.min(0, ...모든pc), hi = Math.max(0, ...모든pc);
+  if(hi - lo < 4){ lo -= 2; hi += 2; }
+  const 여 = (hi - lo) * 0.12; lo -= 여; hi += 여;
+
+  const W = 340, H = 190, L0 = 30, R = 46, T = 10, B = 18;
+  const px = i => L0 + (개수 === 1 ? 0 : i/(개수-1)) * (W - L0 - R);
+  const py = v => T + (1 - (v - lo)/(hi - lo)) * (H - T - B);
+
+  const 눈금 = [];
+  for(let t = 0; t <= 4; t++){
+    const v = lo + (hi - lo) * t/4;
+    눈금.push(`<line class="ggrid" x1="${L0}" y1="${py(v).toFixed(1)}" x2="${W-R}" y2="${py(v).toFixed(1)}"/>
+      <text class="gaxis" x="${L0-4}" y="${(py(v)+3).toFixed(1)}" text-anchor="end">${v>0?'+':''}${v.toFixed(0)}%</text>`);
+  }
+  const 영 = (0 >= lo && 0 <= hi)
+    ? `<line class="gzero" x1="${L0}" y1="${py(0).toFixed(1)}" x2="${W-R}" y2="${py(0).toFixed(1)}"/>` : '';
+
+  /* 선을 그리고, 끝에 이름표를 붙인다 — 겹치면 위아래로 밀어 떨어뜨린다 */
+  const 이름표들 = [];
+  const 선그림 = 계산.map(c => {
+    const 조각 = [];
+    let cur = [];
+    c.pcs.forEach((v,i) => {
+      if(v == null){ if(cur.length > 1) 조각.push(cur); cur = []; return; }
+      cur.push(`${px(i).toFixed(1)},${py(v).toFixed(1)}`);
+    });
+    if(cur.length > 1) 조각.push(cur);
+    const 끝i = c.pcs.map((v,i)=>v==null?-1:i).filter(i=>i>=0).pop();
+    if(끝i != null && 끝i >= 0){
+      이름표들.push({x: px(끝i)+5, y: py(c.pcs[끝i])+3, 색:c.색, 글:c.이름.length>5?c.이름.slice(0,5):c.이름});
+    }
+    return 조각.map(pts => `<polyline points="${pts.join(' ')}" fill="none" stroke="${c.색}"
+      stroke-width="${c.굵기}" stroke-linejoin="round" stroke-linecap="round"
+      ${c.무늬 ? `stroke-dasharray="${c.무늬}"` : ''}/>`).join('');
+  }).join('');
+  이름표들.sort((a2,b2) => a2.y - b2.y);
+  for(let i = 1; i < 이름표들.length; i++){
+    if(이름표들[i].y - 이름표들[i-1].y < 10) 이름표들[i].y = 이름표들[i-1].y + 10;
+  }
+  const 이름표그림 = 이름표들.map(t =>
+    `<text class="gend" x="${t.x.toFixed(1)}" y="${Math.min(H-2, Math.max(8, t.y)).toFixed(1)}" fill="${t.색}">${esc(t.글)}</text>`).join('');
+
+  const 고른 = 그래프.고른칸 != null ? Math.max(0, Math.min(개수-1, 그래프.고른칸)) : null;
+  const 십자 = 고른 == null ? '' :
+    `<line class="gcross" x1="${px(고른).toFixed(1)}" y1="${T}" x2="${px(고른).toFixed(1)}" y2="${H-B}"/>` +
+    계산.map(c => c.pcs[고른] == null ? '' :
+      `<circle cx="${px(고른).toFixed(1)}" cy="${py(c.pcs[고른]).toFixed(1)}" r="4" fill="${c.색}"
+        stroke="var(--surface)" stroke-width="2"/>`).join('');
+
+  const x라벨 = [0, Math.floor((개수-1)/2), 개수-1].map(i =>
+    `<text class="gaxis" x="${px(i).toFixed(1)}" y="${H-5}" text-anchor="${i===0?'start':i===개수-1?'end':'middle'}">${짧은칸(보임[i], 단위)}</text>`).join('');
+
+  const 읽기 = 고른 == null
+    ? `<p class="ghelp">선 누르기 = 값 · 끌기 = 이동 · 벌리기 = 확대</p>`
+    : `<div class="gread">
+        <div class="gr hd"><span class="gn">${짧은칸(보임[고른], 단위)}</span>
+          <span class="gv">값</span><span class="gp">처음 대비</span></div>
+        ${계산.map(c => {
+          const v = c.vs[고른], pc = c.pcs[고른];
+          const q = 퍼센트칠(pc == null ? null : Math.round(pc));
+          return `<div class="gr">
+            <span class="gswatch" style="border-top-color:${c.색};border-top-style:${c.무늬?'dashed':'solid'}"></span>
+            <span class="gn">${esc(c.이름)}</span>
+            <span class="gv">${v == null ? '—' : (그래프.지표==='rm' ? v.toFixed(1) : 콤마(v))}</span>
+            <span class="gp ${q.cls}">${q.t}</span></div>`;
+        }).join('')}
+      </div>`;
+
+  const 표 = !그래프.표보기 ? '' : `<div class="gtable"><table>
+    <thead><tr><th>${단위이름[단위]}</th>${계산.map(c=>`<th>${esc(c.이름)}</th>`).join('')}</tr></thead>
+    <tbody>${보임.map((k,i)=>`<tr><td>${짧은칸(k,단위)}</td>${계산.map(c=>
+      `<td>${c.vs[i]==null?'—':(그래프.지표==='rm'?c.vs[i].toFixed(1):콤마(c.vs[i]))}</td>`).join('')}</tr>`).join('')}</tbody>
+  </table></div>`;
+
+  상자.innerHTML = `
+    ${막대()}
+    <div class="gplot" id="gplot">
+      <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img"
+        aria-label="${esc(선들.map(l=>l.이름).join(', '))} 의 성장 그래프">
+        ${눈금.join('')}${영}${선그림}${이름표그림}${십자}${x라벨}
+      </svg>
+    </div>
+    <div class="clegend">${계산.map(c =>
+      `<span><i style="background:${c.색};${c.무늬?'background-image:repeating-linear-gradient(90deg,transparent 0 2px,var(--surface) 2px 4px)':''}"></i>${esc(c.이름)}</span>`).join('')}</div>
+    ${읽기}${표}
+    <p class="ghelp">모든 선 = <b>왼쪽 끝 대비 %</b> · 굵은 선이 루틴</p>`;
+  그래프묶기();
+}
+
+function 짧은칸(k, 단위){
+  if(!k) return '';
+  if(단위 === 'year') return k;
+  if(단위 === 'month'){ const [y,m] = k.split('-'); return `${y.slice(2)}.${m}`; }
+  const [y,m,d] = k.split('-');
+  return `${+m}/${+d}`;
+}
+
+function 막대(){
+  const 총버튼 = ['day','week','month','year'].map(u =>
+    `<button class="gbtn" data-gunit="${u}" aria-pressed="${그래프.단위===u}">${단위이름[u]}</button>`).join('');
+  const 지표버튼 = ['rm','best','vol'].map(m =>
+    `<button class="gbtn" data-gmetric="${m}" aria-pressed="${그래프.지표===m}">${지표이름[m]}</button>`).join('');
+  return `<div class="gbar">${총버튼}<span class="sp"></span>
+      <span class="gzoom">
+        <button class="gbtn" data-gzoom="out" aria-label="범위 넓히기"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+        <button class="gbtn" data-gzoom="in" aria-label="범위 좁히기"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+      </span>
+    </div>
+    <div class="gbar">
+      <span style="font-size:var(--fs-xs);color:var(--faint);font-weight:700">종목 지표</span>
+      ${지표버튼}<span class="sp"></span>
+      <button class="gbtn" data-gtable="1" aria-pressed="${그래프.표보기}">표로 보기</button>
+    </div>`;
+}
+
+/* 끌기 · 벌리기 · 누르기
+   주의: 그래프를 다시 그리면 #gplot 이 통째로 갈리므로,
+   손가락을 받는 곳은 갈리지 않는 바깥 상자(#gwrap)여야 한다. */
+let 그래프끌기 = null, 그래프묶었나 = false;
+const 손가락 = new Map();
+function 그래프묶기(){
+  const 바깥 = document.getElementById('gwrap');
+  if(!바깥 || 그래프묶었나) return;
+  그래프묶었나 = true;
+
+  const 판 = () => document.getElementById('gplot');
+  바깥.addEventListener('pointerdown', e => {
+    if(!e.target.closest('#gplot')) return;
+    바깥.setPointerCapture(e.pointerId);
+    손가락.set(e.pointerId, e.clientX);
+    const p = 판(); if(!p) return;
+    if(손가락.size === 1) 그래프끌기 = {x0:e.clientX, 끝0:그래프.끝, 움직임:0, w:p.clientWidth};
+    if(손가락.size === 2){
+      const [a2,b2] = [...손가락.values()];
+      그래프끌기 = {핀치: Math.abs(a2-b2) || 1, 개수0: 그래프.개수};
+    }
+  });
+  바깥.addEventListener('pointermove', e => {
+    if(!손가락.has(e.pointerId)) return;
+    e.preventDefault();
+    손가락.set(e.pointerId, e.clientX);
+    if(손가락.size === 2 && 그래프끌기 && 그래프끌기.핀치){
+      const [a2,b2] = [...손가락.values()];
+      const 이제 = Math.abs(a2-b2) || 1;
+      그래프.개수 = Math.max(3, Math.round(그래프끌기.개수0 * 그래프끌기.핀치 / 이제));
+      그래프그리기(); return;
+    }
+    if(!그래프끌기 || 그래프끌기.핀치) return;
+    const dx = e.clientX - 그래프끌기.x0;
+    그래프끌기.움직임 = Math.max(그래프끌기.움직임, Math.abs(dx));
+    const 칸폭 = 그래프끌기.w / Math.max(3, 그래프.개수);
+    const 새끝 = Math.max(0, 그래프끌기.끝0 + Math.round(dx / 칸폭));
+    if(새끝 !== 그래프.끝){ 그래프.끝 = 새끝; 그래프그리기(); }
+  });
+  const 뗌 = e => {
+    if(!손가락.has(e.pointerId)) return;
+    손가락.delete(e.pointerId);
+    const p = 판();
+    if(p && 그래프끌기 && !그래프끌기.핀치 && 그래프끌기.움직임 < 8){
+      /* 움직이지 않았으면 '누른 것'으로 보고 그 칸을 고른다 */
+      const r = p.getBoundingClientRect();
+      const 왼 = r.width * 30/340, 폭 = r.width * (340-30-46)/340;
+      const 비 = (e.clientX - r.left - 왼) / 폭;
+      그래프.고른칸 = Math.round(Math.max(0, Math.min(1, 비)) * (Math.max(3, 그래프.개수) - 1));
+      그래프그리기();
+    }
+    if(손가락.size === 0) 그래프끌기 = null;
+  };
+  바깥.addEventListener('pointerup', 뗌);
+  바깥.addEventListener('pointercancel', 뗌);
+}
+
+/* 막대 버튼 */
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-gunit],[data-gmetric],[data-gzoom],[data-gtable]');
+  if(!b) return;
+  const d = b.dataset;
+  if(d.gunit){ 그래프.단위 = d.gunit; 그래프.개수 = 기본개수[d.gunit]; 그래프.끝 = 0; 그래프.고른칸 = null; }
+  if(d.gmetric){ 그래프.지표 = d.gmetric; 그래프.고른칸 = null; }
+  if(d.gzoom){ 그래프.개수 = Math.max(3, Math.round(그래프.개수 * (d.gzoom === 'in' ? 0.6 : 1.7))); }
+  if(d.gtable){ 그래프.표보기 = !그래프.표보기; }
+  그래프그리기();
+});
+
+/* ────────── 설정 ────────── */
+[['sw-auto','auto'],['sw-ask','ask'],['sw-sound','sound'],['sw-wake','wake']].forEach(([id,k]) => {
+  $('#'+id).addEventListener('click', e => {
+    설정[k] = e.currentTarget.getAttribute('aria-pressed') !== 'true';
+    e.currentTarget.setAttribute('aria-pressed', String(설정[k]));
+  });
+});
+function 무게칩그리기(){
+  [...$('#seg-step').children].forEach(x =>
+    x.setAttribute('aria-pressed', String(parseFloat(x.dataset.step) === 설정.무게단위)));
+}
+$('#seg-step').addEventListener('click', e => {
+  const b = e.target.closest('[data-step]'); if(!b) return;
+  설정.무게단위 = parseFloat(b.dataset.step);
+  무게칩그리기();
+  if(세션) 실행그리기();
+});
+function 기준칩그리기(){
+  [...$('#seg-base').children].forEach(x => {
+    const v = x.dataset.base === 'last' ? 'last' : +x.dataset.base;
+    x.setAttribute('aria-pressed', String(v === 설정.기준));
+  });
+}
+$('#s-set').addEventListener('click', e => {
+  const c = e.target.closest('[data-cal]');
+  if(c){
+    캘표시[c.dataset.cal] = c.getAttribute('aria-pressed') !== 'true';
+    c.setAttribute('aria-pressed', String(캘표시[c.dataset.cal]));
+    달력그리기();
+    return;
+  }
+  const b = e.target.closest('[data-goal]'); if(!b) return;
+  const [무엇, 델타] = b.dataset.goal.split('|');
+  영양목표[무엇] = Math.max(0, 영양목표[무엇] + parseFloat(델타));
+  const inp = document.querySelector(`[data-goalin="${무엇}"]`);
+  if(inp) inp.value = 영양목표[무엇];
+});
+$('#s-set').addEventListener('change', e => {
+  const inp = e.target.closest('[data-goalin]'); if(!inp) return;
+  const v = parseFloat(inp.value);
+  if(!isNaN(v)) 영양목표[inp.dataset.goalin] = Math.max(0, v);
+});
+$('#seg-base').addEventListener('click', e => {
+  const b = e.target.closest('[data-base]'); if(!b) return;
+  설정.기준 = b.dataset.base === 'last' ? 'last' : +b.dataset.base;
+  기준칩그리기();
+  종목그리기(); 루틴그리기(); 달력그리기();
+  if(세션) 실행그리기();
+});
+['seg-unit','seg-rest'].forEach(id => {
+  $('#'+id).addEventListener('click', e => {
+    const b = e.target.closest('button'); if(!b) return;
+    [...e.currentTarget.children].forEach(x => x.setAttribute('aria-pressed', String(x===b)));
+    if(id==='seg-unit'){ 설정.unit = b.textContent; 루틴그리기(); 달력그리기(); }
+  });
+});
+
+/* 숫자칸(영양 · 신체 · 목표) — 눌러야 좌우에 − ＋ 가 나온다. 다른 곳을 누르면 접힌다.
+   다시 그려져도 열린 칸을 기억해 되살린다 */
+let 열린숫자칸 = null;
+function 숫자칸맞추기(){
+  document.querySelectorAll('.nbox[data-nk]').forEach(b => b.classList.toggle('on', b.dataset.nk === 열린숫자칸));
+}
+document.addEventListener('click', e => {
+  const box = e.target.closest('.nbox[data-nk]');
+  열린숫자칸 = box ? box.dataset.nk : null;
+  숫자칸맞추기();
+});
+document.addEventListener('change', () => setTimeout(숫자칸맞추기, 0));
+
+/* ────────── 운동 실행 ────────── */
+let 세션 = null, 타이머 = null, 시계 = null;
+
+function 운동시작(r){
+  if(휴식인가(r)) return;
+  세션 = {
+    루틴: r,
+    /* 계획세트 = 루틴에 원래 정해둔 세트 수. 운동 중 추가해도 이 값은 안 바뀐다 */
+    /* 휴식은 세트마다 따로 가질 수 있다. 처음에는 루틴 값으로 채운다. */
+    종목들: r.종목.map(e => ({...e, 계획세트: e.세트, 기록:[], 임시:false, 예정값:[],
+      휴식들: Array.from({length:e.세트}, () => e.휴식)})),
+    i: 0, s: 0,
+    무게: r.종목[0].무게, 횟수: r.종목[0].횟수,
+    화면: 'set', 시작시각: Date.now(), 열린세트: -1,
+    /* 휴식은 '방금 끝낸 세트 줄' 위에서 돈다 → {k, 끝시각, 물음} */
+    휴식: null,
+  };
+  현재탭 = 'cal';
+  실행그리기();
+  탭그리기();
+  clearInterval(시계);
+  시계 = setInterval(시계갱신, 1000);
+}
+
+function 운동종료(){
+  clearInterval(타이머); 타이머 = null;
+  clearInterval(시계); 시계 = null;
+  세션 = null;
+  현재탭 = 'cal';
+  탭그리기();
+}
+
+const 현재종목 = () => 세션.종목들[세션.i];
+
+/* 맨 윗줄 — 루틴이름 · 몇번째/몇개 · 달성도 · 남은시간 · 진행시간 · 볼륨 · 마치기 */
+function 머리줄그리기(){
+  const S = 세션; if(!S) return;
+  const 달 = 루틴달성도();
+  $('#workbar').innerHTML = `
+    <span class="rn">${esc(S.루틴.이름)}</span>
+    <span class="bit">${S.i+1}/${S.종목들.length}</span>
+    <span class="bit pc"><span class="lb">달성도</span>${Math.min(999, 달)}%</span>
+    <span class="bit"><span id="wbRun">${시분초((Date.now()-S.시작시각)/1000)}</span></span>
+    <span class="bit" id="wbVol">${콤마(오늘볼륨())}/${콤마(목표볼륨())}</span>
+    <button class="endbox" id="endNow">운동 끝내기</button>`;
+  $('#topFill').style.width = Math.min(100, 달) + '%';
+  볼륨맞추기();
+}
+/* 종목 줄이 좁으면 — 이름이 먼저다. ① 볼륨을 k 로 ② 숫자 글씨를 줄임 ③ 그래도 넘치면 이름 끝을 … */
+function 종목줄맞추기(ex){
+  const 줄 = document.querySelector('#ovHead .exline'); if(!줄) return;
+  const 이름 = 줄.querySelector('.nm'), 볼 = 줄.querySelector('#exVol .v');
+  const 넘침 = () => 이름.scrollWidth > 이름.clientWidth + 1;
+  if(!넘침() || !볼) return;
+  const k = n => n >= 1000 ? (n/1000).toFixed(1).replace(/\.0$/,'') + 'k' : String(n);
+  const 목표볼 = ex.무게 * ex.횟수 * (ex.계획세트 || ex.세트);
+  볼.textContent = `${k(볼륨(찬것(ex)))}/${k(목표볼)}`;
+  if(!넘침()) return;
+  줄.classList.add('tight');
+  if(넘침()) 이름.classList.add('ell');
+}
+/* 맨 윗줄이 좁으면(폰 폭 360px + 1시간 넘김 + 다섯 자리 볼륨) 볼륨을 줄여 쓴다
+   10,760/10,760 → 10.8k/10.8k → 10.8k */
+function 볼륨맞추기(){
+  const el = $('#wbVol'); if(!el || !세션) return;
+  const k = n => n >= 1000 ? (n/1000).toFixed(1).replace(/\.0$/,'') + 'k' : String(n);
+  const 한 = 오늘볼륨(), 목 = 목표볼륨();
+  const 후보 = [`${콤마(한)}/${콤마(목)}`, `${k(한)}/${k(목)}`, k(한)];
+  for(const t of 후보){ el.textContent = t; if(el.scrollWidth <= el.clientWidth + 1) return; }
+}
+
+/* 맨 윗줄의 [운동 끝내기] */
+$('#workbar').addEventListener('click', e => {
+  if(!e.target.closest('#endNow') || !세션) return;
+  clearInterval(타이머); 타이머 = null;
+  세션.휴식 = null; 세션.화면 = 'done';
+  실행그리기();
+});
+
+/* 1초마다 시간 두 칸만 고쳐 쓴다 (화면 전체를 다시 그리지 않는다) */
+function 시계갱신(){
+  const S = 세션; if(!S) return;
+  const a = document.getElementById('wbRun');
+  if(a) a.textContent = 시분초((Date.now()-S.시작시각)/1000);
+}
+
+/* 남은 예상 시간 — 아직 안 한 세트 × (수행 + 휴식) */
+function 남은초(){
+  const S = 세션; let 초 = 0;
+  S.종목들.forEach((e,idx) => {
+    if(idx < S.i) return;
+    const 남세트 = Math.max(0, e.세트 - (idx === S.i ? S.s : 0));
+    초 += 남세트 * (세트수행초 + e.휴식);
+    if(idx > S.i) 초 += 종목전환초;
+  });
+  return Math.max(0, 초);
+}
+
+/* 운동 중에 일시적으로 끌어오는 운동. 공식 루틴에는 들어가지 않는다. */
+/* 오늘 루틴의 운동 전부를 보여주고, 누르면 그리로 옮겨간다.
+   기구 자리가 없어 2번을 건너뛰고 3번부터 하고 싶을 때 쓴다. */
+function 운동목록시트(){
+  const S = 세션; if(!S) return;
+  시트열기(`${시트머리('오늘 루틴의 운동')}
+    <p class="note">누르면 이동 · <b>하던 자리는 그대로</b></p>
+    <div style="max-height:52vh;overflow-y:auto">
+      ${S.종목들.map((e,i) => {
+        const 찬 = 찬것(e).length, 총 = Math.max(e.세트, e.기록.length);
+        const 상태 = e.마감 ? '마침' : (찬 >= 총 ? '완료' : (찬 ? '하는 중' : '아직'));
+        return `<button class="item" style="width:100%;text-align:left" data-goex="${i}">
+          <span class="idx">${i+1}</span>
+          <span class="grow">
+            <span class="t" style="display:block">${esc(e.이름)}${
+              i === S.i ? ' <span class="pill ok">지금</span>' : ''}${
+              e.슈퍼 ? '<span class="sbadge">슈퍼</span>' : ''}${
+              e.임시 ? '<span class="tag">추가</span>' : ''}</span>
+            <span class="d" style="display:block">${찬}/${총}세트 · ${상태}</span>
+          </span>
+          <span class="rowgo"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></span></button>`;
+      }).join('')}
+    </div>`);
+}
+
+function 불러오기시트(){
+  시트열기(`${시트머리('운동 불러오기')}
+    <p class="note"><b>오늘만</b> · 루틴 통계 제외 · 종목 향상도엔 반영</p>
+    <div style="max-height:46vh;overflow-y:auto">
+      ${종목표.map(e=>`<button class="item" style="width:100%;text-align:left" data-load="${esc(e.이름)}">
+        ${종목글(e)}
+        <span class="rowgo"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span></button>`).join('')}
+    </div>`);
+}
+function 불러오기(이름){
+  const S = 세션; if(!S) return;
+  /* 지금 하는 종목 바로 뒤에 끼운다 */
+  S.종목들.splice(S.i+1, 0, {
+    이름, 무게:20, 횟수:10, 세트:3, 휴식:90,
+    계획세트: 0, 기록: [], 임시: true, 예정값: [], 휴식들: [90,90,90],
+  });
+}
+
+function 실행그리기(){
+  const S = 세션, ex = 현재종목();
+  머리줄그리기();
+  $('#ovHead').innerHTML = (S.화면 === 'done') ? '' : 종목줄(ex, S);
+  $('#ovHead').hidden = (S.화면 === 'done');
+  if(S.화면 !== 'done') 종목줄맞추기(ex);
+  $('#ovFoot').className = 'ovfoot' + (S.화면 === 'set' ? ' slim' : '');
+
+  if(S.화면 === 'set'){
+    const 총 = Math.max(ex.세트, ex.기록.length);
+    const 줄들 = Array.from({length: 총}, (_, k) => 세트줄(ex, k, S)).join('');
+    $('#ovBody').innerHTML = `
+      ${ex.마감 ? '<button class="resume" id="resumeEx">남은 운동 마저 하기</button>' : ''}
+      ${응원사진(ex)}
+      <div class="setlist">${줄들}</div>
+      <div class="addwrap"><button class="addset" id="addSet" aria-label="세트 추가"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button></div>
+      ${남은운동줄(S)}`;
+    /* '세트 완료' 버튼은 없앴다 — 체크 동그라미가 그 일을 한다 */
+    $('#ovFoot').innerHTML = `
+      <div class="minor tight">
+        <button id="exList2"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg>운동 목록</button>
+        <button id="loadEx"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>운동 추가</button>
+        <button id="nextEx">다음<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button>
+      </div>`;
+  }
+
+  if(S.화면 === 'done'){
+    const 한세트 = 한세트수();
+    const 전부 = 목표세트();
+    const 달성 = 한세트 >= 전부;
+    const 걸린 = Math.round((Date.now() - S.시작시각)/1000);
+    const 기준 = 지금기준();
+    const rc = 루틴성장(S.루틴.id, 기준.날(), 유효세트());
+    const 종목줄 = S.종목들.filter(e => 찬것(e).length).map(e => {
+      const c = 종목성장(e.이름, 기준.날(), 찬것(e), 지금묶음(e));
+      return `<div class="gline">${성장문(e.이름, c)}${e.임시 ? '<span class="tag">불러옴</span>' : ''}${
+        e.슈퍼 ? '<span class="sbadge">슈퍼</span>' : ''}</div>`;
+    }).join('');
+    $('#ovBody').innerHTML = `
+      <div class="wrapup">
+        <div class="eyebrow">${esc(S.루틴.이름)}</div>
+        <div class="big">${달성 ? '오늘 운동 달성' : 한세트 ? '여기까지 했습니다' : '기록이 없습니다'}</div>
+        ${한세트 ? `<span class="pill ${달성?'ok':'miss'}">${한세트} / ${전부} 세트 · ${시간글(걸린)}</span>` : ''}
+        ${영양요약()}
+        <div class="summary">
+          ${한세트 ? `<div class="gline">${성장문(S.루틴.이름, rc)}</div>${종목줄}` : ''}
+          ${한세트 ? '<div id="gwrap" class="gwrap"></div>' : ''}
+          ${S.종목들.map(e => `
+          <div class="item"><div class="grow"><div class="t">${esc(e.이름)}${e.임시 ? '<span class="tag">불러옴</span>' : ''}</div>
+          <div class="d num">${찬것(e).length}/${e.세트}세트 · ${찬것(e).map(x=>`${무게글자(x.w)}×${x.r}`).join(', ') || '기록 없음'}</div></div></div>`).join('')}
+        </div>
+      </div>`;
+    if(한세트){ 그래프묶었나 = false; 손가락.clear(); setTimeout(그래프그리기, 0); }
+    $('#ovFoot').innerHTML = 한세트
+      ? `<button class="btn" id="finish">${달성 ? '기록 저장하고 끝내기' : '한 만큼 저장하고 끝내기'}</button>
+         <button class="quit" id="discard">기록 없이 끝내기</button>`
+      : `<button class="btn ghost" id="discard">기록 없이 끝내기</button>`;
+  }
+}
+
+/* 종목 한 줄 — 이름 · 달성도 · 최대 1RM · 볼륨 */
+function 종목줄(ex, S){
+  const t = 종목통계(ex.이름, 찬것(ex), 지금묶음(ex));
+  const 달 = 종목달성도(ex);
+  /* 1RM 은 지난 기록과 지금 하는 것 중 가장 높은 값을 보여준다 */
+  const rm = Math.max(t.지금 ? t.지금.rm : 0, t.과거최고 ? t.과거최고.rm : 0);
+  const 목표볼 = ex.무게 * ex.횟수 * (ex.계획세트 || ex.세트);
+  return `<div class="exline">
+    <span class="nm"><span class="no">${String(S.i+1).padStart(2,'0')})</span>${esc(ex.이름)}${
+      ex.임시 ? '<span class="tag">불러옴</span>' : ''}${ex.마감 ? '<span class="tag">마침</span>' : ''}${
+      ex.슈퍼 ? `<span class="sbadge">슈퍼 ${S.종목들.filter(x=>x.슈퍼===ex.슈퍼).findIndex(x=>x===ex)+1}/${S.종목들.filter(x=>x.슈퍼===ex.슈퍼).length}</span>` : ''}</span>
+    <button class="m pc" data-sheet="exrec"><span class="lb">달성도</span>${Math.min(999, 달)}%</button>
+    <button class="m" data-sheet="exrec"><span class="lb">1RM</span>${rm ? rm.toFixed(1) : '—'}</button>
+    <button class="m" data-sheet="exrec" id="exVol"><span class="lb">볼륨</span><span class="v">${콤마(볼륨(찬것(ex)))}/${콤마(목표볼)}</span></button>
+  </div>`;
+}
+
+/* 아직 안 한 세트의 무게·횟수.
+   ① 이미 적어둔 것(기록) → ② 그 세트에 따로 정해둔 것(예정값)
+   → ③ 지금 할 세트면 화면에 떠 있는 값 → ④ 종목의 기본값 */
+function 세트값(ex, k, S){
+  const rec = ex.기록[k];
+  if(rec) return {w:rec.w, r:rec.r};
+  const 정 = ex.예정값 && ex.예정값[k];
+  if(정) return {w:정.w, r:정.r};
+  if(S && k === S.s) return {w:S.무게, r:S.횟수};
+  return {w:ex.무게, r:ex.횟수};
+}
+const 세트휴식 = (ex, k) => (ex.휴식들 && ex.휴식들[k] != null) ? ex.휴식들[k] : ex.휴식;
+
+/* 세트 한 줄 — 체크 · 세트 수 · 무게 · 횟수 · 휴지통 · 펼침.
+   아래 작은 줄에 '무게 · 횟수 · 휴식시간'을 한 번에 적어둔다.
+   ⌄ 를 누르면 그 세 가지를 한 줄에서 고칠 수 있다. */
+function 세트줄(ex, k, S){
+  /* 이 줄에서 휴식이 돌고 있으면 줄을 통째로 덮는다 */
+  if(S.휴식 && S.휴식.k === k) return 휴식줄(S);
+  const rec = ex.기록[k];
+  const 열림 = S.열린세트 === k;
+  const 지금 = (k === S.s);
+  const {w, r} = 세트값(ex, k, S);
+  const 휴 = 세트휴식(ex, k);
+  const 분초 = `${String(Math.floor(휴/60)).padStart(2,'0')}:${String(휴%60).padStart(2,'0')}`;
+  const cls = ['srow2', rec ? 'done' : (지금 ? 'now' : 'todo'), 열림 ? 'open' : ''].join(' ');
+  const 추가 = !ex.임시 && k >= ex.계획세트;
+
+  const 걸음 = 설정.무게단위;
+  const 휴글 = `${Math.floor(휴/60)}:${String(휴%60).padStart(2,'0')}`;
+  const 한줄 = !열림 ? '' : 칸버튼줄([
+    {k:'w', 라벨:'무게', 값:무게글자(w)+설정.unit, 단위:설정.unit,
+     입력:`<input type="number" step="0.1" min="0" inputmode="decimal" data-win="${k}" value="${무게글자(w)}" aria-label="무게">`,
+     빼기:`data-sw="${k}|-${걸음}"`, 더하기:`data-sw="${k}|${걸음}"`},
+    {k:'r', 라벨:'횟수', 값:r+'회', 단위:'회',
+     입력:`<input type="number" step="1" min="0" inputmode="numeric" data-rin="${k}" value="${r}" aria-label="횟수">`,
+     빼기:`data-sr="${k}|-1"`, 더하기:`data-sr="${k}|1"`},
+    {k:'t', 라벨:'휴식', 값:휴글, 단위:'',
+     입력:`<input type="text" inputmode="numeric" data-tin="${k}" value="${휴글}" aria-label="휴식시간">`,
+     빼기:`data-srest="${k}|-${설정.휴식단위}"`, 더하기:`data-srest="${k}|${설정.휴식단위}"`},
+  ], S.고른칸, f => `data-kpickw="${k}|${f}"`);
+
+  return `<div class="${cls}">
+    <div class="sline">
+      <button class="chk2" data-chk="${k}" aria-pressed="${!!rec}" aria-label="${k+1}세트 완료"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg></button>
+      <button class="setno" data-open="${k}">${k+1}</button>
+      <button class="cell wcell" data-open="${k}">${무게글자(w)}<span class="u">${설정.unit}</span></button>
+      <button class="cell" data-open="${k}">${r}<span class="u">회</span></button>
+      <button class="cell restcell" data-open="${k}"><span class="u">휴식</span> ${Math.floor(휴/60)}:${String(휴%60).padStart(2,'0')}</button>
+      ${추가 ? '<span class="tag">추가</span>' : ''}
+      <button class="del2" data-delset="${k}" aria-label="${k+1}세트 지우기"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg></button>
+      <button class="cvbtn" data-open="${k}" aria-label="설정 열기"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+    </div>
+    ${한줄}
+  </div>`;
+}
+
+/* 휴식이 도는 동안 그 세트 줄 자리에 들어가는 띠 */
+function 휴식줄(S){
+  const 남 = Math.max(0, Math.ceil((S.휴식.끝시각 - Date.now())/1000));
+  const 시계 = `${Math.floor(남/60)}:${String(남%60).padStart(2,'0')}`;
+  if(S.휴식.물음){
+    return `<div class="srow2 resting"><div class="rstrip">
+      <span class="rlab">휴식 끝</span>
+      <span class="rnext">다음 · ${esc(다음설명())}</span>
+      <button class="rbtn" data-radj="30">30초 더</button>
+      <button class="rbtn go" data-rgo="1">시작</button>
+    </div></div>`;
+  }
+  return `<div class="srow2 resting"><div class="rstrip">
+    <span class="rlab">휴식</span>
+    <b class="rclock" id="restclock">${시계}</b>
+    <span class="gap"></span>
+    <button class="rbtn" data-radj="-10">−10초</button>
+    <button class="rbtn" data-radj="10">+10초</button>
+    <button class="rbtn go" data-rgo="1">건너뛰기</button>
+  </div></div>`;
+}
+
+/* 운동 중 보여줄 사진 한 장 — 종목이 바뀔 때만 새로 뽑는다 */
+let 뽑은사진 = {};
+function 응원사진(ex){
+  if(!캘표시.사진 || ex.사진숨김) return '';
+  const t = 종목표.find(x => x.이름 === ex.이름);
+  const 들 = (t && t.사진) || [];
+  if(!들.length) return '';
+  const 열쇠 = 세션.i + '|' + ex.이름;
+  if(뽑은사진[열쇠] == null || !들[뽑은사진[열쇠]]) 뽑은사진[열쇠] = Math.floor(Math.random()*들.length);
+  return `<div class="cheer"><img src="${들[뽑은사진[열쇠]]}" alt="">
+    <button class="cx" data-pichide="1" aria-label="사진 감추기"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>`;
+}
+
+/* 아직 안 한 종목 목록 — 세트 추가 동그라미 아래에 깐다 */
+function 남은운동줄(S){
+  const 들 = S.종목들.map((e,idx) => ({e, idx}))
+    .filter(x => x.idx !== S.i && !x.e.마감 && 찬것(x.e).length < Math.max(x.e.세트, x.e.기록.length));
+  if(!들.length) return '';
+  return `<div class="restex">
+    <div class="cap">남은 운동</div>
+    ${들.map(x => `<button class="rex" data-go="${x.idx}">
+      <span class="rn2">${esc(x.e.이름)}${x.e.임시 ? '<span class="tag">불러옴</span>' : ''}</span>
+      <span class="rs">${Math.max(0, Math.max(x.e.세트, x.e.기록.length) - 찬것(x.e).length)}세트</span>
+    </button>`).join('')}
+  </div>`;
+}
+
+/* 첨부한 화면을 참고한 세 칸 — 최대 무게 / 최대 1RM / 볼륨.
+   각 칸에 '이전'과 '최고'를 같이 놓고, 오르면 빨강 내리면 파랑 화살표를 붙인다. */
+function 세트요약(세트들){
+  if(!세트들 || !세트들.length) return null;
+  let 최대 = 세트들[0], rm = 0;
+  세트들.forEach(x => {
+    if(x.w > 최대.w || (x.w === 최대.w && x.r > 최대.r)) 최대 = x;
+    rm = Math.max(rm, 일RM(x.w, x.r));
+  });
+  return {무게:최대.w, 횟수:최대.r, rm, vol:볼륨(세트들)};
+}
+function 종목통계(이름, 오늘세트들, 묶음키){
+  const 들 = 종목기록들(이름, 묶음키);
+  const 지금 = 세트요약(오늘세트들);
+  const 이전 = 들.length ? 세트요약(들[들.length-1].세트들) : null;
+  const 얹기 = (최고, v) => {
+    if(!v) return 최고;
+    if(!최고) return {...v};
+    if(v.무게 > 최고.무게 || (v.무게 === 최고.무게 && v.횟수 > 최고.횟수)){ 최고.무게 = v.무게; 최고.횟수 = v.횟수; }
+    최고.rm = Math.max(최고.rm, v.rm);
+    최고.vol = Math.max(최고.vol, v.vol);
+    return 최고;
+  };
+  /* 과거만의 최고 — 오늘이 기록을 깼는지 판단하는 데 쓴다 */
+  let 과거최고 = null;
+  들.forEach(x => { 과거최고 = 얹기(과거최고, 세트요약(x.세트들)); });
+  /* 화면에 보여주는 최고에는 오늘도 넣는다 */
+  const 최고 = 얹기(과거최고 ? {...과거최고} : null, 지금);
+  return {지금, 이전, 최고, 과거최고};
+}
+const 화살 = (a,b) => (a==null||b==null) ? '' : (a>b ? '<span class="ar up">↗</span>' : a<b ? '<span class="ar down">↘</span>' : '');
+const 새기록 = (a,b) => (a!=null && a>0 && (b==null || a>=b)) ? '<span class="dot"></span>' : '';
+
+/* 종목 줄의 숫자를 누르면 열리는 시트 — 이전 · 최고를 여기서 본다 */
+function 종목기록시트(){
+  const ex = 현재종목();
+  const 묶 = 지금묶음(ex);
+  const t = 종목통계(ex.이름, 찬것(ex), 묶);
+  const 과 = t.과거최고;
+  const 무게글 = v => v ? `${무게글자(v.무게)}<span class="x">×</span>${v.횟수}` : '—';
+  const rm글  = v => v ? `${v.rm.toFixed(1)}<span class="u">${설정.unit}</span>` : '—';
+  const vol글 = v => v ? `${콤마(v.vol)}<span class="u">${설정.unit}</span>` : '—';
+  const 칸 = (제목, 값, 이전, 최고) => `
+    <div class="st"><div class="sk">${제목}</div><div class="sv">${값}</div>
+    <div class="sp">이전 ${이전}</div><div class="sp">최고 ${최고}</div></div>`;
+  const 기준 = 지금기준();
+  const c = 종목성장(ex.이름, 기준.날(), 찬것(ex), 묶);
+  시트열기(`${시트머리(esc(ex.이름) + (묶 ? ' <span class="sbadge">슈퍼 ' + esc(묶) + '</span>' : ''))}
+    <div class="stat3">
+      ${칸('최대 무게', 무게글(t.지금),
+          무게글(t.이전) + 화살(t.지금&&t.지금.무게, t.이전&&t.이전.무게),
+          무게글(t.최고) + 새기록(t.지금&&t.지금.무게, 과&&과.무게))}
+      ${칸('최대 1RM', rm글(t.지금),
+          rm글(t.이전) + 화살(t.지금&&t.지금.rm, t.이전&&t.이전.rm),
+          rm글(t.최고) + 새기록(t.지금&&t.지금.rm, 과&&과.rm))}
+      ${칸('볼륨', vol글(t.지금),
+          vol글(t.이전) + 화살(t.지금&&t.지금.vol, t.이전&&t.이전.vol),
+          vol글(t.최고) + 새기록(t.지금&&t.지금.vol, 과&&과.vol))}
+    </div>
+    <div class="gline">${성장문(ex.이름, c)}</div>
+    <div class="gline">이 운동 달성도 <b>${종목달성도(ex)}%</b> — ${찬것(ex).length} / ${ex.계획세트 || ex.세트}세트</div>
+    <button class="btn ghost" data-sheet2="rm">1RM 은 어떻게 계산하나요?</button>`);
+}
+
+function 통계시트(){
+  const S = 세션;
+  const 달성 = 목표볼륨() ? Math.round(오늘볼륨() / 목표볼륨() * 100) : 0;
+  const 기준 = 지금기준();
+
+  /* 달성도 */
+  const 종목줄 = 정식종목().map(e => {
+    const 한 = 볼륨(찬것(e)), 목 = e.무게 * e.횟수 * e.계획세트;
+    const 더 = Math.max(0, 찬것(e).length - e.계획세트);
+    return `<div class="cmp">
+      <span class="grow"><span class="lab" style="display:block">${esc(e.이름)}</span>
+      <span class="sub" style="display:block">${찬것(e).length}/${e.계획세트}세트${더 ? ` <b style="color:var(--rest)">(추가 ${더})</b>` : ''} · 볼륨 ${콤마(한)} / ${콤마(목)}</span></span>
+      <span class="pct">${목 ? Math.round(한/목*100) : 0}%</span></div>`;
+  }).join('');
+
+  /* 루틴 차원 — 기준 시점별 */
+  const 루틴줄 = 기준목록.map(g => {
+    const c = 루틴성장(S.루틴.id, g.날(), 유효세트());
+    const pv = 퍼센트칠(c ? c.볼륨.pct : null);
+    const pr = 퍼센트칠(c ? c.횟수.pct : null);
+    const 설명 = c ? `${c.날} · 처음 ${c.n}세트까지` : '비교할 기록이 없습니다';
+    const 값 = !c ? '<span class="mt"><span class="mrow"><span class="pct flat">—</span></span></span>' : `
+      <span class="mt">
+        <span class="mrow"><span class="mk">볼륨</span><span class="pct ${pv.cls}">${pv.t}</span><span class="md">${c.볼륨.pct!==null ? 부호(c.볼륨.diff, 설정.unit) : ''}</span></span>
+        <span class="mrow"><span class="mk">횟수</span><span class="pct ${pr.cls}">${pr.t}</span><span class="md">${c.횟수.pct!==null ? 부호(c.횟수.diff, '회') : ''}</span></span>
+      </span>`;
+    return `<div class="cmp">
+      <span class="grow"><span class="lab" style="display:block">${g.이름}${설정.기준===g.k ? ' <span class="pill ok">기준</span>' : ''}</span>
+      <span class="sub" style="display:block">${설명}</span></span>${값}</div>`;
+  }).join('');
+
+  /* 종목 차원 — 지금 기준으로 종목마다 한 줄씩 */
+  const 종목성장줄 = S.종목들.map(e => {
+    const c = 종목성장(e.이름, 기준.날(), 찬것(e), 지금묶음(e));
+    const pv = 퍼센트칠(c ? c.볼륨.pct : null);
+    const 설명 = c ? `${c.날}과 비교 · 처음 ${c.n}세트까지` : (찬것(e).length ? '비교할 기록이 없습니다' : '아직 이번에 한 기록이 없습니다');
+    return `<div class="cmp">
+      <span class="grow"><span class="lab" style="display:block">${esc(e.이름)}${e.임시 ? '<span class="tag">불러옴</span>' : ''}</span>
+      <span class="sub" style="display:block">${설명}</span></span>
+      <span class="mt"><span class="mrow"><span class="pct ${pv.cls}">${pv.t}</span>
+      <span class="md">${c && c.볼륨.pct!==null ? 부호(c.볼륨.diff, 설정.unit) : ''}</span></span></span></div>`;
+  }).join('');
+
+  const rc = 루틴성장(S.루틴.id, 기준.날(), 유효세트());
+  const 더한세트 = 추가세트수();
+  const 불러온 = S.종목들.filter(e => e.임시).length;
+
+  시트열기(`${시트머리('오늘 기록')}
+    <div>
+      <div class="row" style="justify-content:space-between">
+        <span class="eyebrow">달성도</span>
+        <span class="num" style="font-size:var(--fs-s);font-weight:600">${한세트수()}/${목표세트()}세트 · ${콤마(오늘볼륨())}/${콤마(목표볼륨())}</span>
+      </div>
+      <div class="bar" style="margin-top:7px"><i style="width:${Math.min(100,달성)}%"></i></div>
+      <div style="margin-top:4px">${종목줄}</div>
+    </div>
+
+    <div>
+      <span class="eyebrow">향상도 ① 루틴 차원</span>
+      <div class="gline" style="border-bottom:0">${성장문(S.루틴.이름, rc)}</div>
+      <div>${루틴줄}</div>
+    </div>
+
+    <div>
+      <span class="eyebrow">향상도 ② 종목 차원 · ${기준.짧}</span>
+      <div style="margin-top:4px">${종목성장줄}</div>
+    </div>
+
+    <p class="note">
+      오늘 ${유효세트().length}세트를 했으므로, 과거 기록도 <b>같은 지점까지만</b> 잘라서 비교합니다.
+      ${더한세트 ? `<br><b style="color:var(--rest)">오늘 추가한 ${더한세트}세트는 향상도 계산에서 뺐습니다.</b> 달성도에는 그대로 더해집니다.` : ''}
+      ${불러온 ? `<br><b style="color:var(--rest)">불러온 운동 ${불러온}개는 루틴 차원(달성도·루틴 향상도)에서 빠집니다.</b> 종목 차원에는 그대로 쌓입니다.` : ''}
+    </p>`);
+}
+
+function 다음설명(){
+  const S = 세션, ex = 현재종목();
+  /* 휴식에 '다음 갈 자리'가 실려 있으면 그것을 그대로 알려준다 (슈퍼세트) */
+  if(S.휴식 && S.휴식.다음){
+    const t = S.종목들[S.휴식.다음.i];
+    if(t) return `${t.이름} ${S.휴식.다음.s+1}세트 · ${무게글자(t.무게)}${설정.unit} × ${t.횟수}회`;
+  }
+  if(S.s < ex.세트) return `${ex.이름} ${S.s+1}세트 · ${무게글자(ex.무게)}${설정.unit} × ${ex.횟수}회`;
+  const nx = S.종목들[S.i+1];
+  return nx ? `${nx.이름} 1세트 · ${무게글자(nx.무게)}${설정.unit} × ${nx.횟수}회` : '마무리';
+}
+
+function 휴식시작(k, 다음자리){
+  const S = 세션, ex = 현재종목();
+  const 쉴 = (ex.휴식들 && ex.휴식들[k] != null) ? ex.휴식들[k] : ex.휴식;
+  S.휴식 = {k, 끝시각: Date.now() + 쉴*1000, 물음:false, 다음: 다음자리 || null};
+  실행그리기();
+  띠보이기();
+  휴식돌리기();
+}
+/* 세트가 많아 띠가 화면 밖으로 밀려도 보이도록 옮겨준다 */
+function 띠보이기(){
+  const 띠 = document.querySelector('.srow2.resting');
+  if(!띠) return;
+  try{
+    띠.scrollIntoView({block:'center', behavior:'smooth'});
+  }catch(e){
+    띠.scrollIntoView(false);
+  }
+}
+function 휴식돌리기(){
+  const S = 세션;
+  clearInterval(타이머);
+  타이머 = setInterval(() => {
+    if(!S.휴식){ clearInterval(타이머); 타이머 = null; return; }
+    const 남 = Math.max(0, Math.ceil((S.휴식.끝시각 - Date.now())/1000));
+    const c = document.getElementById('restclock');
+    if(c) c.textContent = `${Math.floor(남/60)}:${String(남%60).padStart(2,'0')}`;
+    if(남 <= 0){
+      clearInterval(타이머); 타이머 = null;
+      if(설정.sound && navigator.vibrate){ try{ navigator.vibrate([120,80,120]); }catch(e){} }
+      휴식끝();
+    }
+  }, 250);
+}
+/* 휴식이 끝났을 때 — 묻기로 해뒀으면 같은 띠에서 묻는다 */
+function 휴식끝(){
+  const S = 세션;
+  if(설정.ask || !설정.auto){ S.휴식.물음 = true; 실행그리기(); }
+  else 다음으로();
+}
+/* 어느 종목 · 어느 세트로 자리를 옮긴다 */
+function 자리로(i, s){
+  const S = 세션;
+  S.i = i; S.s = s; S.열린세트 = -1;
+  const ex = S.종목들[i];
+  if(!ex) return;
+  const v = 세트값(ex, s, null);
+  S.무게 = v.w; S.횟수 = v.r;
+  S.화면 = 'set';
+}
+function 다음으로(){
+  const S = 세션;
+  const 대기 = S.휴식 && S.휴식.다음;
+  S.휴식 = null;
+  if(대기){ 자리로(대기.i, 대기.s); 실행그리기(); return; }
+  넘어가기준비();
+  if(S.화면 !== 'done') S.화면 = 'set';
+  실행그리기();
+}
+
+['#ovBody','#ovHead'].forEach(sel => $(sel).addEventListener('click', 운동화면클릭));
+function 운동화면클릭(e){
+  const S = 세션; if(!S) return;
+  const b = e.target.closest('button');
+  const t = e.target.closest('[data-t]');
+  if(t){ S.끝시각 += parseInt(t.dataset.t)*1000; if(S.끝시각 < Date.now()) S.끝시각 = Date.now(); return; }
+  if(!b) return;
+  const d = b.dataset, ex = 현재종목();
+
+  if(d.stat){ 통계시트(); return; }
+  /* 휴식 띠 */
+  if(d.radj){
+    if(!S.휴식) return;
+    S.휴식.끝시각 += parseInt(d.radj)*1000;
+    if(S.휴식.끝시각 < Date.now()) S.휴식.끝시각 = Date.now();
+    if(S.휴식.물음){ S.휴식.물음 = false; 실행그리기(); 휴식돌리기(); }
+    else 실행그리기();
+    return;
+  }
+  if(d.rgo){
+    clearInterval(타이머); 타이머 = null;
+    다음으로();          /* 휴식은 다음으로() 가 치운다 — 먼저 지우면 '다음 갈 자리'가 날아간다 */
+    return;
+  }
+  if(d.sheet === 'rm'){ rm시트(); return; }
+  if(d.sheet === 'exrec'){ 종목기록시트(); return; }
+  if(b.id === 'addSet'){
+    /* 슈퍼세트면 묶인 종목 전부에 한 세트씩 붙는다.
+       새 세트는 그 종목의 '맨 아래 세트'를 그대로 베낀다 — 무게·횟수·휴식 전부. */
+    const 식구 = ex.슈퍼 ? S.종목들.filter(x => x.슈퍼 === ex.슈퍼) : [ex];
+    식구.forEach(x => {
+      const 끝 = Math.max(x.세트, x.기록.length) - 1;
+      const 베낄 = 끝 >= 0 ? 세트값(x, 끝, x === ex ? S : null) : {w:x.무게, r:x.횟수};
+      const 쉴 = 끝 >= 0 ? 세트휴식(x, 끝) : x.휴식;
+      const 새 = Math.max(x.세트, x.기록.length);
+      x.세트 = 새 + 1;
+      x.예정값 = x.예정값 || [];
+      x.예정값[새] = {w:베낄.w, r:베낄.r};
+      x.휴식들 = x.휴식들 || [];
+      x.휴식들[새] = 쉴;
+    });
+    실행그리기(); return;
+  }
+  if(b.id === 'resumeEx'){ ex.마감 = false; 실행그리기(); return; }
+  if(d.pichide){ ex.사진숨김 = true; 실행그리기(); return; }
+  if(d.go !== undefined){ 종목으로(+d.go); return; }
+
+  /* 체크 — 누르면 그 세트를 완료/미완료로 바꾼다 */
+  if(d.chk !== undefined){
+    const k = +d.chk;
+    if(ex.기록[k]){ ex.기록[k] = undefined; 실행그리기(); return; }
+    const 지금 = (k === S.s);
+    ex.기록[k] = {w: 지금 ? S.무게 : ex.무게, r: 지금 ? S.횟수 : ex.횟수};
+    if(!지금){ 실행그리기(); return; }
+    S.열린세트 = -1;
+
+    /* ── 슈퍼세트: 묶인 종목을 한 바퀴 돈 뒤에 쉰다 ──
+       덤벨컬 1세트 → 해머컬 1세트 → (휴식) → 덤벨컬 2세트 → 해머컬 2세트 → (휴식) …
+       세 종목이 묶여도 마찬가지로 마지막 종목을 끝낸 뒤에만 쉰다. */
+    if(ex.슈퍼){
+      const 식구 = S.종목들.map((x,idx) => ({x, idx})).filter(o => o.x.슈퍼 === ex.슈퍼 && !o.x.마감);
+      const 자리 = 식구.findIndex(o => o.idx === S.i);
+      if(자리 >= 0 && 자리 < 식구.length - 1){
+        /* 아직 한 바퀴가 안 끝났다 — 쉬지 않고 다음 종목의 같은 세트로 */
+        자리로(식구[자리+1].idx, k);
+        실행그리기(); return;
+      }
+      /* 한 바퀴를 돌았다 — 쉬고 나서 첫 종목의 다음 세트로 */
+      if(자리 >= 0){
+        const 첫 = 식구[0];
+        const 다음칸 = k + 1;
+        const 더있나 = 다음칸 < Math.max(첫.x.세트, 첫.x.기록.length);
+        S.s = 다음빈칸(ex, k);
+        if(더있나){ 휴식시작(k, {i: 첫.idx, s: 다음칸}); return; }
+        /* 묶음이 끝났으면 평소처럼 */
+      }
+    }
+
+    /* 지금 할 세트를 체크하면 그 줄에서 바로 휴식이 돈다 */
+    S.s = 다음빈칸(ex, k);
+    const 마지막 = S.s >= Math.max(ex.세트, ex.기록.length);
+    if(마지막 && S.종목들.every((e,idx) => idx === S.i || e.마감 || !덜한가(e))){
+      S.화면 = 'done'; 실행그리기(); return;
+    }
+    휴식시작(k); return;
+  }
+  /* 세트 줄 삭제 */
+  if(d.delset !== undefined){
+    const k = +d.delset;
+    ex.기록.splice(k,1);
+    if(ex.휴식들) ex.휴식들.splice(k,1);
+    if(ex.예정값) ex.예정값.splice(k,1);
+    ex.세트 = Math.max(1, ex.세트 - 1);
+    if(S.s > k) S.s--;
+    if(S.열린세트 === k) S.열린세트 = -1;
+    실행그리기(); return;
+  }
+  /* 설정 칸 펼치기 / 접기 */
+  if(d.open !== undefined){
+    const k = +d.open;
+    S.열린세트 = (S.열린세트 === k) ? -1 : k;
+    S.고른칸 = null;
+    실행그리기(); return;
+  }
+  if(d.kpickw){
+    const [k, f] = d.kpickw.split('|');
+    S.열린세트 = +k;
+    S.고른칸 = (S.고른칸 === f) ? null : f;
+    실행그리기(); return;
+  }
+  /* 펼친 칸 안에서 무게 · 횟수 · 휴식 고치기 */
+  /* 절대값(직접 입력)이면 새무게를 주고, 버튼이면 무게차를 준다 */
+  const 고치기 = (k, 무게차, 횟수차, 새무게) => {
+    const 적용 = (지금값) => 새무게 != null ? 무게반올림(새무게) : 무게반올림(지금값 + 무게차);
+    const rec = ex.기록[k];
+    if(rec){
+      if(무게차 || 새무게 != null) rec.w = 적용(rec.w);
+      if(횟수차) rec.r = Math.max(0, rec.r + 횟수차);
+    } else if(k === S.s){
+      if(무게차 || 새무게 != null) S.무게 = 적용(S.무게);
+      if(횟수차) S.횟수 = Math.max(0, S.횟수 + 횟수차);
+    } else {
+      /* 아직 안 한 세트는 '그 줄만' 바뀐다 (다른 줄은 그대로) */
+      const 이제 = 세트값(ex, k, S);
+      ex.예정값 = ex.예정값 || [];
+      ex.예정값[k] = {
+        w: (무게차 || 새무게 != null) ? 적용(이제.w) : 이제.w,
+        r: 횟수차 ? Math.max(0, 이제.r + 횟수차) : 이제.r,
+      };
+    }
+  };
+  if(d.sw){ const [k,v] = d.sw.split('|'); 고치기(+k, parseFloat(v), 0); 실행그리기(); return; }
+  if(d.sr){ const [k,v] = d.sr.split('|'); 고치기(+k, 0, parseInt(v)); 실행그리기(); return; }
+  if(d.srest){
+    const [k,v] = d.srest.split('|');
+    if(!ex.휴식들) ex.휴식들 = [];
+    const 이전 = ex.휴식들[+k] != null ? ex.휴식들[+k] : ex.휴식;
+    ex.휴식들[+k] = Math.max(0, Math.min(600, 이전 + parseInt(v)));
+    실행그리기(); return;
+  }
+}
+
+/* "3:00" 또는 "180" 을 초로 바꾼다 */
+function 초읽기(글){
+  const t = String(글).trim();
+  if(t.includes(':')){
+    const [m, x] = t.split(':');
+    return Math.max(0, Math.min(3600, (parseInt(m)||0)*60 + (parseInt(x)||0)));
+  }
+  const n = parseInt(t);
+  return isNaN(n) ? null : Math.max(0, Math.min(3600, n));
+}
+
+/* 무게(0.1 단위) · 횟수 · 휴식시간을 직접 쳐 넣었을 때 */
+$('#ovBody').addEventListener('change', e => {
+  const inp = e.target.closest('input[data-win],input[data-rin],input[data-tin]');
+  if(!inp || !세션) return;
+  const S = 세션, ex = 현재종목(), d = inp.dataset;
+  const k = +(d.win !== undefined ? d.win : d.rin !== undefined ? d.rin : d.tin);
+  const rec = ex.기록[k];
+
+  const 예정에 = (무엇, 값) => {
+    const 이제 = 세트값(ex, k, S);
+    ex.예정값 = ex.예정값 || [];
+    ex.예정값[k] = {w: 무엇 === 'w' ? 값 : 이제.w, r: 무엇 === 'r' ? 값 : 이제.r};
+  };
+  if(d.win !== undefined){
+    const v = parseFloat(inp.value);
+    if(!isNaN(v)){
+      const w2 = 무게반올림(v);
+      if(rec) rec.w = w2;
+      else if(k === S.s) S.무게 = w2;
+      else 예정에('w', w2);
+    }
+  } else if(d.rin !== undefined){
+    const v = parseInt(inp.value);
+    if(!isNaN(v) && v >= 0){
+      if(rec) rec.r = v;
+      else if(k === S.s) S.횟수 = v;
+      else 예정에('r', v);
+    }
+  } else {
+    const v = 초읽기(inp.value);
+    if(v !== null){
+      if(!ex.휴식들) ex.휴식들 = [];
+      ex.휴식들[k] = v;
+    }
+  }
+  실행그리기();
+});
+
+/* 어떤 종목으로 건너뛰기 */
+function 종목으로(idx){
+  const S = 세션;
+  if(idx < 0 || idx >= S.종목들.length) return;
+  clearInterval(타이머); 타이머 = null; S.휴식 = null;
+  S.i = idx; S.열린세트 = -1;
+  const ex = S.종목들[idx];
+  S.s = 다음빈칸(ex, -1);
+  const rec = ex.기록[S.s];
+  S.무게 = rec ? rec.w : ex.무게;
+  S.횟수 = rec ? rec.r : ex.횟수;
+  S.화면 = 'set';
+  실행그리기();
+}
+const 덜한가 = e => 찬것(e).length < Math.max(e.세트, e.기록.length);
+
+/* '다음 →' — 뒤에 덜 한 종목이 있으면 그리로, 없으면 마무리 */
+function 다음종목으로(끝낼까){
+  const S = 세션, ex = 현재종목();
+  if(끝낼까) ex.마감 = true;
+  clearInterval(타이머); 타이머 = null; S.휴식 = null;
+  let 다음 = S.종목들.findIndex((e,idx) => idx > S.i && !e.마감 && 덜한가(e));
+  if(다음 < 0) 다음 = S.종목들.findIndex((e,idx) => idx !== S.i && !e.마감 && 덜한가(e));
+  if(다음 >= 0){ 종목으로(다음); return; }
+  S.화면 = 'done'; 실행그리기();
+}
+function 마칠까시트(){
+  const ex = 현재종목();
+  const 남 = Math.max(0, Math.max(ex.세트, ex.기록.length) - 찬것(ex).length);
+  시트열기(`${시트머리('운동이 완료되지 않았습니다')}
+    <p class="note"><b>${esc(ex.이름)}</b> ${남}세트 남음 · 여기서 마칠까요?</p>
+    <div style="display:flex;gap:8px">
+      <button class="btn" data-fin="yes" style="flex:1 1 0">여기까지</button>
+      <button class="btn ghost" data-fin="no" style="flex:1 1 0">나중에 더</button>
+    </div>
+    <p class="note">나중에 더 → 남은 운동 목록에 남습니다</p>`);
+}
+
+/* 다음으로 채울 빈 칸 */
+function 다음빈칸(ex, 부터){
+  const 총 = Math.max(ex.세트, ex.기록.length);
+  for(let k = 부터+1; k < 총; k++) if(!ex.기록[k]) return k;
+  return 총;
+}
+
+$('#ovFoot').addEventListener('click', e => {
+  const S = 세션; if(!S) return;
+  const id = e.target.closest('button')?.id;
+
+  if(id === 'loadEx'){ 불러오기시트(); }
+  if(id === 'exList2'){ 운동목록시트(); }
+  if(id === 'nextEx'){
+    const ex = 현재종목();
+    if(덜한가(ex)) 마칠까시트(); else 다음종목으로(false);
+  }
+  if(id === 'endNow'){ clearInterval(타이머); 타이머=null; S.휴식=null; S.화면='done'; 실행그리기(); }
+  if(id === 'discard'){ 운동종료(); }
+  if(id === 'finish'){
+    const 한세트 = 한세트수(), 전부 = 목표세트();
+    const 세부 = {}, 임시들 = [];
+    const 슈퍼표 = {};
+    S.종목들.forEach(e => {
+      const 찬 = 찬것(e);
+      if(!찬.length) return;
+      세부[e.이름] = 찬.map(x => ({w:x.w, r:x.r}));
+      if(e.임시) 임시들.push(e.이름);
+      /* 어느 슈퍼세트에서 한 것인지 남긴다 — 묶음 이름은 '식구 이름을 이어붙인 것' */
+      if(e.슈퍼){
+        슈퍼표[e.이름] = S.종목들.filter(x => x.슈퍼 === e.슈퍼).map(x => x.이름).sort().join('+');
+      }
+    });
+    기록[오늘] = {루틴:S.루틴.id, 달성: 한세트 >= 전부, 세부, 임시:임시들, 슈퍼:슈퍼표};
+    /* 오늘이 끝났으니 내일부터 다음 차례로 다시 깐다 */
+    const i = 루틴들.findIndex(r => r.id === S.루틴.id);
+    Object.keys(예정).forEach(k => { if(k >= 오늘) delete 예정[k]; });
+    예정채우기(날더하기(오늘,1), ((i+1) % 루틴들.length + 루틴들.length) % 루틴들.length);
+    운동종료(); 달력그리기(); 루틴그리기(); 종목그리기();
+  }
+});
+
+function 넘어가기준비(){
+  const S = 세션;
+  if(S.s >= Math.max(현재종목().세트, 현재종목().기록.length)){
+    if(S.i < S.종목들.length - 1){ S.i++; S.s = 0; }
+    else { S.화면 = 'done'; return; }
+  }
+  const v = 세트값(현재종목(), S.s, null);
+  S.무게 = v.w; S.횟수 = v.r;
+}
+/* ── 운동 화면에서 열리는 시트 ── */
+function rm시트(){
+  const ex = 현재종목(), t = 종목통계(ex.이름, 찬것(ex));
+  const 예 = t.지금 || t.이전;
+  시트열기(`${시트머리('1RM 추정 계산법')}
+    <p class="note">한 번에 들 수 있는 최대 무게를 실제로 들어보지 않고 어림하는 값입니다.
+    여러 식이 있고 결과가 조금씩 다릅니다. 이 앱은 가장 널리 쓰이는 <b>에플리(Epley) 식</b>을 씁니다.</p>
+    <div class="gline num" style="font-size:var(--fs-b)">1RM = 무게 × (1 + 횟수 ÷ 30)</div>
+    ${예 ? `<div class="gline">보기 — <span class="num">${무게글자(예.무게)}${설정.unit} × ${예.횟수}회</span> 이면
+      <span class="num">${무게글자(예.무게)} × (1 + ${예.횟수}÷30) = ${(일RM(예.무게,예.횟수)).toFixed(1)}${설정.unit}</span></div>` : ''}
+    <p class="note"><b>솔직히 적어둡니다.</b> 홍겸 님이 보여주신 화면의 앱이 어떤 식을 쓰는지는 알 수 없어서,
+    같은 세트라도 값이 조금 다를 수 있습니다. 다른 식(브레츠키 등)으로 바꾸고 싶으면 말씀해 주세요.</p>`);
+}
+/* ────────── 시작 ────────── */
+기록씨앗();
+신체씨앗();
+예정초기화();
+기준칩그리기();
+무게칩그리기();
+달력그리기(); 루틴그리기(); 종목그리기(); 탭그리기();
+</script>
+
+</body></html>

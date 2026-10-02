@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>하젠하이데 시안 · 운동 중 구역 나눔 + 메모</title>
+<style>
+:root{--bg:#F7F8F7;--sf:#fff;--sf2:#F0F2F1;--ln:#DDE2E0;--tx:#1A1C1B;--dim:#6B7F76;--faint:#9AA8A2;--ac:#2E5E4E;--acTx:#fff;--acSoft:#E2EEE8;--good:#2E7D57;--bad:#B3261E;--rest:#B06A1F;--restSoft:#FBEEDD;--up:#D92D20;--down:#1668DC;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121413;--sf:#1E211F;--sf2:#272B29;--ln:#343936;--tx:#E2E3E1;--dim:#9FB2A9;--faint:#6F7F78;--ac:#8FD0B8;--acTx:#00382A;--acSoft:#213029;--good:#8FD0B8;--bad:#F2B8B5;--rest:#E8B87A;--restSoft:#302819;--up:#FF7A6B;--down:#66B0FF}}
+:root[data-theme="dark"]{--bg:#121413;--sf:#1E211F;--sf2:#272B29;--ln:#343936;--tx:#E2E3E1;--dim:#9FB2A9;--faint:#6F7F78;--ac:#8FD0B8;--acTx:#00382A;--acSoft:#213029;--good:#8FD0B8;--bad:#F2B8B5;--rest:#E8B87A;--restSoft:#302819;--up:#FF7A6B;--down:#66B0FF}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;font-size:15px;letter-spacing:-.01em;-webkit-tap-highlight-color:transparent}
+*{box-sizing:border-box}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+button:focus-visible,textarea:focus-visible{outline:2px solid var(--ac);outline-offset:1px}
+#app{height:100%;max-width:440px;margin:0 auto;display:flex;flex-direction:column;position:relative;overflow:hidden;overflow:clip;background:var(--bg)}
+
+/* 머리줄 */
+.top{background:var(--sf);display:flex;align-items:center;gap:8px;padding:10px 12px;font-size:11px;color:var(--dim);white-space:nowrap}
+.top .rt{font-size:13px;color:var(--tx);font-weight:700}
+.top .pct{color:var(--ac);font-weight:700}
+.top .vol{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.top .end{height:28px;padding:0 8px;border:1px solid var(--ln);border-radius:8px;background:var(--sf2);font-weight:700;font-size:11px;color:var(--dim)}
+.bar{height:3px;background:var(--sf2)}.bar i{display:block;height:3px;background:var(--ac);transition:width .3s}
+
+/* 구역 1 — 고정 띠 */
+.z1{padding:4px 12px;background:var(--bg)}
+.band{background:var(--sf);border:1px solid color-mix(in srgb,var(--ac) 35%,transparent);border-radius:8px;padding:6px 12px}
+.band.sup{border-color:color-mix(in srgb,var(--rest) 50%,transparent);background:var(--restSoft)}
+.band.flash{animation:flash .45s}
+@keyframes flash{from{box-shadow:0 0 0 3px color-mix(in srgb,var(--rest) 45%,transparent)}to{box-shadow:0 0 0 0 transparent}}
+.b1{display:flex;align-items:center;gap:6px;min-height:24px}
+.tag{font-size:13px;font-weight:700;color:var(--dim)}
+.band.sup .tag{color:var(--rest)}
+.nm{font-size:15px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pill{font-size:11px;font-weight:700;border-radius:99px;padding:1px 7px;color:var(--rest);border:1px solid color-mix(in srgb,var(--rest) 55%,transparent)}
+.pill.nx{margin-left:auto;color:var(--dim);border-color:var(--ln)}
+.b2{display:flex;gap:8px;font-size:11px;color:var(--dim);margin-top:1px}
+.b2 .p{color:var(--ac);font-weight:700}
+
+/* 구역 2 — 지금 종목 세트 */
+.z2{flex:1;min-height:0;overflow-y:auto;padding:0 12px 8px;overscroll-behavior:contain}
+.grp{border-radius:8px;padding:4px 8px}
+.grp.sup{border:1px solid color-mix(in srgb,var(--rest) 45%,transparent);background:color-mix(in srgb,var(--restSoft) 40%,transparent)}
+.grp.swap{animation:swap .25s ease-out}
+@keyframes swap{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.row{display:flex;align-items:center;gap:4px;padding:4px;margin:2px 0;border-radius:8px;min-height:40px}
+.row.now{background:var(--acSoft)}
+.row.later{opacity:.55}
+.row.rnd{margin-bottom:8px}
+.ck{width:28px;height:28px;border-radius:50%;border:1px solid var(--ln);background:var(--sf2);display:grid;place-items:center;flex:none}
+.ck svg{width:15px;height:15px;stroke:var(--sf)}
+.ck.on{background:var(--ac);border-color:var(--ac)}.ck.on svg{stroke:var(--acTx)}
+.no{width:32px;height:28px;border:1px solid var(--ln);border-radius:8px;background:var(--sf);display:grid;place-items:center;font-size:13px;font-weight:700;flex:none}
+.v{text-align:center;font-size:18px;color:var(--dim)}.v small{font-size:11px;color:var(--faint);margin-left:1px}
+.row .ck.on~.v{color:var(--tx)}
+.w{flex:1.6}.r{flex:1}
+.rs{width:62px;height:28px;border-radius:8px;display:grid;place-items:center;font-size:13px;color:var(--faint);flex:none}
+.rs.live{font-size:18px;font-weight:700;border:1.5px solid var(--good);color:var(--good);background:color-mix(in srgb,var(--good) 14%,transparent)}
+.rs.live.half{border-color:var(--down);color:var(--down);background:color-mix(in srgb,var(--down) 14%,transparent)}
+.rs.live.last{border-color:var(--bad);color:var(--bad);background:color-mix(in srgb,var(--bad) 14%,transparent);font-weight:800}
+.skip{height:28px;padding:0 8px;border:1px solid var(--ln);border-radius:8px;background:var(--sf2);font-size:11px;font-weight:700;color:var(--dim);flex:none}
+.add{display:grid;place-items:center;padding:8px 0}
+.add button{width:40px;height:40px;border-radius:50%;border:1px solid var(--ln);background:var(--sf);color:var(--ac);font-size:22px;line-height:1}
+
+/* 구역 3 — 오늘 종목 */
+.z3{background:var(--sf);border-top:1px solid var(--ln);max-height:112px;overflow-y:auto}
+.it{display:flex;align-items:center;gap:8px;height:36px;padding:0 12px;font-size:13px;color:var(--dim)}
+.it .n{width:24px;font-weight:700}
+.it .t{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.it.cur{color:var(--tx);background:var(--acSoft);box-shadow:inset 3px 0 0 var(--ac)}
+.it.cur .t{font-weight:700}
+.it.fin{color:var(--faint)}
+.it.fin .c::after{content:" ✓"}
+
+/* 아랫줄 · 탭 */
+.foot{display:flex;gap:8px;padding:8px 12px;background:var(--sf)}
+.foot button{flex:1;height:32px;border:1px solid var(--ln);border-radius:8px;background:var(--sf2);font-size:13px;font-weight:600}
+.tabs{display:flex;background:var(--sf);border-top:1px solid var(--ln)}
+.tabs button{flex:1;height:52px;font-size:11px;color:var(--faint);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.tabs button.on{color:var(--ac);font-weight:700}
+.tabs i{display:block;width:18px;height:3px;border-radius:2px;background:currentColor;opacity:.5}
+
+/* 쓰던 메모 띠 */
+.draft{display:none;align-items:center;gap:8px;height:40px;padding:0 12px;background:var(--acSoft);border-top:1px solid color-mix(in srgb,var(--ac) 35%,transparent);font-size:13px;width:100%;text-align:left}
+.draft.show{display:flex}
+.draft b{color:var(--ac);flex:none}
+.draft span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dim)}
+
+/* 메모 시트 */
+.scrim{position:absolute;inset:0;background:rgba(0,0,0,.32);opacity:0;pointer-events:none;transition:opacity .2s}
+.scrim.show{opacity:1;pointer-events:auto}
+.sheet{position:absolute;left:0;right:0;bottom:0;max-height:84%;background:var(--sf);border-radius:16px 16px 0 0;display:flex;flex-direction:column;transform:translateY(105%);transition:transform .22s ease-out}
+.sheet.show{transform:none}
+.grab{padding:8px 16px 4px;touch-action:none;cursor:grab}
+.grab .h{width:36px;height:4px;border-radius:2px;background:var(--ln);margin:0 auto 8px}
+.grab .ti{display:flex;align-items:center}
+.grab .ti b{flex:1;font-size:18px;letter-spacing:-.02em}
+.grab .ti button{height:32px;padding:0 10px;font-size:13px;color:var(--dim)}
+.sb{overflow-y:auto;padding:4px 16px 16px;flex:1;min-height:0}
+.new{display:flex;gap:8px;align-items:flex-end}
+textarea{width:100%;font:inherit;color:var(--tx);background:var(--sf2);border:1px solid var(--ln);border-radius:8px;padding:9px 10px;resize:none;line-height:1.4;display:block}
+.new textarea{flex:1;min-height:40px;max-height:160px}
+.btn{height:40px;padding:0 14px;border-radius:8px;border:1px solid var(--ln);background:var(--sf2);font-size:13px;font-weight:700;flex:none}
+.btn.pri{background:var(--ac);border-color:var(--ac);color:var(--acTx)}
+.btn.sm{height:32px}
+.memo{padding:10px 0;border-bottom:1px solid var(--ln)}
+.meta{display:flex;align-items:center;font-size:11px;color:var(--faint);gap:4px}
+.meta span{flex:1}
+.meta button{width:32px;height:32px;display:grid;place-items:center;color:var(--dim)}
+.meta svg{width:16px;height:16px}
+.txt{white-space:pre-wrap;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;cursor:pointer}
+.txt.open{display:block}
+.more{font-size:11px;color:var(--ac);margin-top:2px;cursor:pointer;display:none}
+.more.show{display:inline-block}
+.trail{font-size:11px;color:var(--ac);margin-top:4px;cursor:pointer;display:inline-block;margin-left:10px}
+.trl{font-size:11px;color:var(--faint);line-height:1.5;margin-top:2px}
+.edit textarea{margin-top:4px;overflow:hidden}
+.two{display:flex;gap:8px;margin-top:8px}.two .btn{flex:1}
+.empty{color:var(--faint);font-size:13px;padding:12px 0}
+.toast{position:absolute;left:12px;right:12px;bottom:112px;background:var(--tx);color:var(--bg);border-radius:8px;padding:10px 12px;font-size:13px;display:flex;gap:8px;align-items:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.show{opacity:1;pointer-events:auto}
+.toast button{margin-left:auto;font-weight:700;color:var(--ac);filter:brightness(1.6)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="top">
+    <span class="rt">가슴, 팔 루틴</span><span id="pos"></span><span class="pct" id="pct"></span><span id="clock"></span><span class="vol" id="vol"></span>
+    <button class="end" data-act="end">운동 끝내기</button>
+  </div>
+  <div class="bar"><i id="barI"></i></div>
+
+  <section class="z1" aria-label="지금 할 종목"><div class="band" id="band"></div></section>
+  <section class="z2" id="z2" aria-label="지금 종목 세트"></section>
+  <section class="z3" id="z3" aria-label="오늘 종목"></section>
+
+  <div class="foot">
+    <button data-act="list">운동 목록</button><button data-act="plus">운동 추가</button><button data-act="next">다음</button>
+  </div>
+  <button class="draft" id="draftBar" data-act="openMemo"><b>✎ 쓰던 메모</b><span id="draftPeek"></span><b>이어 쓰기</b></button>
+  <nav class="tabs">
+    <button><i></i>캘린더</button><button><i></i>루틴</button><button class="on"><i></i>운동 중</button><button><i></i>설정</button><button data-act="openMemo"><i></i>메모</button>
+  </nav>
+
+  <div class="scrim" id="scrim" data-act="lower"></div>
+  <div class="sheet" id="sheet" role="dialog" aria-label="수정 메모">
+    <div class="grab" id="grab">
+      <div class="h"></div>
+      <div class="ti"><b>수정 메모 · 운동 중</b><button data-act="lower">내리기 ∨</button></div>
+    </div>
+    <div class="sb" id="sb">
+      <div class="new">
+        <textarea id="newTx" rows="1" placeholder="고칠 점을 적어 두세요"></textarea>
+        <button class="btn pri" data-act="put">넣기</button>
+      </div>
+      <div id="memoList"></div>
+      <div class="two" id="allBtns">
+        <button class="btn pri" data-act="copyAll">전부 복사</button>
+        <button class="btn" data-act="clearAll" style="color:var(--bad)">전부 지우기</button>
+      </div>
+    </div>
+  </div>
+  <div class="toast" id="toast"><span id="toastTx"></span><button id="toastBtn">되돌리기</button></div>
+</div>
+
+<script>
+(function(){
+const $=s=>document.querySelector(s);
+const REST=20; // 시안이라 휴식을 20초로 줄임
+const CHK='<svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+const PEN='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>';
+const BIN='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13"/></svg>';
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const pad=n=>String(n).padStart(2,'0');
+const ms=s=>`${Math.floor(s/60)}:${pad(s%60)}`;
+
+/* ── 운동 ── */
+const ex=[
+  {name:'인클라인 벤치프레스',w:60,r:8,n:5,sup:null},
+  {name:'딥스',w:10,r:12,n:5,sup:null},
+  {name:'해머 컬',w:14,r:12,n:8,sup:'팔'},
+  {name:'덤벨 컬',w:12,r:12,n:8,sup:'팔'},
+  {name:'케이블 푸시 다운',w:25,r:12,n:4,sup:null},
+].map(e=>({...e,done:Array(e.n).fill(false)}));
+let cur={i:0,s:0}, rest=null, lastHead=-1, lastBand='';
+const t0=Date.now();
+const fam=j=>ex[j].sup?ex.map((_,x)=>x).filter(x=>ex[x].sup===ex[j].sup):[j];
+const cnt=j=>ex[j].done.filter(Boolean).length;
+const left=j=>cnt(j)<ex[j].n;
+const empty=j=>{const k=ex[j].done.indexOf(false);return k<0?ex[j].n:k};
+const label=(j,k)=>{const g=fam(j);return g.length>1?`${k+1}${'ABCD'[g.indexOf(j)]}`:`${k+1}`};
+const todo=()=>rest&&rest.next?rest.next:cur;   // 다음에 할 세트 — 띠 · 강조 줄 · 구역2 모두 이것을 따른다
+const oneRM=(w,r)=>w*(1+r/30);
+
+/* 발자취 (시안 안에서 한 동작) */
+const trail=[];
+const log=t=>{const d=new Date();trail.push(`${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())} ${t}`);if(trail.length>20)trail.shift()};
+
+function check(j,k){
+  const e=ex[j];
+  if(e.done[k]){ e.done[k]=false; if(rest&&rest.j===j&&rest.k===k)rest=null; cur={i:j,s:k}; log(`${e.name} ${label(j,k)} 세트 체크 풀기`); render(); return; }
+  e.done[k]=true; log(`${e.name} ${label(j,k)} 세트 체크`);
+  const g=fam(j);
+  if(g.length>1){
+    const rem=g.filter(left);
+    if(rem.length){
+      const mx=Math.max(...g.map(cnt));
+      const behind=rem.filter(x=>cnt(x)<mx);
+      const nx=(behind.length?behind:rem).reduce((a,b)=>cnt(b)<cnt(a)?b:a);
+      if(behind.length){ rest=null; cur={i:nx,s:empty(nx)}; render(); return; }
+      const last=g[g.length-1];
+      cur={i:j,s:empty(j)};
+      rest={j:last,k:cnt(last)-1,end:Date.now()+REST*1000,total:REST,next:{i:nx,s:empty(nx)}};
+      render(); return;
+    }
+  }
+  cur={i:j,s:empty(j)};
+  if(ex.every((_,x)=>!left(x))){ rest=null; toast('모든 세트 끝 — 앱에서는 여기서 마무리 화면'); render(); return; }
+  rest={j,k,end:Date.now()+REST*1000,total:REST,next:null};
+  render();
+}
+function goNext(){
+  const h=rest; rest=null;
+  if(h&&h.next){ cur={...h.next}; }
+  else if(!left(cur.i)){ nextGroup(); return; }
+  render();
+}
+function heads(){const seen=new Set(),out=[];ex.forEach((_,j)=>{const g=fam(j);if(!seen.has(g[0])){seen.add(g[0]);out.push(g[0])}});return out}
+function goGroup(h){
+  const g=fam(h); rest=null;
+  const pick=g.filter(left).reduce((a,b)=>a===null||cnt(b)<cnt(a)?b:a,null);
+  const i=pick===null?h:pick; const s=empty(i);
+  cur={i,s:s<ex[i].n?s:0}; render();
+}
+function nextGroup(){
+  const hs=heads(), me=fam(cur.i)[0];
+  const open=hs.filter(h=>h!==me&&fam(h).some(left));
+  const after=open.find(h=>h>me);
+  const h=after!==undefined?after:open[0];
+  if(h===undefined){ toast('남은 종목이 없어요'); render(); return; }
+  goGroup(h);
+}
+
+/* 그리기 */
+function render(){
+  const T=todo(), j=T.i, e=ex[j], g=fam(j), sup=g.length>1, head=g[0];
+  // 머리줄
+  const tot=ex.reduce((a,x)=>a+x.n,0), dn=ex.reduce((a,x,i)=>a+cnt(i),0);
+  $('#pos').textContent=`${heads().indexOf(head)+1}/${heads().length}`;
+  $('#pct').textContent=`달성도 ${Math.round(dn/tot*100)}%`;
+  const vol=ex.reduce((a,x)=>a+x.done.reduce((b,d)=>b+(d?x.w*x.r:0),0),0), tv=ex.reduce((a,x)=>a+x.w*x.r*x.n,0);
+  $('#vol').textContent=`${vol.toLocaleString()}/${tv.toLocaleString()}`;
+  $('#barI').style.width=`${dn/tot*100}%`;
+
+  // 구역 1 — 띠: 슈퍼세트면 '다음에 할 종목'으로 바뀐다 (휴식 중에도)
+  const done=e.done.map((d,k)=>d?k:-1).filter(k=>k>=0);
+  const rm=done.length?Math.max(...done.map(()=>oneRM(e.w,e.r))):0;
+  const ev=cnt(j)*e.w*e.r, et=e.n*e.w*e.r;
+  const tag=sup?label(j,Math.min(T.s,e.n-1)):pad(j+1)+')';
+  const bandKey=`${j}|${sup}`;
+  const band=$('#band');
+  band.className='band'+(sup?' sup':'');
+  band.innerHTML=`<div class="b1">${sup?'<span class="pill">슈퍼세트</span>':''}<span class="tag">${tag}</span><span class="nm">${esc(e.name)}</span>${rest&&rest.next?'<span class="pill nx">휴식 뒤</span>':''}</div>
+    <div class="b2"><span class="p">${Math.round(cnt(j)/e.n*100)}%</span><span>1RM ${rm?rm.toFixed(1):'—'}</span><span>${ev.toLocaleString()}/${et.toLocaleString()}</span></div>`;
+  if(lastBand&&lastBand!==bandKey){band.classList.remove('flash');void band.offsetWidth;band.classList.add('flash')}
+  lastBand=bandKey;
+
+  // 구역 2 — 지금 종목(묶음)만. 늘 띠 바로 아래에서 시작
+  const rows=Math.max(...g.map(x=>ex[x].n));
+  let h=`<div class="grp${sup?' sup':''}${head!==lastHead?' swap':''}">`;
+  for(let k=0;k<rows;k++) g.forEach((x,n)=>{
+    if(k>=ex[x].n)return;
+    const d=ex[x].done[k], now=T.i===x&&T.s===k, resting=rest&&rest.j===x&&rest.k===k;
+    const showRest=!sup||n===g.length-1;
+    const rs=resting?`<span class="rs live" id="live"></span><button class="skip" data-act="skip">건너뛰기</button>`:(showRest?`<span class="rs">${ms(REST)}</span>`:`<span class="rs"></span>`);
+    h+=`<div class="row${now?' now':''}${!d&&!now&&!resting?' later':''}${sup&&n===g.length-1?' rnd':''}" ${now?'id="nowRow"':''}>
+      <button class="ck${d?' on':''}" data-act="ck" data-j="${x}" data-k="${k}" aria-label="${label(x,k)} 세트 완료">${CHK}</button>
+      <span class="no">${label(x,k)}</span>
+      <span class="v w">${ex[x].w}<small>kg</small></span><span class="v r">${ex[x].r}<small>회</small></span>${rs}</div>`;
+  });
+  h+=`<div class="add"><button data-act="addSet" aria-label="세트 추가">＋</button></div></div>`;
+  const z2=$('#z2'); z2.innerHTML=h;
+  const swapped=head!==lastHead; lastHead=head;
+  if(swapped) z2.scrollTop=0;
+  fit(z2);
+
+  // 구역 3 — 오늘 종목
+  $('#z3').innerHTML=heads().map(hd=>{
+    const gg=fam(hd), c=gg.reduce((a,x)=>a+cnt(x),0), n=gg.reduce((a,x)=>a+ex[x].n,0);
+    const nm=gg.length>1?`슈퍼세트 ${gg.map(x=>ex[x].name).join(' + ')}`:ex[hd].name;
+    return `<button class="it${hd===head?' cur':''}${c===n?' fin':''}" style="width:100%;text-align:left" data-act="go" data-h="${hd}"><span class="n">${pad(hd+1)}</span><span class="t">${esc(nm)}</span><span class="c">${c}/${n}</span></button>`;
+  }).join('');
+  const ci=$('#z3 .it.cur'); if(ci){const z3=$('#z3');const a=ci.offsetTop,b=a+ci.offsetHeight;if(a<z3.scrollTop)z3.scrollTop=a;else if(b>z3.scrollTop+z3.clientHeight)z3.scrollTop=b-z3.clientHeight;}
+  tick();
+}
+// 지금 줄이 구역 2 밖으로 나갈 때만, 들어올 만큼만 움직인다
+function fit(box){
+  const row=$('#nowRow'); if(!row)return;
+  const b=box.getBoundingClientRect(), r=row.getBoundingClientRect();
+  const top=b.top+8, bot=b.bottom-8; let m=0;
+  if(r.top<top)m=r.top-top; else if(r.bottom>bot)m=Math.min(r.bottom-bot,r.top-top);
+  if(Math.abs(m)>2)box.scrollBy({top:m,behavior:'smooth'});
+}
+function tick(){
+  const s=Math.floor((Date.now()-t0)/1000);
+  $('#clock').textContent=`${Math.floor(s/3600)}:${pad(Math.floor(s/60)%60)}:${pad(s%60)}`;
+  if(!rest)return;
+  const left=Math.max(0,Math.ceil((rest.end-Date.now())/1000));
+  const el=$('#live');
+  if(el){el.textContent=ms(left);el.className='rs live'+(left<=5?' last':left*2<=rest.total?' half':'');}
+  if(left<=0)goNext();
+}
+setInterval(tick,250);
+
+/* ── 메모 ── */
+const TR1=['12:44:38 덤벨 컬 2B 세트 체크','12:44:39 해머 컬 3A 세트 체크','12:44:39 덤벨 컬 3B 세트 체크','12:44:40 해머 컬 4A 세트 체크','12:44:41 덤벨 컬 4B 세트 체크','12:46:12 해머 컬 5A 세트 체크','12:46:14 덤벨 컬 5B 세트 체크','12:46:16 휴식 건너뛰기','12:46:17 케이블 푸시 다운 1 세트 체크','12:46:18 휴식 건너뛰기'];
+const base=new Date(2026,8,24,12,46).getTime();
+const SAMPLE=[
+  {t:base,화면:'운동 중',글:'메모기능에 대해 보완을 지시했잖아? 난 앞으로도 이런 어플들을 만들 생각인데 \'동작방식\'에 대한 기록이 따로 있었으면 좋겠어. 보완하기 쉽고 얽힌것도 정리하기 쉽게. UI의 구성방식, 통일감 등등도 포함하는게 좋겠군. 어디선가 또 새로운걸 만들때 \'기초적인 동작방식을 복사해줘. 새 어플만들때 쓰려고\' 하는식으로 간단하게 복사해올수있잖아?',흔적:TR1},
+  {t:base+60000,화면:'운동 중',글:'메모된걸 누르면 메모 전체내용이 펼쳐지게. 당연히 접기도 되도록 해줘. 요약돼서 뭐라썼는지 안보여ㅎ',흔적:TR1},
+  {t:base+120000,화면:'운동 중',글:'(시안용 긴 메모 — ✎ 로 고쳐 보세요)\n1. 벤치 3세트 무게가 루틴에 안 남음\n2. 휴식 끝날 때 진동이 약함\n3. 여기 줄을 고쳐 보세요\n4. 딥스는 맨몸이면 kg 대신 "맨몸"\n5. 슈퍼세트 휴식은 B 줄에만\n6. 캘린더 주 펼침 높이\n7. 레포트 버튼 순서\n8. 메모 글씨가 작음\n9. 끝.',흔적:[]},
+];
+let M={memos:SAMPLE,draft:'',editT:null,editTx:''};
+try{const s=localStorage.getItem('hh-sian-memo-v1');if(s)M={...M,...JSON.parse(s)}}catch(_){}
+const keep=()=>{try{localStorage.setItem('hh-sian-memo-v1',JSON.stringify(M))}catch(_){}};
+const opened=new Set(); let trailOpen=null, sheetOn=false;
+const fmt=t=>{const d=new Date(t);return `${d.getMonth()+1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`};
+
+function grow(ta){ta.style.height='auto';ta.style.height=ta.scrollHeight+2+'px'}
+function openMemo(){
+  sheetOn=true; log('메모 열기');
+  $('#sheet').classList.add('show');$('#scrim').classList.add('show');
+  $('#sheet').style.transform='';
+  const ta=$('#newTx'); ta.value=M.draft; grow(ta);
+  renderMemos(); drawDraft();
+}
+// 내리기 — 쓰던 글(새 메모든 고치던 메모든)이 있으면 아래 띠로 남고, 없으면 닫힌다
+function lower(){
+  sheetOn=false;
+  $('#sheet').classList.remove('show');$('#scrim').classList.remove('show');
+  $('#sheet').style.transform='';
+  document.activeElement&&document.activeElement.blur&&document.activeElement.blur();
+  drawDraft();
+}
+function drawDraft(){
+  const has=M.draft.trim()||M.editT!==null;
+  $('#draftBar').classList.toggle('show',!sheetOn&&!!has);
+  $('#draftBar b').textContent=M.editT!==null&&!M.draft.trim()?'✎ 고치던 메모':'✎ 쓰던 메모';
+  $('#draftPeek').textContent=(M.draft.trim()||M.editTx).replace(/\s+/g,' ');
+}
+function renderMemos(){
+  const L=M.memos.slice().reverse();
+  $('#allBtns').style.display=L.length?'flex':'none';
+  if(!L.length){$('#memoList').innerHTML='<div class="empty">아직 적은 메모가 없습니다</div>';return}
+  $('#memoList').innerHTML=L.map(m=>{
+    const meta=`<div class="meta"><span>${fmt(m.t)} · ${esc(m.화면)}</span>`;
+    if(M.editT===m.t) return `<div class="memo edit">${meta}</div><textarea id="editTx" data-t="${m.t}">${esc(M.editTx)}</textarea>
+      <div class="two"><button class="btn sm" data-act="editCancel">취소</button><button class="btn sm pri" data-act="editSave">저장</button></div></div>`;
+    const op=opened.has(m.t), to=trailOpen===m.t;
+    return `<div class="memo">${meta}<button data-act="edit" data-t="${m.t}" aria-label="메모 고치기">${PEN}</button><button data-act="del" data-t="${m.t}" aria-label="메모 지우기">${BIN}</button></div>
+      <div class="txt${op?' open':''}" data-act="fold" data-t="${m.t}">${esc(m.글)}</div>
+      <span class="more" data-act="fold" data-t="${m.t}"></span>${m.흔적&&m.흔적.length?`<span class="trail" data-act="trail" data-t="${m.t}">${to?'직전 동작 접기':`직전 동작 ${m.흔적.length}가지 보기`}</span>`:''}
+      ${to?`<div class="trl">${m.흔적.map(esc).join('<br>')}</div>`:''}</div>`;
+  }).join('');
+  // 두 줄을 넘는 메모에만 '전체 보기 ∨' / '접기 ∧'
+  document.querySelectorAll('.txt').forEach(el=>{
+    const mo=el.nextElementSibling, t=+el.dataset.t;
+    if(opened.has(t)){mo.textContent='접기 ∧';mo.classList.add('show')}
+    else if(el.scrollHeight>el.clientHeight+1){mo.textContent='전체 보기 ∨';mo.classList.add('show')}
+  });
+  const et=$('#editTx'); if(et){grow(et); et.addEventListener('input',()=>{M.editTx=et.value;grow(et);keep()});}
+}
+function copyText(){return M.memos.map(m=>{const h=`- [${m.화면}] ${m.글}`;return m.흔적&&m.흔적.length?h+m.흔적.map(x=>`\n    · ${x}`).join(''):h}).join('\n')}
+async function copyAll(){
+  const t=copyText();
+  try{await navigator.clipboard.writeText(t);toast('전부 복사했습니다');return}catch(_){}
+  const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();
+  let ok=false;try{ok=document.execCommand('copy')}catch(_){}
+  ta.remove();toast(ok?'전부 복사했습니다':'복사가 막혀 있어요 — 길게 눌러 직접 복사해 주세요');
+}
+let undoFn=null,toastTimer=null;
+function toast(msg,undo){
+  $('#toastTx').textContent=msg; undoFn=undo||null;
+  $('#toastBtn').style.display=undo?'':'none';
+  $('#toast').classList.add('show'); clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>$('#toast').classList.remove('show'),undo?5000:2200);
+}
+$('#toastBtn').onclick=()=>{if(undoFn){undoFn();undoFn=null;$('#toast').classList.remove('show')}};
+
+$('#newTx').addEventListener('input',e=>{M.draft=e.target.value;grow(e.target);keep()});
+
+/* 누름 */
+document.addEventListener('click',ev=>{
+  const b=ev.target.closest('[data-act]'); if(!b)return;
+  const a=b.dataset.act, t=+b.dataset.t;
+  switch(a){
+    case 'ck': check(+b.dataset.j,+b.dataset.k); break;
+    case 'skip': log('휴식 건너뛰기'); goNext(); break;
+    case 'go': log(`${ex[+b.dataset.h].name} 로 이동`); goGroup(+b.dataset.h); break;
+    case 'addSet': fam(todo().i).forEach(x=>{ex[x].n++;ex[x].done.push(false)}); log('세트 추가'); render(); break;
+    case 'next': log('다음 누름'); nextGroup(); break;
+    case 'list': case 'plus': toast('시안에서는 생략 — 아래 목록을 눌러 이동해 보세요'); break;
+    case 'end': toast('시안에서는 생략'); break;
+    case 'openMemo': openMemo(); break;
+    case 'lower': lower(); break;
+    case 'put': { const s=M.draft.trim(); if(!s)break; M.memos.push({t:Date.now(),화면:'운동 중',글:s,흔적:trail.slice(-10)}); M.draft=''; $('#newTx').value=''; grow($('#newTx')); keep(); renderMemos(); break; }
+    case 'fold': opened.has(t)?opened.delete(t):opened.add(t); renderMemos(); break;
+    case 'trail': trailOpen=trailOpen===t?null:t; renderMemos(); break;
+    case 'edit': { const m=M.memos.find(x=>x.t===t); M.editT=t; M.editTx=m.글; keep(); renderMemos(); const et=$('#editTx'); if(et){et.focus();} break; }
+    case 'editCancel': M.editT=null; M.editTx=''; keep(); renderMemos(); break;
+    case 'editSave': { const s=M.editTx.trim(); if(s)M.memos=M.memos.map(x=>x.t===M.editT?{...x,글:s}:x); M.editT=null; M.editTx=''; keep(); renderMemos(); break; }
+    case 'del': { const old=M.memos.slice(); M.memos=M.memos.filter(x=>x.t!==t); keep(); renderMemos(); toast('메모를 지웠습니다',()=>{M.memos=old;keep();renderMemos()}); break; }
+    case 'clearAll': { const old=M.memos.slice(); M.memos=[]; keep(); renderMemos(); toast(`메모 ${old.length}개를 지웠습니다`,()=>{M.memos=old;keep();renderMemos()}); break; }
+    case 'copyAll': copyAll(); break;
+  }
+});
+
+/* 시트를 끌어내리기 */
+(function(){
+  const g=$('#grab'), sh=$('#sheet'); let y0=null, dy=0;
+  g.addEventListener('pointerdown',e=>{if(e.target.closest('button'))return;y0=e.clientY;dy=0;sh.style.transition='none';g.setPointerCapture(e.pointerId)});
+  g.addEventListener('pointermove',e=>{if(y0===null)return;dy=Math.max(0,e.clientY-y0);sh.style.transform=`translateY(${dy}px)`});
+  const up=()=>{if(y0===null)return;y0=null;sh.style.transition='';if(dy>70)lower();else sh.style.transform='';};
+  g.addEventListener('pointerup',up);g.addEventListener('pointercancel',up);
+})();
+
+render(); drawDraft();
+})();
+</script>
+</body>
+</html>

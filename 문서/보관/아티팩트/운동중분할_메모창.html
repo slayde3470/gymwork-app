@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>시안 — 운동 중 분할 · 메모 창</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F7F8F7;--surf:#FFFFFF;--surf2:#F0F2F1;--line:#DDE2E0;--text:#1A1C1B;--muted:#6B7F76;--faint:#9AA8A2;
+  --acc:#2E5E4E;--onacc:#FFFFFF;--accsoft:#E2EEE8;--good:#2E7D57;--bad:#B3261E;--rest:#B06A1F;--restsoft:#FBEEDD;
+  --up:#D92D20;--down:#1668DC;--accline:rgba(46,94,78,.35);--restline:rgba(176,106,31,.45);--supbg:#FBF3EA;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#121413;--surf:#1E211F;--surf2:#272B29;--line:#343936;--text:#E2E3E1;--muted:#9FB2A9;--faint:#6F7F78;
+  --acc:#8FD0B8;--onacc:#00382A;--accsoft:#213029;--good:#8FD0B8;--bad:#F2B8B5;--rest:#E8B87A;--restsoft:#302819;
+  --up:#FF7A6B;--down:#66B0FF;--accline:rgba(143,208,184,.35);--restline:rgba(232,184,122,.45);--supbg:#221F19;
+}}
+:root[data-theme="dark"]{
+  --bg:#121413;--surf:#1E211F;--surf2:#272B29;--line:#343936;--text:#E2E3E1;--muted:#9FB2A9;--faint:#6F7F78;
+  --acc:#8FD0B8;--onacc:#00382A;--accsoft:#213029;--good:#8FD0B8;--bad:#F2B8B5;--rest:#E8B87A;--restsoft:#302819;
+  --up:#FF7A6B;--down:#66B0FF;--accline:rgba(143,208,184,.35);--restline:rgba(232,184,122,.45);--supbg:#221F19;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{height:100%;margin:0;background:var(--bg);color:var(--text);display:flex;flex-direction:column;align-items:center;
+  font-family:"Noto Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;letter-spacing:-.01em;
+  -webkit-tap-highlight-color:transparent;overflow:clip}
+button,input,textarea{font-family:inherit;letter-spacing:inherit}
+button{cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+svg{display:block}
+
+.ctl{width:100%;max-width:420px;display:flex;align-items:center;gap:8px;padding:6px 16px}
+.ctl span{flex:1;font-size:11px;color:var(--faint)}
+.ctl button{height:28px;padding:0 10px;border-radius:8px;border:1px solid var(--line);background:var(--surf2);color:var(--muted);font-size:11px;font-weight:700}
+
+.phone{position:relative;width:100%;max-width:420px;flex:1;min-height:0;display:flex;flex-direction:column;background:var(--bg);overflow:clip}
+@media (min-width:600px){.phone{border:1px solid var(--line);border-radius:16px;max-height:860px;margin-bottom:16px}}
+
+/* 머리줄 */
+.top{background:var(--surf)}
+.toprow{display:flex;align-items:center;gap:8px;padding:12px}
+.rname{font-size:13px;font-weight:700;letter-spacing:-.02em;white-space:nowrap}
+.m{font-size:11px;color:var(--muted);white-space:nowrap}
+.m.acc{color:var(--acc);font-weight:700}
+.grow{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.endbtn{height:28px;padding:0 8px;border-radius:8px;border:1px solid var(--line);background:var(--surf2);color:var(--muted);font-size:11px;font-weight:700;white-space:nowrap}
+.bar{height:3px;background:var(--surf2)}
+.bar i{display:block;height:100%;background:var(--acc);transition:width .3s}
+
+/* 분할 */
+.split{flex:1;min-height:0;display:flex;flex-direction:column;gap:8px;padding:8px 16px 0}
+.now{flex:0 1 auto;max-height:64%;min-height:0;display:flex;flex-direction:column;background:var(--surf);
+  border:1px solid var(--accline);border-radius:8px;overflow:hidden}
+.now.sup{border-color:var(--restline);background:var(--supbg)}
+.now.enter .sets,.now.enter .band{animation:rise .26s ease-out}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.band{padding:6px 12px 7px;border-bottom:1px solid var(--line);flex:none}
+.now.sup .band{border-bottom-color:var(--restline)}
+.suplab{font-size:11px;font-weight:700;color:var(--rest);letter-spacing:.04em;line-height:1.4}
+.bname{display:flex;align-items:baseline;gap:4px;line-height:1.25}
+.bname.swap{animation:swap .24s ease-out}
+@keyframes swap{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.bno{font-size:13px;font-weight:700;color:var(--muted)}
+.now.sup .bno{color:var(--rest)}
+.bt{font-size:15px;font-weight:700;letter-spacing:-.02em}
+.bstat{display:flex;gap:8px;font-size:11px;color:var(--muted);margin-top:2px;line-height:1.4}
+.bstat .a{color:var(--acc);font-weight:700}
+.upc{color:var(--up);font-weight:700}.dnc{color:var(--down);font-weight:700}
+.sets{flex:1 1 auto;min-height:0;overflow-y:auto;position:relative;padding:4px 8px;overscroll-behavior:contain}
+
+/* 세트 줄 */
+.row{display:flex;align-items:center;gap:4px;padding:4px;border-radius:8px;margin:2px 0;min-height:36px}
+.row.cur{background:var(--accsoft)}
+.row.dim{opacity:.55}
+.chk{width:28px;height:28px;border-radius:50%;border:1px solid var(--line);background:var(--surf2);display:grid;place-items:center;padding:0;flex:none;color:var(--surf2)}
+.chk.on{background:var(--acc);border-color:var(--acc);color:var(--onacc)}
+.chk svg{width:15px;height:15px}
+.no{width:32px;height:28px;border:1px solid var(--line);border-radius:8px;background:var(--surf);display:grid;place-items:center;font-size:13px;font-weight:700;flex:none}
+.w,.r{text-align:center;white-space:nowrap}
+.w{flex:1.6}.r{flex:1}
+.w b,.r b{font-size:18px;font-weight:500;color:var(--muted)}
+.row.d .w b,.row.d .r b{color:var(--text)}
+.w i,.r i{font-style:normal;font-size:11px;color:var(--faint);margin-left:1px}
+.restlab{width:62px;text-align:right;font-size:11px;color:var(--faint);flex:none;white-space:nowrap}
+.restlab b{font-size:13px;font-weight:400}
+.timer{--c:var(--good);width:62px;height:28px;border-radius:8px;display:grid;place-items:center;flex:none;font-size:18px;font-weight:700;color:var(--c);
+  border:1.5px solid var(--c);background:color-mix(in srgb,var(--c) 14%,transparent)}
+.timer.mid{--c:var(--down)}.timer.bad{--c:var(--bad);font-weight:800}
+.skip{height:28px;padding:0 8px;border-radius:8px;border:1px solid var(--line);background:var(--surf2);font-size:11px;font-weight:700;color:var(--muted);flex:none}
+.plusw{display:flex;justify-content:center;padding:8px 0}
+.plus{width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--surf);color:var(--acc);display:grid;place-items:center;padding:0}
+.plus svg{width:20px;height:20px}
+
+/* 아래 구역 — 나머지 종목 */
+.list{flex:1 1 0;min-height:30%;overflow-y:auto;position:relative;overscroll-behavior:contain;padding-bottom:4px}
+.lg{border-radius:8px;padding:2px 8px;margin-bottom:6px;opacity:.8}
+.lg.sup{border:1px solid var(--restline);background:var(--supbg)}
+.lg.fin{opacity:.5}
+.lsup{display:flex;align-items:center;padding-left:4px;min-height:28px}
+.lsup span{flex:1;font-size:11px;font-weight:700;color:var(--rest);letter-spacing:.04em}
+.lhead{display:flex;align-items:center;gap:4px;min-height:40px;padding-left:4px}
+.lname{flex:1;display:flex;align-items:baseline;gap:4px;min-width:0;background:none;border:0;text-align:left;padding:4px 0;color:var(--muted)}
+.lname .n{font-size:13px;font-weight:700}
+.lg.sup .lname .n{color:var(--rest)}
+.lname .t{font-size:15px;font-weight:700;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lcnt{font-size:11px;color:var(--muted);white-space:nowrap}
+.badge{font-size:11px;font-weight:700;color:var(--rest);border:1px solid var(--restline);border-radius:999px;padding:0 6px;line-height:16px}
+.fold{width:32px;height:32px;border-radius:8px;border:0;background:none;color:var(--muted);display:grid;place-items:center;padding:0;flex:none}
+.fold svg{width:18px;height:18px;transition:transform .2s}
+.fold.open svg{transform:rotate(180deg)}
+.lrows{padding-bottom:4px}
+
+/* 쓰던 메모 손잡이 */
+.peek{margin:6px 16px 0;background:var(--surf);border:1px solid var(--line);border-bottom:0;border-radius:12px 12px 0 0;padding:6px 12px 8px;touch-action:none;cursor:pointer}
+.peek[hidden]{display:none}
+.grab{width:36px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 6px}
+.ptxt{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ptxt b{color:var(--acc);font-weight:700}
+
+/* 아래 버튼줄 · 탭 */
+.bottom{display:flex;gap:8px;padding:8px 12px;background:var(--surf)}
+.bottom button{flex:1;height:32px;border-radius:8px;border:1px solid var(--line);background:var(--surf2);color:var(--text);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:4px}
+.bottom svg{width:16px;height:16px}
+.tabs{display:flex;background:var(--surf);border-top:1px solid var(--line)}
+.tabs button{flex:1;height:44px;border:0;background:none;color:var(--faint);font-size:11px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.tabs svg{width:18px;height:18px}
+.tabs button.on{color:var(--acc);font-weight:700}
+
+/* 메모 시트 */
+.scrim{position:absolute;inset:0;background:rgba(0,0,0,.35);opacity:0;pointer-events:none;transition:opacity .2s}
+.scrim.on{opacity:1;pointer-events:auto}
+.sheet{position:absolute;left:0;right:0;bottom:0;max-height:88%;display:flex;flex-direction:column;background:var(--surf);
+  border-radius:16px 16px 0 0;transform:translateY(105%);transition:transform .24s ease;box-shadow:0 -4px 24px rgba(0,0,0,.18)}
+.sheet.open{transform:none}
+.shead{padding:8px 16px 10px;touch-action:none;cursor:grab;flex:none}
+.stitle{font-size:18px;font-weight:700;letter-spacing:-.02em;line-height:1.25}
+.sbody{overflow-y:auto;padding:0 16px 16px;overscroll-behavior:contain}
+.inrow{display:flex;gap:8px}
+.inrow input{flex:1;min-width:0;height:40px;border-radius:8px;border:1px solid var(--line);background:var(--surf2);padding:0 12px;font-size:15px;color:var(--text)}
+.btn{height:40px;padding:0 14px;border-radius:8px;border:1px solid var(--line);background:var(--surf2);color:var(--text);font-size:13px;font-weight:700}
+.btn.pri{background:var(--acc);border-color:var(--acc);color:var(--onacc)}
+.btn.sm{height:32px}
+.btn.red{color:var(--bad)}
+.empty{font-size:13px;color:var(--faint);padding:12px 0}
+.memo{display:flex;gap:2px;padding:8px 0;border-bottom:1px solid var(--line)}
+.mmain{flex:1;min-width:0}
+.mhead{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--faint);cursor:pointer;min-height:22px}
+.mhead .sp{flex:1}
+.mhead svg{width:16px;height:16px;color:var(--muted);transition:transform .2s}
+.memo.ex .mhead svg{transform:rotate(180deg)}
+.mhead .ed{color:var(--rest);font-weight:700}
+.mtext{font-size:15px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;cursor:pointer;white-space:pre-wrap;word-break:keep-all;overflow-wrap:anywhere}
+.medit{width:100%;font-size:15px;line-height:1.4;color:var(--text);background:var(--surf2);border:1px solid var(--line);border-radius:8px;padding:6px 8px;
+  resize:none;overflow:hidden;display:block;word-break:keep-all;overflow-wrap:anywhere;margin-top:2px}
+.medit:focus{outline:2px solid var(--acc);outline-offset:-1px;background:var(--surf)}
+.mbtns{display:flex;gap:8px;margin-top:8px}
+.mbtns[hidden]{display:none}
+.mbtns .btn{flex:1}
+.trl{background:none;border:0;padding:4px 0 0;color:var(--acc);font-size:11px}
+.trail div{font-size:11px;color:var(--faint);line-height:1.6}
+.mside{display:flex;flex:none}
+.ib{width:32px;height:32px;border:0;background:none;color:var(--muted);display:grid;place-items:center;padding:0;border-radius:8px}
+.ib svg{width:18px;height:18px}
+.allbtns{display:flex;gap:8px;margin-top:12px}
+.allbtns .btn{flex:1}
+.toast{position:absolute;left:50%;bottom:120px;transform:translate(-50%,8px);background:var(--text);color:var(--bg);font-size:13px;padding:8px 14px;border-radius:8px;opacity:0;pointer-events:none;transition:.2s;white-space:nowrap}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="ctl"><span>시안 ㉓~㉙ · 운동 중 분할과 메모 창</span><button id="bReset">처음부터</button></div>
+
+<div class="phone" id="phone">
+  <header class="top">
+    <div class="toprow">
+      <b class="rname">가슴, 팔 루틴</b>
+      <span class="m" id="hpos"></span>
+      <span class="m acc" id="hach"></span>
+      <span class="m" id="htime"></span>
+      <span class="m grow" id="hvol"></span>
+      <button class="endbtn">운동 끝내기</button>
+    </div>
+    <div class="bar"><i id="hbar"></i></div>
+  </header>
+
+  <main class="split">
+    <section class="now" id="now" aria-label="지금 하는 종목"></section>
+    <section class="list" id="list" aria-label="나머지 종목"></section>
+  </main>
+
+  <div class="peek" id="peek" hidden role="button" aria-label="쓰던 메모 이어 쓰기">
+    <div class="grab"></div>
+    <div class="ptxt"><b>쓰던 메모</b> <span id="peekTxt"></span></div>
+  </div>
+
+  <nav class="bottom">
+    <button><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>운동 목록</button>
+    <button><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>운동 추가</button>
+    <button data-act="next"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>다음</button>
+  </nav>
+  <nav class="tabs">
+    <button><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>캘린더</button>
+    <button><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6.5 6.5v11M17.5 6.5v11M3 9v6M21 9v6M6.5 12h11"/></svg>루틴</button>
+    <button><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>종목</button>
+    <button><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>설정</button>
+    <button id="tabMemo" data-act="memo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4"/></svg>메모</button>
+  </nav>
+
+  <div class="scrim" id="scrim"></div>
+  <div class="sheet" id="sheet" role="dialog" aria-label="수정 메모">
+    <div class="shead" id="shead"><div class="grab"></div><div class="stitle">수정 메모 · 운동 중</div></div>
+    <div class="sbody">
+      <div class="inrow">
+        <input id="mIn" placeholder="고칠 점을 적어 두세요" enterkeyhint="done" autocomplete="off">
+        <button class="btn pri" data-act="madd">넣기</button>
+      </div>
+      <div id="mList"></div>
+    </div>
+  </div>
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+const $=s=>document.querySelector(s);
+const ICON={
+  chk:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+  plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  chev:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>',
+  pen:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4"/></svg>',
+  del:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>'
+};
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ── 루틴 (예시) ── */
+const BASE=[
+  {name:'인클라인 벤치프레스',w:60,r:10,n:5,rest:90},
+  {name:'딥스',w:10,r:10,n:5,rest:90},
+  {name:'해머 컬',w:14,r:12,n:5,rest:60},
+  {name:'덤벨 컬',w:12,r:12,n:5,rest:60},
+  {name:'케이블 푸시 다운',w:25,r:12,n:4,rest:60},
+];
+const G=[[0],[1],[2,3],[4]];   // 묶음 — [2,3] 이 슈퍼세트
+let EX,done,cur,rest,openL,lastCur,lastTurn,trail,start;
+
+function reset(){
+  EX=BASE.map(e=>({...e}));
+  done=EX.map(e=>Array(e.n).fill(false));
+  done[0][0]=done[0][1]=done[0][2]=true;
+  cur=0;rest=null;openL={};lastCur=null;lastTurn=null;trail=[];
+  start=Date.now()-20*60*1000-35000;
+  render();
+}
+const pad2=v=>String(v).padStart(2,'0');
+function clock(){const d=new Date();return pad2(d.getHours())+':'+pad2(d.getMinutes())+':'+pad2(d.getSeconds())}
+function log(s){trail.push(clock()+' '+s);if(trail.length>20)trail.shift()}
+const comma=v=>Math.round(v).toLocaleString('ko-KR');
+const fw=v=>v%1?v.toFixed(1):String(v);
+const ms=s=>Math.floor(s/60)+':'+pad2(s%60);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function rows(g){
+  const m=G[g];
+  if(m.length===1) return Array.from({length:EX[m[0]].n},(_,k)=>({e:m[0],k,lab:String(k+1)}));
+  const mx=Math.max(...m.map(i=>EX[i].n)),out=[];
+  for(let k=0;k<mx;k++) m.forEach((i,n)=>{if(k<EX[i].n) out.push({e:i,k,lab:(k+1)+'AB'[n]})});
+  return out;
+}
+const gOf=e=>G.findIndex(m=>m.includes(e));
+const gDone=g=>rows(g).every(r=>done[r.e][r.k]);
+const turn=g=>rows(g).find(r=>!done[r.e][r.k])||null;
+const cnt=i=>done[i].filter(Boolean).length;
+const volDone=i=>cnt(i)*EX[i].w*EX[i].r;
+const volGoal=i=>EX[i].n*EX[i].w*EX[i].r;
+/* 이 세트 뒤에 쉬는가 — 슈퍼세트는 한 바퀴의 마지막 종목 뒤에만 */
+function restAfter(e,k){const m=G[gOf(e)];if(m.length===1)return true;const later=m.slice(m.indexOf(e)+1);return !later.some(i=>k<EX[i].n)}
+function labOf(e,k){return rows(gOf(e)).find(r=>r.e===e&&r.k===k).lab}
+
+/* ── 그리기 ── */
+function renderHead(){
+  const te=(turn(cur)||{e:G[cur][G[cur].length-1]}).e;
+  const tot=EX.reduce((a,_,i)=>a+volGoal(i),0),dn=EX.reduce((a,_,i)=>a+volDone(i),0);
+  const p=Math.round(dn/tot*100);
+  $('#hpos').textContent=(te+1)+'/'+EX.length;
+  $('#hach').textContent='달성도 '+p+'%';
+  $('#hvol').textContent=comma(dn)+'/'+comma(tot);
+  $('#hbar').style.width=p+'%';
+}
+function tick(){
+  const s=Math.floor((Date.now()-start)/1000);
+  $('#htime').textContent=s>=3600?Math.floor(s/3600)+':'+pad2(Math.floor(s%3600/60))+':'+pad2(s%60):ms(s);
+  if(rest){
+    const left=Math.ceil((rest.end-Date.now())/1000);
+    if(left<=0){endRest(false);return}
+    const el=$('#timer');
+    if(el){el.textContent=ms(left);el.className='timer'+(left<=5?' bad':left*2<=rest.total?' mid':'')}
+  }
+}
+function stat(i){
+  const e=EX[i],c=cnt(i),past=e.w-2.5;
+  const rmPast=past*(1+e.r/30),rmNow=c?e.w*(1+e.r/30):0,rm=Math.max(rmPast,rmNow);
+  let h=`<span class="a">${Math.round(volDone(i)/volGoal(i)*100)}%</span><span>1RM ${rm.toFixed(1)}</span><span>${comma(volDone(i))}/${comma(volGoal(i))}</span>`;
+  if(c){const p=Math.round((e.w/past-1)*100);h+=`<span class="${p>=0?'upc':'dnc'}">${p>=0?'▲':'▼'}${Math.abs(p)}%</span>`}
+  return h;
+}
+function rowHTML(r,inNow){
+  const e=EX[r.e],d=done[r.e][r.k],t=turn(cur);
+  const isCur=inNow&&t&&t.e===r.e&&t.k===r.k;
+  const resting=rest&&rest.e===r.e&&rest.k===r.k;
+  const cls='row'+(isCur?' cur':'')+(d?' d':'')+(!d&&!isCur&&!resting?' dim':'');
+  let tail;
+  if(resting&&inNow){
+    const left=Math.max(0,Math.ceil((rest.end-Date.now())/1000));
+    tail=`<span class="timer" id="timer">${ms(left)}</span><button class="skip" data-act="skip">건너뛰기</button>`;
+  } else tail=`<span class="restlab">${restAfter(r.e,r.k)?'휴식 <b>'+ms(e.rest)+'</b>':''}</span>`;
+  return `<div class="${cls}" data-e="${r.e}" data-k="${r.k}">
+    <button class="chk${d?' on':''}" data-act="chk" aria-label="${r.lab} 세트 완료">${ICON.chk}</button>
+    <span class="no">${r.lab}</span>
+    <span class="w"><b>${fw(e.w)}</b><i>kg</i></span>
+    <span class="r"><b>${e.r}</b><i>회</i></span>${tail}</div>`;
+}
+function renderNow(gc){
+  const N=$('#now'),old=$('#sets'),st=old?old.scrollTop:0;
+  const m=G[cur],sup=m.length>1,t=turn(cur),te=t?t.e:m[m.length-1];
+  const swap=!gc&&lastTurn!==null&&te!==lastTurn;
+  N.className='now'+(sup?' sup':'');
+  N.innerHTML=`<div class="band">${sup?'<div class="suplab">슈퍼세트</div>':''}
+      <div class="bname${swap?' swap':''}"><span class="bno">${sup?'AB'[m.indexOf(te)]:pad2(te+1)+')'}</span><span class="bt">${esc(EX[te].name)}</span></div>
+      <div class="bstat">${stat(te)}</div></div>
+    <div class="sets" id="sets">${rows(cur).map(r=>rowHTML(r,true)).join('')}
+      <div class="plusw"><button class="plus" data-act="add" aria-label="세트 추가">${ICON.plus}</button></div></div>`;
+  lastTurn=te;
+  const S=$('#sets');
+  if(gc){void N.offsetWidth;N.classList.add('enter');placeNow(true)}
+  else{S.scrollTop=st;requestAnimationFrame(()=>placeNow(false))}
+}
+/* 지금 구역 안에서만 움직인다 — 쉬는 중이면 그 줄을, 아니면 지금 세트 줄을 구역 맨 위로 */
+function placeNow(instant){
+  const S=$('#sets');if(!S)return;
+  let el=null;
+  if(rest) el=S.querySelector(`.row[data-e="${rest.e}"][data-k="${rest.k}"]`);
+  if(!el) el=S.querySelector('.row.cur');
+  if(!el) return;
+  S.scrollTo({top:Math.max(0,el.offsetTop-4),behavior:instant||reduce?'auto':'smooth'});
+}
+function groupHTML(g){
+  const m=G[g],sup=m.length>1,fin=gDone(g),op=!!openL[g];
+  const fold=`<button class="fold${op?' open':''}" data-act="fold" data-g="${g}" aria-label="${op?'접기':'펼치기'}">${ICON.chev}</button>`;
+  const line=(i,n)=>`<div class="lhead"><button class="lname" data-act="go" data-e="${i}"><span class="n">${sup?'AB'[n]:pad2(i+1)+')'}</span><span class="t">${esc(EX[i].name)}</span></button>
+      ${fin&&!sup?'<span class="badge">마침</span>':''}<span class="lcnt">${cnt(i)}/${EX[i].n}세트</span>${sup?'':fold}</div>`;
+  let h=`<div class="lg${sup?' sup':''}${fin?' fin':''}" data-lg="${g}">`;
+  if(sup) h+=`<div class="lsup"><span>슈퍼세트</span>${fin?'<span class="badge">마침</span>':''}${fold}</div>`;
+  h+=m.map(line).join('');
+  if(op) h+=`<div class="lrows">${rows(g).map(r=>rowHTML(r,false)).join('')}</div>`;
+  return h+'</div>';
+}
+function renderList(gc){
+  const L=$('#list'),st=L.scrollTop;
+  const gs=G.map((_,g)=>g).filter(g=>g!==cur);
+  L.innerHTML=gs.map(groupHTML).join('')+'<div id="lsp"></div>';
+  L.scrollTop=st;
+  fitList(gc);requestAnimationFrame(()=>fitList(gc));
+}
+/* 끝낸 종목은 위로 지나가 있게 — 다음 할 종목이 아래 구역 맨 위에 오도록 여백을 둔다 */
+function fitList(gc){
+  const L=$('#list'),sp=$('#lsp');if(!sp)return;
+  const gs=G.map((_,g)=>g).filter(g=>g!==cur),first=gs.find(g=>!gDone(g));
+  const fe=first!=null?L.querySelector(`[data-lg="${first}"]`):null;
+  sp.style.height='0px';
+  if(fe){const need=L.clientHeight-(sp.offsetTop+4-fe.offsetTop);sp.style.height=Math.max(0,need)+"px"}
+  if(gc)L.scrollTop=fe?fe.offsetTop:0;
+}
+function render(){
+  const gc=cur!==lastCur;
+  renderHead();renderNow(gc);renderList(gc);lastCur=cur;tick();
+}
+
+/* ── 동작 ── */
+function nextGroup(){
+  for(let s=1;s<=G.length;s++){const g=(cur+s)%G.length;if(!gDone(g))return g}
+  return null;
+}
+function toggle(e,k,inNow){
+  const was=done[e][k];done[e][k]=!was;
+  log(`${EX[e].name} ${labOf(e,k)} 세트 ${was?'체크 풀기':'체크'}`);
+  if(was){if(rest&&rest.e===e&&rest.k===k)rest=null}
+  else if(inNow){
+    if(restAfter(e,k)) rest={e,k,end:Date.now()+EX[e].rest*1000,total:EX[e].rest};
+    else if(gDone(cur)){const g=nextGroup();if(g!=null)cur=g}
+  }
+  render();
+}
+function endRest(byUser){
+  if(byUser)log('휴식 건너뛰기');
+  rest=null;
+  if(gDone(cur)){const g=nextGroup();if(g!=null)cur=g}
+  render();
+}
+
+$('#phone').addEventListener('click',ev=>{
+  const b=ev.target.closest('[data-act]');if(!b)return;
+  const a=b.dataset.act,row=b.closest('.row');
+  if(a==='chk') toggle(+row.dataset.e,+row.dataset.k,!!b.closest('#now'));
+  else if(a==='skip') endRest(true);
+  else if(a==='add'){log('세트 추가');G[cur].forEach(i=>{EX[i].n++;done[i].push(false)});render()}
+  else if(a==='go'){const e=+b.dataset.e;log(`${EX[e].name} 로 이동`);cur=gOf(e);rest=null;render()}
+  else if(a==='fold'){const g=+b.dataset.g;log(openL[g]?'종목 접기':'종목 펼치기');openL[g]=!openL[g];renderList(false)}
+  else if(a==='next'){log('다음 누름');const g=nextGroup();if(g!=null){cur=g;rest=null}render()}
+  else if(a==='memo') openSheet();
+  else memoAct(a,b);
+});
+$('#bReset').onclick=()=>{reset();memos=sample();draft='';draftTrail=null;mOpen={};mEdit={};mTr={};$('#mIn').value='';closeSheet(true);renderMemos()};
+
+/* ── 메모 ── */
+const at=(h,m,s)=>new Date(2026,8,24,h,m,s).getTime();
+const TR=['12:44:38 덤벨 컬 2B 세트 체크','12:44:39 해머 컬 3A 세트 체크','12:44:39 덤벨 컬 3B 세트 체크','12:44:40 해머 컬 4A 세트 체크','12:44:41 덤벨 컬 4B 세트 체크','12:46:12 해머 컬 5A 세트 체크','12:46:14 덤벨 컬 5B 세트 체크','12:46:16 휴식 건너뛰기','12:46:17 케이블 푸시 다운 1 세트 체크','12:46:18 휴식 건너뛰기'];
+function sample(){return[
+  {t:at(12,31,10),scr:'캘린더',text:'백업내보내기할때 메모까지 저장해서 내보낼필요없음',tr:['12:31:03 루틴 탭','12:31:04 설정 탭','12:31:08 캘린더 탭']},
+  {t:at(12,47,20),scr:'운동 중',text:"메모기능에 대해 보완을 지시했잖아? 난 앞으로도 이런 어플들을 만들 생각인데 '동작방식'에 대한 기록이 따로 있었으면 좋겠어. 보완하기 쉽고 얽힌것도 정리하기 쉽게. UI의 구성방식, 통일감 등등도 포함하는게 좋겠군. 어디선가 또 새로운걸 만들때 '기초적인 동작방식을 복사해줘. 새 어플만들때 쓰려고' 하는식으로 간단하게 복사해올수있잖아?",tr:TR.slice()},
+  {t:at(12,48,5),scr:'운동 중',text:'메모된걸 누르면 메모 전체내용이 펼쳐지게. 당연히 접기도 되도록 해줘. 요약돼서 뭐라썼는지 안보여ㅎ',tr:TR.slice()},
+]}
+let memos=sample(),draft='',draftTrail=null,mOpen={},mEdit={},mTr={};
+const fmtT=t=>{const d=new Date(t);return (d.getMonth()+1)+'/'+d.getDate()+' '+pad2(d.getHours())+':'+pad2(d.getMinutes())};
+
+function memoHTML(m){
+  const ex=!!mOpen[m.t],ed=mEdit[m.t],dirty=ed!==undefined&&ed!==m.text;
+  return `<div class="memo${ex?' ex':''}" data-t="${m.t}">
+    <div class="mmain">
+      <div class="mhead" data-act="mtog"><span>${fmtT(m.t)} · ${esc(m.scr)}</span>${!ex&&dirty?'<span class="ed">고치던 중</span>':''}<span class="sp"></span>${ICON.chev}</div>
+      ${ex?`<textarea class="medit" rows="1" aria-label="메모 고치기">${esc(ed??m.text)}</textarea>
+        <div class="mbtns"${dirty?'':' hidden'}><button class="btn sm" data-act="mcancel">취소</button><button class="btn sm pri" data-act="msave">저장</button></div>`
+        :`<div class="mtext" data-act="mopen">${esc(ed??m.text)}</div>`}
+      ${m.tr.length?`<button class="trl" data-act="mtr">${mTr[m.t]?'직전 동작 접기':'직전 동작 '+m.tr.length+'가지 보기'}</button>`:''}
+      ${mTr[m.t]?'<div class="trail">'+m.tr.map(x=>`<div>${esc(x)}</div>`).join('')+'</div>':''}
+    </div>
+    <div class="mside"><button class="ib" data-act="medit" aria-label="메모 고치기">${ICON.pen}</button><button class="ib" data-act="mdel" aria-label="메모 지우기">${ICON.del}</button></div>
+  </div>`;
+}
+function grow(ta){ta.style.height='auto';ta.style.height=ta.scrollHeight+2+'px'}
+function renderMemos(){
+  const L=$('#mList');
+  let h=memos.length?memos.slice().reverse().map(memoHTML).join(''):'<div class="empty">아직 적은 메모가 없습니다</div>';
+  if(memos.length) h+='<div class="allbtns"><button class="btn pri" data-act="mcopy">전부 복사</button><button class="btn red" data-act="mclear">전부 지우기</button></div>';
+  L.innerHTML=h;
+  L.querySelectorAll('.medit').forEach(grow);
+}
+function memoAct(a,b){
+  if(a==='madd') return addMemo();
+  if(a==='mcopy'){
+    const txt=memos.map(m=>`- [${m.scr}] ${m.text}`+m.tr.map(x=>'\n    · '+x).join('')).join('\n');
+    (navigator.clipboard?navigator.clipboard.writeText(txt):Promise.reject()).then(()=>toast('복사했습니다'),()=>toast('복사하지 못했습니다'));
+    return;
+  }
+  if(a==='mclear'){memos=[];renderMemos();return}
+  const box=b.closest('.memo');if(!box)return;
+  const t=+box.dataset.t,m=memos.find(x=>x.t===t);
+  if(a==='mopen'||a==='mtog'){mOpen[t]=!mOpen[t];renderMemos()}
+  else if(a==='medit'){mOpen[t]=true;renderMemos();const ta=$(`.memo[data-t="${t}"] .medit`);ta.focus();ta.setSelectionRange(ta.value.length,ta.value.length)}
+  else if(a==='mtr'){mTr[t]=!mTr[t];renderMemos()}
+  else if(a==='mcancel'){delete mEdit[t];renderMemos()}
+  else if(a==='msave'){const v=(mEdit[t]||'').trim();if(v)m.text=v;delete mEdit[t];renderMemos();toast('고쳤습니다')}
+  else if(a==='mdel'){memos=memos.filter(x=>x.t!==t);renderMemos()}
+}
+$('#mList').addEventListener('input',ev=>{
+  const ta=ev.target.closest('.medit');if(!ta)return;
+  const t=+ta.closest('.memo').dataset.t,m=memos.find(x=>x.t===t);
+  mEdit[t]=ta.value;grow(ta);
+  ta.parentElement.querySelector('.mbtns').hidden=ta.value===m.text;
+});
+/* 새 메모 — 쓰던 글은 창을 내려도 남는다. 직전 동작은 '처음 쓰기 시작한 때' 기준 */
+const mIn=$('#mIn');
+mIn.addEventListener('input',()=>{
+  if(!draft&&mIn.value) draftTrail=trail.slice(-10);
+  draft=mIn.value;if(!draft)draftTrail=null;
+});
+mIn.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addMemo()}});
+function addMemo(){
+  const v=mIn.value.trim();if(!v)return;
+  memos.push({t:Date.now(),scr:'운동 중',text:v,tr:draftTrail||trail.slice(-10)});
+  draft='';draftTrail=null;mIn.value='';renderMemos();$('.sbody').scrollTop=0;
+}
+function openSheet(){
+  $('#sheet').classList.add('open');$('#scrim').classList.add('on');$('#tabMemo').classList.add('on');
+  mIn.value=draft;renderMemos();updatePeek();
+}
+function closeSheet(){
+  $('#sheet').classList.remove('open');$('#scrim').classList.remove('on');$('#tabMemo').classList.remove('on');
+  mIn.blur();updatePeek();
+}
+function updatePeek(){
+  const show=!!draft&&!$('#sheet').classList.contains('open');
+  $('#peek').hidden=!show;$('#peekTxt').textContent=draft;
+  if(!$('#peek').hidden) renderList(false);
+}
+$('#scrim').onclick=closeSheet;
+/* 머리를 끌어내리면 닫힌다 */
+(()=>{const h=$('#shead'),s=$('#sheet');let y0=null;
+  h.addEventListener('pointerdown',e=>{y0=e.clientY;s.style.transition='none';h.setPointerCapture(e.pointerId)});
+  h.addEventListener('pointermove',e=>{if(y0==null)return;s.style.transform=`translateY(${Math.max(0,e.clientY-y0)}px)`});
+  const up=e=>{if(y0==null)return;const d=e.clientY-y0;y0=null;s.style.transition='';s.style.transform='';if(d>70)closeSheet()};
+  h.addEventListener('pointerup',up);h.addEventListener('pointercancel',up);
+})();
+/* 쓰던 메모 손잡이 — 누르거나 끌어올리면 다시 열린다 */
+(()=>{const p=$('#peek');let y0=null,moved=false;
+  p.addEventListener('pointerdown',e=>{y0=e.clientY;moved=false;p.setPointerCapture(e.pointerId)});
+  p.addEventListener('pointermove',e=>{if(y0!=null&&y0-e.clientY>24&&!moved){moved=true;y0=null;openSheet()}});
+  p.addEventListener('pointerup',()=>{if(y0!=null&&!moved)openSheet();y0=null});
+})();
+function toast(s){const t=$('#toast');t.textContent=s;t.classList.add('on');clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove('on'),1400)}
+
+addEventListener('resize',()=>renderList(false));
+reset();renderMemos();
+if(document.fonts)document.fonts.ready.then(()=>{fitList(true);placeNow(true)});
+setInterval(tick,250);
+</script>
+</body>
+</html>

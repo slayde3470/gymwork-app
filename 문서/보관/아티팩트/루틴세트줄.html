@@ -1,0 +1,473 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>루틴 세트줄 시안</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+:root{
+  --바탕:#F6F7F6;--면:#FFFFFF;--면2:#EFF2F0;--선:#DFE4E1;--글:#1A1D1B;--흐림:#5F7169;--옅음:#94A39C;
+  --강조:#2E5E4E;--강조글:#FFFFFF;--강조옅음:#E3EEE8;--종이:#E6EAE8;--띠:#1F2A25;--띠글:#F2F5F3;
+  --키판:#D3D8DB;--키:#FFFFFF;--키글:#111111;--오름:#D5322A;--내림:#1D67D0;--묶음:#A8641C;--묶음옅음:#FAF0E3;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --바탕:#111413;--면:#1B1F1D;--면2:#242926;--선:#323936;--글:#E4E7E5;--흐림:#A2B4AB;--옅음:#6E7E77;
+  --강조:#8ED1B7;--강조글:#00372A;--강조옅음:#1F2E28;--종이:#0A0C0B;--띠:#E4E7E5;--띠글:#111413;
+  --키판:#24282A;--키:#383D40;--키글:#E4E7E5;--오름:#FF7B6E;--내림:#6AAEFF;--묶음:#E6B676;--묶음옅음:#2E271A;}}
+:root[data-theme="dark"]{
+  --바탕:#111413;--면:#1B1F1D;--면2:#242926;--선:#323936;--글:#E4E7E5;--흐림:#A2B4AB;--옅음:#6E7E77;
+  --강조:#8ED1B7;--강조글:#00372A;--강조옅음:#1F2E28;--종이:#0A0C0B;--띠:#E4E7E5;--띠글:#111413;
+  --키판:#24282A;--키:#383D40;--키글:#E4E7E5;--오름:#FF7B6E;--내림:#6AAEFF;--묶음:#E6B676;--묶음옅음:#2E271A;}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--종이);color:var(--글);font-family:"Noto Sans KR",system-ui,sans-serif;font-size:15px;line-height:1.4;letter-spacing:-.01em;font-variant-numeric:tabular-nums;padding-inline:16px;padding-block:16px 40px}
+button{font:inherit;color:inherit;letter-spacing:inherit;cursor:pointer;border:0;background:none;padding:0;text-align:inherit}
+button:focus-visible{outline:2px solid var(--강조);outline-offset:2px}
+.wrap{max-width:880px;margin:0 auto;display:flex;gap:24px;flex-wrap:wrap;justify-content:center;align-items:flex-start}
+/* ── 정렬 규칙 (09-24) ──
+   좌우 기준선(레일) 하나: 화면 제목 · 카드 안 내용 · 세트 줄 · 아래 버튼이 모두 같은 선에서 시작하고 끝난다.
+   카드는 레일보다 8 바깥에 테두리를 둔다. 세로 간격은 4의 배수만. */
+:root{--레일:16px;--카드밖:8px;--줄:40px}
+.phone{width:360px;max-width:100%;background:var(--바탕);border:1px solid var(--선);border-radius:28px;overflow:hidden;position:relative;height:720px;display:flex;flex-direction:column}
+/* 폰 안에서는 스크롤 막대를 보이지 않는다 — 휠 · 목록 모두 (09-24 메모) */
+.scroll{flex:1;min-height:0;overflow:auto;scrollbar-width:none;-ms-overflow-style:none}
+.phone *::-webkit-scrollbar{width:0;height:0;display:none}
+.top{padding:16px var(--레일) 8px}
+.h1{font-size:22px;font-weight:700;letter-spacing:-.02em;line-height:1.25}
+.sub{font-size:13px;color:var(--흐림);display:flex;align-items:center;gap:8px;line-height:1.4;margin-top:4px}
+.card{background:var(--면);border-radius:16px;margin:8px var(--카드밖);padding:4px calc(var(--레일) - var(--카드밖)) 8px}
+.exrow{display:flex;align-items:center;gap:8px;height:44px}
+.nm{font-size:15px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meta{font-size:11px;color:var(--옅음);margin-left:auto;white-space:nowrap}
+.up{color:var(--오름);font-weight:700}.down{color:var(--내림);font-weight:700}
+.ref{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;color:var(--옅음);flex:none}
+.ref.has{color:var(--강조);background:var(--강조옅음)}
+.ref svg{width:16px;height:16px}
+.linkbox{border:1px solid var(--선);border-radius:8px;padding:8px;margin:0 0 8px}
+.lab{font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--옅음);margin-bottom:4px}
+.fake{height:36px;border:1px solid var(--선);border-radius:8px;display:flex;align-items:center;padding:0 8px;font-size:12px;color:var(--옅음);margin-bottom:4px}
+.fake span{margin-left:auto;font-size:11px}
+.link{display:flex;align-items:center;gap:8px;height:32px;margin:0 0 4px}
+.thumb{width:28px;height:28px;border-radius:6px;flex:none;background:linear-gradient(135deg,#3a3f3d,#6b7a73);display:grid;place-items:center}
+.thumb svg{width:12px;height:12px}
+.linktext{font-size:12px;color:var(--강조);text-decoration:underline;text-underline-offset:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.addlink{font-size:12px;color:var(--옅음)}
+/* 세트 줄 묶음 — 따로 테두리를 두지 않는다. 줄이 레일에 그대로 맞도록 */
+.box{display:flex;flex-direction:column;gap:4px;margin:0 0 8px}
+.row4{display:flex;gap:2px;align-items:center}
+.del{width:14px;height:var(--줄);flex:none;display:grid;place-items:center;color:var(--옅음)}
+.del svg{width:12px;height:12px}
+/* 세트가 들어오고 나갈 때 — 어디가 바뀌었는지 눈으로 좇을 수 있게 (09-24 메모) */
+@keyframes 세트들어옴{from{opacity:0;max-height:0;transform:translateY(-10px)}to{opacity:1;max-height:var(--줄);transform:none}}
+@keyframes 잠깐물듦{from{background:var(--강조옅음);box-shadow:inset 0 0 0 1.5px var(--강조)}to{background:var(--면2);box-shadow:none}}
+.row4.들어옴{animation:세트들어옴 .22s cubic-bezier(.2,.8,.3,1)}
+.kbd{border-top:1px solid var(--선)}
+.row4.들어옴 .k{animation:잠깐물듦 .7s ease-out}
+@media (prefers-reduced-motion:reduce){.row4.들어옴,.row4.들어옴 .k{animation:none}}
+.k{flex:1;height:var(--줄);border-radius:8px;background:var(--면2);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.15}
+.k small{font-size:11px;color:var(--옅음);white-space:nowrap}
+.k span{font-size:13px;font-weight:700;white-space:nowrap}
+.k.on{flex:1.69;background:var(--면);box-shadow:inset 0 0 0 1.5px var(--강조);flex-direction:row;justify-content:center;padding:0}
+.k.on.횟수칸{flex:1.6}
+.k.on.휴식칸{flex:1.51}
+/* 빈 자리를 − ＋ 가 나눠 갖는다 — 누를 수 있는 범위를 넓게, 값은 가운데 (09-24 메모) */
+.k.on .mid{display:flex;flex-direction:column;align-items:center;min-width:0;flex:none;padding:0 2px}
+.k.on .pm{flex:1;width:auto;min-width:28px}
+.k.on .val{font-size:15px}
+.k.세트칸{flex:.75}     /* 세트는 숫자 한두 자리뿐 — 좁게 */
+.k.횟수칸{flex:.85}     /* 세트를 키운 만큼 횟수에서 덜어냈다 */
+.k.on.세트칸{flex:1.07}
+.k.on.세트칸 .pm{width:24px}
+.pm{width:30px;align-self:stretch;color:var(--강조);font-size:18px;font-weight:700;display:grid;place-items:center}
+.wheelrow{display:flex;gap:2px}
+.wheel{position:relative;height:170px;overflow-y:auto;background:var(--면2);border-radius:8px;scrollbar-width:none}
+.wheel::-webkit-scrollbar{display:none}
+.wv{height:34px;width:100%;display:grid;place-items:center;font-size:13px;color:var(--흐림)}
+.wv.on{background:var(--강조옅음);color:var(--강조);font-weight:700;font-size:18px}
+.kbd{background:var(--키판);padding:6px;display:grid;grid-template-columns:repeat(3,1fr);gap:6px;flex:none}
+.key{height:38px;background:var(--키);color:var(--키글);border-radius:8px;font-size:17px;display:grid;place-items:center}
+.chiprow{display:flex;gap:4px;overflow-x:auto;padding:2px 0 4px;scrollbar-width:none}
+.chiprow::-webkit-scrollbar{display:none}
+.gchip{flex:none;height:20px;padding:0 8px;border-radius:99px;background:var(--면2);font-size:11px;font-weight:700;display:inline-flex;align-items:center;gap:4px;color:var(--흐림)}
+.bar{display:flex;gap:8px;padding:8px var(--레일);background:var(--면);border-top:1px solid var(--선);flex:none}
+.btn{flex:1;height:40px;border-radius:8px;background:var(--면2);color:var(--글);font-size:13px;font-weight:700;display:grid;place-items:center}
+.btn.main{background:var(--강조);color:var(--강조글)}
+.sheetwrap{position:absolute;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:flex-end}
+/* 고르는 물음은 화면 가운데에 — 손이 멀리 가지 않게, 좌우로는 여백을 둔다 (09-24 메모) */
+.dlgwrap{position:absolute;inset:0;background:rgba(0,0,0,.35);display:grid;place-items:center}
+.dlg{width:60%;min-width:208px;background:var(--면);border-radius:16px;padding:16px}
+.dlg h3{margin:0 0 4px;font-size:18px;letter-spacing:-.02em;text-wrap:balance}
+.sheet{width:100%;background:var(--면);border-radius:16px 16px 0 0;padding:16px var(--레일)}
+.sheet h3{margin:0 0 8px;font-size:18px;letter-spacing:-.02em}
+.opt{display:flex;align-items:center;gap:8px;height:44px;border-bottom:1px solid var(--선);font-size:13px}
+.opt .tick{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--선);display:grid;place-items:center;flex:none;font-size:12px;color:var(--강조글)}
+.opt .tick.on{background:var(--강조);border-color:var(--강조)}
+.prev{font-size:12px;color:var(--흐림);background:var(--면2);border-radius:8px;padding:8px;margin:8px 0}
+.setline{display:flex;align-items:center;justify-content:space-between;height:44px;font-size:13px;color:var(--흐림)}
+.seg{display:flex;gap:4px}
+.seg button{height:28px;padding:0 10px;border-radius:99px;background:var(--면2);font-size:12px;color:var(--흐림)}
+.seg button.on{background:var(--강조);color:var(--강조글);font-weight:700}
+.toast{position:absolute;left:12px;right:12px;bottom:12px;background:var(--띠);color:var(--띠글);border-radius:12px;display:flex;align-items:center;justify-content:space-between;padding:0 8px 0 16px;min-height:44px;font-size:12px}
+.toast button{color:var(--띠글);font-weight:700;padding:0 8px;height:32px}
+.tabs{display:flex;gap:8px;flex-wrap:wrap}
+.tab{height:32px;padding:0 14px;border-radius:99px;background:var(--면);font-size:13px;color:var(--흐림)}
+.tab.on{background:var(--강조);color:var(--강조글);font-weight:700}
+.side{width:380px;max-width:100%;display:flex;flex-direction:column;gap:12px}
+.note{background:var(--면);border-radius:16px;padding:16px;font-size:13px;line-height:1.7;color:var(--흐림)}
+.note h2{font-size:18px;margin:0 0 8px;color:var(--글);letter-spacing:-.02em}
+.note b{color:var(--글)}
+.note ul{margin:6px 0 0;padding-left:18px}
+.note li{margin-bottom:4px}
+.tag{font-size:11px;color:var(--옅음);margin-top:8px}
+</style>
+
+<div class="wrap">
+  <div class="phone" id="phone">
+    <div class="scroll" id="screen"></div>
+    <div class="kbd" id="kbd" hidden></div>
+    <div class="bar" id="bar"></div>
+    <div id="sheetHost"></div>
+    <div class="toast" id="toast" hidden><span id="toastT"></span><button id="toastX">닫기</button></div>
+  </div>
+
+  <div class="side">
+    <div class="tabs" id="tabs">
+      <button class="tab on" data-v="루틴">루틴</button>
+      <button class="tab" data-v="운동">운동 중 · 타이트하게</button>
+      <button class="tab" data-v="설정">볼륨 자동 올리기</button>
+    </div>
+    <div class="note" id="note"></div>
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const 분초=t=>`${Math.floor(t/60)}:${String(t%60).padStart(2,"0")}`;
+const 무글=w=>Number.isInteger(w)?String(w):w.toFixed(1);
+const 콤마=n=>Math.round(n).toLocaleString();
+const 일RM=(w,r)=>w*(1+r/30);
+
+// ── 자료 ── 기본값: 1세트 · 휴식 1:00 (09-24 메모)
+let 화면="루틴";
+let 종목=[
+  {이름:"벤치프레스", 성장:7, 링크:{글:"유튜브 · 벤치프레스 자세", url:"https://youtu.be/..."},
+   세트:[{w:60,r:10,t:60},{w:65,r:8,t:60},{w:65,r:8,t:90}]},
+  {이름:"인클라인 덤벨프레스", 성장:3, 링크:null, 세트:[{w:24,r:10,t:60},{w:24,r:10,t:60}]},
+  {이름:"케이블 플라이", 성장:-2, 링크:null, 세트:[{w:15,r:12,t:60}]},
+];
+let 열린=0;                 // 펼친 종목
+let 켠=null;                // "종목|세트|칸"  (칸: s w r t)
+let 열때=null, 친글=null, 옛=null, 타이머=null;
+let 링크열림=null;          // 참고 링크 칸이 열린 종목
+let 새줄=null;              // 방금 들어온 세트 줄 "j|k" — 한 번만 애니메이션
+let 물음=null;              // 마지막 세트를 뺄 때 묻는 시트 (종목 번호)
+let 지움되돌림=null;        // 종목을 뺀 직후 5초 되돌리기
+// 운동 중 · 타이트하게
+let 타이트={열림:false, 세트:true, 휴식:true, 마지막:false};
+// 볼륨 자동 올리기
+let 볼륨={켬:true, 방식:"%", 값:2.5, 배분:"무게", 언제:"성공"};
+
+const 이름={s:"세트",w:"무게",r:"횟수",t:"휴식"},단위={s:"",w:"kg",r:"회",t:""},간={w:1,r:1,t:5};   // − ＋ 는 무게 1kg (09-24 메모)
+// 휠: 무게 5kg · 횟수 1회 · 휴식 10초 (09-24 메모)
+const 휠값={w:Array.from({length:61},(_,i)=>i*5),r:Array.from({length:50},(_,i)=>i+1),t:Array.from({length:19},(_,i)=>i*10)};
+const 휠글={w:무글,r:String,t:분초};
+const 총세트=()=>종목.reduce((a,e)=>a+e.세트.length,0);
+const 예상분=()=>Math.round(종목.reduce((a,e)=>a+e.세트.reduce((b,s)=>b+40+s.t,0),0)/60)+ (종목.length-1);
+const 볼륨값=e=>e.세트.reduce((a,s)=>a+s.w*s.r,0);
+const 최고RM=e=>Math.max(...e.세트.map(s=>일RM(s.w,s.r)));
+const 루틴성장=()=>Math.round(종목.reduce((a,e)=>a+e.성장*볼륨값(e),0)/종목.reduce((a,e)=>a+볼륨값(e),0));
+
+/** 받침에 따라 을/를 · 은/는 */
+function 조사(말, 받침, 없음){ const c=말.charCodeAt(말.length-1); const 받=(c>=0xAC00&&c<=0xD7A3)&&((c-0xAC00)%28!==0); return 말+(받?받침:없음) }
+function 알림(t,닫기글="닫기"){ 지움되돌림 = 닫기글==="되돌리기" ? 지움되돌림 : null;$("toastT").textContent=t;$("toastX").textContent=닫기글;$("toast").hidden=false;clearTimeout(타이머);타이머=setTimeout(()=>{$("toast").hidden=true},4000)}
+function 성장글(n){return n===0?`0%`:`${n>0?"▲":"▼"}${Math.abs(n)}%`}
+function 성장클(n){return n>0?"up":n<0?"down":""}
+
+// ── 숫자 칸 ──
+function 칸(ji,ki,칸이름,값,현재){
+  const 키=`${ji}|${ki}|${칸이름}`;
+  if(켠!==키) return `<button class="k${칸이름==="s"?" 세트칸":칸이름==="r"?" 횟수칸":""}" data-open="${키}"><small>${칸이름==="s"?"세트":이름[칸이름]}</small><span>${값}</span></button>`;
+  const 보임 = 친글!==null ? 친글+단위[칸이름] : 값;
+  return `<div class="k on${칸이름==="s"?" 세트칸":칸이름==="r"?" 횟수칸":칸이름==="t"?" 휴식칸":""}"><button class="pm" data-pm="-" data-key="${키}" aria-label="${이름[칸이름]} 빼기">−</button>
+    <div class="mid"><small>${이름[칸이름]}</small><span class="val">${보임}</span></div>
+    <button class="pm" data-pm="+" data-key="${키}" aria-label="${이름[칸이름]} 더하기">＋</button></div>`;
+}
+function 휠그리기(ji,ki){
+  if(!켠) return "";
+  const [j,k,칸이름]=켠.split("|");
+  if(+j!==ji||+k!==ki||칸이름==="s") return "";
+  const 값들=휠값[칸이름], 지금=종목[ji].세트[ki][칸이름];
+  const 가까운=값들.reduce((a,v,i)=>Math.abs(v-지금)<Math.abs(값들[a]-지금)?i:a,0);
+  const 목록=값들.map((v,i)=>`<button class="wv${i===가까운?" on":""}" data-pick="${v}">${휠글[칸이름](v)}</button>`).join("");
+  const 앞=["s","w","r","t"].indexOf(칸이름);
+  return `<div class="wheelrow">${["s","w","r","t"].map((x,i)=>i===앞
+    ?`<div class="wheel" id="wheel" style="flex:${칸이름==="r"?"1.6":칸이름==="t"?"1.51":"1.69"}">${목록}</div>`
+    :`<div style="flex:${x==="s"?".75":x==="r"?".85":"1"}"></div>`).join("")}<div style="width:14px;flex:none"></div></div>`;
+}
+function 세트줄(ji){
+  const e=종목[ji];
+  return `<div class="box">`+e.세트.map((s,ki)=>
+    `<div class="row4${새줄===`${ji}|${ki}`?" 들어옴":""}" data-row="${ji}|${ki}">
+      ${칸(ji,ki,"s",`${ki+1}`)}
+      ${칸(ji,ki,"w",무글(s.w)+"kg")}
+      ${칸(ji,ki,"r",s.r+"회")}
+      ${칸(ji,ki,"t",분초(s.t))}
+      <button class="del" data-del="${ji}|${ki}" aria-label="세트 ${ki+1} 지우기">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button>
+    </div>${휠그리기(ji,ki)}`).join("")+`</div>`;
+}
+/** 오른쪽 위 '참고' 아이콘 — 누르면 링크 칸이 열린다 */
+function 참고단추(e,ji){
+  const 있음=!!e.링크;
+  return `<button class="ref${있음?" has":""}" data-reflink="${ji}" aria-label="참고 링크">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7L12 19"/></svg></button>`;
+}
+function 링크칸(e,ji){
+  if(링크열림!==ji) return "";
+  if(!e.링크) return `<div class="linkbox">
+    <div class="lab">참고 링크</div>
+    <div class="fake">https://youtu.be/… <span>주소</span></div>
+    <div class="fake">벤치프레스 자세 <span>보일 글씨</span></div>
+    <div class="bar" style="padding:0;background:none;border:0;margin-top:8px">
+      <button class="btn" data-reflink="${ji}">취소</button><button class="btn main" data-savelink="${ji}">넣기</button></div>
+    <div class="tag">주소는 감추고 글씨만 보입니다 · 유튜브면 썸네일을 받아 옵니다</div></div>`;
+  return `<div class="linkbox">
+    <button class="link" data-link="${ji}">
+      <span class="thumb"><svg viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg></span>
+      <span class="linktext">${e.링크.글}</span></button>
+    <div class="bar" style="padding:0;background:none;border:0">
+      <button class="btn" data-dellink="${ji}">지우기</button><button class="btn" data-reflink="${ji}">닫기</button></div></div>`;
+}
+
+function 루틴화면(){
+  return `<div class="top">
+      <div class="h1">가슴날</div>
+      <div class="sub"><span>${종목.length}종목 · ${총세트()}세트 · 약 ${예상분()}분</span>
+        <b class="${성장클(루틴성장())}" style="margin-left:auto">3개월 ${성장글(루틴성장())}</b></div>
+    </div>` +
+    종목.map((e,ji)=>`<div class="card">
+      <div class="exrow">
+        <button class="nm" data-ex="${ji}" style="flex:1">${e.이름}</button>
+        <span class="meta">1RM ${최고RM(e).toFixed(1)} · 볼륨 ${콤마(볼륨값(e))}</span>
+        ${참고단추(e,ji)}
+      </div>
+      ${링크칸(e,ji)}
+      ${열린===ji?세트줄(ji):""}
+    </div>`).join("");
+}
+
+function 운동화면(){
+  return `<div class="top">
+      <div class="sub" style="gap:6px"><b style="color:var(--글);font-size:15px">가슴날</b><span>2/4</span>
+        <span>달성도 18%</span><span>02:41</span><span style="margin-left:auto">1,200/4,635</span></div>
+    </div>
+    <div class="card"><div class="exrow"><span class="nm">00) 워밍업 · 푸시업</span><span class="meta"><b class="up">▲6%</b></span></div></div>
+    <div class="card"><div class="exrow"><span class="nm">01) 벤치프레스</span>
+      <span class="meta">1RM 80.0 · 볼륨 1,200 · <b class="up">3개월 ▲7%</b></span></div>
+      <div class="box">
+        <div class="row4"><div class="k"><small>세트 1</small><span>✓ 60kg</span></div><div class="k"><small>횟수</small><span>10회</span></div><div class="k"><small>휴식</small><span>1:00</span></div></div>
+        <div class="row4"><div class="k" style="box-shadow:inset 0 0 0 1.5px var(--강조)"><small>세트 2</small><span>60kg</span></div><div class="k"><small>횟수</small><span>10회</span></div><div class="k"><small>휴식</small><span>1:00</span></div></div>
+      </div>
+    </div>
+    <div class="card"><div class="exrow"><span class="nm">02) 인클라인 덤벨프레스</span><span class="meta">4세트</span></div></div>
+    <div class="card"><div class="exrow"><span class="nm">03) 케이블 플라이</span><span class="meta">3세트</span></div></div>
+    <div style="font-size:11px;color:var(--옅음);margin:4px 16px 0">· 끝난 종목(00) 은 <b style="color:var(--글)">늘어난 만큼</b>만 · 아직 시작 안 한 종목(02 · 03)은 <b style="color:var(--글)">세트 수</b>만 · 자세한 것은 줄을 눌러 펼쳤을 때 (09-24 메모)</div>`;
+}
+
+/** 마지막 세트 — 종목째 뺄까요? */
+function 물음시트(){
+  if(물음===null) return "";
+  const e=종목[물음];
+  return `<div class="dlgwrap"><div class="dlg">
+    <h3>${조사(e.이름,"을","를")} 뺄까요?</h3>
+    <div style="font-size:13px;color:var(--흐림)">마지막 한 세트입니다</div>
+    <div class="bar" style="padding:16px 0 0;background:none;border:0;gap:4px">
+      <button class="btn" data-물음취소="1">아니오</button>
+      <button class="btn main" data-물음빼기="${물음}">빼기</button>
+    </div></div></div>`;
+}
+function 타이트시트(){
+  if(!타이트.열림) return "";
+  const 줄인세트=총세트()-(타이트.세트?종목.length:0)-(타이트.마지막?종목[종목.length-1].세트.length:0);
+  const 줄인분=Math.max(5, 예상분()-(타이트.세트?4:0)-(타이트.휴식?6:0)-(타이트.마지막?6:0));
+  const 줄=(키,글,설명)=>`<button class="opt" data-tight="${키}" style="width:100%">
+      <span class="tick${타이트[키]?" on":""}">${타이트[키]?"✓":""}</span>
+      <span style="color:var(--글)">${글}</span><span style="margin-left:auto">${설명}</span></button>`;
+  return `<div class="sheetwrap" id="sheetwrap"><div class="sheet">
+    <h3>오늘만 타이트하게</h3>
+    <div style="font-size:12px;color:var(--옅음)">오늘 기록에만 적용 · 루틴 원본은 그대로</div>
+    ${줄("세트","종목마다 마지막 세트 빼기","−"+종목.length+"세트")}
+    ${줄("휴식","휴식 15초씩 줄이기","−15초")}
+    ${줄("마지막","마지막 종목 통째로 빼기","−"+종목[종목.length-1].세트.length+"세트")}
+    <div class="prev">${총세트()}세트 · 약 ${예상분()}분 → <b style="color:var(--글)">${줄인세트}세트 · 약 ${줄인분}분</b></div>
+    <div class="bar" style="padding:0;background:none;border:0">
+      <button class="btn" data-tightclose="1">취소</button>
+      <button class="btn main" data-tightgo="1">오늘만 적용</button>
+    </div>
+  </div></div>`;
+}
+
+function 설정화면(){
+  const 세그=(키,값들,현재)=>`<div class="seg">${값들.map(v=>`<button data-set="${키}" data-val="${v}" class="${String(현재)===String(v)?"on":""}">${v}</button>`).join("")}</div>`;
+  return `<div class="top"><div class="h1">볼륨 자동 올리기</div>
+    <div class="sub">루틴을 끝까지 성공하면 다음 루틴 목표가 저절로 올라갑니다</div></div>
+    <div class="card">
+      <div class="setline"><span>켜기</span>${세그("켬",["켬","끔"],볼륨.켬?"켬":"끔")}</div>
+      <div class="setline"><span>얼마나</span>${세그("방식",["%","kg"],볼륨.방식)}</div>
+      <div class="setline"><span>값</span>
+        <span><button class="pm" data-vol="-" style="width:36px">−</button>
+        <b style="color:var(--글)">${볼륨.방식==="%"?볼륨.값+"%":무글(볼륨.값)+"kg"}</b>
+        <button class="pm" data-vol="+" style="width:36px">＋</button></span></div>
+      <div class="setline"><span>언제</span>${세그("언제",["성공","항상"],볼륨.언제)}</div>
+      <div class="setline"><span>어디에 붙일까</span>${세그("배분",["무게","횟수","세트"],볼륨.배분)}</div>
+    </div>
+    <div class="card">
+      <div class="setline"><b style="color:var(--글)">종목마다 따로</b><span style="font-size:12px">안 정하면 위 기본값</span></div>
+      ${종목.map(e=>`<div class="setline"><span style="color:var(--글)">${e.이름}</span>
+        <span style="font-size:12px">${e.이름==="케이블 플라이"?"끔":"기본값 (+"+볼륨.값+(볼륨.방식==="%"?"%":"kg")+")"}</span></div>`).join("")}
+    </div>
+    <div class="card"><div class="setline"><b style="color:var(--글)">다음 루틴 미리보기</b></div>
+      ${종목.map(e=>{
+        const 올림=볼륨.방식==="%"?볼륨값(e)*볼륨.값/100:볼륨.값*e.세트.reduce((a,s)=>a+s.r,0);
+        const 새=볼륨값(e)+(e.이름==="케이블 플라이"?0:올림);
+        return `<div class="setline"><span style="color:var(--글)">${e.이름}</span>
+          <span style="font-size:12px">${콤마(볼륨값(e))} → <b class="up">${콤마(새)}</b></span></div>`;
+      }).join("")}
+    </div>`;
+}
+
+function 아랫줄(){
+  if(화면==="루틴") return `<button class="btn main" data-newex="1">＋ 종목 (1세트 · 1:00)</button>`;
+  if(화면==="운동") return `<button class="btn">운동 목록</button><button class="btn" data-tightopen="1">타이트하게</button><button class="btn main">다음</button>`;
+  return `<button class="btn main" data-savevol="1">저장</button>`;
+}
+
+function 그리기(){
+  $("screen").innerHTML = 화면==="루틴"?루틴화면():화면==="운동"?운동화면():설정화면();
+  $("sheetHost").innerHTML = 물음!==null ? 물음시트() : (화면==="운동"?타이트시트():"");
+  $("bar").innerHTML = 아랫줄();
+  const 칸이름=켠?켠.split("|")[2]:null;
+  $("kbd").hidden = !(켠&&칸이름!=="s");
+  if(!$("kbd").hidden) $("kbd").innerHTML=[1,2,3,4,5,6,7,8,9,"완료",0,"⌫"].map(x=>`<button class="key" data-key2="${x}">${x}</button>`).join("");
+  const w=$("wheel"); if(w){const on=w.querySelector(".wv.on"); if(on) w.scrollTop=on.offsetTop-68}
+  $("note").innerHTML=글[화면];
+}
+
+const 글={
+ 루틴:`<h2>루틴 — 세트마다 한 줄</h2>
+  <ul>
+   <li><b>세트 칸</b>은 − ＋ 만. 휠도 자판도 없습니다</li>
+   <li><b>마지막 한 세트</b>에서 − 나 휴지통을 누르면 <b>화면 가운데에</b> "종목을 뺄까요?" 가 뜹니다 (폭은 화면의 60%). 빼면 5초 동안 <b>되돌리기</b>가 뜹니다 (09-24)</li>
+   <li>칸 사이를 좁히고 오른쪽 끝에 <b>휴지통</b>을 더했습니다 — 그 줄만 <b>바로</b> 뺍니다 (움직임 없이). 칸이 열려 있어도 그대로 보입니다</li>
+   <li>칸 크기 — <b>무게 · 횟수 · 휴식은 셋이 같은 너비</b>로 넓게(100kg · 12회 · 1:30 이 넉넉히 들어가게), <b>세트는 좁게</b>. 휴지통 칸도 작게 줄여 그만큼을 숫자 칸에 줬습니다</li>
+   <li><b>무게 · 횟수 · 휴식</b>은 그 줄만 고칩니다 — − ＋ · 휠(눌러야 들어감) · 자판</li>
+   <li><b>정렬</b> (09-24) — 화면 제목 · 종목 이름 · 세트 줄 · 아래 버튼이 <b>같은 좌우 기준선</b>에서 시작하고 끝납니다. 카드 테두리만 그 선보다 8 바깥입니다. 세트 줄을 감싸던 테두리는 뺐습니다(선이 두 겹이라 줄이 안쪽으로 밀렸습니다)</li>
+   <li><b>글자</b>는 11 · 13 · 15 · 18 · 22 다섯 단계만, <b>세로 간격</b>은 4의 배수만, <b>줄 높이</b>는 40(값) · 44(이름 · 설정 줄)만 씁니다</li>
+   <li><b>무게 단위</b> — 휠은 <b>5kg</b>씩, − ＋ 는 <b>1kg</b>씩 (09-24). 횟수는 1회, 휴식은 5초 · 휠은 10초</li>
+   <li>새 종목은 <b>1세트 · 휴식 1:00</b> 로 시작합니다</li>
+   <li>종목 이름 옆은 <b>1RM · 볼륨</b> 만 (무게×횟수×세트 요약은 뺐습니다)</li>
+   <li><b>참고 링크</b> — 종목 줄 <b>오른쪽 끝 고리 아이콘</b>을 누르면 칸이 열립니다. 주소는 감추고 적어 둔 글씨만 보이고, 왼쪽 네모가 썸네일 자리입니다 (앱에서는 유튜브 썸네일을 받아 옵니다. 이 시안에서는 바깥 그림을 못 불러와 아이콘으로 뒀습니다)</li>
+   <li><b>향상도</b> — 루틴 제목 옆에 <b>루틴 전체</b>만. 종목별 향상도는 <b>운동 중</b> 화면에서 지금 하는 종목에만 붙입니다 (종목이 많아도 화면이 늘어지지 않게)</li>
+   <li><b>세트 ＋</b> — 누른 줄을 베껴 <b>바로 아래에</b> 넣습니다 (뒤 번호는 한 칸씩 밀림). 넣은 뒤에도 − ＋ 가 그대로 있어 연달아 누를 수 있습니다. − 는 누른 줄을 뺍니다</li>
+   <li><b>움직임</b> (09-24) — 새 줄은 0.22초 동안 <b>펼쳐지며 잠깐 초록으로 물들고</b>, 뺄 때는 <b>바로</b> 사라집니다 (− 도 휴지통도). 폰의 '동작 줄이기' 설정을 켜면 움직임 없이 바로 바뀝니다</li>
+  </ul>`,
+ 운동:`<h2>오늘만 타이트하게</h2>
+  종목 줄은 <b>지금 하는 것만</b> 자세히 보입니다 — 끝난 종목은 늘어난 %만, 아직 안 한 종목은 세트 수만 (09-24 메모).<br>
+  아랫줄 <b>타이트하게</b> 버튼도 눌러 보세요.
+  <ul>
+   <li>고른 것에 따라 <b>세트 수 · 휴식</b>이 줄고, 바뀐 뒤 세트 수와 예상 시간을 미리 보여 줍니다</li>
+   <li><b>오늘 기록에만</b> 적용되고 루틴 원본은 그대로입니다 (명세 5-5 ①과 같은 규칙)</li>
+   <li>고를 거리는 써 보면서 더하거나 뺍니다 → 업데이트·보완 목록에 넣었습니다</li>
+  </ul>`,
+ 설정:`<h2>볼륨 자동 올리기</h2>
+  루틴을 성공하면 다음 루틴 목표가 저절로 올라갑니다. 값을 바꾸면 맨 아래 미리보기가 따라 바뀝니다.
+  <ul>
+   <li><b>얼마나</b> — % 또는 kg</li>
+   <li><b>언제</b> — 성공(계획한 세트를 다 끝낸 날)만 / 항상</li>
+   <li><b>어디에 붙일까</b> — 아래 세 가지 중 하나. 이게 같이 고민할 부분입니다</li>
+  </ul>
+  <p><b>붙이는 방법 세 가지</b></p>
+  <ul>
+   <li><b>무게에</b> — 무게를 올립니다. 다만 봉·원판은 2.5kg 단위라, 2% 가 1.2kg 이면 올릴 수가 없습니다 → <b>모자란 만큼 쌓아 두었다가 2.5kg 이 차면 한 번에</b> 올리는 방법을 제안합니다</li>
+   <li><b>횟수에</b> — 10회 → 11회. 잘게 올라가지만 횟수가 계속 늘어나므로 <b>상한(예: 12회)</b>을 두고 넘으면 무게로 넘깁니다 (흔히 쓰는 더블 프로그레션)</li>
+   <li><b>세트에</b> — 세트를 더합니다. 가장 크게 뛰고 시간도 늘어납니다</li>
+  </ul>
+  <p class="tag">제 제안: <b>횟수 → 상한을 넘으면 무게</b>. 무게만 올리면 초반에 못 올리는 구간이 생깁니다. 어느 쪽으로 할지 정해 주세요.</p>`
+};
+
+// ── 동작 ──
+function 열기(키){ 켠 = 켠===키?null:키; 친글=null; 열때 = 켠?JSON.parse(JSON.stringify(종목)):null; 그리기() }
+function 닫기(){ 켠=null; 친글=null; 열때=null; 그리기() }
+function 취소(){ if(열때) 종목=열때; 닫기() }
+/** 세트 한 줄 빼기 — − 도 휴지통도 바로 지운다 (09-24 메모: 사라지는 움직임은 없앰) */
+function 줄빼기(j,i,켠유지){
+  const e=종목[j];
+  // 마지막 한 세트를 빼려 하면 — 종목을 뺄지 묻는다 (09-24 메모)
+  if(e.세트.length<=1){ 물음=j; 켠=null; 그리기(); return }
+  e.세트.splice(i,1);
+  켠 = 켠유지 ? `${j}|${Math.min(i, e.세트.length-1)}|s` : null;
+  친글=null; 그리기();
+}
+function 더하기(키,d){
+  const [j,k,칸이름]=키.split("|"); const e=종목[+j];
+  if(칸이름==="s"){
+    const i=+k;
+    if(d>0){
+      // 누른 줄을 베껴 바로 아래에 (뒤 번호는 한 칸씩 밀린다) — 새 줄은 펼쳐지며 잠깐 물든다
+      e.세트.splice(i+1,0,{...e.세트[i]});
+      새줄=`${j}|${i+1}`;
+      켠=`${j}|${i}|s`;   // 칸은 열어 둔다 — 한 번 더 누르려고
+      친글=null; 그리기(); 새줄=null; return;
+    }
+    줄빼기(+j, i, true);
+    return;
+  }
+  const s=e.세트[+k];
+  s[칸이름]=Math.max(칸이름==="r"?1:0, +(s[칸이름]+d*간[칸이름]).toFixed(2));
+  친글=null; 그리기();
+}
+document.addEventListener("click",ev=>{
+  const b=ev.target.closest("button");
+  if(!b){ if(켠) 취소(); return }
+  const d=b.dataset;
+  if(d.v){ 화면=d.v; 켠=null; 타이트.열림=false; document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("on",t===b)); 그리기(); return }
+  if(b.id==="toastX"){ $("toast").hidden=true; return }
+  if(d.ex!==undefined){ 열린 = 열린===+d.ex?-1:+d.ex; 켠=null; 그리기(); return }
+  if(d.open){ 열기(d.open); return }
+  if(d.del){ const [j,i]=d.del.split("|"); 줄빼기(+j,+i,false); return }
+  if(d["물음취소"]){ 물음=null; 그리기(); return }
+  if(d["물음빼기"]){
+    const j=+d["물음빼기"], 옛=JSON.parse(JSON.stringify(종목)), 이름=종목[j].이름;
+    종목.splice(j,1); 물음=null; 열린=Math.min(열린, 종목.length-1); 그리기();
+    지움되돌림=옛; 알림(`${조사(이름,"을","를")} 뺐습니다`,"되돌리기");
+    return;
+  }
+  if(b.id==="toastX" && 지움되돌림){ 종목=지움되돌림; 지움되돌림=null; $("toast").hidden=true; 그리기(); return }
+  if(d.pm){ 더하기(d.key, d.pm==="+"?1:-1); return }
+  if(d.pick!==undefined){ const [j,k,칸이름]=켠.split("|"); 종목[+j].세트[+k][칸이름]=+d.pick; 닫기(); return }
+  if(d.key2!==undefined){
+    const [j,k,칸이름]=켠.split("|"), v=d.key2;
+    if(v==="완료"){
+      if(친글){ const n = 칸이름==="t" ? (친글.includes(":")?친글.split(":").reduce((a,x)=>a*60+ +x,0):+친글) : +친글;
+        if(!isNaN(n)) 종목[+j].세트[+k][칸이름] = 칸이름==="r"?Math.max(1,Math.round(n)):n; }
+      닫기(); return;
+    }
+    친글 = v==="⌫" ? (친글??"").slice(0,-1) : (친글??"")+v;
+    그리기(); return;
+  }
+  if(d.link){ 알림(`${종목[+d.link].링크.url} 로 이동합니다 (시안이라 열리지 않습니다)`,"확인"); return }
+  if(d.savelink){ 종목[+d.savelink].링크={글:"유튜브 · 벤치프레스 자세",url:"https://youtu.be/..."}; 링크열림=null; 그리기(); return }
+  if(d.dellink){ 종목[+d.dellink].링크=null; 그리기(); return }
+  if(d.reflink){ 링크열림 = 링크열림===+d.reflink?null:+d.reflink; 켠=null; 그리기(); return }
+  if(d.newex){ 종목.push({이름:"새 종목", 성장:0, 링크:null, 세트:[{w:20,r:10,t:60}]}); 열린=종목.length-1; 그리기(); return }
+  if(d.tightopen){ 타이트.열림=true; 그리기(); return }
+  if(d.tightclose){ 타이트.열림=false; 그리기(); return }
+  if(d.tight){ 타이트[d.tight]=!타이트[d.tight]; 그리기(); return }
+  if(d.tightgo){ 타이트.열림=false; 그리기(); 알림("오늘만 줄였습니다 · 루틴 원본은 그대로","되돌리기"); return }
+  if(d.set){ 볼륨[d.set] = d.set==="켬" ? d.val==="켬" : d.val; 그리기(); return }
+  if(d.vol){ 볼륨.값 = Math.max(볼륨.방식==="%"?0.5:0.5, +(볼륨.값 + (d.vol==="+"?1:-1)*(볼륨.방식==="%"?0.5:1.25)).toFixed(2)); 그리기(); return }
+  if(d.savevol){ 알림("저장했습니다 (시안)","확인"); return }
+});
+그리기();
+</script>
+
+</body></html>

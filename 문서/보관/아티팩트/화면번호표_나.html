@@ -1,0 +1,368 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>하젠하이데 화면 번호표</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+:root{
+  --bg:#EEF2F0; --paper:#FFFFFF; --ink:#16211D; --soft:#5B6B64; --faint:#98A6A0; --line:#D5DEDA;
+  --green:#2F5D50; --green-soft:#DDEBE5; --orange:#B26A22; --orange-soft:#F7EDE2;
+  --tag:#1E6FD9; --tag-ink:#FFFFFF; --phone:#FAFBFA; --shadow:0 1px 2px rgba(22,33,29,.08),0 8px 24px rgba(22,33,29,.06);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  color-scheme:dark;
+  --bg:#101614; --paper:#18201D; --ink:#E6EEEA; --soft:#A3B3AC; --faint:#6E7D77; --line:#2B3632;
+  --green:#7FBFA8; --green-soft:#1F3A31; --orange:#E0A060; --orange-soft:#3A2A1A;
+  --tag:#5AA2FF; --tag-ink:#07182E; --phone:#131A17; --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.3);
+}}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#101614; --paper:#18201D; --ink:#E6EEEA; --soft:#A3B3AC; --faint:#6E7D77; --line:#2B3632;
+  --green:#7FBFA8; --green-soft:#1F3A31; --orange:#E0A060; --orange-soft:#3A2A1A;
+  --tag:#5AA2FF; --tag-ink:#07182E; --phone:#131A17; --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.3);
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:"Noto Sans KR",system-ui,sans-serif;font-size:15px;line-height:1.6;margin:0}
+.wrap{max-width:1120px;margin:0 auto;padding-inline:16px;padding-block:28px 56px}
+h1{font-size:28px;line-height:1.25;margin:0 0 6px;font-weight:900;letter-spacing:-.02em;text-wrap:balance}
+h2{font-size:19px;margin:44px 0 6px;font-weight:700;letter-spacing:-.01em;text-wrap:balance}
+.lead{color:var(--soft);max-width:62ch;margin:0}
+.note{color:var(--soft);font-size:13px;max-width:65ch;margin:4px 0 16px}
+code,.mono{font-family:"IBM Plex Mono",ui-monospace,monospace}
+.pill{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:99px;background:var(--green-soft);color:var(--green)}
+
+/* 규칙 */
+.rule{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:16px}
+.rbox{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.rbox b{display:block;font-size:13px;color:var(--soft);font-weight:500;margin-bottom:4px}
+.say{font-size:18px;font-weight:700}
+.say .t{color:var(--tag);font-family:"IBM Plex Mono",monospace}
+.codes{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.codes span{font-size:13px;border:1px solid var(--line);border-radius:6px;padding:1px 8px;background:var(--phone)}
+.codes span b{display:inline;color:var(--tag);font-family:"IBM Plex Mono",monospace;margin-right:4px;font-size:13px}
+
+/* 폰 + 범례 */
+.screens{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;margin-top:16px}
+.screen{display:flex;flex-direction:column;gap:10px}
+.screen h3{margin:0;font-size:15px;display:flex;align-items:center;gap:8px}
+.screen h3 .mono{color:var(--tag);font-size:15px}
+.phone{background:var(--phone);border:1px solid var(--line);border-radius:22px;padding:12px 10px 10px;box-shadow:var(--shadow);position:relative;font-size:12px}
+.row{display:flex;align-items:center;gap:6px}
+.el{position:relative;border-radius:8px;padding:6px 8px;background:var(--paper);border:1px solid var(--line);margin-bottom:6px}
+.el.flat{background:transparent;border-color:transparent}
+.el.sel{outline:2px solid var(--tag);outline-offset:1px}
+.t{position:absolute;top:-6px;left:-5px;min-width:15px;height:13.5px;padding:0 4px;border-radius:7px;background:var(--tag);color:var(--tag-ink);font:600 8.25px/13.5px "IBM Plex Mono",monospace;text-align:center;cursor:pointer;z-index:2;border:0}
+.t:focus-visible{outline:2px solid var(--ink);outline-offset:1px}
+.muted{color:var(--faint)}
+.g{color:var(--green);font-weight:700}
+.o{color:var(--orange);font-weight:700}
+.chk{width:14px;height:14px;border-radius:50%;border:1px solid var(--line);display:inline-block;flex:none}
+.chk.on{background:var(--green);border-color:var(--green)}
+.num{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums}
+.set{display:grid;grid-template-columns:16px 26px 1fr 1fr 1.2fr 16px;gap:6px;align-items:center;padding:4px 2px}
+.set.now{background:var(--green-soft);border-radius:6px}
+.btns{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.btns div{border:1px solid var(--line);border-radius:6px;text-align:center;padding:4px 0;background:var(--paper)}
+.tabs{display:grid;grid-template-columns:repeat(5,1fr);text-align:center;color:var(--faint);font-size:11px;padding-top:4px}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;font-size:11px}
+.cal i{font-style:normal;display:block;padding:2px 0}
+.chip{font-size:10px;border:1px solid var(--line);border-radius:4px;padding:0 3px}
+.chip.g2{background:var(--green-soft);color:var(--green);border-color:transparent}
+.sw{width:26px;height:14px;border-radius:7px;background:var(--green);display:inline-block;flex:none}
+.sw.off{background:var(--line)}
+.chips{display:flex;gap:4px;flex-wrap:wrap}
+.chips span{border:1px solid var(--line);border-radius:99px;padding:0 7px;font-size:11px}
+.chips span.on{background:var(--green);color:var(--paper);border-color:var(--green)}
+.legend{list-style:none;margin:0;padding:0;background:var(--paper);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.legend li{display:grid;grid-template-columns:58px 1fr;gap:8px;padding:6px 12px;border-top:1px solid var(--line);font-size:13px;cursor:pointer}
+.legend li:first-child{border-top:0}
+.legend li b{font-family:"IBM Plex Mono",monospace;color:var(--tag);font-weight:600}
+.legend li.sel{background:var(--green-soft)}
+.legend li small{display:block;color:var(--soft);font-size:12px}
+
+/* 보이는 방식 */
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px;margin-top:14px}
+.opt{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.opt h4{margin:0;font-size:15px}
+.opt p{margin:0;color:var(--soft);font-size:13px}
+.demo{background:var(--phone);border:1px dashed var(--line);border-radius:10px;padding:14px 10px 10px;font-size:12px}
+.pro{font-size:12px;margin:0;padding-left:16px;color:var(--soft)}
+.pro li::marker{color:var(--green)}
+.tagB{outline:1.5px dashed var(--tag);outline-offset:2px;border-radius:6px;position:relative}
+.tagB::after{content:attr(data-n);position:absolute;right:-4px;top:-10px;font:600 10px/14px "IBM Plex Mono",monospace;background:var(--paper);color:var(--tag);padding:0 3px;border:1px solid var(--tag);border-radius:4px}
+.toast{margin-top:8px;background:var(--ink);color:var(--paper);border-radius:8px;padding:6px 10px;font-size:12px;display:inline-block}
+
+/* 합치기 */
+.flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin-top:14px;counter-reset:st}
+.step{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.step h4{margin:0;font-size:14px}
+.step h4::before{counter-increment:st;content:counter(st);display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--green);color:var(--paper);font-size:12px;margin-right:6px}
+.rcard{border:1px solid var(--line);border-radius:8px;padding:6px 8px;background:var(--phone);font-size:12px}
+.rcard.drag{transform:rotate(-2deg);box-shadow:var(--shadow);border-color:var(--green)}
+.rcard.target{outline:2px solid var(--green);background:var(--green-soft)}
+.ask{border:1px solid var(--line);border-radius:12px;padding:10px;background:var(--phone);text-align:center;font-size:12px}
+.ask .row{justify-content:center;margin-top:6px}
+.ask .b{border:1px solid var(--line);border-radius:6px;padding:3px 8px;background:var(--paper)}
+.ask .b.p{background:var(--green);color:var(--paper);border-color:var(--green)}
+.q{background:var(--orange-soft);border-radius:12px;padding:12px 14px;margin-top:14px;font-size:14px}
+.q b{color:var(--orange)}
+footer{margin-top:40px;color:var(--faint);font-size:12px}
+@media (prefers-reduced-motion:no-preference){ .el,.legend li{transition:background .15s} }
+</style>
+
+<div class="wrap">
+  <h1>화면 번호표</h1>
+  <p class="lead">시험 기간 동안 앱의 칸마다 번호를 붙여 두면, 사진 없이 <b>"운4 휴식칸 좀 좁혀줘"</b>처럼 말할 수 있습니다. 아래는 번호를 매기는 규칙, 지금 화면 네 개에 붙인 번호, 앱에서 번호를 보여 주는 방법 세 가지입니다. <span class="pill">v0.6.8 에 들어감 · 방식 A · 파랑 · 25% 작게</span></p>
+
+  <h2>번호를 매기는 규칙</h2>
+  <div class="rule">
+    <div class="rbox"><b>화면 글자 + 번호</b>
+      <div class="say"><span class="t">운4</span> = 운동 중 화면의 4번</div>
+      <div class="codes"><span><b>캘</b>캘린더</span><span><b>루</b>루틴</span><span><b>종</b>종목</span><span><b>설</b>설정</span><span><b>운</b>운동 중</span><span><b>달</b>달성 화면</span><span><b>메</b>메모</span></div>
+    </div>
+    <div class="rbox"><b>칸 안의 작은 칸은 점으로</b>
+      <div class="say"><span class="t">운4.3</span> = 세트 줄의 횟수 칸</div>
+      <p class="note" style="margin:6px 0 0">번호는 두 단계까지만 씁니다. 더 잘게 나누면 번호를 외우기 어려워집니다.</p>
+    </div>
+    <div class="rbox"><b>번호는 위에서 아래, 왼쪽에서 오른쪽</b>
+      <div class="say">한 번 붙인 번호는 바꾸지 않습니다</div>
+      <p class="note" style="margin:6px 0 0">칸이 새로 생기면 빈 번호나 끝 번호를 씁니다. 지운 칸의 번호는 다시 쓰지 않습니다. 목록은 <code>10_동작방식.md</code> 부록에 둡니다.</p>
+    </div>
+  </div>
+
+  <h2>지금 화면에 붙인 번호</h2>
+  <p class="note">번호나 오른쪽 목록을 누르면 서로 짝이 표시됩니다. 화면은 v0.6.x 모양을 줄여 그린 것입니다.</p>
+
+  <div class="screens">
+    <!-- 운동 중 -->
+    <section class="screen" data-s="운">
+      <h3><span class="mono">운</span>운동 중</h3>
+      <div class="phone">
+        <div class="el flat" data-k="운1"><button class="t">운1</button>
+          <div class="row" style="justify-content:space-between"><span><b>가슴</b> <span class="muted">3/7</span> <span class="g">달성도 28%</span> <span class="muted num">00:32</span></span><span class="chip">운동 끝내기</span></div>
+        </div>
+        <div class="el" data-k="운2"><button class="t">운2</button>
+          <div><span class="o">슈퍼세트 A</span> <b>해머 컬</b> <span class="muted" style="float:right">∧</span></div>
+          <div class="muted"><span class="g">43%</span> 1RM 26.7 · 600/1,400</div>
+        </div>
+        <div class="el flat" data-k="운3"><button class="t">운3</button>
+          <div class="muted">01) 벤치프레스 · 5/5세트 <span style="float:right">∨</span></div>
+        </div>
+        <div class="el" data-k="운4" style="background:var(--orange-soft)"><button class="t">운4</button>
+          <div class="set"><span class="chk on"></span><span class="num">1A</span><span class="num">20kg</span><span class="num">10회</span><span class="muted"></span><span class="muted">∨</span></div>
+          <div class="set"><span class="chk on"></span><span class="num">1B</span><span class="num">20kg</span><span class="num">10회</span><span class="g num">0:42</span><span class="muted">∨</span></div>
+          <div class="set now"><span class="chk"></span><span class="num">2A</span><span class="num">20kg</span><span class="num">10회</span><span class="muted"></span><span class="muted">∨</span></div>
+          <div style="text-align:center;margin-top:4px"><span class="chip">＋</span></div>
+        </div>
+        <div class="el flat" data-k="운5"><button class="t">운5</button>
+          <div class="muted">05) 케이블 푸시 다운 · 0/1세트</div>
+        </div>
+        <div class="el flat" data-k="운6"><button class="t">운6</button>
+          <div class="btns"><div>운동 목록</div><div>운동 추가</div><div>다음</div></div>
+        </div>
+        <div class="tabs"><span>캘린더</span><span>루틴</span><span>종목</span><span>설정</span><span>메모</span></div>
+      </div>
+      <ul class="legend">
+        <li data-k="운1"><b>운1</b><span>맨 윗줄 — 루틴 · 달성도 · 시간 · 볼륨 · 운동 끝내기</span></li>
+        <li data-k="운2"><b>운2</b><span>고정 띠 — 지금 종목<small>운2.1 이름 · 운2.2 정보 줄 · 운2.3 접기</small></span></li>
+        <li data-k="운3"><b>운3</b><span>끝낸 종목 줄 (접힘)</span></li>
+        <li data-k="운4"><b>운4</b><span>지금 묶음 상자 — 세트 줄<small>운4.1 체크 · 운4.2 세트 번호 · 운4.3 무게 · 운4.4 횟수 · 운4.5 휴식 칸 · 운4.6 펼치기 · 운4.7 ＋</small></span></li>
+        <li data-k="운5"><b>운5</b><span>남은 종목 줄 (접힘)</span></li>
+        <li data-k="운6"><b>운6</b><span>아랫줄 버튼 — 운동 목록 · 운동 추가 · 다음</span></li>
+      </ul>
+    </section>
+
+    <!-- 캘린더 -->
+    <section class="screen" data-s="캘">
+      <h3><span class="mono">캘</span>캘린더</h3>
+      <div class="phone">
+        <div class="el flat" data-k="캘1"><button class="t">캘1</button>
+          <div class="row" style="justify-content:space-between"><span class="chip">‹</span><b>2026년 9월</b><span class="chip">›</span></div>
+        </div>
+        <div class="el" data-k="캘2"><button class="t">캘2</button>
+          <div class="cal">
+            <i class="muted">일</i><i class="muted">월</i><i class="muted">화</i><i class="muted">수</i><i class="muted">목</i><i class="muted">금</i><i class="muted">토</i>
+            <i>20</i><i>21</i><i>22</i><i>23</i><i><b>24</b><br><span class="chip g2">가슴</span></i><i>25<br><span class="chip">등</span></i><i>26<br><span class="chip">하체</span></i>
+            <i>27</i><i>28</i><i>29</i><i>30</i><i></i><i></i><i></i>
+          </div>
+        </div>
+        <div class="el" data-k="캘3"><button class="t">캘3</button>
+          <div><b>가슴</b> <span class="chip g2">달성</span> <span class="muted num">25세트 · 7,250kg · 08:41</span></div>
+          <div class="muted">직전 대비 비교 기록 없음</div>
+          <div class="btns" style="margin-top:6px;grid-template-columns:2fr 1fr"><div>이 날 기록 지우기</div><div>일정</div></div>
+        </div>
+        <div class="tabs"><span class="g">캘린더</span><span>루틴</span><span>종목</span><span>설정</span><span>메모</span></div>
+      </div>
+      <ul class="legend">
+        <li data-k="캘1"><b>캘1</b><span>달 이름 · 이전 · 다음</span></li>
+        <li data-k="캘2"><b>캘2</b><span>달력<small>캘2.1 날짜 숫자 · 캘2.2 루틴 칩 · 캘2.3 일정 점</small></span></li>
+        <li data-k="캘3"><b>캘3</b><span>날짜 판<small>캘3.1 제목 줄 · 캘3.2 향상도 줄 · 캘3.3 버튼 줄</small></span></li>
+      </ul>
+    </section>
+
+    <!-- 루틴 -->
+    <section class="screen" data-s="루">
+      <h3><span class="mono">루</span>루틴</h3>
+      <div class="phone">
+        <div class="el flat" data-k="루1"><button class="t">루1</button>
+          <b style="font-size:15px">루틴</b><div class="muted">자동생성 루틴만 순서대로 달력에 깔립니다</div>
+        </div>
+        <div class="el" data-k="루2"><button class="t">루2</button>
+          <div class="row"><b class="num">1</b><div style="flex:1"><b>가슴</b><div class="g" style="font-size:11px">7종목 · 25세트 · 49분 · 자동생성</div></div><span class="muted">↑ ↓ ⚙ ∧</span></div>
+        </div>
+        <div class="el" data-k="루3"><button class="t">루3</button>
+          <div class="row"><b style="flex:1">벤치프레스</b><span class="muted">1RM 80 · 3,000</span><span class="muted">지우기</span></div>
+          <div class="set" style="grid-template-columns:30px 1fr 1fr 1fr 16px"><span class="num">1</span><span class="num">40kg</span><span class="num">10회</span><span class="num">1:00</span><span class="muted">×</span></div>
+        </div>
+        <div class="el flat" data-k="루4"><button class="t">루4</button>
+          <div class="btns" style="grid-template-columns:1fr"><div>종목 추가</div></div>
+        </div>
+        <div class="el flat" data-k="루5"><button class="t">루5</button>
+          <div class="btns" style="grid-template-columns:2fr 1fr"><div>루틴 추가</div><div>휴식일</div></div>
+        </div>
+        <div class="tabs"><span>캘린더</span><span class="g">루틴</span><span>종목</span><span>설정</span><span>메모</span></div>
+      </div>
+      <ul class="legend">
+        <li data-k="루1"><b>루1</b><span>제목 · 안내 한 줄</span></li>
+        <li data-k="루2"><b>루2</b><span>루틴 머리줄<small>루2.1 순서 · 루2.2 이름 · 루2.3 요약 · 루2.4 ↑↓ · 루2.5 설정(⚙) · 루2.6 펼치기</small></span></li>
+        <li data-k="루3"><b>루3</b><span>루틴 속 종목 · 세트 줄<small>루3.1 종목 이름 · 루3.2 1RM·볼륨 · 루3.3 세트 줄</small></span></li>
+        <li data-k="루4"><b>루4</b><span>종목 추가</span></li>
+        <li data-k="루5"><b>루5</b><span>루틴 추가 · 휴식일</span></li>
+      </ul>
+    </section>
+
+    <!-- 설정 -->
+    <section class="screen" data-s="설">
+      <h3><span class="mono">설</span>설정</h3>
+      <div class="phone">
+        <div class="el" data-k="설1"><button class="t">설1</button>
+          <div class="muted" style="font-size:11px">운동 진행</div>
+          <div class="row" style="justify-content:space-between"><span>자동 진행</span><span class="sw"></span></div>
+          <div class="row" style="justify-content:space-between"><span>소리 · 진동</span><span class="sw"></span></div>
+          <div class="chips" style="margin-top:4px"><span>약</span><span class="on">중</span><span>강</span> · <span>0.5초</span><span class="on">1초</span><span>2초</span><span>3초</span></div>
+        </div>
+        <div class="el" data-k="설2"><button class="t">설2</button>
+          <div class="muted" style="font-size:11px">기록</div>
+          <div>무게 조절 폭</div>
+          <div class="chips"><span>0.1</span><span>0.5</span><span class="on">1</span><span>2.5</span><span>5</span></div>
+          <div style="margin-top:4px">기본 세트 · 기본 휴식 · 향상도 기준</div>
+        </div>
+        <div class="el" data-k="설3"><button class="t">설3</button>
+          <div class="row" style="justify-content:space-between"><span>볼륨 자동 올리기</span><span class="sw off"></span></div>
+        </div>
+        <div class="el" data-k="설4"><button class="t">설4</button>
+          <div class="btns" style="grid-template-columns:1fr 1fr"><div>백업 내보내기</div><div>백업 가져오기</div></div>
+        </div>
+        <div class="tabs"><span>캘린더</span><span>루틴</span><span>종목</span><span class="g">설정</span><span>메모</span></div>
+      </div>
+      <ul class="legend">
+        <li data-k="설1"><b>설1</b><span>운동 진행 카드<small>설1.1 자동 진행 · 설1.2 넘어가기 전 확인 · 설1.3 소리·진동 · 설1.4 진동 세기 · 설1.5 진동 길이 · 설1.6 화면 켜 두기 · 설1.7 화면 번호 보기</small></span></li>
+        <li data-k="설2"><b>설2</b><span>기록 카드<small>설2.1 무게 조절 폭 · 설2.2 기본 세트 · 설2.3 기본 휴식 · 설2.4 향상도 기준</small></span></li>
+        <li data-k="설3"><b>설3</b><span>볼륨 자동 올리기</span></li>
+        <li data-k="설4"><b>설4</b><span>데이터 — 백업</span></li>
+      </ul>
+    </section>
+  </div>
+
+  <h2>앱에서 번호를 보여 주는 방법</h2>
+  <p class="note"><b>A로 정했습니다 (09-26).</b> 파란색, 원래 시안보다 25% 작게. <b>설정 → 화면 번호 보기</b>(설1.7)로 켜고 끄며, 처음엔 켜져 있습니다. 시험이 끝나면 설정째 뺍니다. 지금은 큰 칸(운1~6 · 캘1~3 · 루1~5 · 설1~4)에만 번호가 붙고, 점 번호(운4.3)는 이 표로 말해 주시면 됩니다.</p>
+  <div class="opts">
+    <div class="opt" style="border-color:var(--tag);border-width:2px">
+      <h4>A · 모서리에 작은 번호 <span class="pill">고름</span></h4>
+      <div class="demo"><div class="el" style="margin:0"><span class="t" style="cursor:default">운2</span><b>해머 컬</b> <span class="muted">43% · 1RM 26.7</span></div></div>
+      <p>칸마다 왼쪽 위에 빨간 번호가 늘 붙어 있습니다.</p>
+      <ul class="pro"><li>화면 사진 한 장에 모든 번호가 찍힙니다</li><li>화면이 조금 복잡해 보입니다</li></ul>
+    </div>
+    <div class="opt">
+      <h4>B · 점선 테두리 + 번호</h4>
+      <div class="demo"><div class="tagB" data-n="운2" style="padding:6px 8px"><b>해머 컬</b> <span class="muted">43% · 1RM 26.7</span></div></div>
+      <p>칸의 경계가 점선으로 보이고 오른쪽 위에 번호가 붙습니다.</p>
+      <ul class="pro"><li>어디까지가 한 칸인지 분명합니다</li><li>칸이 많은 화면(운4)에서는 선이 겹칩니다</li></ul>
+    </div>
+    <div class="opt">
+      <h4>C · 길게 누르면 번호</h4>
+      <div class="demo"><div class="el" style="margin:0"><b>해머 컬</b> <span class="muted">43% · 1RM 26.7</span></div><span class="toast">운2 · 고정 띠 — 메모에 붙였습니다</span></div>
+      <p>평소엔 안 보이고, 칸을 길게 누르면 번호가 뜨며 메모에 자동으로 붙습니다.</p>
+      <ul class="pro"><li>화면이 그대로입니다</li><li>꾹 누르기(옮기기)와 겹치는 칸에서는 쓸 수 없습니다</li></ul>
+    </div>
+  </div>
+  
+
+  <h2>루틴 합치기 <span class="pill">v0.6.8 에 들어감</span></h2>
+  <p class="note">슈퍼세트를 묶을 때처럼 루틴 이름 줄을 꾹 눌러 끌어다 놓아 새 루틴을 만듭니다. 원래 두 루틴은 그대로 남습니다. 같은 종목이 두 루틴에 다 있으면 두 번 다 넣습니다(09-26).</p>
+  <div class="flow">
+    <div class="step"><h4>루틴 카드를 꾹 눌러 집기</h4>
+      <div class="rcard drag"><b>가슴</b> <span class="muted">7종목</span></div>
+      <p class="note" style="margin:0">운동 종목을 옮길 때와 같은 동작입니다. 집으면 초록 테두리가 생깁니다.</p>
+    </div>
+    <div class="step"><h4>다른 루틴 위에 놓기</h4>
+      <div class="rcard target"><b>팔</b> <span class="muted">4종목</span></div>
+      <p class="note" style="margin:0">가운데에 놓으면 합치기, 위·아래 끝에 놓으면 순서 바꾸기입니다.</p>
+    </div>
+    <div class="step"><h4>어느 쪽을 위로 둘지 고르기</h4>
+      <div class="ask"><b>새 루틴 만들기</b><div class="muted">가슴 7종목 + 팔 4종목</div>
+        <div class="row"><span class="b p">가슴 먼저</span><span class="b">팔 먼저</span><span class="b">취소</span></div></div>
+      <p class="note" style="margin:0">가운데 창은 고르는 일이라 팝업을 씁니다.</p>
+    </div>
+    <div class="step"><h4>맨 아래에 새 루틴이 생김</h4>
+      <div class="rcard"><b>가슴 + 팔</b> <span class="muted">11종목 · 자동생성 꺼짐</span></div>
+      <p class="note" style="margin:0">슈퍼세트 묶음은 그대로 옮깁니다. 이름은 ⚙에서 바꿉니다.</p>
+    </div>
+  </div>
+  
+
+
+  <h2>향상도 — 최고 대비와 직전 대비 <span class="pill">시안 · 아직 앱에 넣지 않음</span></h2>
+  <p class="note">09-26 답: 향상도는 <b>지난 기록 중 최고</b>와 견준다. 다만 직전보다 늘었는지도 알고 싶다. 예) 2주 전 최고 100kg → 지난주 90kg → 이번 주 95kg. 직전보다는 +5kg, 최고보다는 −5kg. 한눈에 두 가지를 구분해 보는 방법 세 가지입니다.</p>
+  <div class="opts">
+    <div class="opt">
+      <h4>① 두 숫자를 나란히</h4>
+      <div class="demo">
+        <div class="row" style="gap:10px"><b>벤치프레스</b><span class="num">95kg</span></div>
+        <div class="row" style="gap:8px;margin-top:4px"><span class="chip" style="color:#2F6FD6">최고 ▼5</span><span class="chip" style="color:#C8243B">직전 ▲5</span></div>
+      </div>
+      <p>최고 대비를 앞에, 직전 대비를 뒤에. 앱의 빨강 ▲ 파랑 ▼ 규칙 그대로.</p>
+      <ul class="pro"><li>가장 단순합니다</li><li>숫자 두 개를 읽어야 뜻이 잡힙니다</li></ul>
+    </div>
+    <div class="opt">
+      <h4>② 막대 한 줄 — 최고까지 얼마나</h4>
+      <div class="demo">
+        <div class="row" style="justify-content:space-between"><b>벤치프레스</b><span class="num">95 / 최고 100</span></div>
+        <div style="position:relative;height:10px;background:var(--line);border-radius:5px;margin-top:6px">
+          <div style="position:absolute;left:0;top:0;bottom:0;width:95%;background:var(--green);border-radius:5px"></div>
+          <div style="position:absolute;left:90%;top:-3px;width:2px;height:16px;background:var(--soft)"></div>
+        </div>
+        <div class="muted" style="font-size:11px;margin-top:4px">회색 눈금 = 지난주 90 · 끝 = 최고 100</div>
+      </div>
+      <p>막대 끝이 최고, 채운 만큼이 이번 기록, 눈금이 지난번.</p>
+      <ul class="pro"><li>최고에 얼마나 가까운지가 바로 보입니다</li><li>한 줄을 더 씁니다</li></ul>
+    </div>
+    <div class="opt">
+      <h4>③ 최고 대비만 크게, 직전은 작게</h4>
+      <div class="demo">
+        <div class="row" style="gap:8px"><b>벤치프레스</b><b style="color:#2F6FD6;font-size:15px">−5%</b><span class="muted" style="font-size:11px">직전 +6%</span></div>
+      </div>
+      <p>기준은 최고. 직전은 곁들여 작게.</p>
+      <ul class="pro"><li>무엇이 기준인지 헷갈리지 않습니다</li><li>직전 변화는 눈에 덜 띕니다</li></ul>
+    </div>
+  </div>
+  <p class="note" style="margin-top:12px">'최고'를 무엇으로 볼지도 정해야 합니다 — 한 세트 최고 무게, 추정 1RM, 그날 볼륨 중 하나. 지금 앱의 향상도는 볼륨 기준입니다.</p>
+
+  <footer>하젠하이데 v0.6.8 기준 · 번호 목록은 화면이 바뀌면 같이 고칩니다</footer>
+</div>
+
+<script>
+(function(){
+  function pick(k){
+    document.querySelectorAll('.sel').forEach(function(e){ e.classList.remove('sel'); });
+    document.querySelectorAll('[data-k="'+k+'"]').forEach(function(e){ e.classList.add('sel'); });
+  }
+  document.querySelectorAll('.phone .t').forEach(function(b){
+    b.addEventListener('click', function(){ pick(b.closest('[data-k]').getAttribute('data-k')); });
+  });
+  document.querySelectorAll('.legend li').forEach(function(li){
+    li.addEventListener('click', function(){ pick(li.getAttribute('data-k')); });
+  });
+})();
+</script>
+
+</body></html>

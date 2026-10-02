@@ -1,0 +1,167 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>루틴 세트별 설정 시안</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+<style>
+:root{
+  --바탕:#F6F7F6;--면:#FFFFFF;--면2:#EFF2F0;--선:#DFE4E1;--글:#1A1D1B;--흐림:#5F7169;--옅음:#94A39C;
+  --강조:#2E5E4E;--강조글:#FFFFFF;--강조옅음:#E3EEE8;--묶음:#A8641C;--종이:#E6EAE8;--띠:#1F2A25;--띠글:#F2F5F3;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --바탕:#111413;--면:#1B1F1D;--면2:#242926;--선:#323936;--글:#E4E7E5;--흐림:#A2B4AB;--옅음:#6E7E77;
+  --강조:#8ED1B7;--강조글:#00372A;--강조옅음:#1F2E28;--묶음:#E6B676;--종이:#0A0C0B;--띠:#E4E7E5;--띠글:#111413;}}
+:root[data-theme="dark"]{
+  --바탕:#111413;--면:#1B1F1D;--면2:#242926;--선:#323936;--글:#E4E7E5;--흐림:#A2B4AB;--옅음:#6E7E77;
+  --강조:#8ED1B7;--강조글:#00372A;--강조옅음:#1F2E28;--묶음:#E6B676;--종이:#0A0C0B;--띠:#E4E7E5;--띠글:#111413;}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--종이);color:var(--글);font-family:"Noto Sans KR",system-ui,sans-serif;font-size:15px;line-height:1.4;letter-spacing:-.01em;font-variant-numeric:tabular-nums;padding-inline:16px;padding-block:16px 40px}
+button{font:inherit;color:inherit;letter-spacing:inherit;cursor:pointer;border:0;background:none}
+button:focus-visible{outline:2px solid var(--강조);outline-offset:2px}
+.wrap{max-width:900px;margin:0 auto;display:flex;gap:24px;flex-wrap:wrap;justify-content:center;align-items:flex-start}
+.phone{width:360px;max-width:100%;background:var(--바탕);border:1px solid var(--선);border-radius:28px;overflow:hidden;position:relative;min-height:640px;display:flex;flex-direction:column}
+.top{padding:16px 16px 8px}
+.h1{font-size:22px;font-weight:700;letter-spacing:-.02em}
+.sub{font-size:13px;color:var(--흐림)}
+.card{background:var(--면);border-radius:16px;margin:8px 16px;padding:4px 12px 12px}
+.ex{display:flex;align-items:center;gap:8px;min-height:44px}
+.ex b{font-weight:500}
+.ex .sum{font-size:11px;color:var(--옅음);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+.box{border:1px solid var(--선);border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:8px}
+.row4{display:flex;gap:4px}
+.k{flex:1;height:40px;border-radius:8px;background:var(--면2);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.15}
+.k small{font-size:11px;color:var(--옅음)}.k span{font-size:13px;font-weight:700;white-space:nowrap}
+.k.on{flex:2.3;background:var(--면);box-shadow:inset 0 0 0 1.5px var(--강조);flex-direction:row;justify-content:space-between;padding:0 2px}
+.k.on .mid{display:flex;flex-direction:column;align-items:center}
+.pm{width:30px;height:100%;color:var(--강조);font-size:18px;font-weight:700}
+.tog{display:flex;align-items:center;justify-content:space-between;height:32px;font-size:13px;color:var(--흐림);padding:0 4px}
+.tog .chev{transition:transform .2s}.tog.open .chev{transform:rotate(180deg)}
+.sets{display:flex;flex-direction:column;border-top:1px solid var(--선)}
+.set{display:grid;grid-template-columns:28px 1fr 1fr 1fr;align-items:center;height:40px;border-bottom:1px solid var(--선);padding:0 4px;text-align:right;font-size:13px}
+.set .n{text-align:left;color:var(--옅음);font-weight:700}
+.set.sel{background:var(--강조옅음)}
+.set .diff{color:var(--강조);font-weight:700}
+.editor{padding:8px 0;border-bottom:1px solid var(--선)}
+.fill{display:flex;gap:4px;flex-wrap:wrap}
+.chip{height:28px;padding:0 12px;border-radius:99px;background:var(--면2);font-size:13px;color:var(--흐림)}
+.chip.on{background:var(--강조);color:var(--강조글)}
+.lab{font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--옅음)}
+.pyr{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.prev{font-size:13px;color:var(--흐림);background:var(--면2);border-radius:8px;padding:8px}
+.btn{height:40px;border-radius:8px;background:var(--강조);color:var(--강조글);font-weight:700;width:100%}
+.toast{position:absolute;left:12px;right:12px;bottom:12px;background:var(--띠);color:var(--띠글);border-radius:12px;display:flex;align-items:center;justify-content:space-between;padding:0 8px 0 16px;height:44px;font-size:13px}
+.toast button{color:var(--띠글);font-weight:700;padding:0 8px;height:32px}
+.side{width:380px;max-width:100%;display:flex;flex-direction:column;gap:12px}
+.modes{display:flex;gap:8px;flex-wrap:wrap}
+.note{background:var(--면);border-radius:16px;padding:16px;font-size:13px;line-height:1.6;color:var(--흐림)}
+.note h2{font-size:18px;margin:0 0 8px;color:var(--글);letter-spacing:-.02em}
+.note b{color:var(--글)}
+.note ul{margin:8px 0 0;padding-left:18px}
+.tag{font-size:11px;color:var(--옅음)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <div class="phone" id="phone">
+    <div class="top"><div class="h1">가슴날</div><div class="sub">3종목 · 13세트 · 약 38분</div></div>
+    <div class="card">
+      <div class="ex"><b>벤치프레스</b><span class="sum" id="sum"></span></div>
+      <div class="box" id="box"></div>
+    </div>
+    <div class="card"><div class="ex"><b>인클라인 덤벨프레스</b><span class="sum">24kg×10회×4세트·1:30</span></div></div>
+    <div class="card"><div class="ex"><b>케이블 플라이</b><span class="sum">15kg×12회×3세트·1:00</span></div></div>
+    <div class="toast" id="toast" hidden><span id="toastT"></span><button id="undo">되돌리기</button></div>
+  </div>
+
+  <div class="side">
+    <div class="modes" id="modes">
+      <button class="chip on" data-m="A">A 세트별 줄</button>
+      <button class="chip" data-m="B">B 증감으로 한 번에</button>
+      <button class="chip" data-m="C">C 둘 다</button>
+    </div>
+    <div class="note" id="note"></div>
+    <div class="note"><h2>공통 규칙</h2>
+      위 네 칸(세트 · 무게 · 횟수 · 휴식)은 <b>모든 세트</b>를 한꺼번에 고친다. 세트마다 값이 다르면 칸에 <b>60~70</b> 처럼 보이고, 고치면 전부 그 값이 되며 5초 <b>되돌리기</b>.
+      <ul><li>세트 수를 늘리면 <b>맨 아래 세트를 베낀다</b> (운동 화면 ＋ 와 같음)</li>
+      <li>숫자를 누르면 − ＋ (앱에서는 휠 · 자판도 — 휠은 눌러야 확정, 빈 곳 · 뒤로 = 취소)</li>
+      <li>운동 중 바꾼 값이 다음 루틴에 넘어오면(5-5) 이 세트별 줄에 그대로 보인다</li></ul>
+      <p class="tag">시안입니다. 숫자는 예시입니다.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+let 모드="A", sets=[{w:60,r:12,t:90},{w:65,r:10,t:90},{w:70,r:8,t:120}], 켠=null, 줄=null, 펼침=true, 옛=null, 타이머=null;
+let 피={w0:60,dw:5,r0:12,dr:-2};
+const 분초=t=>`${Math.floor(t/60)}:${String(t%60).padStart(2,"0")}`;
+const 무글=w=>Number.isInteger(w)?w:w.toFixed(1);
+function 폭(a,f=x=>x){const mn=Math.min(...a),mx=Math.max(...a);return mn===mx?f(mn):`${f(mn)}~${f(mx)}`}
+const 다른가=()=>["w","r","t"].some(k=>new Set(sets.map(s=>s[k])).size>1);
+function 요약(){return `${폭(sets.map(s=>s.w),무글)}kg×${폭(sets.map(s=>s.r))}회×${sets.length}세트·${폭(sets.map(s=>s.t),분초)}`}
+const 칸값={s:()=>sets.length,w:()=>폭(sets.map(s=>s.w),무글),r:()=>폭(sets.map(s=>s.r)),t:()=>폭(sets.map(s=>s.t),분초)};
+const 이름={s:"세트",w:"무게",r:"횟수",t:"휴식"},단위={s:"",w:"kg",r:"회",t:""},간={w:2.5,r:1,t:5};
+function 알림(t){옛=옛||null;$("toastT").textContent=t;$("toast").hidden=false;clearTimeout(타이머);타이머=setTimeout(()=>{$("toast").hidden=true;옛=null},5000)}
+function 모두(k,d){ // 위 칸 − ＋ : 모든 세트
+  const 달랐나=new Set(sets.map(s=>s[k])).size>1;
+  if(달랐나&&!옛)옛=JSON.parse(JSON.stringify(sets));
+  const 기준=sets[0][k];const v=Math.max(k==="t"?0:k==="w"?0:1,기준+d*간[k]);
+  sets.forEach(s=>s[k]=v);
+  if(달랐나)알림(`${이름[k]}을 모든 세트 ${k==="t"?분초(v):무글(v)+단위[k]}로`);
+  그리기();
+}
+function 세트수(d){if(d>0)sets.push({...sets.at(-1)});else if(sets.length>1)sets.pop();그리기()}
+function 한세트(i,k,d){sets[i][k]=Math.max(0,sets[i][k]+d*간[k]);그리기()}
+function 채우기(dw,dr){const s0=sets[0];sets=sets.map((_,i)=>({w:s0.w+dw*i,r:Math.max(1,s0.r+dr*i),t:sets[i].t}));그리기()}
+function 버튼칸(k){
+  const on=켠===k;
+  if(!on)return `<button class="k" data-k="${k}"><small>${이름[k]}</small><span>${칸값[k]()}${k==="s"?"":단위[k]}</span></button>`;
+  return `<div class="k on"><button class="pm" data-pm="-" data-k="${k}" aria-label="${이름[k]} 빼기">−</button><div class="mid"><small>${이름[k]}${k!=="s"&&다른가()?" · 모두":""}</small><span>${칸값[k]()}${단위[k]}</span></div><button class="pm" data-pm="+" data-k="${k}" aria-label="${이름[k]} 더하기">＋</button></div>`;
+}
+function 세트줄들(){
+  return `<div class="sets">`+sets.map((s,i)=>{
+    const 첫=sets[0];
+    const row=`<button class="set${줄===i?" sel":""}" data-row="${i}"><span class="n">${i+1}</span><span class="${s.w!==첫.w?"diff":""}">${무글(s.w)}kg</span><span class="${s.r!==첫.r?"diff":""}">${s.r}회</span><span class="${s.t!==첫.t?"diff":""}">${분초(s.t)}</span></button>`;
+    const ed=줄===i?`<div class="editor"><div class="row4">${["w","r","t"].map(k=>`<div class="k on" style="flex:1"><button class="pm" data-one="${i}" data-kk="${k}" data-pm="-" aria-label="${i+1}세트 ${이름[k]} 빼기">−</button><div class="mid"><small>${이름[k]}</small><span>${k==="t"?분초(s[k]):무글(s[k])+단위[k]}</span></div><button class="pm" data-one="${i}" data-kk="${k}" data-pm="+" aria-label="${i+1}세트 ${이름[k]} 더하기">＋</button></div>`).join("")}</div></div>`:"";
+    return row+ed;
+  }).join("")+`</div>`;
+}
+function 증감판(){
+  const n=sets.length,미=Array.from({length:n},(_,i)=>`${무글(피.w0+피.dw*i)}×${Math.max(1,피.r0+피.dr*i)}`).join(" · ");
+  const 줄=(lab,key,d,f)=>`<div class="k on" style="flex:1"><button class="pm" data-py="${key}" data-d="${-d}" aria-label="${lab} 빼기">−</button><div class="mid"><small>${lab}</small><span>${f(피[key])}</span></div><button class="pm" data-py="${key}" data-d="${d}" aria-label="${lab} 더하기">＋</button></div>`;
+  return `<div class="lab">세트마다 늘리기 · 줄이기</div>
+  <div class="pyr">${줄("시작 무게","w0",2.5,v=>무글(v)+"kg")}${줄("세트마다","dw",2.5,v=>(v>=0?"+":"")+무글(v)+"kg")}${줄("시작 횟수","r0",1,v=>v+"회")}${줄("세트마다","dr",1,v=>(v>=0?"+":"")+v+"회")}</div>
+  <div class="prev">${미}</div><button class="btn" id="py">${n}세트에 채우기</button>`;
+}
+function 그리기(){
+  $("sum").textContent=요약();
+  let h=`<div class="row4">${["s","w","r","t"].map(버튼칸).join("")}</div>`;
+  if(모드==="A"||모드==="C"){
+    h+=`<button class="tog${펼침?" open":""}" id="tog"><span>세트마다 다르게${다른가()?" · 지금 다름":""}</span><span class="chev">⌄</span></button>`;
+    if(펼침){h+=세트줄들();
+      if(모드==="C")h+=`<div class="lab">1세트에서 채우기</div><div class="fill"><button class="chip" data-f="2.5,0">+2.5kg씩</button><button class="chip" data-f="5,0">+5kg씩</button><button class="chip" data-f="0,-1">−1회씩</button><button class="chip" data-f="5,-2">+5kg · −2회씩</button><button class="chip" data-f="0,0">모두 같게</button></div>`;}
+  }
+  if(모드==="B")h+=증감판();
+  $("box").innerHTML=h;
+  const 글={A:`<h2>A · 세트별 줄 펼치기</h2>네 칸 아래 <b>세트마다 다르게 ⌄</b>. 줄을 누르면 그 세트만 고치는 칸이 열린다. 1세트와 다른 값은 초록 굵게.<ul><li>좋은 점: 운동 화면 세트 줄과 같은 모양 · 어떤 구성이든 된다</li><li>아쉬운 점: 세트가 많으면 누를 게 많다</li></ul>`,
+    B:`<h2>B · 증감으로 한 번에</h2>시작 값과 <b>세트마다 늘릴 양</b>만 정하면 미리보기대로 채운다.<ul><li>좋은 점: 피라미드가 두 번 만에</li><li>아쉬운 점: 60 · 65 · 65 처럼 규칙이 없는 구성은 못 만든다 · 세트마다의 휴식은 못 고친다</li></ul>`,
+    C:`<h2>C · 둘 다</h2>A 의 세트별 줄 + 아래에 <b>1세트에서 채우기</b> 버튼. 채운 뒤 줄을 눌러 하나씩 다듬는다.<ul><li>좋은 점: 빠르고, 무엇이든 된다</li><li>아쉬운 점: 버튼 한 줄만큼 화면이 길어진다</li></ul>`};
+  $("note").innerHTML=글[모드];
+}
+document.addEventListener("click",e=>{
+  const t=e.target.closest("button");
+  if(!t){켠=null;줄=null;그리기();return}   // 빈 곳 = 닫기
+  if(t.dataset.m){모드=t.dataset.m;document.querySelectorAll("#modes .chip").forEach(c=>c.classList.toggle("on",c===t));켠=null;줄=null;그리기();return}
+  if(t.id==="undo"){if(옛)sets=옛;옛=null;$("toast").hidden=true;그리기();return}
+  if(t.id==="tog"){펼침=!펼침;줄=null;그리기();return}
+  if(t.id==="py"){sets=sets.map((s,i)=>({w:피.w0+피.dw*i,r:Math.max(1,피.r0+피.dr*i),t:s.t}));그리기();return}
+  if(t.dataset.py){피[t.dataset.py]=+(피[t.dataset.py]+ +t.dataset.d).toFixed(1);그리기();return}
+  if(t.dataset.f){const[a,b]=t.dataset.f.split(",").map(Number);채우기(a,b);return}
+  if(t.dataset.one!=null){한세트(+t.dataset.one,t.dataset.kk,t.dataset.pm==="+"?1:-1);return}
+  if(t.dataset.pm&&t.dataset.k){const k=t.dataset.k,d=t.dataset.pm==="+"?1:-1;if(k==="s")세트수(d);else 모두(k,d);return}
+  if(t.dataset.k){켠=켠===t.dataset.k?null:t.dataset.k;줄=null;그리기();return}
+  if(t.dataset.row!=null){const i=+t.dataset.row;줄=줄===i?null:i;켠=null;그리기();return}
+});
+그리기();
+</script>
+
+</body></html>
