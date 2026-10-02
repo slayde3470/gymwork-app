@@ -1,3 +1,4 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>하젠하이데 7일 체험</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
@@ -7,7 +8,7 @@
   --바탕:#F8FAFB; --면:#FFFFFF; --면2:#F0F4F8; --선:#D3DFE9; --속선:#B5C9DA;
   --글:#000000; --흐림:#35495B; --옅음:#5E6B77;
   --강조:#084B83; --강조글:#FFFFFF; --강조옅음:#E1E9F0;
-  --좋음:#4C9A1F; --좋음글:#FFFFFF; --좋음옅음:#EAF3E4; --나쁨:#B3261E; --연두:#7CB342;
+  --좋음:#4C9A1F; --좋음글:#FFFFFF; --좋음옅음:#EAF3E4; --근육:#D6DDD9; --피부:#B9C3BE; --결:#AEB9B3; --나쁨:#B3261E; --연두:#7CB342;
   --체험:#1d2a36; --체험글:#E9F0F6;
   --글꼴: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
   --r-작게:8px; --r-보통:16px;
@@ -15,11 +16,11 @@
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
   --바탕:#07121E; --면:#111F2E; --면2:#172738; --선:#253A50; --속선:#37526E;
   --글:#E5F0FA; --흐림:#C5D1DB; --옅음:#9BA7B3; --강조:#7FB3E6; --강조글:#04213D; --강조옅음:#1F3246;
-  --좋음:#9BE06B; --좋음글:#0B2A10; --좋음옅음:#243A22; --나쁨:#E57368; --연두:#9BE06B; --체험:#0c1620; --체험글:#C5D1DB; color-scheme:dark }}
+  --좋음:#9BE06B; --좋음글:#0B2A10; --좋음옅음:#243A22; --근육:#4A5550; --피부:#3A433F; --결:#39423E; --나쁨:#E57368; --연두:#9BE06B; --체험:#0c1620; --체험글:#C5D1DB; color-scheme:dark }}
 :root[data-theme="dark"]{
   --바탕:#07121E; --면:#111F2E; --면2:#172738; --선:#253A50; --속선:#37526E;
   --글:#E5F0FA; --흐림:#C5D1DB; --옅음:#9BA7B3; --강조:#7FB3E6; --강조글:#04213D; --강조옅음:#1F3246;
-  --좋음:#9BE06B; --좋음글:#0B2A10; --좋음옅음:#243A22; --나쁨:#E57368; --연두:#9BE06B; --체험:#0c1620; --체험글:#C5D1DB; color-scheme:dark }
+  --좋음:#9BE06B; --좋음글:#0B2A10; --좋음옅음:#243A22; --근육:#4A5550; --피부:#3A433F; --결:#39423E; --나쁨:#E57368; --연두:#9BE06B; --체험:#0c1620; --체험글:#C5D1DB; color-scheme:dark }
 html,body{height:100%}
 body{background:var(--바탕);color:var(--글);font-family:var(--글꼴);font-size:15px;letter-spacing:-0.01em;padding-inline:16px;padding-block:12px;box-sizing:border-box}
 *{box-sizing:border-box}
@@ -36,9 +37,9 @@ input{font:inherit;color:var(--글)}
 .체험 .날들 button.켬{background:#fff;color:#084B83;font-weight:700}
 .체험 .날들 button.지남{opacity:.55}
 .체험 small{font-size:11px;opacity:.8}
-.체험 .작은{font-size:11px;border:1px solid #ffffff44;border-radius:6px;padding:2px 7px;color:var(--체험글)}
+.체험 .작은{font-size:11px;border:1px solid #ffffff44;border-radius:8px;padding:2px 7px;color:var(--체험글)}
 /* ── 휴대폰 한 화면 ── */
-.폰{flex:1;min-height:560px;max-height:860px;background:var(--바탕);border:1px solid var(--선);border-radius:22px;overflow:hidden;display:flex;flex-direction:column;position:relative}
+.폰{flex:1;min-height:560px;max-height:860px;background:var(--바탕);border:1px solid var(--선);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;position:relative}
 .화면{flex:1;min-height:0;display:flex;flex-direction:column;position:relative}
 .넘김{overflow-y:auto;min-height:0;flex:1;padding:0 12px 12px}
 .탭줄{display:flex;background:var(--면);border-top:1px solid var(--선);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -69,19 +70,19 @@ h1{font-size:22px;font-weight:700;letter-spacing:-0.02em;margin:14px 0 8px;text-
 .입력{height:40px;border:1px solid var(--속선);border-radius:var(--r-작게);background:var(--면);padding:0 10px;width:100%;min-width:0}
 label.칸{display:flex;flex-direction:column;gap:2px;font-size:11px;color:var(--옅음);flex:1;min-width:0}
 .구분{height:1px;background:var(--선)}
-.알약{font-size:11px;font-weight:700;border-radius:6px;padding:1px 6px}
+.알약{font-size:11px;font-weight:700;border-radius:8px;padding:1px 6px}
 .알약.달성{background:var(--좋음옅음);color:var(--좋음)}
 .알약.미달성{color:var(--나쁨);border:1px solid var(--나쁨)}
 .알약.강조{background:var(--강조);color:var(--강조글)}
 .번호{position:relative}
-.번호[data-n]::before{content:attr(data-n);position:absolute;left:2px;top:2px;font-size:9px;font-weight:700;color:#fff;background:#1e6fd9;border-radius:4px;padding:0 3px;z-index:3;pointer-events:none}
+.번호[data-n]::before{content:attr(data-n);position:absolute;left:2px;top:2px;font-size:11px;font-weight:700;color:#fff;background:#1e6fd9;border-radius:8px;padding:0 3px;z-index:3;pointer-events:none}
 .번호끔 .번호[data-n]::before{display:none}
 /* ── 시트 ── */
 .가림{position:absolute;inset:0;background:#0006;display:flex;align-items:flex-end;z-index:20}
 .시트{background:var(--면);width:100%;max-height:88%;border-radius:16px 16px 0 0;padding:14px 14px 18px;overflow-y:auto;display:flex;flex-direction:column;gap:8px}
 .시트 .머리{display:flex;align-items:center;gap:8px}
 .시트 .머리 b{flex:1;font-size:18px}
-.아래띠{position:absolute;left:10px;right:10px;bottom:62px;background:var(--흐림);color:var(--바탕);border-radius:12px;padding:10px 12px;display:flex;gap:10px;align-items:center;z-index:15;font-size:13px}
+.아래띠{position:absolute;left:10px;right:10px;bottom:62px;background:var(--흐림);color:var(--바탕);border-radius:8px;padding:10px 12px;display:flex;gap:10px;align-items:center;z-index:15;font-size:13px}
 .아래띠 button{font-weight:700;color:var(--바탕);text-decoration:underline}
 /* ── 캘린더 ── */
 .띠{background:var(--강조);color:var(--강조글);min-height:40px;display:flex;align-items:center;gap:8px;padding:6px 12px}
@@ -89,13 +90,13 @@ label.칸{display:flex;flex-direction:column;gap:2px;font-size:11px;color:var(--
 .달력{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;padding:4px 6px 6px;user-select:none;-webkit-user-select:none;touch-action:pan-y}
 .요일{font-size:11px;text-align:center;color:var(--옅음);padding:2px 0}
 .칸날{height:56px;border-radius:8px;padding:3px 2px;display:flex;flex-direction:column;align-items:center;gap:1px;font-size:11px;position:relative;border:1px solid transparent}
-.칸날 .일{font-size:12px;font-weight:600}
-.칸날.오늘 .일{background:var(--강조);color:var(--강조글);border-radius:6px;padding:0 4px}
+.칸날 .일{font-size:13px;font-weight:600}
+.칸날.오늘 .일{background:var(--강조);color:var(--강조글);border-radius:8px;padding:0 4px}
 .칸날.고름{border-color:var(--강조);background:var(--강조옅음)}
-.칸날 .루{font-size:10px;max-width:100%;overflow:hidden;white-space:nowrap;letter-spacing:-0.05em;border-radius:4px;padding:0 2px}
+.칸날 .루{font-size:11px;max-width:100%;overflow:hidden;white-space:nowrap;letter-spacing:-0.05em;border-radius:8px;padding:0 2px}
 .칸날 .루.예{background:var(--강조옅음);color:var(--강조)}
 .칸날 .루.휴{border:1px solid var(--속선);color:var(--옅음)}
-.칸날 .상{font-size:9px;font-weight:700}
+.칸날 .상{font-size:11px;font-weight:700}
 .칸날.놓기{background:var(--강조);color:var(--강조글)}
 .칸날.못놓{border:2px solid var(--나쁨)}
 .칸날.집음{outline:2px dashed var(--강조);opacity:.55}
@@ -111,36 +112,89 @@ label.칸{display:flex;flex-direction:column;gap:2px;font-size:11px;color:var(--
 /* ── 운동 중 ── */
 .머리줄{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--면);font-size:11px}
 .머리줄 b{font-size:13px}
-.고정띠{position:absolute;left:12px;right:12px;top:4px;z-index:5;border:2px solid var(--강조);border-radius:12px;overflow:hidden;background:var(--면)}
+.고정띠{position:absolute;left:12px;right:12px;top:4px;z-index:5;border:2px solid var(--강조);border-radius:16px;overflow:hidden;background:var(--면)}
 .고정띠 .띠{align-items:flex-start}
 .고정띠 .이름{font-size:18px;font-weight:700;line-height:1.25;overflow-wrap:anywhere}
-.세트줄{display:grid;grid-template-columns:36px 1fr 1fr 62px 36px;gap:4px;align-items:center;padding:4px 0}
+.세트줄{display:grid;grid-template-columns:28px 1fr 1fr 64px 28px;gap:4px;align-items:center;padding:4px 0}
 .세트줄.지금{background:var(--강조옅음);border-radius:8px}
 .세트줄.워밍{box-shadow:inset 3px 0 0 var(--연두)}
 .세트줄 .k{font-weight:700;text-align:center}
-.값칸{display:flex;align-items:center;border:1px solid var(--속선);border-radius:8px;height:36px;overflow:hidden}
-.값칸 button{width:26px;height:100%;color:var(--강조);font-weight:700}
+.값칸{display:flex;align-items:center;border:1px solid var(--속선);border-radius:8px;height:40px;overflow:hidden}
+.값칸 button{width:28px;height:100%;color:var(--강조);font-weight:700}
 .값칸 span{flex:1;text-align:center;font-weight:700;font-size:13px;font-variant-numeric:tabular-nums}
-.체크{width:32px;height:32px;border-radius:50%;border:2px solid var(--속선);display:flex;align-items:center;justify-content:center}
+.체크{width:28px;height:28px;border-radius:50%;border:2px solid var(--속선);display:flex;align-items:center;justify-content:center}
 .체크.켬{background:var(--강조);border-color:var(--강조);color:var(--강조글)}
-.휴식칸{height:36px;border-radius:8px;border:1px solid var(--강조);position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--강조)}
+.휴식칸{height:40px;border-radius:8px;border:1px solid var(--강조);position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--강조)}
 .휴식칸 i{position:absolute;inset:0;background:var(--강조);transform-origin:left}
-.휴식칸 span{position:relative;mix-blend-mode:difference;color:#fff}
-.종목상자{border:1px solid var(--속선);border-radius:12px;padding:8px;background:var(--면)}
+.휴식칸 .밑{position:relative;color:var(--강조)}
+.휴식칸 .위{position:absolute;inset:0;background:var(--강조);color:var(--강조글);display:flex;align-items:center;justify-content:center}
+.종목상자{border:1px solid var(--속선);border-radius:16px;padding:8px;background:var(--면)}
 .종목상자.지금{border:2px solid var(--강조)}
 .아랫줄{display:flex;gap:8px;padding:8px 12px;background:var(--면);border-top:1px solid var(--선)}
-.게이지{height:20px;border-radius:10px;background:var(--면2);border:1px solid var(--속선);position:relative;overflow:hidden}
+.게이지{height:20px;border-radius:8px;background:var(--면2);border:1px solid var(--속선);position:relative;overflow:hidden}
 .게이지 i{position:absolute;inset:0 auto 0 0;background:var(--강조)}
 .게이지 span{position:relative;display:block;text-align:center;font-size:11px;font-weight:700;line-height:18px;mix-blend-mode:difference;color:#fff}
-.가는바{height:4px;border-radius:2px;background:var(--면2);overflow:hidden}.가는바 i{display:block;height:100%;background:var(--강조)}
+.가는바{height:8px;border-radius:4px;background:var(--면2);overflow:hidden}.가는바 i{display:block;height:100%;background:var(--강조)}
 .방식띠{min-height:40px;border-radius:8px;background:linear-gradient(90deg,var(--강조),color-mix(in srgb,var(--강조) 82%,transparent));color:var(--강조글);display:flex;align-items:center;gap:6px;padding:6px 10px;width:100%;text-align:left}
 .방식띠.골름{box-shadow:inset 0 0 0 3px var(--강조),inset 0 0 0 5.5px var(--강조글)}
 .방식속{background:var(--면2);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:6px}
-.빈칸{border:1px dashed var(--속선);border-radius:12px;padding:14px;text-align:center;color:var(--옅음);font-size:13px}
+.빈칸{border:1px dashed var(--속선);border-radius:8px;padding:14px;text-align:center;color:var(--옅음);font-size:13px}
 .수칸{display:flex;align-items:center;gap:4px}
 .수칸 button{width:28px;height:28px;border:1px solid var(--속선);border-radius:8px;font-weight:700}
 .수칸 b{min-width:30px;text-align:center}
 .토스트{position:absolute;left:50%;top:50px;transform:translateX(-50%);background:var(--흐림);color:var(--바탕);padding:6px 12px;border-radius:8px;font-size:13px;z-index:40;white-space:nowrap}
+/* ── 운동 중 그림 칸 ── */
+.배너{display:flex;gap:6px;padding:6px 12px 0;position:relative;flex:none;transition:height .35s cubic-bezier(.2,.8,.2,1)}
+.그림판{flex:1;min-width:0;position:relative;background:var(--면);border:1px solid var(--선);border-radius:8px;overflow:hidden;display:flex}
+.그림속{flex:1;min-width:0;display:flex;align-items:center;justify-content:center;padding:4px}
+.그림속 svg{width:100%;height:100%;display:block}
+.그림속 img{width:100%;height:100%;object-fit:cover;display:block}
+.그림판:has(img) .그림속{padding:0}
+.그림이름{position:absolute;left:6px;bottom:4px;font-size:11px;font-weight:700;color:var(--흐림);background:color-mix(in srgb,var(--면) 82%,transparent);padding:0 4px;border-radius:8px;max-width:calc(100% - 20px);white-space:nowrap;overflow:hidden}
+.배너닫기{position:absolute;top:10px;right:16px;width:24px;height:24px;border-radius:50%;background:color-mix(in srgb,var(--면) 85%,transparent);font-size:11px;color:var(--흐림);z-index:2}
+.더미{position:absolute;right:2px;top:8px;bottom:8px;display:flex;gap:1px;pointer-events:none}
+.더미 i{width:3px;border-radius:50%;background:var(--속선);opacity:.75}
+.사진없음{font-size:13px;color:var(--옅음);text-align:center;line-height:1.4}
+.몸바탕{fill:var(--피부)} .몸결{fill:none;stroke:var(--결);stroke-width:.7;opacity:.8}
+.몸근{stroke:var(--면);stroke-width:1.2;stroke-linejoin:round;transition:fill .6s ease}
+/* ── 종목 사진 ── */
+.종목줄{border-bottom:1px solid var(--선);padding:6px 0}
+.종목줄:last-child{border-bottom:0}
+.종목줄머리{width:100%;text-align:left}
+.작은사진{width:28px;height:28px;border-radius:8px;object-fit:cover;flex:none}
+.작은사진.빈{background:var(--면2);border:1px dashed var(--속선)}
+.접힘표{transition:transform .25s}.접힘표.펼{transform:rotate(180deg)}
+.종목펼속{display:flex;flex-direction:column;gap:6px;padding-top:8px}
+.사진줄{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
+.사진추가,.사진칸{width:72px;height:72px;flex:none;border-radius:8px;position:relative;overflow:hidden}
+.사진추가{border:1px dashed var(--속선);display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--강조);font-size:22px;cursor:pointer;line-height:1.1}
+.사진추가 small{font-size:11px;color:var(--흐림)}
+.사진칸 img{width:100%;height:100%;object-fit:cover}
+.지움표{position:absolute;inset:0;background:#000a;color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center}
+/* ── 움직임 (UI 동작 전부) ── */
+button{transition:transform .12s ease, background-color .2s, color .2s, box-shadow .2s, opacity .2s}
+button:active:not(:disabled){transform:scale(.96)}
+.세트줄{transition:background-color .25s}
+.게이지3 i{transition:width .7s cubic-bezier(.2,.8,.2,1)}
+.휴식칸 i{transition:transform .25s linear}
+@keyframes 스며{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes 올라옴{from{transform:translateY(100%)}to{transform:none}}
+@keyframes 흐려짐{from{opacity:0}to{opacity:1}}
+@keyframes 톡{0%{transform:scale(.7)}60%{transform:scale(1.12)}100%{transform:scale(1)}}
+@keyframes 펼침{from{transform:scaleX(.03);opacity:.3}to{transform:none;opacity:1}}
+@keyframes 오른{from{transform:translateX(0)}to{transform:translateX(18px)}}
+@keyframes 왼{from{transform:translateX(18px)}to{transform:translateX(0)}}
+.들어옴{animation:스며 .24s ease-out both}
+.가림.들어옴{animation:흐려짐 .2s ease-out both}
+.시트.들어옴{animation:올라옴 .3s cubic-bezier(.2,.8,.2,1) both}
+.가림.나감{animation:흐려짐 .17s ease-in reverse both}
+.가림.나감 .시트{animation:올라옴 .17s ease-in reverse both}
+.체크.켬.들어옴,.칩.켬.들어옴{animation:톡 .3s ease-out both}
+.체크.들어옴:not(.켬){animation:none}
+.스위치.들어옴{animation:none}.스위치.켬.들어옴 i{animation:오른 .2s ease-out both}.스위치:not(.켬).들어옴 i{animation:왼 .2s ease-out both}
+.그림판.들어옴{animation:펼침 .45s cubic-bezier(.2,.8,.2,1) both;transform-origin:right center}
+.토스트{animation:스며 .2s ease-out both}
+.칸날{transition:background-color .2s, border-color .2s}
 @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
 </style>
 
@@ -148,11 +202,12 @@ label.칸{display:flex;flex-direction:column;gap:2px;font-size:11px;color:var(--
   <section class="체험" aria-label="7일 체험">
     <div class="윗">
       <b id="체험제목">7일 체험</b>
+      <button class="작은" data-act="세시간" id="세시간">+3시간</button>
       <button class="작은" data-act="빨리" id="빨리">휴식 ×1</button>
       <button class="작은" data-act="처음부터">처음부터</button>
     </div>
     <div class="날들" id="날들"></div>
-    <small id="체험설명">날짜를 누르면 그 날이 '오늘'이 됩니다. 기록 · 예정 · 플랜 회차는 다음 날로 이어지고, 지난 날짜를 두 번 누르면 그 날 아침으로 돌아갑니다. 지난주 기록은 예시입니다.</small>
+    <small id="체험설명">날짜를 누르면 그 날 저녁 6시가 됩니다. 기록 · 예정 · 플랜 · 근육 피로가 이어지고, 지난 날짜를 두 번 누르면 그 날로 돌아갑니다. '+3시간'으로 근육이 풀리는 것을 볼 수 있습니다. 운동 화면은 10-02 새 시안입니다 — 한 화면에 한 종목, 근육 그림은 오른쪽에 붙박이.</small>
   </section>
   <div class="폰" id="폰"></div>
 </div>
@@ -241,8 +296,11 @@ function 맨몸환산값(t,몸,모드,보w,보r){ const 부하=유효부하(t,�
 /* 플랜 */
 const 목표1RM = p => p.목표방식==="RM" ? p.목표무게 : 일RM(p.목표무게,p.목표횟수);
 const 마지막측정 = p => p.측정들.reduce((a,m)=>!a||m.회>a.회?m:a, null);
-const 기준회 = p => 마지막측정(p)?.회 ?? 0;
-function 지금진행값(p){ const t=찾표(p.종목), m=마지막측정(p);
+/* 10-01 매 회차 자기조절 — 처방과 다르게 한 회의 실제 값(재기준)이 측정보다 뒤면 거기서 다시 걸어간다 */
+const 재기준씀 = p => (p.재기준 && p.재기준.회 > (마지막측정(p)?.회 ?? 0)) ? p.재기준 : null;
+const 기준회 = p => 재기준씀(p)?.회 ?? 마지막측정(p)?.회 ?? 0;
+function 지금진행값(p){ const t=찾표(p.종목), m=마지막측정(p), rb=재기준씀(p);
+  if(rb) return 맨몸(t)? Math.max(1,rb.값) : rb.값;
   if(맨몸(t)) return Math.max(1, m? m.횟수 : p.시작개수); return m? 일RM(m.무게,m.횟수) : p.시작1RM; }
 const 시작진행값 = p => 맨몸(찾표(p.종목)) ? Math.max(1,p.시작개수) : p.시작1RM;
 const 목표진행값 = p => 맨몸(찾표(p.종목)) ? p.목표개수 : 목표1RM(p);
@@ -250,7 +308,8 @@ function 보정배수(종목){ const g=S.향상기록들.filter(x=>x.종목===�
   const m=g.reduce((a,x)=>a+x.측정값/x.예상값,0)/g.length; return Math.min(2,Math.max(0.5,m)); }
 function 속도출처(종목){ const n=S.향상기록들.filter(x=>x.종목===종목&&x.예상값>0&&x.측정값>0).length; return n>=플랜표.학습최소?`내 기록 (${n}회)`:"기본표"; }
 function 플랜회표(p){ const t=찾표(p.종목); if(!t) return []; const 앞=기준회(p);
-  return 회표(t, 지금진행값(p), 목표진행값(p), p.주당, S.몸, 보정배수(p.종목)??1).map(x=>({...x,회:x.회+앞,주:Math.ceil((x.회+앞)/p.주당)})); }
+  return 회표(t, 지금진행값(p), 목표진행값(p), p.주당, S.몸, 보정배수(p.종목)??1).map(x=>{ const 회=x.회+앞, 간격=Math.max(1,플랜표.측정주기[x.수준]*p.주당);
+    return {...x, 회, 주:Math.ceil(회/p.주당), 측정일:회%간격===0}; }); }   // 측정일은 처음부터 센 회로
 const 다음회 = p => 플랜회표(p).find(x=>x.회>p.한회) || null;
 function 회처방(p, 목표값, 측정일){
   const t=찾표(p.종목), 폭=S.설정.무게폭;
@@ -325,6 +384,64 @@ const 콤마 = n => Math.round(n).toLocaleString("ko-KR");
 const 분초 = s => { s=Math.max(0,Math.round(s)); return `${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`; };
 </script>
 <!-- part2-start -->
+<script>
+"use strict";
+/* 근육 그림 · 나무 · 종목 규칙 — 앱 data/Muscle.kt 와 같은 표 (원본: claude/근육지도/) */
+const 근육부모={"pectoralis_major":"chest","chest_upper":"pectoralis_major","chest_mid":"pectoralis_major","chest_lower":"pectoralis_major","pectoralis_minor":"chest","serratus":"chest","subclavius":"chest","traps":"back","traps_upper":"traps","traps_mid":"traps","traps_lower":"traps","lats":"back","rhomboids":"back","rhomboid_major":"rhomboids","rhomboid_minor":"rhomboids","levator_scapulae":"back","teres_major":"back","lower_back":"back","iliocostalis":"lower_back","longissimus":"lower_back","spinalis":"lower_back","multifidus":"back","quadratus_lumborum":"back","deltoid":"shoulders","delt_front":"deltoid","delt_side":"deltoid","delt_rear":"deltoid","rotator_cuff":"shoulders","supraspinatus":"rotator_cuff","infraspinatus":"rotator_cuff","teres_minor":"rotator_cuff","subscapularis":"rotator_cuff","upper_arm_front":"arms","biceps":"upper_arm_front","biceps_long":"biceps","biceps_short":"biceps","brachialis":"upper_arm_front","coracobrachialis":"upper_arm_front","upper_arm_back":"arms","triceps":"upper_arm_back","triceps_long":"triceps","triceps_lateral":"triceps","triceps_medial":"triceps","anconeus":"upper_arm_back","forearm":"arms","forearm_flexors":"forearm","pronator_teres":"forearm_flexors","flexor_carpi_radialis":"forearm_flexors","palmaris_longus":"forearm_flexors","flexor_carpi_ulnaris":"forearm_flexors","flexor_digitorum_superficialis":"forearm_flexors","flexor_digitorum_profundus":"forearm_flexors","flexor_pollicis_longus":"forearm_flexors","pronator_quadratus":"forearm_flexors","forearm_extensors":"forearm","brachioradialis":"forearm_extensors","extensor_carpi_radialis_longus":"forearm_extensors","extensor_carpi_radialis_brevis":"forearm_extensors","extensor_digitorum":"forearm_extensors","extensor_digiti_minimi":"forearm_extensors","extensor_carpi_ulnaris":"forearm_extensors","supinator":"forearm_extensors","abductor_pollicis_longus":"forearm_extensors","extensor_pollicis_brevis":"forearm_extensors","extensor_pollicis_longus":"forearm_extensors","extensor_indicis":"forearm_extensors","hand":"arms","thenar":"hand","hypothenar":"hand","interossei_hand":"hand","abs":"core","abs_upper":"abs","abs_lower":"abs","obliques":"core","external_oblique":"obliques","internal_oblique":"obliques","transversus_abdominis":"core","hip_flexors":"core","psoas_major":"hip_flexors","iliacus":"hip_flexors","glutes":"legs","gluteus_maximus":"glutes","gluteus_medius":"glutes","gluteus_minimus":"glutes","tfl":"glutes","deep_rotators":"glutes","piriformis":"deep_rotators","quads":"legs","rectus_femoris":"quads","vastus_lateralis":"quads","vastus_medialis":"quads","vastus_intermedius":"quads","sartorius":"legs","hamstrings":"legs","biceps_femoris":"hamstrings","biceps_femoris_long":"biceps_femoris","biceps_femoris_short":"biceps_femoris","semitendinosus":"hamstrings","semimembranosus":"hamstrings","adductors":"legs","adductor_longus":"adductors","adductor_brevis":"adductors","adductor_magnus":"adductors","gracilis":"adductors","pectineus":"adductors","calves":"legs","gastrocnemius":"calves","gastrocnemius_medial":"gastrocnemius","gastrocnemius_lateral":"gastrocnemius","soleus":"calves","shin":"legs","tibialis_anterior":"shin","extensor_digitorum_longus":"shin","peroneus":"shin","tibialis_posterior":"calves","scm":"neck","scalenes":"neck","splenius":"neck"};
+const 근육이름={"pectoralis_major":"대흉근","chest_upper":"가슴 윗부분 (쇄골갈래)","chest_mid":"가슴 가운데 (흉골갈래)","chest_lower":"가슴 아랫부분 (복부갈래)","pectoralis_minor":"소흉근","serratus":"전거근","subclavius":"쇄골하근","traps":"승모근","traps_upper":"승모 윗부분","traps_mid":"승모 가운데","traps_lower":"승모 아랫부분","lats":"광배근","rhomboids":"능형근","rhomboid_major":"대능형근","rhomboid_minor":"소능형근","levator_scapulae":"견갑거근","teres_major":"대원근","lower_back":"척추 기립근","iliocostalis":"장늑근","longissimus":"최장근","spinalis":"극근","multifidus":"다열근","quadratus_lumborum":"요방형근","deltoid":"삼각근","delt_front":"어깨 앞","delt_side":"어깨 옆","delt_rear":"어깨 뒤","rotator_cuff":"회전근개","supraspinatus":"극상근","infraspinatus":"극하근","teres_minor":"소원근","subscapularis":"견갑하근","upper_arm_front":"위팔 앞 (굽힘근)","biceps":"이두 (상완이두근)","biceps_long":"이두 긴갈래","biceps_short":"이두 짧은갈래","brachialis":"상완근","coracobrachialis":"오훼완근","upper_arm_back":"위팔 뒤 (폄근)","triceps":"삼두 (상완삼두근)","triceps_long":"삼두 긴갈래","triceps_lateral":"삼두 가쪽갈래","triceps_medial":"삼두 안쪽갈래","anconeus":"주근","forearm":"전완","forearm_flexors":"전완 앞 (손목 굽힘근)","pronator_teres":"원회내근","flexor_carpi_radialis":"요측수근굴근","palmaris_longus":"장장근","flexor_carpi_ulnaris":"척측수근굴근","flexor_digitorum_superficialis":"얕은손가락굽힘근","flexor_digitorum_profundus":"깊은손가락굽힘근","flexor_pollicis_longus":"긴엄지굽힘근","pronator_quadratus":"방형회내근","forearm_extensors":"전완 뒤 (손목 폄근)","brachioradialis":"완요골근","extensor_carpi_radialis_longus":"긴요측수근신근","extensor_carpi_radialis_brevis":"짧은요측수근신근","extensor_digitorum":"손가락폄근","extensor_digiti_minimi":"새끼폄근","extensor_carpi_ulnaris":"척측수근신근","supinator":"회외근","abductor_pollicis_longus":"긴엄지벌림근","extensor_pollicis_brevis":"짧은엄지폄근","extensor_pollicis_longus":"긴엄지폄근","extensor_indicis":"검지폄근","hand":"손 (손 안 근육)","thenar":"엄지두덩근","hypothenar":"새끼두덩근","interossei_hand":"손 뼈사이근","abs":"복직근","abs_upper":"복근 위","abs_lower":"복근 아래","obliques":"옆구리","external_oblique":"외복사근","internal_oblique":"내복사근","transversus_abdominis":"복횡근","hip_flexors":"엉덩허리근","psoas_major":"대요근","iliacus":"장골근","glutes":"엉덩이","gluteus_maximus":"대둔근","gluteus_medius":"중둔근","gluteus_minimus":"소둔근","tfl":"대퇴근막장근","deep_rotators":"고관절 깊은 돌림근","piriformis":"이상근","quads":"허벅지 앞 (대퇴사두근)","rectus_femoris":"대퇴직근","vastus_lateralis":"외측광근","vastus_medialis":"내측광근","vastus_intermedius":"중간광근","sartorius":"봉공근","hamstrings":"허벅지 뒤 (햄스트링)","biceps_femoris":"대퇴이두근","biceps_femoris_long":"대퇴이두 긴갈래","biceps_femoris_short":"대퇴이두 짧은갈래","semitendinosus":"반건양근","semimembranosus":"반막양근","adductors":"허벅지 안쪽 (내전근)","adductor_longus":"긴모음근","adductor_brevis":"짧은모음근","adductor_magnus":"큰모음근","gracilis":"두덩정강근","pectineus":"치골근","calves":"종아리","gastrocnemius":"비복근","gastrocnemius_medial":"비복근 안쪽갈래","gastrocnemius_lateral":"비복근 가쪽갈래","soleus":"가자미근","shin":"정강이 (앞 · 옆)","tibialis_anterior":"전경골근","extensor_digitorum_longus":"긴발가락폄근","peroneus":"비골근","tibialis_posterior":"후경골근","scm":"흉쇄유돌근","scalenes":"사각근","splenius":"판상근"};
+const 몸조각=[["f","b","","","M100 8 C86 8 82 20 82 32 C82 46 90 56 100 56 Z"],["f","m","scm","","M92 52 L100 54 L100 70 L88 68 Z"],["f","m","traps","","M90 58 C80 64 70 68 62 72 L88 70 Z"],["f","m","delt_front","","M62 72 C52 74 46 84 46 96 C50 100 56 102 60 100 C62 90 68 80 74 76 Z"],["f","m","delt_side","","M46 96 C42 106 42 116 46 122 L54 112 C56 106 58 104 60 100 C56 102 50 100 46 96 Z"],["f","m","chest_upper","","M74 76 C84 72 94 72 100 74 L100 92 C90 92 78 94 66 98 C64 90 68 82 74 76 Z"],["f","m","chest_lower","chest_mid","M66 98 C78 94 90 92 100 92 L100 114 C92 122 80 124 70 118 C64 112 64 104 66 98 Z"],["f","m","serratus","","M68 120 L74 124 L72 130 L66 128 Z M67 132 L73 136 L71 142 L66 140 Z M68 144 L73 148 L72 154 L68 152 Z"],["f","m","abs","","M88 124 L99 122 L99 140 L88 141 Z M88 145 L99 144 L99 162 L88 163 Z M88 167 L99 166 L99 184 L89 185 Z M89 189 L99 188 L99 214 C94 212 90 204 89 196 Z"],["f","m","obliques","","M74 124 C70 146 72 172 80 196 L88 200 L87 126 C83 122 78 122 74 124 Z"],["f","b","","","M80 198 C84 208 92 214 100 216 L100 222 C90 222 80 214 76 204 Z"],["f","b","","","M100 8 C114 8 118 20 118 32 C118 46 110 56 100 56 Z"],["f","m","scm","","M108 52 L100 54 L100 70 L112 68 Z"],["f","m","traps","","M110 58 C120 64 130 68 138 72 L112 70 Z"],["f","m","delt_front","","M138 72 C148 74 154 84 154 96 C150 100 144 102 140 100 C138 90 132 80 126 76 Z"],["f","m","delt_side","","M154 96 C158 106 158 116 154 122 L146 112 C144 106 142 104 140 100 C144 102 150 100 154 96 Z"],["f","m","chest_upper","","M126 76 C116 72 106 72 100 74 L100 92 C110 92 122 94 134 98 C136 90 132 82 126 76 Z"],["f","m","chest_lower","chest_mid","M134 98 C122 94 110 92 100 92 L100 114 C108 122 120 124 130 118 C136 112 136 104 134 98 Z"],["f","m","serratus","","M132 120 L126 124 L128 130 L134 128 Z M133 132 L127 136 L129 142 L134 140 Z M132 144 L127 148 L128 154 L132 152 Z"],["f","m","abs","","M112 124 L101 122 L101 140 L112 141 Z M112 145 L101 144 L101 162 L112 163 Z M112 167 L101 166 L101 184 L111 185 Z M111 189 L101 188 L101 214 C106 212 110 204 111 196 Z"],["f","m","obliques","","M126 124 C130 146 128 172 120 196 L112 200 L113 126 C117 122 122 122 126 124 Z"],["f","b","","","M120 198 C116 208 108 214 100 216 L100 222 C110 222 120 214 124 204 Z"],["f","m","biceps","brachialis coracobrachialis","M54 112 C48 124 46 138 48 152 C52 158 58 156 60 150 C62 136 62 122 58 110 Z"],["f","m","triceps","brachialis","M46 122 C42 134 42 146 44 154 L48 152 C46 138 48 124 54 112 Z"],["f","m","forearm","","M44 158 C38 176 34 192 34 208 L42 210 C46 194 52 176 58 160 C54 158 48 156 44 158 Z"],["f","m","forearm","","M58 160 C56 178 52 194 46 210 L42 210 C46 194 50 178 52 162 Z"],["f","b","","","M34 210 C30 218 32 230 38 234 C44 232 46 222 44 212 Z"],["f","m","biceps","brachialis coracobrachialis","M146 112 C152 124 154 138 152 152 C148 158 142 156 140 150 C138 136 138 122 142 110 Z"],["f","m","triceps","brachialis","M154 122 C158 134 158 146 156 154 L152 152 C154 138 152 124 146 112 Z"],["f","m","forearm","","M156 158 C162 176 166 192 166 208 L158 210 C154 194 148 176 142 160 C146 158 152 156 156 158 Z"],["f","m","forearm","","M142 160 C144 178 148 194 154 210 L158 210 C154 194 150 178 148 162 Z"],["f","b","","","M166 210 C170 218 168 230 162 234 C156 232 154 222 156 212 Z"],["f","m","quads","tfl sartorius","M76 206 C66 234 64 268 72 304 L82 306 C78 272 80 238 86 216 Z"],["f","m","quads","tfl sartorius","M86 216 C80 244 80 276 84 304 L94 304 C96 276 96 244 94 220 Z"],["f","m","quads","tfl sartorius","M94 288 C90 298 90 308 96 316 C100 312 100 300 99 290 Z"],["f","m","adductors","","M94 220 L100 222 L100 284 C97 270 96 246 94 220 Z"],["f","b","","","M76 308 L96 308 C98 318 94 326 86 328 C80 326 76 318 76 308 Z"],["f","m","shin","","M78 332 C74 364 76 392 80 420 L86 420 C86 392 88 362 86 332 Z"],["f","m","calves","","M86 332 C94 350 96 378 90 408 L86 410 C88 382 88 356 86 332 Z"],["f","b","","","M78 422 L90 422 C92 432 90 440 80 442 C74 440 74 430 78 422 Z"],["f","m","quads","tfl sartorius","M124 206 C134 234 136 268 128 304 L118 306 C122 272 120 238 114 216 Z"],["f","m","quads","tfl sartorius","M114 216 C120 244 120 276 116 304 L106 304 C104 276 104 244 106 220 Z"],["f","m","quads","tfl sartorius","M106 288 C110 298 110 308 104 316 C100 312 100 300 101 290 Z"],["f","m","adductors","","M106 220 L100 222 L100 284 C103 270 104 246 106 220 Z"],["f","b","","","M124 308 L104 308 C102 318 106 326 114 328 C120 326 124 318 124 308 Z"],["f","m","shin","","M122 332 C126 364 124 392 120 420 L114 420 C114 392 112 362 114 332 Z"],["f","m","calves","","M114 332 C106 350 104 378 110 408 L114 410 C112 382 112 356 114 332 Z"],["f","b","","","M122 422 L110 422 C108 432 110 440 120 442 C126 440 126 430 122 422 Z"],["f","x","","","M76 80 L96 86 M70 90 L98 94 M70 104 L98 102 M72 114 L96 110 M52 80 L58 98 M56 118 L52 146 M40 170 L38 200 M72 230 L74 290 M88 230 L88 296 M82 340 L82 408"],["f","x","","","M124 80 L104 86 M130 90 L102 94 M130 104 L102 102 M128 114 L104 110 M148 80 L142 98 M144 118 L148 146 M160 170 L162 200 M128 230 L126 290 M112 230 L112 296 M118 340 L118 408"],["b","b","","","M100 8 C86 8 82 20 82 32 C82 46 90 56 100 56 Z"],["b","m","traps","","M100 50 C94 56 84 62 64 72 C76 84 88 104 100 140 Z"],["b","m","delt_rear","infraspinatus teres_minor","M64 72 C52 74 46 86 46 100 C52 104 58 102 62 96 C66 88 70 80 76 78 Z"],["b","m","delt_side","","M46 100 C42 108 42 118 46 124 L54 114 C56 108 60 102 62 96 C58 102 52 104 46 100 Z"],["b","m","rhomboids","","M76 80 C82 88 90 104 96 124 L88 126 C84 112 78 98 72 88 Z"],["b","m","lats","teres_major","M70 94 C64 116 66 146 78 176 C86 172 94 164 98 150 L96 128 L88 128 C84 114 78 102 72 90 Z"],["b","m","lower_back","","M90 150 L100 150 L100 204 L92 202 C90 186 90 168 90 150 Z"],["b","m","obliques","","M78 178 C78 190 80 198 82 204 L92 204 L90 164 C86 170 82 176 78 178 Z"],["b","m","glutes","","M82 206 C70 214 68 236 76 252 C86 258 96 256 100 250 L100 208 Z"],["b","b","","","M100 8 C114 8 118 20 118 32 C118 46 110 56 100 56 Z"],["b","m","traps","","M100 50 C106 56 116 62 136 72 C124 84 112 104 100 140 Z"],["b","m","delt_rear","infraspinatus teres_minor","M136 72 C148 74 154 86 154 100 C148 104 142 102 138 96 C134 88 130 80 124 78 Z"],["b","m","delt_side","","M154 100 C158 108 158 118 154 124 L146 114 C144 108 140 102 138 96 C142 102 148 104 154 100 Z"],["b","m","rhomboids","","M124 80 C118 88 110 104 104 124 L112 126 C116 112 122 98 128 88 Z"],["b","m","lats","teres_major","M130 94 C136 116 134 146 122 176 C114 172 106 164 102 150 L104 128 L112 128 C116 114 122 102 128 90 Z"],["b","m","lower_back","","M110 150 L100 150 L100 204 L108 202 C110 186 110 168 110 150 Z"],["b","m","obliques","","M122 178 C122 190 120 198 118 204 L108 204 L110 164 C114 170 118 176 122 178 Z"],["b","m","glutes","","M118 206 C130 214 132 236 124 252 C114 258 104 256 100 250 L100 208 Z"],["b","m","triceps","anconeus","M54 114 C46 126 44 140 46 156 C52 160 58 158 60 152 C62 138 60 124 56 112 Z"],["b","m","forearm","","M46 160 C38 178 34 194 34 210 L42 212 C48 196 54 178 60 160 C56 160 50 158 46 160 Z"],["b","b","","","M34 212 C30 220 32 232 38 236 C44 234 46 224 44 214 Z"],["b","m","triceps","anconeus","M146 114 C154 126 156 140 154 156 C148 160 142 158 140 152 C138 138 140 124 144 112 Z"],["b","m","forearm","","M154 160 C162 178 166 194 166 210 L158 212 C152 196 146 178 140 160 C144 160 150 158 154 160 Z"],["b","b","","","M166 212 C170 220 168 232 162 236 C156 234 154 224 156 214 Z"],["b","m","hamstrings","","M74 256 C68 280 70 300 76 318 L86 318 C84 298 84 276 86 258 Z"],["b","m","hamstrings","","M86 258 C86 280 88 300 94 318 L99 316 C100 296 100 276 99 256 Z"],["b","b","","","M76 320 L98 320 C98 326 94 332 86 332 C80 332 76 326 76 320 Z"],["b","m","calves","tibialis_posterior","M78 334 C70 352 72 372 80 388 C84 380 86 360 86 336 Z"],["b","m","calves","tibialis_posterior","M86 336 C88 356 90 374 96 386 C100 370 98 350 92 336 Z"],["b","m","calves","tibialis_posterior","M80 390 C82 402 84 414 84 420 L92 420 C92 408 94 396 96 388 C90 394 86 394 80 390 Z"],["b","b","","","M80 422 L92 422 C94 430 92 438 84 440 C78 438 76 430 80 422 Z"],["b","m","hamstrings","","M126 256 C132 280 130 300 124 318 L114 318 C116 298 116 276 114 258 Z"],["b","m","hamstrings","","M114 258 C114 280 112 300 106 318 L101 316 C100 296 100 276 101 256 Z"],["b","b","","","M124 320 L102 320 C102 326 106 332 114 332 C120 332 124 326 124 320 Z"],["b","m","calves","tibialis_posterior","M122 334 C130 352 128 372 120 388 C116 380 114 360 114 336 Z"],["b","m","calves","tibialis_posterior","M114 336 C112 356 110 374 104 386 C100 370 102 350 108 336 Z"],["b","m","calves","tibialis_posterior","M120 390 C118 402 116 414 116 420 L108 420 C108 408 106 396 104 388 C110 394 114 394 120 390 Z"],["b","b","","","M120 422 L108 422 C106 430 108 438 116 440 C122 438 124 430 120 422 Z"],["b","x","","","M72 72 L96 100 M80 70 L98 118 M74 110 L90 160 M70 128 L84 170 M52 124 L50 150 M84 216 L88 248 M76 270 L80 312 M92 270 L94 312 M80 346 L82 380"],["b","x","","","M128 72 L104 100 M120 70 L102 118 M126 110 L110 160 M130 128 L116 170 M148 124 L150 150 M116 216 L112 248 M124 270 L120 312 M108 270 L106 312 M120 346 L118 380"]];
+const 근육규칙={"역할":{"P":1.0,"S":0.5,"Y":0.25},"규칙":[[["인클라인"],{"chest_upper":"P","chest_mid":"S","delt_front":"S","triceps":"Y"}],[["디클라인"],{"chest_lower":"P","chest_mid":"S","triceps":"S","delt_front":"Y"}],[["리버스","리어","페이스풀"],{"delt_rear":"P","rhomboids":"S","traps_mid":"S"}],[["딥스"],{"chest_lower":"P","triceps":"P","delt_front":"S"}],[["팔굽혀","푸시업","푸쉬업"],{"chest_mid":"P","chest_upper":"S","chest_lower":"S","delt_front":"S","triceps":"S","abs":"Y"}],[["벤치","체스트 프레스","체스트프레스"],{"chest_mid":"P","chest_upper":"S","chest_lower":"S","delt_front":"S","triceps":"S"}],[["플라이","펙덱","크로스오버"],{"chest_mid":"P","chest_lower":"P","chest_upper":"S","delt_front":"Y"}],[["오버헤드","밀리터리","숄더 프레스","숄더프레스","OHP"],{"delt_front":"P","delt_side":"S","triceps":"S","traps_upper":"Y"}],[["레터럴","사이드 레이즈","사이드레이즈"],{"delt_side":"P","traps_upper":"Y"}],[["프론트 레이즈","프런트 레이즈"],{"delt_front":"P"}],[["슈러그"],{"traps_upper":"P"}],[["루마니안","RDL","굿모닝","스티프"],{"hamstrings":"P","gluteus_maximus":"S","lower_back":"S"}],[["데드"],{"gluteus_maximus":"P","hamstrings":"P","lower_back":"P","quads":"S","traps":"Y","lats":"Y","forearm_flexors":"Y"}],[["런지","스플릿"],{"quads":"P","gluteus_maximus":"P","adductors":"S","hamstrings":"Y"}],[["레그 익스텐션","레그익스텐션"],{"quads":"P"}],[["레그 컬","레그컬"],{"hamstrings":"P","calves":"Y"}],[["백 익스텐션","하이퍼"],{"lower_back":"P","gluteus_maximus":"S"}],[["스쿼트","레그 프레스","레그프레스","핵"],{"quads":"P","gluteus_maximus":"P","adductor_magnus":"S","hamstrings":"Y","lower_back":"Y"}],[["힙 쓰러스트","힙쓰러스트","브릿지"],{"gluteus_maximus":"P","hamstrings":"S"}],[["카프","종아리"],{"calves":"P"}],[["턱걸이","풀업","친업"],{"lats":"P","biceps":"S","teres_major":"S","rhomboids":"S","delt_rear":"Y","forearm_flexors":"Y"}],[["풀다운","랫풀"],{"lats":"P","teres_major":"S","rhomboids":"S","biceps":"Y","delt_rear":"Y"}],[["로우"],{"lats":"P","rhomboids":"P","traps_mid":"S","delt_rear":"S","biceps":"S","lower_back":"Y"}],[["해머"],{"brachioradialis":"P","brachialis":"P","biceps":"S"}],[["컬"],{"biceps":"P","brachialis":"S","forearm_flexors":"Y"}],[["삼두","트라이셉스","푸시다운","푸쉬다운","킥백","스컬","프렌치"],{"triceps":"P"}],[["러시안","사이드 벤드","옆구리"],{"obliques":"P","abs":"S"}],[["크런치","싯업","윗몸","레그 레이즈","플랭크","복근"],{"abs":"P","obliques":"Y"}]],"부위":{"가슴":{"pectoralis_major":"P","delt_front":"Y","triceps":"Y"},"등":{"lats":"P","rhomboids":"S","biceps":"Y"},"하체":{"quads":"P","gluteus_maximus":"S","hamstrings":"S"},"어깨":{"deltoid":"P"},"팔":{"upper_arm_front":"S","upper_arm_back":"S"},"복근":{"abs":"P","obliques":"S"}},"색표":{"heat":[[0.05,"#FFE9A3"],[0.35,"#F9C23C"],[0.65,"#F2802E"],[1.0,"#D12D24"]],"red":[[0.05,"#F8D9D6"],[1.0,"#C0261E"]],"blue":[[0.05,"#DCE8FF"],[1.0,"#1E4FD1"]]}};
+/* ═════════════ 근육 지도 — 07 근육지도규칙 (나무 · 역할 · 20단계 · 이전 최대 볼륨 · 실시간 회복) ═════════════ */
+const 근육자식={}; for(const [id,p] of Object.entries(근육부모)) (근육자식[p]=근육자식[p]||[]).push(id);
+const 잎캐시={};
+function 잎(id){ if(잎캐시[id]) return 잎캐시[id]; const r = 근육자식[id]?.length ? 근육자식[id].flatMap(잎) : [id]; return 잎캐시[id]=r; }
+/* 종목 → 근육과 역할 (기본값). 이름 속 낱말로 먼저 찾고, 없으면 부위로 */
+function 종목근육(이름){ for(const [k,m] of 근육규칙.규칙) if(k.some(w=>이름.includes(w))) return m;
+  const 표=S.종목표.find(x=>x.이름===이름); return (표&&근육규칙.부위[표.칸])||{}; }
+const 유효무게 = w => w>0 ? w : (S.몸.체중>0 ? S.몸.체중*0.6 : 1);   // 맨몸 0kg 은 체중의 60% 로 센다 [제안]
+/* 잎마다 유효 볼륨 = Σ 무게 × 횟수 × 역할 비중. 다=true 면 계획한 세트 전부(처음 하는 근육의 기준) */
+function 잎볼륨(종목들, 다=false){ const v={};
+  for(const e of 종목들){ const 합=e.세트.filter(s=>다||s.완료).reduce((a,s)=>a+유효무게(s.w)*s.r,0); if(!합) continue;
+    for(const [id,역] of Object.entries(종목근육(e.이름))){ const 비=근육규칙.역할[역]||0; for(const l of 잎(id)) v[l]=(v[l]||0)+합*비; } }
+  return v; }
+/* 오늘 오른 단계 = 20 × 오늘 볼륨 ÷ 이전 최대 (처음이면 오늘 계획) — 20 에서 멈춘다 */
+function 오늘단계(종목들){ const v=잎볼륨(종목들), 계=잎볼륨(종목들,true), out={};
+  for(const [l,x] of Object.entries(v)){ const 기=S.최대볼륨[l]>0?S.최대볼륨[l]:(계[l]||x); out[l]=Math.min(20,20*x/기); } return out; }
+/* 남은 피로 — lv0 에서 끝 시각까지 곧게 내려간다 */
+function 남은피로(l,t){ const f=S.피로[l]; if(!f||t>=f.끝) return 0; if(t<=f.시작) return f.lv0; return f.lv0*(f.끝-t)/(f.끝-f.시작); }
+function 지금단계(종목들,t){ const 오=종목들?오늘단계(종목들):{}, out={};
+  for(const l of new Set([...Object.keys(S.피로),...Object.keys(오)])){ const x=Math.min(20,남은피로(l,t)+(오[l]||0)); if(x>0.01) out[l]=x; } return out; }
+/* 운동을 저장할 때 — 피로를 쌓고(회복 전이면 남은 시간 위에 더한다) 이전 최대를 올린다 */
+function 피로저장(종목들,t){ const v=잎볼륨(종목들), s=오늘단계(종목들), 휴=S.설정.회복시간*3600e3;
+  for(const [l,k] of Object.entries(s)){ if(!(k>0)) continue; const r=남은피로(l,t), f=S.피로[l], 남=f?Math.max(0,f.끝-t):0;
+    S.피로[l]={lv0:Math.min(20,r+k), 시작:t, 끝:t+남+휴*(k/20)}; }
+  for(const [l,x] of Object.entries(v)) S.최대볼륨[l]=Math.max(S.최대볼륨[l]||0,x); }
+/* 색 — 20단계. 0 은 기본색 */
+function 섞기(a,b,f){ const p=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)); const x=p(a),y=p(b); return "#"+x.map((v,i)=>Math.round(v+(y[i]-v)*f).toString(16).padStart(2,"0")).join(""); }
+function 단계색(k){ k=Math.round(k); if(k<=0) return null; const st=근육규칙.색표[S.설정.색표]||근육규칙.색표.heat, t=Math.min(1,k/20);
+  if(t<=st[0][0]) return st[0][1]; for(let i=1;i<st.length;i++) if(t<=st[i][0]){ const [a,ca]=st[i-1],[b,cb]=st[i]; return 섞기(ca,cb,(t-a)/(b-a)); } return st[st.length-1][1]; }
+/* 그림 — 조각마다 자기 근육(과 대신 맡은 근육) 아래 잎 중 가장 큰 값으로 칠한다 */
+const 조각상자 = 몸조각.map(([v,k,m,c,d])=>{ const n=d.match(/-?\d+(\.\d+)?/g).map(Number); let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+  for(let i=0;i+1<n.length;i+=2){ x0=Math.min(x0,n[i]);x1=Math.max(x1,n[i]);y0=Math.min(y0,n[i+1]);y1=Math.max(y1,n[i+1]); } const o=v==="b"?240:0; return [x0+o,y0,x1+o,y1]; });
+const 조각잎 = 몸조각.map(([v,k,m,c])=> k==="m" ? [m,...(c?c.split(" "):[])].flatMap(id=>잎(id)) : []);
+function 몸그림(단계,{자르기=null,키="몸"}={}){
+  const vb = 자르기 ? 자르기.map(x=>Math.round(x)).join(" ") : "0 0 440 460";
+  let h=`<svg class="몸" viewBox="${vb}" preserveAspectRatio="xMidYMid meet" aria-hidden="true">`;
+  몸조각.forEach(([v,k,m,c,d],i)=>{ const tr=v==="b"?' transform="translate(240 0)"':'';
+    if(k==="b") h+=`<path class="몸바탕" d="${d}"${tr}/>`;
+    else if(k==="x") h+=`<path class="몸결" d="${d}"${tr}/>`;
+    else { const 값=Math.max(0,...조각잎[i].map(l=>단계[l]||0)), 색=단계색(값); h+=`<path class="몸근" d="${d}"${tr} data-anim-fill="${키}-${i}" style="fill:${색||"var(--근육)"}"/>`; } });
+  return h+"</svg>"; }
+/* 지금 종목이 쓰는 근육(주동 · 보조)만 크게 — 그 조각들의 상자를 정사각형으로 */
+function 확대상자(이름){ const 쓸잎=new Set(Object.entries(종목근육(이름)).filter(([,r])=>r!=="Y").flatMap(([id])=>잎(id)));
+  const idx=몸조각.map((_,i)=>i).filter(i=>조각잎[i].some(l=>쓸잎.has(l))); if(!idx.length) return null;
+  const f=idx.filter(i=>몸조각[i][0]==="f"), b=idx.filter(i=>몸조각[i][0]==="b"), 쓸=f.length>=b.length?f:b;
+  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9; 쓸.forEach(i=>{ const q=조각상자[i]; x0=Math.min(x0,q[0]);y0=Math.min(y0,q[1]);x1=Math.max(x1,q[2]);y1=Math.max(y1,q[3]); });
+  const s=Math.max(x1-x0,y1-y0)+28, cx=(x0+x1)/2, cy=(y0+y1)/2; return [cx-s/2,cy-s/2,s,s]; }
+const 역할이름={P:"주동근",S:"보조근",Y:"협응근"};
+function 근육글(m){ const 묶=Object.entries(역할이름).map(([r,n])=>{ const l=Object.entries(m).filter(([,x])=>x===r).map(([id])=>(근육이름[id]||id).replace(/ \(.*\)/,"")); return l.length?`${n} ${l.join(", ")}`:""; }).filter(Boolean);
+  return 묶.join(" · ")||"근육 정보 없음"; }
+</script>
 <style>
 .맞춤{display:block;overflow:hidden;min-width:0}
 .화면 .아래띠{bottom:10px}
@@ -336,44 +453,521 @@ const 분초 = s => { s=Math.max(0,Math.round(s)); return `${Math.floor(s/60)}:$
 .종목상자{display:flex;flex-direction:column;gap:4px;margin-bottom:8px;scroll-margin-top:96px;width:100%;text-align:left}
 .종목상자.접힘{flex-direction:row;align-items:center;gap:8px;padding:10px;color:var(--흐림)}
 .종목머리{display:flex;align-items:flex-start;gap:8px;width:100%;text-align:left}
-.이름2{font-size:16px;line-height:1.3;overflow-wrap:anywhere}
-.세트머리{display:grid;grid-template-columns:36px 1fr 1fr 62px 36px;gap:4px;text-align:center}
+.이름2{font-size:18px;line-height:1.3;overflow-wrap:anywhere}
+.세트머리{display:grid;grid-template-columns:28px 1fr 1fr 64px 28px;gap:4px;text-align:center}
 .세트머리.루{grid-template-columns:28px 1fr 1fr 1fr}
 .루세트{display:grid;grid-template-columns:28px 1fr 1fr 1fr;gap:4px;align-items:center}
 .루세트 .k{font-weight:700;text-align:center;font-size:13px}
-.값칸 input{flex:1;min-width:0;width:100%;border:0;background:transparent;text-align:center;font-weight:700;font-size:14px;font-variant-numeric:tabular-nums;padding:0}
+.값칸 input{flex:1;min-width:0;width:100%;border:0;background:transparent;text-align:center;font-weight:700;font-size:15px;font-variant-numeric:tabular-nums;padding:0}
 .휴식칸.빈{border-color:var(--선);color:var(--옅음);font-weight:500}
-.체크 svg{width:18px;height:18px}
+.체크 svg{width:16px;height:16px}
 .세트줄 .체크{justify-self:center}
 .설정줄{display:flex;align-items:center;gap:8px;padding:8px 0}
 .스위치{width:44px;height:26px;border-radius:13px;background:var(--속선);position:relative;flex:none;transition:background .15s}
 .스위치 i{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .15s}
 .스위치.켬{background:var(--강조)}.스위치.켬 i{transform:translateX(18px)}
-.이름표{font-size:12px;font-weight:700;color:var(--흐림);margin:14px 2px 6px}
+.이름표{font-size:13px;font-weight:700;color:var(--흐림);margin:14px 2px 6px}
 .입력줄{display:flex;align-items:center;gap:4px}
-.입력줄 em{font-style:normal;font-size:12px;color:var(--옅음)}
+.입력줄 em{font-style:normal;font-size:13px;color:var(--옅음)}
 .루틴카드{display:flex;flex-direction:column;gap:2px;width:100%;text-align:left;border-width:1px;border-color:var(--속선)}
 .루틴카드.자동{border-left:4px solid var(--강조)}
 .플랜카드{display:flex;flex-direction:column;gap:6px}
-.게이지3{height:10px;border-radius:5px;background:var(--면2);border:1px solid var(--속선);overflow:hidden}
+.게이지3{height:8px;border-radius:4px;background:var(--면2);border:1px solid var(--속선);overflow:hidden}
 .게이지3 i{display:block;height:100%;background:var(--강조)}
-.회블록{border:1px solid var(--선);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:2px}
+.회블록{border:1px solid var(--선);border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;gap:2px}
 .방식목록{display:flex;flex-direction:column;gap:3px}
 .방식목록 .방식띠{min-height:34px;padding:4px 10px}
-.방식목록 .방식띠 b{font-size:14px}
+.방식목록 .방식띠 b{font-size:15px}
 .방식목록 .방식띠 span{font-size:11px;opacity:.85}
 .시트.높이{max-height:96%}
 .타일들{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
-.타일{background:var(--면);border:1px solid var(--선);border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.타일{background:var(--면);border:1px solid var(--선);border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:2px;min-width:0}
 .타일 b{font-size:18px;font-variant-numeric:tabular-nums}
 .타일 span{font-size:11px;color:var(--옅음)}
 .닫기{font-size:13px;font-weight:600;color:var(--강조);padding:4px 6px}
 .시트 .고르기 b{font-weight:600}
 .고르기.나쁨 b{color:var(--나쁨)}
-.회색칸{background:var(--면2);border-radius:10px;padding:8px 10px}
+.회색칸{background:var(--면2);border-radius:8px;padding:8px 10px}
 .칸날 .루{max-width:100%}
 .칸날 .상.달성{color:var(--좋음)}.칸날 .상.미달성{color:var(--나쁨)}.칸날 .상.미실시{color:var(--옅음)}
 </style>
+<style>
+/* ── 스탯 · 업적 (10-02) — 글자 11·13·15·18·28 · 여백 4·8·12·16 · 모서리 8·16 · 막대 높이 8 (11 UI지침) ── */
+:root{ --오름:#B3261E; --내림:#084B83;
+  /* 등급 색 [제안 — 12-5 색 값 미정] 초보 · 중급 · 고급 · 미친자 · 유머 · 숨은 */
+  --초보:#94612A; --중급:#5A6E82; --고급:#8F6A00; --미친자:#7B2CBF; --유머:#0F7B6C; --숨은:#3E3A78; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --오름:#E57368; --내림:#7FB3E6;
+  --초보:#D9A066; --중급:#A9BACB; --고급:#E2BE55; --미친자:#C79BF2; --유머:#5CC9B7; --숨은:#AFA9F0; }}
+:root[data-theme="dark"]{ --오름:#E57368; --내림:#7FB3E6;
+  --초보:#D9A066; --중급:#A9BACB; --고급:#E2BE55; --미친자:#C79BF2; --유머:#5CC9B7; --숨은:#AFA9F0; }
+.등급-초보{--등급색:var(--초보)} .등급-중급{--등급색:var(--중급)} .등급-고급{--등급색:var(--고급)} .등급-미친자{--등급색:var(--미친자)} .등급-유머{--등급색:var(--유머)} .등급-숨은{--등급색:var(--숨은)}
+.칭호칩{max-width:44%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.스탯머리{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--면);border-bottom:1px solid var(--선);flex:none}
+.스탯머리 b{font-size:18px;min-width:0;white-space:nowrap}
+.닫기x{width:32px;height:32px;border-radius:8px;border:1px solid var(--속선);font-size:15px;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.스탯속{display:flex;flex-direction:column;gap:8px;padding-top:8px;padding-bottom:4px}
+.체력칸{display:flex;flex-direction:column;gap:4px;padding:8px 12px;border:2px solid var(--강조);border-radius:16px;background:var(--면);width:100%;text-align:left}
+.체력칸.고름,.스탯칸.고름{background:var(--강조옅음)}
+.스탯큰값{font-size:22px;line-height:1.2}
+.스탯판{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.스탯칸{display:flex;flex-direction:column;justify-content:center;gap:4px;padding:4px 8px;min-height:44px;border-radius:8px;border:1px solid var(--선);background:var(--면);text-align:left;min-width:0}
+.스탯칸.고름{border-color:var(--강조)}
+.스탯칸 .줄{gap:4px;line-height:16px}
+.스탯칸 .맞춤{line-height:13px}
+.막대줄 .막대{flex:1;min-width:0}
+.스탯칸 .막대줄{line-height:13px}
+.스탯이름{font-size:13px;font-weight:500;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.스탯값{font-size:15px;font-variant-numeric:tabular-nums}
+.차{font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.차.오름{color:var(--오름)} .차.내림{color:var(--내림)}
+.막대{height:8px;border-radius:4px;background:var(--면2);position:relative;overflow:hidden;flex:none}
+.막대 i{position:absolute;top:0;bottom:0;left:0;background:var(--강조)}
+.막대 i.더{background:var(--오름);transform-origin:left center}
+.스탯풀이{flex:none;display:flex;flex-direction:column;gap:4px;padding:4px 12px 8px;background:var(--면);border-top:1px solid var(--선)}
+.업적위{flex:none;display:flex;flex-direction:column;gap:8px;padding:8px 12px;background:var(--면);border-bottom:1px solid var(--선)}
+.가로밀기{margin:0 -12px;overflow-x:auto;scrollbar-width:none}
+.가로밀기::-webkit-scrollbar{display:none}
+.가로밀기 .칩줄{flex-wrap:nowrap;padding:0 12px;width:max-content}
+.가로밀기 .칩{flex:none}
+.업적목록{display:flex;flex-direction:column}
+.업적줄{display:flex;flex-direction:column;gap:4px;padding:8px 0;border-bottom:1px solid var(--선);width:100%;text-align:left;min-width:0}
+.업적줄 .줄{gap:8px}
+.칭호표{display:inline-flex;align-items:center;height:28px;padding:0 8px;border-radius:8px;border:2px solid var(--등급색,var(--속선));font-size:13px;font-weight:700;max-width:58%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;flex:none}
+.칭호표.잠김{border:1px dashed var(--속선);color:transparent;text-shadow:0 0 8px var(--옅음);user-select:none}
+.칭호표.숨음{border:1px dashed var(--속선);color:var(--옅음)}
+.등급글{font-size:11px;font-weight:700;color:var(--등급색,var(--옅음));flex:none}
+.플레이버{font-size:11px;color:var(--옅음);border-left:2px solid var(--선);padding-left:8px}
+.진행줄{display:flex;align-items:center;gap:8px}
+.진행줄 .막대{flex:1}
+.조건글{font-size:11px;color:var(--흐림)}
+.업적이름{font-size:13px;color:var(--흐림);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.업적띠{z-index:16}
+.업적띠 b{font-weight:700}
+.업적띠.나감띠{opacity:0;transition:opacity .2s}
+@keyframes 자람{from{transform:scaleX(0)}to{transform:none}}
+.스탯칸.들어옴 .더,.체력칸.들어옴 .더{animation:자람 .7s .2s cubic-bezier(.2,.8,.2,1) both}
+.스탯칸.들어옴,.체력칸.들어옴{animation:none}
+.업적줄.풀림.들어옴 .칭호표{animation:톡 .35s ease-out both}
+
+/* ═══ 운동 중 — 10-02 새 시안: 한 화면에 한 종목 · 근육 그림 붙박이 ═══
+   칸마다 높이가 정해져 있어 무엇을 눌러도 다른 칸이 움직이지 않는다 (11 UI지침 U5-6 · U5-7) */
+.운전체{flex:none;padding:8px 12px;background:var(--면);border-bottom:1px solid var(--선)}
+.운막대{height:8px;border-radius:4px;background:var(--면2);overflow:hidden}
+.운막대 i{display:block;height:100%;background:var(--강조);border-radius:4px}
+.운요약{display:flex;gap:12px;margin-top:8px;font-size:11px;color:var(--흐림);font-variant-numeric:tabular-nums}
+.운요약 b{color:var(--글)}
+.운띠{flex:none;display:flex;gap:4px;padding:8px 12px;background:var(--면2);border-bottom:1px solid var(--선);overflow-x:auto;scrollbar-width:none}
+.운띠::-webkit-scrollbar{display:none}
+.운칸{flex:0 0 72px;background:var(--면);border:1px solid var(--선);border-radius:8px;padding:4px 8px 8px;text-align:left;color:var(--글)}
+.운칸.지금{border:2px solid var(--강조);padding:3px 7px 7px;background:var(--강조옅음)}
+.운칸.끝{opacity:.55}
+.운칸 .ㅇ{font-size:11px;font-weight:700;line-height:1.25;height:28px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:keep-all}
+.운칸 .ㅅ{font-size:11px;color:var(--흐림);font-variant-numeric:tabular-nums}
+.운칸 .ㅁ{height:8px;border-radius:4px;background:var(--면2);margin-top:4px;overflow:hidden}
+.운칸 .ㅁ i{display:block;height:100%;background:var(--강조)}
+.운칸.끝 .ㅁ i{background:var(--좋음)}
+.운넘{flex:none;display:flex;align-items:center;gap:8px;padding:4px 12px;background:var(--면);border-bottom:1px solid var(--선);font-size:11px}
+.운넘 button{flex:1 1 0;min-width:0;height:32px;border-radius:8px;color:var(--흐림);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 4px}
+.운넘 button:disabled{opacity:.35}
+.운넘 .ㄴ{text-align:left}.운넘 .ㄷ{text-align:right}
+.운넘 .ㅈ{flex:none;font-weight:700;font-variant-numeric:tabular-nums}
+.운머리{flex:none;display:flex;gap:8px;align-items:flex-start;padding:8px 12px;background:var(--면);border-bottom:1px solid var(--선)}
+.운글{flex:1;min-width:0}
+.운이름{font-size:18px;font-weight:700;line-height:1.3;word-break:keep-all}
+.운곁{font-size:11px;color:var(--흐림);margin-top:4px}
+.운근육{display:flex;gap:4px;flex-wrap:nowrap;overflow:hidden;margin-top:8px}
+.운근육 span{flex:none;height:28px;padding:0 8px;border:1px solid var(--속선);border-radius:8px;font-size:11px;color:var(--흐림);display:inline-flex;align-items:center;gap:4px}
+.운근육 span.주{color:var(--글);border-color:var(--글);font-weight:700}
+.운근육 i{width:8px;height:8px;border-radius:50%;flex:none}
+.운지표{display:flex;gap:8px;flex-wrap:nowrap;white-space:nowrap;overflow:hidden;align-items:center;margin-top:8px;font-size:11px;color:var(--흐림);font-variant-numeric:tabular-nums}
+.운지표 b{font-size:15px;color:var(--글)}
+.운칩{height:28px;padding:0 8px;border-radius:8px;border:1px solid var(--속선);font-size:11px;display:inline-flex;align-items:center}
+.운칩.오름{color:var(--나쁨);border-color:var(--나쁨)}
+.운칩.내림{color:var(--강조);border-color:var(--강조)}
+.운칩.빈{color:var(--옅음)}
+.운몸{flex:0 0 88px;background:var(--면2);border:1px solid var(--선);border-radius:8px;padding:4px;display:flex;flex-direction:column;align-items:center;gap:4px}
+.운몸속{width:80px;height:80px;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:8px}
+.운몸속 svg{width:100%;height:100%;display:block}
+.운몸속 img{width:100%;height:100%;object-fit:cover;display:block}
+.운몸 .글{font-size:11px;color:var(--옅음)}
+.운세트들{flex:1;min-height:0;overflow-y:auto;padding:8px 12px;display:flex;flex-direction:column;gap:4px}
+.큰몸{display:flex;justify-content:center}
+.큰몸 svg{width:100%;height:auto;max-height:280px}
+.몸눈금{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--흐림)}
+.몸눈금 .바{flex:1;height:8px;border-radius:4px}
+.몸표{width:100%;border-collapse:collapse;font-size:13px}
+.몸표 td,.몸표 th{padding:8px 0;border-bottom:1px solid var(--선);text-align:left}
+.몸표 th{font-size:11px;color:var(--옅음);font-weight:400}
+.몸표 .ㄱ{text-align:right;font-variant-numeric:tabular-nums;color:var(--흐림)}
+.몸점{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:8px}
+.시트사진{width:88px;height:88px;object-fit:cover;border-radius:8px}
+</style>
+<script>
+"use strict";
+const 업적원본 = [
+["1-1", "3-1", "3대 200", "쇠질 입문자", "봉이 무겁다는 걸 알게 된 당신, 시작이 반입니다", "3대 합계", "초보", "벤치프레스 · 백 스쿼트 · 데드리프트 1RM(종목마다 역대 최고) 합계 200kg 이상", 0, "", "예", "저장: 3대 >= 200"],
+["1-2", "3-2", "3대 300", "3대 300", "헬스장에서 '좀 하시네요' 소리 들을 준비 완료", "3대 합계", "중급", "벤치프레스 · 백 스쿼트 · 데드리프트 1RM(종목마다 역대 최고) 합계 300kg 이상", 0, "", "예", "저장: 3대 >= 300"],
+["1-3", "3-3", "3대 400", "원판 수집가", "이제 원판이 모자라 보이기 시작합니다. 존중합니다", "3대 합계", "중급", "벤치프레스 · 백 스쿼트 · 데드리프트 1RM(종목마다 역대 최고) 합계 400kg 이상", 0, "", "예", "저장: 3대 >= 400"],
+["1-4", "3-4", "3대 500", "오백의 사나이", "축하합니다. 이제 이사할 때 부르는 사람 1순위입니다", "3대 합계", "고급", "벤치 · 스쿼트 · 데드 합계 500kg 달성 (12-6 일반 설명)", 0, "일찍이 오백을 넘은 자들은 모두 같은 말을 남겼다. \"원판이 모자라다.\" 그들이 떠난 자리에는 휘어진 봉만이 남아 있었다.", "예", "저장: 3대 >= 500"],
+["1-5", "3-5", "3대 600", "중력 부정론자", "지구가 당신을 싫어합니다. 당신도 지구를 싫어하는 것 같고요", "3대 합계", "미친자", "벤치프레스 · 백 스쿼트 · 데드리프트 1RM(종목마다 역대 최고) 합계 600kg 이상", 0, "", "예", "저장: 3대 >= 600"],
+["1-6", "3-6", "3대 700", "인간 지게차", "존경합니다. 그런데 문 손잡이는 살살 잡아 주세요", "3대 합계", "미친자", "벤치프레스 · 백 스쿼트 · 데드리프트 1RM(종목마다 역대 최고) 합계 700kg 이상", 0, "", "예", "저장: 3대 >= 700"],
+["1-7", "3-7", "벤치 60", "가슴 개척자", "봉 양쪽에 20kg, 첫 원판의 감동", "종목별", "초보", "벤치프레스 1RM 60kg 이상", 0, "", "예", "저장: 최고RM(\"벤치프레스\") >= 60"],
+["1-8", "3-8", "벤치 100", "백벤치 클럽", "인사 대신 '벤치 몇 치세요?' 를 들을 자격", "종목별", "중급", "벤치프레스 1RM 100kg 이상", 0, "", "예", "저장: 최고RM(\"벤치프레스\") >= 100"],
+["1-9", "3-9", "벤치 140", "가슴이 먼저 도착하는 사람", "문을 열기 전에 가슴이 먼저 들어갑니다", "종목별", "고급", "벤치프레스 1RM 140kg 이상", 0, "", "예", "저장: 최고RM(\"벤치프레스\") >= 140"],
+["1-10", "3-10", "스쿼트 140", "하체 무시 안 함", "닭다리 탈출을 공식 인증합니다", "종목별", "중급", "백 스쿼트 1RM 140kg 이상", 0, "", "예", "저장: 최고RM(\"백 스쿼트\") >= 140"],
+["1-11", "3-11", "스쿼트 200", "계단의 적", "스쿼트 200, 대신 다음 날 계단은 당신의 적입니다", "종목별", "고급", "백 스쿼트 1RM 200kg 이상", 0, "", "예", "저장: 최고RM(\"백 스쿼트\") >= 200"],
+["1-12", "3-12", "데드 180", "바닥 청소부", "바닥에 있는 건 뭐든 들어 올립니다", "종목별", "중급", "데드리프트 1RM 180kg 이상", 0, "", "예", "저장: 최고RM(\"데드리프트\") >= 180"],
+["1-13", "3-13", "데드 250", "허리에 보험 든 사람", "존경합니다. 보험사는 당신을 싫어합니다", "종목별", "고급", "데드리프트 1RM 250kg 이상", 0, "", "예", "저장: 최고RM(\"데드리프트\") >= 250"],
+["1-14", "3-14", "오버헤드 프레스 = 체중", "하늘 받침대", "천장이 낮게 느껴지기 시작합니다", "종목별", "중급", "오버헤드 프레스 1RM 이 체중 이상", 0, "", "예", "저장: 최고RM(\"오버헤드 프레스\") >= 체중"],
+["1-15", "3-15", "체중 대비 벤치 1배", "내 몸은 내가 민다", "자기 몸무게를 밀어낸 사람", "종목별", "중급", "벤치프레스 1RM 이 체중의 1배 이상", 0, "", "예", "저장: 최고RM(\"벤치프레스\") >= 체중 × 1.0"],
+["1-16", "3-16", "체중 대비 데드 2.5배", "몸무게는 거들 뿐", "당신의 체중은 이제 워밍업입니다", "종목별", "고급", "데드리프트 1RM 이 체중의 2.5배 이상", 0, "", "예", "저장: 최고RM(\"데드리프트\") >= 체중 × 2.5"],
+["1-17", "3-17", "첫 맨몸 턱걸이 1회", "철봉과 화해", "드디어 철봉이 당신을 받아들였습니다", "맨몸", "초보", "보조 없이 턱걸이 1회 (12-6 일반 설명)", 0, "오랫동안 철봉은 그를 밀어냈다. 매달린 날들이 쌓여 어느 아침 턱이 봉을 넘었을 때, 철봉은 처음으로 침묵했다.", "예", "저장: 최다연속(\"턱걸이\") >= 1"],
+["1-18", "3-18", "팔굽혀펴기 20", "바닥과 친구", "군대 가도 안 혼납니다", "맨몸", "초보", "팔굽혀펴기 한 세트 20회 이상", 0, "", "예", "저장: 최다연속(\"팔굽혀펴기\") >= 20"],
+["1-19", "3-19", "턱걸이 연속 15", "등이 넓어지는 중", "문 지나갈 때 옆으로 서는 날이 옵니다", "맨몸", "중급", "턱걸이 한 세트 15회 연속 (보조 없이)", 0, "", "예", "저장: 최다연속(\"턱걸이\") >= 15"],
+["1-20", "3-20", "턱걸이 연속 30", "중력 협상가", "중력과 협상 중. 아직은 당신이 이기고 있습니다", "맨몸", "고급", "턱걸이 한 세트 30회 연속 (보조 없이)", 0, "", "예", "저장: 최다연속(\"턱걸이\") >= 30"],
+["1-21", "3-21", "턱걸이 연속 50", "철봉 거주자", "주소지를 철봉으로 옮기셨나요? 존경과 걱정을 함께 보냅니다", "맨몸", "미친자", "턱걸이 한 세트 50회 연속 (보조 없이)", 0, "", "예", "저장: 최다연속(\"턱걸이\") >= 50"],
+["1-22", "3-22", "맨몸 스쿼트 연속 100", "무릎 장인", "무릎이 고맙다고 전해 달래요", "맨몸", "중급", "맨몸 스쿼트 한 세트 100회 연속", 0, "", "예", "저장: 최다연속(\"맨몸 스쿼트\") >= 100"],
+["1-23", "3-23", "맨몸 스쿼트 연속 500", "앉았다 일어서기 명인", "의자가 필요 없는 삶. 그런데 왜 그러셨어요?", "맨몸", "미친자", "맨몸 스쿼트 한 세트 500회 연속", 0, "", "예", "저장: 최다연속(\"맨몸 스쿼트\") >= 500"],
+["1-24", "3-24", "플랭크 3분", "버티기 달인", "세상 풍파도 이렇게 버티면 됩니다", "맨몸", "중급", "플랭크 한 번에 3분 이상 버팀", 0, "", "나중", "저장: 플랭크 세트 시간 >= 180초"],
+["1-25", "3-25", "플랭크 10분", "인간 판자", "10분 동안 뭘 생각하셨는지 궁금합니다", "맨몸", "미친자", "플랭크 한 번에 10분 이상 버팀", 0, "", "나중", "저장: 플랭크 세트 시간 >= 600초"],
+["1-26", "3-26", "팔둘레 40", "반팔이 끼는 사람", "소매가 슬슬 불편해집니다", "둘레 · 몸", "중급", "팔둘레 40cm 이상", 0, "", "나중", "몸기록: 최근 팔둘레 >= 40"],
+["1-27", "3-27", "팔둘레 50", "반팔 파괴자", "옷 가게 점원이 당신을 기억합니다", "둘레 · 몸", "고급", "팔둘레 50cm 이상", 0, "", "나중", "몸기록: 최근 팔둘레 >= 50"],
+["1-28", "3-28", "허벅지 60", "청바지의 적", "청바지 매장에서 한숨이 늘었습니다", "둘레 · 몸", "중급", "허벅지둘레 60cm 이상", 0, "", "나중", "몸기록: 최근 허벅지둘레 >= 60"],
+["1-29", "3-29", "체지방률 첫 1%p 감소", "지방과 이별 중", "천천히, 그러나 확실하게", "둘레 · 몸", "중급", "체지방률이 처음 잰 값보다 1%p 이상 내려감", 0, "", "나중", "몸기록: 첫 체지방률 − 최근 체지방률 >= 1.0"],
+["1-30", "3-30", "골격근량 +5kg", "근육 저축왕", "통장 잔고보다 근육 잔고가 먼저 늘었습니다", "둘레 · 몸", "고급", "골격근량이 처음 잰 값보다 5kg 이상 늘어남", 0, "", "나중", "몸기록: 최근 골격근량 − 첫 골격근량 >= 5.0"],
+["1-31", "3-31", "첫 운동 기록", "첫 발자국", "오늘 온 것만으로 이미 대단합니다", "꾸준함 · 성실", "초보", "운동을 처음 저장함", 0, "", "예", "저장: 기록.size >= 1"],
+["1-32", "3-32", "주 3회 × 4주", "습관의 씨앗", "한 달을 버틴 당신, 절반은 성공입니다", "꾸준함 · 성실", "초보", "한 주(월~일)에 3일 이상 운동을 4주 연속", 0, "", "예", "저장: 연속한 4개 주 모두 운동날수(주) >= 3"],
+["1-33", "3-33", "12주 연속 계획 달성", "약속을 지키는 사람", "석 달 동안 자신과의 약속을 지켰습니다", "꾸준함 · 성실", "중급", "12주 연속, 그 주의 계획을 다 지킴", 0, "", "예", "저장 · 켤때: 연속한 12개 주 모두 (그 주 기록 >= 1 && 그 주 미실시 == 0 && 그 주 기록 전부 달성 == true)"],
+["1-34", "3-34", "1년 동안 주 3회 이상", "헬스장 지박령", "관장님보다 헬스장에 오래 있습니다", "꾸준함 · 성실", "고급", "52주 연속, 매주 3일 이상 운동", 0, "", "예", "저장: 연속한 52개 주 모두 운동날수(주) >= 3"],
+["1-35", "3-35", "365일 연속 운동", "일상생활 가능하신가요?", "존경합니다. 그런데 휴식도 운동입니다", "꾸준함 · 성실", "미친자", "1년 동안 하루도 빠짐없이 운동 (12-6 일반 설명)", 0, "쉬는 법을 잊은 자는 결국 쉬는 법을 다시 배우게 된다. 대개 병원 침대 위에서. 그러니 오늘은 쉬어라, 방랑자여.", "예", "저장: 운동날 이 365일 연속"],
+["1-36", "3-36", "보충제 30일 빠짐없이", "영양 성실왕", "크레아틴이 당신을 자랑스러워합니다", "꾸준함 · 성실", "중급", "30일 연속, 그날 정한 보충제를 빠짐없이 먹음", 0, "", "나중", "즉시: 보충제 다 먹은 날 이 30일 연속"],
+["1-37", "3-37", "새벽 5시 전 운동 30번", "새벽의 망령", "해보다 먼저 일어나는 사람. 잠은 언제 주무세요?", "꾸준함 · 성실", "미친자", "새벽 5시 전에 시작한 운동 30번", 0, "", "예", "저장: count(기록 k | 시작시(k) < 5) >= 30"],
+["1-38", "3-38", "계획된 휴식일 제대로 쉼 10번", "쉴 줄 아는 사람", "근육은 쉴 때 자랍니다. 잘하셨어요", "스트레스 · 회복", "초보", "휴식일로 정해진 날에 운동하지 않고 쉰 날 10번", 0, "", "새 칸", "켤때: 쉰날.size >= 10"],
+["1-39", "3-39", "가기 싫은데 간 날 50번", "의지의 화신", "싫은 걸 해낸 날이 쌓여 지금의 당신이 됐습니다", "스트레스 · 회복", "중급", "가기 싫다고 체크한 날 운동을 저장 50번", 0, "", "나중", "저장: count(기록 k | 컨디션(k) 에 '가기 싫음') >= 50"],
+["1-40", "3-40", "스트레스 최고치에서도 운동", "스트레스를 들어 올리는 자", "그 스트레스도 1RM 에 포함해 드릴까요?", "스트레스 · 회복", "미친자", "스트레스가 최고치(100)일 때 운동을 시작해 저장", 0, "", "나중", "저장: 시작할때스트레스(k) >= 스트레스최대(100)"],
+["1-41", "3-41", "2주 연속 휴식", "전략적 후퇴", "후퇴가 아닙니다. 재정비입니다. (그렇죠?)", "스트레스 · 회복", "유머", "14일 연속 운동 기록 없음", 0, "", "예", "켤때 · 저장: 이웃한 두 운동날 사이(또는 마지막 운동날 ~ 어제) 빈 날 >= 14일"],
+["1-42", "3-42", "첫 기록 갱신", "성장의 맛", "어제의 나를 이겼습니다", "기록 갱신", "초보", "처음으로 기록 갱신", 0, "", "예", "저장: 기록갱신(k).isNotEmpty()"],
+["1-43", "3-43", "기록 갱신 50번", "기록 사냥꾼", "갱신이 취미가 됐습니다", "기록 갱신", "중급", "기록 갱신 누적 50번", 0, "", "예", "저장: Σ 기록갱신(k).size (모든 k) >= 50"],
+["1-44", "3-44", "1년 전 나보다 모든 스탯 상승", "1년 전의 나에게", "1년 전의 당신이 지금의 당신을 보면 놀랄 겁니다", "기록 갱신", "고급", "1년 전 같은 날보다 모든 스탯이 올라감", 0, "", "나중", "켤때: 스탯기록[오늘 − 365일 이전 가장 가까운 날] 과 오늘 둘 다 값이 있는 스탯 모두 오늘 > 그때 (스트레스 제외)"],
+["1-45", "3-45", "헬스장 첫 방문 기록", "낯선 쇳소리", "모두 여기서 시작했습니다. 저 근육맨도요", "헬스장 생활", "초보", "운동을 처음 저장함 (1-31 과 같음)", 0, "", "예", "저장: 기록.size >= 1"],
+["1-46", "3-46", "같은 시간대 운동 30번", "그 시간의 고정 멤버", "이제 관장님이 당신 없으면 걱정합니다", "헬스장 생활", "중급", "같은 시간대(같은 '시')에 시작한 운동 누적 30번", 0, "", "예", "저장: max over h(count(기록 k | 시작시(k) == h)) >= 30"],
+["1-47", "3-47", "체중 5kg 감량", "가벼워진 발걸음", "계단이 한 칸 낮아진 것 같지 않나요?", "몸 · 체중", "중급", "처음 적은 체중보다 5kg 이상 줄어듦", 0, "", "새 칸", "몸기록: 첫 체중 − 최근7일평균 체중 >= 5"],
+["1-48", "3-48", "체중 20kg 감량", "다른 사람이 되어 돌아옴", "옛 사진 속 사람과 인사하세요", "몸 · 체중", "고급", "처음 적은 체중보다 20kg 이상 줄어듦", 0, "", "새 칸", "몸기록: 첫 체중 − 최근7일평균 체중 >= 20"],
+["1-49", "3-49", "크레아틴 100일", "크레아틴 신도", "물 마시는 양이 두 배가 됐습니다", "보충제 · 생활", "중급", "크레아틴 복용 체크 누적 100일", 0, "", "나중", "즉시: count(날 | 크레아틴 체크) >= 100"],
+["1-50", "3-50", "측정일 전부 참석 (1년)", "시험을 피하지 않는 자", "결과보다 마주하는 용기에 박수를", "기록 · 측정", "중급", "1년 동안 플랜의 측정일을 한 번도 건너뛰지 않음", 0, "", "새 칸", "켤때: 어떤 플랜 p 든 p.만든날 <= 오늘 − 365 이고, 그 365일 안 p 의 측정일 회 >= 1 이며 그 회들 모두 측정 세트(종류 2) 있음"],
+["1-51", "3-51", "스트레스 높은 날 운동 20번", "쇠로 푸는 사람", "쇳덩이는 말없이 들어줍니다", "스트레스 · 의지력", "중급", "스트레스 높음(70 이상)일 때 운동 누적 20번", 0, "", "나중", "저장: count(기록 k | 시작할때스트레스(k) >= 스트레스높음(70)) >= 20"],
+["1-52", "3-52", "스트레스 0 을 30일 유지", "해탈한 리프터", "혹시 스님이세요?", "스트레스 · 의지력", "미친자", "스트레스 0 을 30일 연속 유지", 0, "", "나중", "켤때: 스트레스기록 이 30일 연속 == 0"],
+["1-53", "3-53", "하체 운동 주 2회 × 12주", "하체를 버리지 않은 자", "다리가 당신을 기억할 겁니다. 계단에서요", "체형 · 부위", "중급", "부위 '하체' 운동을 주 2일 이상, 12주 연속", 0, "", "예", "저장: 연속한 12개 주 모두 count(운동날 d | d 기록에 부위 == '하체' 종목) >= 2"],
+["2-1", "4-1", "크리스마스에 운동", "산타도 쉬는 날", "(확정) 문구 미정", "날짜 · 생활", "", "12월 25일에 운동", 1, "", "예", "저장: 월일(k) == 12-25"],
+["2-2", "4-2", "1월 1일에 운동", "작심삼일의 첫날", "통계적으로 1월 4일에 다시 뵙겠습니다", "날짜 · 생활", "", "1월 1일에 운동", 1, "", "예", "저장: 월일(k) == 01-01"],
+["2-3", "4-3", "1월 4일에도 운동", "통계를 이긴 자", "작심삼일을 넘었습니다. 올해는 다를지도", "날짜 · 생활", "", "같은 해 1월 1일과 1월 4일에 모두 운동", 1, "", "예", "저장: 월일(k) == 01-04 && 운동날 에 같은 해 01-01 있음"],
+["2-4", "4-4", "생일에 운동", "스스로에게 주는 선물", "케이크 대신 쇳덩이를 고른 당신", "날짜 · 생활", "", "생일(월 · 일)에 운동", 1, "", "새 칸", "저장: 월일(k) == 몸.생일 의 월일"],
+["2-5", "4-5", "명절(설 · 추석) 당일 운동", "전 부치다 온 사람", "기름 냄새와 쇠 냄새가 공존합니다", "날짜 · 생활", "", "설날 · 추석 당일에 운동", 1, "", "새 칸", "저장: 날짜만(k) ∈ 명절표"],
+["2-6", "4-6", "금요일 밤 10시 이후 운동", "불금은 헬스장에서", "친구들은 술잔을, 당신은 바벨을", "날짜 · 생활", "", "금요일 밤 10시 이후에 운동 시작", 1, "", "예", "저장: 요일(k) == 금 && 시작시(k) >= 22"],
+["2-7", "4-7", "운동 시간 3시간 넘김", "헬스장에 사는 사람", "휴대폰 보는 시간도 운동 시간에 포함됐습니다", "날짜 · 생활", "", "한 번 운동 시간이 3시간 넘음", 1, "", "예", "저장: 기록[k].걸린초 > 10800"],
+["2-8", "4-8", "휴식 시간 합계가 운동 시간보다 김", "쉬는 게 본업", "세트 사이에 인생을 돌아보셨군요", "날짜 · 생활", "", "실제로 쉰 시간 합이 운동 시간보다 김", 1, "", "새 칸", "저장: 실제휴식합(세션) >= 정한휴식합(세션) × 2 [제안]"],
+["2-9", "4-9", "같은 날 한 번 더 운동 3번", "아직 배고프다", "하루 한 번으로는 성에 안 차는 분", "날짜 · 생활", "", "같은 날 '한 번 더' 운동 누적 3번", 1, "", "예", "저장: count(기록 열쇠에 '~' 있음) >= 3"],
+["2-10", "4-10", "월요일 운동 20번", "국제 가슴의 날 명예회원", "전 세계 벤치가 붐비는 날, 당신도 거기 있었습니다", "날짜 · 생활", "", "월요일에 운동 누적 20일", 1, "", "예", "저장: count(운동날 d | 요일(d) == 월) >= 20"],
+["2-11", "4-11", "하체 날 건너뛰기 5번", "하체는 거들 뿐", "상체가 무거워 보입니다. 균형을 생각해 주세요", "날짜 · 생활", "", "하체 날을 건너뛰거나 못 한 일 누적 5번", 1, "", "새 칸", "켤때: count(하체날 루틴이 건너뜀 또는 미실시) >= 5"],
+["2-12", "4-12", "메모에 '힘들다' 30번", "솔직한 사람", "힘든 걸 힘들다고 말하는 것도 용기입니다", "날짜 · 생활", "", "운동 메모에 '힘들' 이 들어간 메모 30개", 1, "", "새 칸", "즉시: count(운동메모 m | m.글 에 '힘들' 또는 '힘듦') >= 30"],
+["2-13", "4-13", "1RM 딱 100.0kg 달성", "세 자리의 문", "정확히 100. 우연일까요, 집념일까요", "날짜 · 생활", "", "그 날 어떤 종목의 1RM 이 정확히 100.0kg", 1, "", "예", "저장: ∃ 종목 · 반올림0.1(날RM(k, 종목)) == 100.0"],
+["2-14", "4-14", "한 달 쉬고 돌아옴", "탕아의 귀환", "봉은 당신을 기다렸습니다. 원판도요", "날짜 · 생활", "", "30일 이상 쉬다가 다시 운동", 1, "", "예", "저장: 날짜만(k) − 직전 운동날 >= 31일 (사이 빈 날 30일 이상)"],
+["2-15", "4-15", "새벽 3~5시 운동", "잠 못 드는 쇠의 영혼", "무엇이 당신을 이 시간에 불렀습니까", "날짜 · 생활", "", "새벽 3시~5시 사이에 운동 시작", 1, "", "예", "저장: 3 <= 시작시(k) < 5"],
+["2-16", "4-16", "운동 시작하고 5분 만에 종료", "출석 도장", "왔다는 게 중요하죠. 네, 그렇습니다", "헬스장 생활", "", "시작하고 5분 안에 운동 끝", 1, "", "예", "저장: 0 < 기록[k].걸린초 <= 300"],
+["2-17", "4-17", "휴식 타이머를 10번 연속 건너뜀", "휴식은 사치", "심장이 보낸 항의 서한이 도착했습니다", "헬스장 생활", "", "휴식 타이머 '건너뛰기' 를 10번 연속", 1, "", "새 칸", "즉시: 건너뛰기 → 세기[연속건너뜀] += 1, 휴식이 끝까지 돌면 0 → >= 10"],
+["2-18", "4-18", "한 세트 휴식이 20분 넘음", "인스타 보다 옴", "쉬는 동안 계절이 바뀌었습니다", "헬스장 생활", "", "세트와 세트 사이가 20분을 넘음", 1, "", "새 칸", "체크할 때: 이번 체크 시각 − 직전 세트 체크 시각 > 1200초 (같은 운동 안)"],
+["2-19", "4-19", "루틴에 같은 종목 5번 넣음", "한 우물만 판다", "벤치만 사랑하는 당신, 벤치도 당신을 사랑합니다", "헬스장 생활", "", "한 루틴에 같은 종목 줄을 5개 넣음", 1, "", "예", "루틴 저장: ∃ 루틴 · max over 이름(count(루틴.종목 줄 | 이름)) >= 5"],
+["2-20", "4-20", "체중을 하루 3번 기록", "체중계와 연애 중", "숫자는 하루에도 변합니다. 사랑도 그렇죠", "몸 · 체중", "", "하루에 체중을 3번 적음", 1, "", "새 칸", "즉시: count(체중기록 | 같은 날) >= 3"],
+["2-21", "4-21", "팔둘레를 일주일에 5번 잼", "줄자의 노예", "어제와 같습니다. 정말입니다", "몸 · 체중", "", "7일 안에 팔둘레를 5번 잼", 1, "", "나중", "즉시: count(팔둘레 기록 | 최근 7일) >= 5"],
+["2-22", "4-22", "보충제 체크를 밤 11시 59분에", "마감 직전의 성실", "성실은 성실입니다. 아슬아슬해도", "보충제 · 생활", "", "보충제를 밤 11시 59분에 체크", 1, "", "나중", "즉시: 보충제 체크 시각의 시:분 == 23:59"],
+["2-23", "4-23", "새벽 운동 후 수면 5시간 미만 10번", "좀비 리프터", "근육은 자면서 큽니다. 알고 계시죠?", "보충제 · 생활", "", "새벽 운동한 날, 그 전 잠이 5시간 미만 — 누적 10번", 1, "", "나중", "저장 · 켤때: count(운동날 d | 시작시 < 6 && 수면(d 아침까지) < 5시간) >= 10"],
+["2-24", "4-24", "측정일에 목표를 20% 넘김", "계획 파괴자", "계산식이 당신을 과소평가했습니다. 죄송합니다", "기록 · 측정", "", "측정일 결과가 그 회 계획값의 120% 이상", 1, "", "예", "저장: 이번에 생긴 향상기록 h 가 h.예상값 > 0 && h.측정값 >= h.예상값 × 1.2"],
+["2-25", "4-25", "1RM 이 정확히 체중과 같음", "나를 들어 올리는 자", "철학적인 순간입니다", "기록 · 측정", "", "그 날 어떤 종목의 1RM 이 체중과 정확히 같음", 1, "", "예", "저장: ∃ 종목 · 반올림0.1(날RM(k, 종목)) == 반올림0.1(체중)"],
+["2-26", "4-26", "기록이 3번 연속 떨어짐", "겨울잠", "모든 영웅에겐 슬럼프 장이 있습니다", "기록 · 측정", "", "한 종목의 기록이 3번 연속 떨어짐", 1, "", "예", "저장: 한 종목의 최근 4 기록일 날RM a1 > a2 > a3 > a4 (시간 순)"],
+["2-27", "4-27", "가기 싫은 날 체크 후 기록 갱신", "억지로 와서 신기록", "역시 인생은 알 수 없습니다", "스트레스 · 의지력", "", "가기 싫다고 체크한 날 기록 갱신", 1, "", "나중", "저장: 컨디션(k) 에 '가기 싫음' && 기록갱신(k).isNotEmpty()"],
+["2-28", "4-28", "여름 새벽 폭염 경보일 운동", "땀으로 쓰는 일기", "에어컨 앞자리는 양보하셨나요?", "계절 · 날짜", "", "여름, 폭염 경보가 내린 날 새벽에 운동", 1, "", "나중", "저장: 그 날 사는 곳 폭염경보 && 시작시(k) < 6"],
+["2-29", "4-29", "폭설 · 태풍 날 운동", "날씨는 핑계일 뿐", "그 길을 뚫고 오신 거예요? 진짜로?", "계절 · 날짜", "", "폭설 · 태풍 특보가 내린 날 운동", 1, "", "나중", "저장: 그 날 사는 곳 대설 또는 태풍 특보"],
+["2-30", "4-30", "월말 마지막 날 몰아서 3번 운동", "월말 정산", "이번 달 성실 스탯, 막차 탑승 성공", "계절 · 날짜", "", "그 달 마지막 날 하루에 운동 3번", 1, "", "예", "저장: 날짜만(k) == 그 달 말일 && count(같은 날짜 기록) >= 3"],
+["2-31", "4-31", "13일의 금요일 운동", "불길한 날의 리프터", "오늘 떨어뜨린 원판은 저주 탓입니다", "계절 · 날짜", "", "13일의 금요일에 운동", 1, "", "예", "저장: 일(k) == 13 && 요일(k) == 금"],
+["2-32", "4-32", "휴식 시간을 10분으로 설정", "명상가", "운동하러 오신 거 맞죠?", "휴식 · 시간", "", "휴식 시간을 10분 이상으로 정함", 1, "", "예", "루틴 저장 · 운동 중 휴식 고침: 휴식 또는 휴식값 중 하나 >= 600초"],
+["2-33", "4-33", "휴식 0초로 5세트", "숨 쉬는 법을 잊은 자", "폐가 사표를 냈습니다", "휴식 · 시간", "", "정한 휴식이 0초인 세트를 한 운동에서 5개 이상 함", 1, "", "예", "저장: count(세션 체크한 세트 | 세트휴식(k) == 0) >= 5"],
+["2-34", "4-34", "운동 기록 시간 1분 미만", "번개", "셔터 속도보다 빨랐습니다", "휴식 · 시간", "", "운동 시간 1분 미만으로 저장", 1, "", "예", "저장: 0 < 기록[k].걸린초 < 60"],
+["2-35", "4-35", "자정을 넘겨 운동 끝", "신데렐라", "12시가 지났는데도 근육은 그대로입니다", "휴식 · 시간", "", "자정을 넘겨 운동을 끝냄", 1, "", "예", "저장: 날짜(끝시각) > 날짜(시작시각) (폰 시간대)"],
+["2-36", "4-36", "작은 창(PiP) 켜 놓고 20분", "딴짓 전문가", "쉬는 동안 드라마 한 편 끝냈습니다", "휴식 · 시간", "", "한 운동에서 작은 창(PiP)이 켜진 시간 합 20분 이상", 1, "", "새 칸", "즉시: 세션 PiP초 >= 1200"],
+["2-37", "4-37", "무게 합계가 정확히 1,000kg 인 날", "1톤의 사나이", "오늘 당신은 트럭 한 대분을 옮겼습니다", "기록 · 숫자", "", "하루 볼륨 합이 정확히 1,000kg", 1, "", "예", "저장: 반올림0.1(Σ 볼륨(그 날짜의 모든 기록)) == 1000.0"],
+["2-38", "4-38", "연간 누적 볼륨 1,000톤", "인간 크레인", "에펠탑 무게의 1/10 을 들었습니다. 계산은 대충입니다", "기록 · 숫자", "", "한 해(1/1~12/31) 볼륨 합 1,000톤 이상", 1, "", "예", "저장: Σ 볼륨(그 해 모든 기록) >= 1,000,000kg"],
+["2-39", "4-39", "모든 세트를 정확히 10회로", "십진법 신봉자", "9도 11도 인정하지 않습니다", "기록 · 숫자", "", "한 운동의 모든 세트를 정확히 10회로", 1, "", "예", "저장: 기록세트(k) 개수 >= 3 && 모두 r == 10"],
+["2-40", "4-40", "같은 무게 · 횟수로 10주", "평화주의자", "변화는 싫습니다. 안정이 좋습니다", "기록 · 숫자", "", "한 종목을 10주 동안 똑같은 무게 · 횟수로", 1, "", "예", "저장: 한 종목에서 이어진 기록일들(>= 5일, 첫날~끝날 >= 70일)의 본운동 세트 (w, r) 목록이 모두 같음"],
+["2-41", "4-41", "1RM 69kg", "숫자를 아는 사람", "…네. 그렇습니다", "기록 · 숫자", "", "그 날 어떤 종목의 1RM 이 정확히 69kg", 1, "", "예", "저장: ∃ 종목 · 반올림0.1(날RM(k, 종목)) == 69.0"],
+["2-42", "4-42", "1RM 이 전날보다 딱 0.5kg 오름", "티끌 모아 태산", "0.5kg 도 기록은 기록입니다", "기록 · 숫자", "", "한 종목의 1RM 이 직전 기록일보다 딱 0.5kg 오름", 1, "", "예", "저장: ∃ 종목 · 반올림0.1(날RM(k) − 날RM(그 종목 직전 기록일)) == 0.5"],
+["2-43", "4-43", "메모 100개", "운동 일기 작가", "출판사에서 연락 올지도 모릅니다", "메모 · 앱 사용", "", "운동 메모 누적 100개", 1, "", "새 칸", "즉시: 운동메모.size >= 100"],
+["2-44", "4-44", "운동 중 메모 '아' 한 글자", "할 말을 잃은 자", "그 마음 압니다", "메모 · 앱 사용", "", "운동 중에 '아' 한 글자만 메모", 1, "", "새 칸", "즉시: 운동 중 저장한 메모 글.trim() == \"아\""],
+["2-45", "4-45", "루틴 이름 10번 바꿈", "작명 중독", "이름보다 운동을 바꿔 보는 건 어떨까요", "메모 · 앱 사용", "", "루틴 이름을 누적 10번 바꿈", 1, "", "새 칸", "즉시: 루틴 이름 바꿔 저장 → 세기[루틴이름바꿈] += 1 → >= 10"],
+["2-46", "4-46", "설정 화면 50번 들어감", "설정 장인", "운동보다 설정을 더 많이 만졌습니다", "메모 · 앱 사용", "", "설정 화면을 누적 50번 엶", 1, "", "새 칸", "즉시: 설정 탭 열 때 세기[설정진입] += 1 → >= 50"],
+["2-47", "4-47", "백업 30번", "편집증 기록관", "당신의 기록은 핵전쟁에도 살아남을 겁니다", "메모 · 앱 사용", "", "백업 내보내기 누적 30번", 1, "", "새 칸", "즉시: 백업 내보내기 성공 → 세기[백업] += 1 → >= 30"],
+["2-48", "4-48", "가슴 운동만 4주 연속", "상체 원툴", "거울 앞에선 멋있습니다. 거울 앞에서만요", "체형 · 부위", "", "4주 연속, 가슴 운동만 함", 1, "", "예", "저장: 연속한 4개 주 모두 운동날 >= 1 && 그 4주 모든 기록의 모든 종목 부위 == '가슴'"],
+["2-49", "4-49", "팔 운동이 주의 절반", "이두 신봉자", "반팔 입을 날만 기다립니다", "체형 · 부위", "", "한 주 세트의 절반 이상이 팔 운동", 1, "", "예", "저장: 이번 주(월~일) 본세트 >= 10 && 부위 '팔' 본세트 >= 본세트 × 0.5"],
+["2-50", "4-50", "복근 운동 100번", "식스팩 탐험가", "지방 아래 어딘가에 있습니다. 분명히", "체형 · 부위", "", "복근 운동을 한 날 누적 100일", 1, "", "예", "저장: count(운동날 d | d 기록에 부위 == '복근' 종목) >= 100"],
+["2-51", "4-51", "한 달 쉬고 복귀", "나 다시 돌아갈래", "봉 앞에 선 당신, 그때로 돌아가고 싶습니까", "영화 · 드라마 패러디 (짧은 대사만 · 출시 전 확인)", "", "30일 이상 쉬다가 다시 운동 (2-14 와 같음)", 1, "", "예", "저장: 날짜만(k) − 직전 운동날 >= 31일"],
+["2-52", "4-52", "세트 시작 전 3분 넘게 멈춤", "생각이 많아지셨나요?", "바벨은 기다려 줍니다. 무한히는 아니고요", "영화 · 드라마 패러디 (짧은 대사만 · 출시 전 확인)", "", "휴식이 끝난 뒤 3분 넘게 지나서 다음 세트 체크", 1, "", "새 칸", "체크할 때: 이번 체크 시각 − 휴식 끝 시각 > 180초"],
+["2-53", "4-53", "휴식 끝 알림에 바로 시작 10번", "얼음 땡", "알림이 울리자마자 움직이는 당신, 탈락하지 않았습니다", "영화 · 드라마 패러디 (짧은 대사만 · 출시 전 확인)", "", "휴식 끝 알림 뒤 10초 안에 다음 세트 체크 누적 10번", 1, "", "새 칸", "체크할 때: 이번 체크 시각 − 휴식 끝 시각 <= 10초 → 세기[바로시작] += 1 → >= 10"],
+["2-54", "4-54", "같은 운동 100일", "늘 하던 대로", "지루함과 싸워 이긴 자의 칭호", "영화 · 드라마 패러디 (짧은 대사만 · 출시 전 확인)", "", "한 종목을 한 날 누적 100일", 1, "", "예", "저장: max over 종목(count(운동날 d | d 에 그 종목)) >= 100"]
+];
+/* ═════════════ 스탯 · 업적 — 스탯명세.md (10-02) · 업적표.csv (12-10 번호판 107줄) ═════════════
+   앱과 같은 규칙. 숫자 · 경계 · 문구는 이 블록 한곳 (스탯표 · 업적원본). [제안] 값은 명세 그대로 */
+const 스탯표 = {
+  근력100:700, 도츠100:500, 최근RM일:90, 최근일:28, 다양부위:6, 다양종목:12, 의지력일:90, 의지측정:5, 의지갱신:2, 비교일:7,
+  별칭:{"스쿼트":"백 스쿼트","풀업":"턱걸이","푸시업":"팔굽혀펴기"}, 정자세여유:0.95, 환산최대:10,
+  도츠남:[-307.75076,24.0900756,-0.1918759221,0.0007391293,-0.000001093,40,210],
+  도츠여:[-57.96288,13.6175032,-0.1126655495,0.0005158568,-0.0000010706,40,150],
+  목록:[   // 순서 = 명세 1절. 상태: 지금 · 일부 · 나중 · 새 칸
+    {이름:"체력", 상태:"일부", 이유:"힘 쪽만 · 심폐 · 코어 · 폭발력은 나중"},
+    {이름:"근력"}, {이름:"내 수행능력"}, {이름:"밀기"}, {이름:"당기기"}, {이름:"하체"},
+    {이름:"폭발력", 상태:"나중", 이유:"인상 · 용상 · 클린 합의 뒤"},
+    {이름:"근지구력"},
+    {이름:"심폐지구력", 상태:"나중", 이유:"유산소 시간 · 거리 입력 뒤"},
+    {이름:"코어", 상태:"나중", 이유:"플랭크 시간 세트 뒤"},
+    {이름:"체성분", 상태:"나중", 이유:"인바디 입력 뒤"},
+    {이름:"균형"}, {이름:"다양성"},
+    {이름:"성실", 상태:"일부", 이유:"실행률만 · 보충제 복용은 나중"},
+    {이름:"작업량"},
+    {이름:"회복력", 상태:"나중", 이유:"심박 · 수면 입력 뒤 · 기준점 미정"},
+    {이름:"의지력", 상태:"일부", 이유:"측정 · 갱신만 · 컨디션 칩은 나중"},
+    {이름:"목표 진척도"}, {이름:"나이 · 성별 대비"}, {이름:"처음 대비 성장"},
+    {이름:"스트레스", 상태:"새 칸", 이유:"새 칸 · 오르내림 값은 대화로 정함"},
+  ],
+};
+const 등급들 = ["초보","중급","고급","미친자","유머"];
+
+/* ── 공통 계산 (명세 2절) ── */
+const 날짜만 = k => k.split("~")[0];
+const 키순 = (a,b)=>{ const [x,m=1]=a.split("~"), [y,n=1]=b.split("~"); return x<y?-1:x>y?1:(+m)-(+n); };
+const 날차 = (a,b)=> Math.round((날(b)-날(a))/864e5);           // b − a (일)
+const 반01 = x => Math.round(x*10)/10;
+const 같은01 = (a,b)=> Math.abs(반01(a)-반01(b))<1e-9;
+const 평균 = l => { const v=l.filter(x=>x!=null&&isFinite(x)); return v.length? v.reduce((a,b)=>a+b,0)/v.length : null; };
+const 자름 = (x,a=0,b=100)=> Math.min(b,Math.max(a,x));
+function 정식이름(e){ if(e.플랜id){ const p=S.플랜들.find(x=>x.id===e.플랜id); if(p) return p.종목; } return 스탯표.별칭[e.이름] ?? e.이름; }
+const 한세트 = e => e.세트.filter(s=>s.완료);                       // 체험 기록은 체크한 세트만 '한 세트' (워밍업 종류 없음)
+const RM값 = s => (s.완료 && s.w>0 && s.r>=1 && s.r<=스탯표.환산최대) ? 일RM(s.w,s.r) : 0;
+function 날RM(rec, 종목){ let m=0; for(const e of rec.종목) if(정식이름(e)===종목) for(const s of e.세트) m=Math.max(m,RM값(s)); return m; }
+function 최고RM(줄, 종목){ let m=0; for(const [,r] of 줄) m=Math.max(m,날RM(r,종목)); return m; }
+const 삼대 = 줄 => 최고RM(줄,"벤치프레스")+최고RM(줄,"백 스쿼트")+최고RM(줄,"데드리프트");
+function 정자세(s, 종목){ const t=찾표(종목); return s.w===0 || (S.몸.체중>0 && s.w >= S.몸.체중*(t?.맨몸비??1)*스탯표.정자세여유); }
+function 최다연속(줄, 종목){ let m=0; for(const [,r] of 줄) for(const e of r.종목) if(정식이름(e)===종목) for(const s of e.세트) if(s.완료&&정자세(s,종목)) m=Math.max(m,s.r); return m; }
+const 했나 = (줄, 종목)=> 줄.some(([,r])=>r.종목.some(e=>정식이름(e)===종목 && e.세트.some(s=>s.완료)));
+const 부위 = e => (S.종목표.find(x=>x.이름===e.이름) || S.종목표.find(x=>x.이름===정식이름(e)))?.칸 ?? null;
+const 볼륨 = rec => 기록볼륨(rec);
+const 시작시 = rec => rec.시작시각>0 ? new Date(rec.시작시각).getHours() : null;   // 시작시각 0(옛 · 예시 기록)은 판정 제외
+function 주키(d){ const x=날(d); x.setDate(x.getDate()-(x.getDay()+6)%7); return 키(x); }   // 주 = 월~일
+function 운동날들(줄){ return [...new Set(줄.map(([k])=>날짜만(k)))].sort(); }
+/* Logic.kt 기록갱신 — 1RM · 볼륨, 처음 해 본 종목 제외, 0.05 넘게 좋아져야 */
+function 기록갱신(줄, k){ const rec=S.기록[k]; if(!rec) return []; const 앞=줄.filter(([x])=>키순(x,k)<0).map(([,r])=>r), 결과=[], 볼들=[];
+  for(const 이름 of [...new Set(rec.종목.map(e=>e.이름))]){ const 세트들=r=>r.종목.filter(e=>e.이름===이름).flatMap(한세트);
+    const 오=세트들(rec); if(!오.length) continue; const 전=앞.map(세트들).filter(l=>l.length); if(!전.length) continue;
+    const rm=Math.max(...오.map(s=>일RM(s.w,s.r))), 전rm=Math.max(...전.map(l=>Math.max(...l.map(s=>일RM(s.w,s.r)))));
+    if(rm>전rm+0.05) 결과.push({이름, 종류:"1RM", 값:rm, 전최고:전rm});
+    const 볼=오.reduce((a,s)=>a+s.w*s.r,0), 전볼=Math.max(...전.map(l=>l.reduce((a,s)=>a+s.w*s.r,0)));
+    if(볼>전볼+0.05) 볼들.push({이름, 종류:"볼륨", 값:볼, 전최고:전볼}); }
+  return 결과.concat(볼들); }
+/* 연속 — 주(또는 날) 목록에서 조건을 채운 것이 몇 개 이어지나. 최대 · 지금(이번 것이 아직 안 찼으면 지난 것까지) */
+function 연속(목록, 맞나){ let 최대=0, 줄=0; const 값=목록.map(맞나); 값.forEach(v=>{ 줄=v?줄+1:0; 최대=Math.max(최대,줄); });
+  let 지금=0; for(let i=값.length-1-(값.length&&!값[값.length-1]?1:0); i>=0 && 값[i]; i--) 지금++; return {최대, 지금}; }
+function 주목록(줄, 끝날){ const 날들=운동날들(줄); if(!날들.length) return []; const out=[]; let w=주키(날들[0]); const 끝=주키(끝날);
+  while(w<=끝){ out.push(w); w=날더하기(w,7); } return out; }
+const 그주 = (줄, w)=> 줄.filter(([k])=>주키(날짜만(k))===w);
+const 넘음 = (x, n, 단위)=> ({된:x>=n-1e-9, x, n, 단위});
+const 참 = v => ({된:!!v});
+
+/* 판정에 쓰는 맥락 — k 가 있으면 '방금 저장한 기록 k 까지', 없으면 '오늘까지' */
+function 맥락(k, 새향상){
+  const 날=k?날짜만(k):오늘();
+  const 줄=Object.entries(S.기록).filter(([x])=> k ? 키순(x,k)<=0 : 날짜만(x)<=날).sort(([a],[b])=>키순(a,b));
+  return {k, 날, 줄, rec:k?S.기록[k]:null, 새향상: 새향상 ?? (k? S.향상기록들.filter(h=>h.날짜===날) : [])};
+}
+const 그날종목들 = c => c.rec ? [...new Set(c.rec.종목.map(정식이름))] : [];
+function 기록일RM(줄, 종목){ const m={}; for(const [k,r] of 줄){ const v=날RM(r,종목); if(v>0){ const d=날짜만(k); m[d]=Math.max(m[d]||0,v); } } return Object.entries(m).sort(([a],[b])=>a<b?-1:1); }
+function 쉰틈(c, 켤때){ const 날들=운동날들(c.줄); let 큰=0; for(let i=1;i<날들.length;i++) 큰=Math.max(큰, 날차(날들[i-1],날들[i])-1);
+  let 지금=0; if(켤때 && 날들.length){ 지금=Math.max(0, 날차(날들[날들.length-1], c.날)-1); 큰=Math.max(큰,지금); } return {큰, 지금}; }
+const 직전운동날 = c => { const 날들=운동날들(c.줄.filter(([x])=>날짜만(x)<c.날)); return 날들[날들.length-1]; };
+
+/* 판정 함수 — 업적표.csv '판정식' 그대로. 시점(때)은 판정식 앞머리에서 읽는다 */
+const 판정식 = {
+  "1-1":c=>넘음(삼대(c.줄),200,"kg"), "1-2":c=>넘음(삼대(c.줄),300,"kg"), "1-3":c=>넘음(삼대(c.줄),400,"kg"),
+  "1-4":c=>넘음(삼대(c.줄),500,"kg"), "1-5":c=>넘음(삼대(c.줄),600,"kg"), "1-6":c=>넘음(삼대(c.줄),700,"kg"),
+  "1-7":c=>넘음(최고RM(c.줄,"벤치프레스"),60,"kg"), "1-8":c=>넘음(최고RM(c.줄,"벤치프레스"),100,"kg"), "1-9":c=>넘음(최고RM(c.줄,"벤치프레스"),140,"kg"),
+  "1-10":c=>넘음(최고RM(c.줄,"백 스쿼트"),140,"kg"), "1-11":c=>넘음(최고RM(c.줄,"백 스쿼트"),200,"kg"),
+  "1-12":c=>넘음(최고RM(c.줄,"데드리프트"),180,"kg"), "1-13":c=>넘음(최고RM(c.줄,"데드리프트"),250,"kg"),
+  "1-14":c=>넘음(최고RM(c.줄,"오버헤드 프레스"),S.몸.체중,"kg"), "1-15":c=>넘음(최고RM(c.줄,"벤치프레스"),S.몸.체중*1.0,"kg"),
+  "1-16":c=>넘음(최고RM(c.줄,"데드리프트"),S.몸.체중*2.5,"kg"),
+  "1-17":c=>넘음(최다연속(c.줄,"턱걸이"),1,"회"), "1-18":c=>넘음(최다연속(c.줄,"팔굽혀펴기"),20,"회"),
+  "1-19":c=>넘음(최다연속(c.줄,"턱걸이"),15,"회"), "1-20":c=>넘음(최다연속(c.줄,"턱걸이"),30,"회"), "1-21":c=>넘음(최다연속(c.줄,"턱걸이"),50,"회"),
+  "1-22":c=>넘음(최다연속(c.줄,"맨몸 스쿼트"),100,"회"), "1-23":c=>넘음(최다연속(c.줄,"맨몸 스쿼트"),500,"회"),
+  "1-31":c=>넘음(c.줄.length,1,"번"), "1-45":c=>넘음(c.줄.length,1,"번"),
+  "1-32":c=>{ const r=연속(주목록(c.줄,c.날), w=>운동날들(그주(c.줄,w)).length>=3); return {...넘음(r.지금,4,"주"), 된:r.최대>=4}; },
+  "1-33":c=>{ const r=연속(주목록(c.줄,c.날), w=>{ const l=그주(c.줄,w); return l.length>=1 && !Object.keys(S.미실시).some(d=>d<=c.날&&주키(d)===w) && l.every(([,x])=>기록달성(x)); });
+    return {...넘음(r.지금,12,"주"), 된:r.최대>=12}; },
+  "1-34":c=>{ const r=연속(주목록(c.줄,c.날), w=>운동날들(그주(c.줄,w)).length>=3); return {...넘음(r.지금,52,"주"), 된:r.최대>=52}; },
+  "1-35":c=>{ const 날들=운동날들(c.줄); if(!날들.length) return 넘음(0,365,"일"); const 모든=[]; for(let d=날들[0]; d<=c.날; d=날더하기(d,1)) 모든.push(d);
+    const 있=new Set(날들), r=연속(모든, d=>있.has(d)); return {...넘음(r.지금,365,"일"), 된:r.최대>=365}; },
+  "1-37":c=>넘음(c.줄.filter(([,r])=>시작시(r)!=null&&시작시(r)<5).length,30,"번"),
+  "1-41":c=>{ const t=쉰틈(c,!c.k); return {...넘음(t.지금,14,"일"), 된:t.큰>=14}; },
+  "1-42":c=>참(c.k && 기록갱신(c.줄,c.k).length>0),
+  "1-43":c=>넘음(c.줄.reduce((a,[k])=>a+기록갱신(c.줄,k).length,0),50,"번"),
+  "1-46":c=>{ const n={}; c.줄.forEach(([,r])=>{ const h=시작시(r); if(h!=null) n[h]=(n[h]||0)+1; }); return 넘음(Math.max(0,...Object.values(n)),30,"번"); },
+  "1-53":c=>{ const r=연속(주목록(c.줄,c.날), w=>운동날들(그주(c.줄,w).filter(([,x])=>x.종목.some(e=>부위(e)==="하체"&&한세트(e).length))).length>=2);
+    return {...넘음(r.지금,12,"주"), 된:r.최대>=12}; },
+  "2-1":c=>참(c.k && c.날.slice(5)==="12-25"), "2-2":c=>참(c.k && c.날.slice(5)==="01-01"),
+  "2-3":c=>참(c.k && c.날.slice(5)==="01-04" && 운동날들(c.줄).includes(c.날.slice(0,4)+"-01-01")),
+  "2-6":c=>참(c.rec && 요일(c.날)==="금" && 시작시(c.rec)!=null && 시작시(c.rec)>=22),
+  "2-7":c=>참(c.rec && c.rec.초>10800),
+  "2-9":c=>참(c.줄.filter(([k])=>k.includes("~")).length>=3),
+  "2-10":c=>참(운동날들(c.줄).filter(d=>요일(d)==="월").length>=20),
+  "2-13":c=>참(c.rec && 그날종목들(c).some(t=>같은01(날RM(c.rec,t),100))),
+  "2-14":c=>{ const 앞=직전운동날(c); return 참(c.k && 앞 && 날차(앞,c.날)>=31); },
+  "2-15":c=>{ const h=c.rec&&시작시(c.rec); return 참(h!=null && h>=3 && h<5); },
+  "2-16":c=>참(c.rec && c.rec.초>0 && c.rec.초<=300),
+  "2-19":()=>참(S.루틴들.some(r=>{ const n={}; r.종목.forEach(e=>n[e.이름]=(n[e.이름]||0)+1); return Math.max(0,...Object.values(n))>=5; })),
+  "2-24":c=>참(c.새향상.some(h=>h.예상값>0 && h.측정값>=h.예상값*1.2)),
+  "2-25":c=>참(c.rec && S.몸.체중>0 && 그날종목들(c).some(t=>{ const v=날RM(c.rec,t); return v>0 && 같은01(v,S.몸.체중); })),
+  "2-26":c=>참(c.rec && 그날종목들(c).some(t=>{ const l=기록일RM(c.줄,t).map(([,v])=>v).slice(-4); return l.length===4 && l[0]>l[1] && l[1]>l[2] && l[2]>l[3]; })),
+  "2-30":c=>{ if(!c.k) return 참(false); const d=날(c.날), 말일=new Date(d.getFullYear(),d.getMonth()+1,0).getDate(); return 참(d.getDate()===말일 && c.줄.filter(([k])=>날짜만(k)===c.날).length>=3); },
+  "2-31":c=>참(c.k && 날(c.날).getDate()===13 && 요일(c.날)==="금"),
+  "2-32":()=>참(S.루틴들.some(r=>r.종목.some(e=>e.세트.some(s=>s.휴>=600)))),
+  "2-33":c=>참(c.rec && c.rec.종목.reduce((a,e)=>a+e.세트.filter(s=>s.완료&&s.휴===0).length,0)>=5),
+  "2-34":c=>참(c.rec && c.rec.초>0 && c.rec.초<60),
+  "2-35":c=>참(c.rec && c.rec.시작시각>0 && 키(new Date(c.rec.시작시각+c.rec.초*1000))>키(new Date(c.rec.시작시각))),
+  "2-37":c=>참(c.k && 같은01(c.줄.filter(([k])=>날짜만(k)===c.날).reduce((a,[,r])=>a+볼륨(r),0),1000)),
+  "2-38":c=>참(c.k && c.줄.filter(([k])=>k.slice(0,4)===c.날.slice(0,4)).reduce((a,[,r])=>a+볼륨(r),0)>=1e6),
+  "2-39":c=>{ const l=c.rec?c.rec.종목.flatMap(한세트):[]; return 참(l.length>=3 && l.every(s=>s.r===10)); },
+  "2-40":c=>참(c.rec && 그날종목들(c).some(t=>{ const 날별={}; c.줄.forEach(([k,r])=>{ const l=r.종목.filter(e=>정식이름(e)===t).flatMap(한세트).map(s=>`${s.w}x${s.r}`); if(l.length) 날별[날짜만(k)]=l.join(","); });
+    const 날들=Object.keys(날별).sort(); if(날들[날들.length-1]!==c.날) return false; let i=날들.length-1; while(i>0 && 날별[날들[i-1]]===날별[c.날]) i--;
+    return 날들.length-i>=5 && 날차(날들[i],c.날)>=70; })),
+  "2-41":c=>참(c.rec && 그날종목들(c).some(t=>같은01(날RM(c.rec,t),69))),
+  "2-42":c=>참(c.rec && 그날종목들(c).some(t=>{ const v=날RM(c.rec,t); if(!(v>0)) return false; const 앞=기록일RM(c.줄,t).filter(([d])=>d<c.날).pop(); return 앞 && 같은01(v-앞[1],0.5); })),
+  "2-48":c=>{ const r=연속(주목록(c.줄,c.날), w=>{ const l=그주(c.줄,w); return l.length>=1 && l.every(([,x])=>x.종목.every(e=>부위(e)==="가슴")); }); return 참(r.최대>=4); },
+  "2-49":c=>{ if(!c.rec) return 참(false); const l=그주(c.줄,주키(c.날)).flatMap(([,r])=>r.종목.flatMap(e=>한세트(e).map(()=>부위(e)))); return 참(l.length>=10 && l.filter(x=>x==="팔").length>=l.length*0.5); },
+  "2-50":c=>참(운동날들(c.줄.filter(([,r])=>r.종목.some(e=>부위(e)==="복근"&&한세트(e).length))).length>=100),
+  "2-51":c=>{ const 앞=직전운동날(c); return 참(c.k && 앞 && 날차(앞,c.날)>=31); },
+  "2-54":c=>{ const n={}; c.줄.forEach(([k,r])=>new Set(r.종목.filter(e=>한세트(e).length).map(정식이름)).forEach(t=>{ (n[t]=n[t]||new Set()).add(날짜만(k)); }));
+    return 참(Math.max(0,...Object.values(n).map(s=>s.size))>=100); },
+};
+const 업적표 = 업적원본.map(([번호,칭호번호,이름,칭호,문구,분류,등급,조건,숨김,플레이버,구현,식])=>{
+  const 머리=식.split(":")[0]; const 때=[]; if(/저장/.test(머리)&&!/루틴 저장/.test(머리)) 때.push("저장"); if(/켤때/.test(머리)) 때.push("켤때"); if(/루틴 저장/.test(머리)) 때.push("루틴");
+  return {번호,칭호번호,이름,칭호,문구,분류,등급,조건,숨김:!!숨김,플레이버,구현,때,판정:구현==="예"?판정식[번호]:null}; });
+const 업적찾기 = 번호 => 업적표.find(a=>a.번호===번호);
+const 칭호찾기 = 칭호번호 => 업적표.find(a=>a.칭호번호===칭호번호);
+
+/* 판정 — 그 시점의 업적만 본다. 한 번 얻으면 취소 안 함 */
+function 업적판정(때, k, 새향상){ S.업적=S.업적||{}; const c=맥락(k,새향상), 새=[];
+  for(const a of 업적표){ if(!a.판정 || S.업적[a.번호] || !a.때.includes(때)) continue;
+    if(a.판정(c).된){ S.업적[a.번호]={날:c.날, 순:Object.keys(S.업적).length+1}; 새.push(a.번호); } }
+  return 새; }
+/* 처음 켤 때 — 지난 기록으로 소급 (달성일 = 조건을 처음 채운 기록 날) */
+function 업적소급(){ S.업적={}; const 새=[];
+  for(const k of Object.keys(S.기록).sort(키순)) 새.push(...업적판정("저장",k));
+  새.push(...업적판정("켤때"), ...업적판정("루틴")); return 새; }
+function 업적진행(a){ if(!a.판정 || a.숨김 || S.업적?.[a.번호]) return null; const r=a.판정(맥락()); return r.n!=null ? r : null; }
+
+/* ── 스탯 계산 (명세 1 · 2절) — D 날까지의 기록으로 ── */
+function 종목점수(이름, 줄){ const t=찾표(이름); if(!t) return null; let x, b;
+  if(맨몸(t)){ if(!했나(줄,이름)) return null; x=최다연속(줄,이름); b=t.횟수경계; }
+  else { const rm=최고RM(줄,이름); if(!(rm>0) || !(S.몸.체중>0)) return null; x=rm/S.몸.체중; b=S.몸.남?t.남:t.여; }
+  if(x<b[0]) return 20*x/b[0];
+  for(let i=0;i<3;i++) if(x>=b[i] && x<b[i+1]) return 20*(i+1)+20*(x-b[i])/(b[i+1]-b[i]);
+  return Math.min(100, 80+20*(x-b[3])/(b[3]-b[2])); }
+function 도츠(합, 체중, 남){ const [A,B,C,D,E,lo,hi]=남?스탯표.도츠남:스탯표.도츠여, w=자름(체중,lo,hi); return 합*500/(A+B*w+C*w*w+D*w**3+E*w**4); }
+function 스탯계산(D){
+  const 줄=Object.entries(S.기록).filter(([k])=>날짜만(k)<=D).sort(([a],[b])=>키순(a,b));
+  const 안 = n => 줄.filter(([k])=>날차(날짜만(k),D)<n);
+  const 줄90=안(스탯표.최근RM일), 줄28=안(스탯표.최근일), 몸=S.몸, 값={}, 풀이={}, 숫=x=>x==null?"—":String(Math.round(x));
+  const 점={}; for(const t of 플랜표.종목들) 점[t.이름]=종목점수(t.이름,줄90);
+  const 셋=삼대(줄90);
+  값.근력 = 셋>0 ? Math.min(100, 셋/스탯표.근력100*100) : null; 풀이.근력=`3대 ${kg(반01(셋))}kg ÷ 7 · 3대 700kg = 100 (최근 90일)`;
+  const dt = 셋>0&&몸.체중>0 ? 도츠(셋,몸.체중,몸.남) : null;
+  값["내 수행능력"] = dt!=null ? Math.min(100, dt/스탯표.도츠100*100) : null; 풀이["내 수행능력"]=`DOTS ${dt!=null?dt.toFixed(1):"—"} ÷ 5 · 체중 ${몸.체중}kg · ${몸.남?"남":"여"}`;
+  const 쌍=(이름,a,b,덧)=>{ 값[이름]=평균([점[a],점[b]]); 풀이[이름]=`${a} ${숫(점[a])} · ${b} ${숫(점[b])} 평균 — ${덧}`; };
+  쌍("밀기","벤치프레스","오버헤드 프레스","체중 대비 1RM 점수"); 쌍("당기기","펜들레이 로우","턱걸이","1RM · 정자세 횟수 점수");
+  쌍("하체","백 스쿼트","데드리프트","체중 대비 1RM 점수"); 쌍("근지구력","팔굽혀펴기","맨몸 스쿼트","정자세 최다 횟수 점수");
+  값.체력 = 평균([값.밀기,값.당기기,값.하체,값.근지구력]); 풀이.체력="밀기 · 당기기 · 하체 · 근지구력 평균 (있는 것만)";
+  const 셋힘=[값.밀기,값.당기기,값.하체].filter(x=>x!=null);
+  값.균형 = 셋힘.length>=2 ? 100-(Math.max(...셋힘)-Math.min(...셋힘)) : null; 풀이.균형="100 − (가장 높은 − 가장 낮은) · 밀기 · 당기기 · 하체";
+  const 한것=줄28.flatMap(([,r])=>r.종목.filter(e=>한세트(e).length)), 부위수=new Set(한것.map(부위).filter(Boolean)).size, 종목수=new Set(한것.map(정식이름)).size;
+  값.다양성 = 줄.length ? 50*Math.min(부위수,스탯표.다양부위)/스탯표.다양부위 + 50*Math.min(종목수,스탯표.다양종목)/스탯표.다양종목 : null; 풀이.다양성=`최근 28일 부위 ${부위수}/6 · 종목 ${Math.min(종목수,12)}/12`;
+  const 날28=new Set(줄28.map(([k])=>날짜만(k))).size, 미28=Object.keys(S.미실시).filter(d=>d<=D&&날차(d,D)<스탯표.최근일).length;
+  값.성실 = 날28+미28>0 ? 100*날28/(날28+미28) : null; 풀이.성실=`최근 28일 운동 ${날28}일 ÷ (운동 ${날28} + 미실시 ${미28}일)`;
+  const 회당=줄28.length ? 줄28.reduce((a,[,r])=>a+볼륨(r),0)/줄28.length : 0;
+  값.작업량 = 줄28.length&&몸.체중>0 ? Math.min(100, 회당/몸.체중) : null; 풀이.작업량=`최근 28일 한 번 평균 ${콤마(회당)}kg ÷ 체중 · 이름 미정 (저력 · 기력 · 완력)`;
+  const 측날=new Set(줄90.filter(([,r])=>r.종목.some(e=>e.측정일&&한세트(e).length)).map(([k])=>날짜만(k))).size;
+  const 갱날=new Set(줄90.filter(([k])=>기록갱신(줄,k).length).map(([k])=>날짜만(k))).size;
+  값.의지력 = 줄.length ? Math.min(100, 스탯표.의지측정*측날+스탯표.의지갱신*갱날) : null; 풀이.의지력=`최근 90일 측정한 날 ${측날} × 5 + 기록 갱신한 날 ${갱날} × 2`;
+  const 플=S.플랜들.filter(p=>!p.만든날||p.만든날<=D).map(p=>{ const a=시작진행값(p), z=목표진행값(p); return z>a ? 자름((지금진행값(p)-a)/(z-a),0,1) : null; }).filter(x=>x!=null);
+  값["목표 진척도"] = 플.length ? 100*평균(플) : null; 풀이["목표 진척도"]=`플랜 ${플.length}개 평균 — 시작에서 목표까지 온 만큼`;
+  const 힘=평균([값.밀기,값.당기기,값.하체,값.근지구력]);
+  값["나이 · 성별 대비"] = 힘!=null ? Math.min(100, 힘/나이배수(몸.나이)) : null; 풀이["나이 · 성별 대비"]=`힘 평균 ${숫(힘)} ÷ 나이배수 ${나이배수(몸.나이)} (${몸.나이}살 · 성별은 종목점수에)`;
+  const 늘=[...new Set(줄.flatMap(([,r])=>r.종목.map(정식이름)))].map(t=>{ const l=기록일RM(줄,t); if(l.length<2) return null; const 최=최고RM(줄90,t); return 최>0 ? 최/l[0][1]-1 : null; }).filter(x=>x!=null);
+  const 늘평=평균(늘); 값["처음 대비 성장"] = 늘평!=null ? 자름(늘평*100) : null;
+  풀이["처음 대비 성장"]=`첫 기록 대비 평균 ${늘평!=null?(늘평>=0?"+":"−")+Math.abs(늘평*100).toFixed(1)+"%":"—"} (기록일 2개 이상 종목 ${늘.length}개)`;
+  for(const s of 스탯표.목록){ if(!(s.이름 in 값)) 값[s.이름]=null; if(s.상태==="나중"||s.상태==="새 칸") 풀이[s.이름]=s.이유; }
+  return {값, 풀이};
+}
+/* 하루 한 번 스탯기록 — 같은 날은 마지막 값으로 덮는다 */
+function 스탯남기기(D=오늘()){ const {값}=스탯계산(D); S.스탯기록=S.스탯기록||{}; S.스탯기록[D]=Object.fromEntries(Object.entries(값).filter(([,v])=>v!=null).map(([k,v])=>[k,반01(v)])); }
+/* 처음 켤 때 — 첫 기록 날부터 어제까지 스탯기록을 지난 기록으로 채운다 (7일 전 대비를 첫날부터 보이게) */
+function 스탯소급(){ S.스탯기록={}; const 날들=운동날들(Object.entries(S.기록)); if(날들.length) for(let d=날들[0]; d<오늘(); d=날더하기(d,1)) 스탯남기기(d); 스탯남기기(); }
+function 비교기록(){ const 기준=날더하기(오늘(),-스탯표.비교일), 날들=Object.keys(S.스탯기록||{}).filter(d=>d<=기준).sort(); const d=날들[날들.length-1]; return d?{날:d, 값:S.스탯기록[d]}:null; }
+/* ── 스탯 · 업적 화면 (캘린더 띠의 작은 칩 → 전체 화면, ✕ 로 닫기) ── */
+const 대표 = ()=> S.대표칭호 ? 칭호찾기(S.대표칭호) : null;
+const 짧은분류 = v => String(v).replace(/ \(.*\)$/,"");
+const 스탯숫 = v => v==null ? "—" : String(Math.round(v));
+function 스탯차(v, b, 전){ if(v==null) return ""; if(b==null) return 전?`<span class="차 오름">새로</span>`:"";
+  const d=v-b; if(Math.abs(d)<0.05) return ""; const x=Math.abs(d)>=1?Math.round(Math.abs(d)):Math.abs(d).toFixed(1);
+  return `<span class="차 ${d>0?"오름":"내림"}">${d>0?"▲ +":"▼ −"}${x}</span>`; }
+function 스탯막대(v, b){ if(v==null) return ""; const 밑=b==null?0:Math.min(b,v), 더=Math.max(0,v-밑);
+  return `<div class="막대"><i style="width:${밑}%"></i>${더>0.05?`<i class="더" style="left:${밑}%;width:${더}%"></i>`:""}</div>`; }
+function 스탯화면(){ const u=U.스탯;
+  return `<div class="화면"><div class="스탯머리 번호"${번("스0")}><button class="닫기x" data-act="스탯닫기" aria-label="닫기">✕</button><b class="채움">스탯 · 업적</b>${칩줄("스탯보기","",["스탯","업적"],u.보기)}</div>
+    ${u.보기==="스탯"?스탯판():업적판()}${업적띠()}</div>`; }
+function 스탯판(){ const {값,풀이}=스탯계산(오늘()), 전=비교기록(), u=U.스탯, 앞=s=>전?.값?.[s];
+  const 칸 = s => { const v=값[s.이름], 없=s.상태==="나중"||s.상태==="새 칸";
+    return `<button class="스탯칸 ${u.고름===s.이름?"고름":""}" data-act="스탯고름" data-v="${s.이름}" data-enter="스탯${s.이름}">
+      <div class="줄"><span class="스탯이름">${s.이름}</span>${s.상태==="일부"?`<span class="아주작 옅음">일부</span>`:""}<span class="채움"></span><b class="스탯값 ${없||v==null?"옅음":""}">${스탯숫(v)}</b></div>
+      ${없?`<div class="맞춤 아주작 옅음">${s.이유}</div>`:v==null?`<div class="맞춤 아주작 옅음">기록이 아직 없습니다</div>`:`<div class="줄 막대줄">${스탯막대(v,앞(s.이름))}${스탯차(v,앞(s.이름),전)}</div>`}</button>`; };
+  const 체=스탯표.목록[0], v=값.체력, 고른=스탯표.목록.find(s=>s.이름===u.고름)||체, gv=값[고른.이름], gb=앞(고른.이름);
+  return `<div class="넘김 스탯속">
+    <button class="체력칸 번호 ${u.고름==="체력"?"고름":""}" data-act="스탯고름" data-v="체력" data-enter="스탯체력"${번("스1")}>
+      <div class="줄"><b class="큰">체력</b><span class="아주작 옅음">일부</span><span class="채움"></span><b class="스탯큰값 숫"${v!=null?` data-count="${Math.round(v)}"`:""}>${스탯숫(v)}</b>${스탯차(v,앞("체력"),전)}</div>
+      ${스탯막대(v,앞("체력"))}<div class="맞춤 아주작 옅음">${체.이유}</div></button>
+    <div class="스탯판 번호"${번("스2")}>${스탯표.목록.slice(1).map(칸).join("")}</div></div>
+    <div class="스탯풀이 번호"${번("스3")} data-enter="풀이${고른.이름}"><div class="줄"><b>${고른.이름}</b><span class="채움"></span><span class="작 흐림 숫">${전?(gb!=null?`${날글(전.날)} ${스탯숫(gb)} → `:`${날글(전.날)} — → `):"7일 전 기록 없음 · "}지금 ${스탯숫(gv)}</span>${스탯차(gv,gb,전)}</div><div class="맞춤 아주작 흐림">${esc(풀이[고른.이름]||"")}</div></div>`; }
+function 업적판(){ const u=U.스탯, 얻=S.업적||{}, 풀=업적표.filter(a=>얻[a.번호]), 대=대표();
+  const 분류들=[...new Set(업적표.map(a=>a.분류))];
+  let 목록 = u.분류==="전체"?업적표 : u.분류==="풀림"?풀.slice().sort((a,b)=>얻[b.번호].순-얻[a.번호].순) : u.분류==="숨은"?업적표.filter(a=>a.숨김) : 업적표.filter(a=>a.분류===u.분류);
+  return `<div class="업적위 번호"${번("업0")}><div class="줄 작"><b class="채움">풀림 ${풀.length}/${업적표.length}</b><span class="흐림 숫">업적 ${풀.filter(a=>!a.숨김).length}/${업적표.filter(a=>!a.숨김).length} · 숨은 ${풀.filter(a=>a.숨김).length}/${업적표.filter(a=>a.숨김).length}</span></div>
+      <div class="맞춤 아주작 옅음">${대?`대표 『${esc(대.칭호)}』 · 풀린 칭호를 누르면 바뀝니다`:"풀린 칭호를 누르면 대표 칭호가 됩니다"}</div>
+      <div class="가로밀기">${칩줄("업적분류","",["전체","풀림","숨은",...분류들],u.분류,v=>v==="풀림"?`풀림 ${풀.length}`:esc(짧은분류(v)))}</div></div>
+    <div class="넘김 업적목록 번호"${번("업1")} data-enter="업적목록${u.분류}">${목록.map(업적줄).join("")||`<div class="빈칸" style="margin-top:12px">아직 없습니다</div>`}</div>`; }
+function 업적줄(a){ const 얻=S.업적?.[a.번호], 대=S.대표칭호===a.칭호번호, 등=a.숨김?"숨은":a.등급, 숨김잠김=a.숨김&&!얻;
+  const 표 = 얻 ? `<span class="칭호표 등급-${등}">${esc(a.칭호)}</span>` : 숨김잠김 ? `<span class="칭호표 숨음">???</span>` : `<span class="칭호표 잠김 등급-${등}" aria-label="잠긴 칭호">${esc(a.칭호)}</span>`;
+  const 준비 = a.구현==="예" ? "" : `판정 준비 중 · ${a.구현==="새 칸"?"새 칸 필요":"다른 기능 먼저"}`;
+  const 머리 = `<div class="줄">${표}<span class="아주작 옅음 숫">${a.번호}</span><span class="업적이름">${숨김잠김?"???":esc(a.이름)}</span>${숨김잠김&&준비?`<span class="아주작 옅음">${a.구현==="새 칸"?"새 칸":"나중"}</span>`:""}${대?`<span class="알약 강조">대표</span>`:`<span class="등급글 등급-${등}">${등}</span>`}</div>`;
+  if(얻) return `<button class="업적줄 풀림" data-act="업적누름" data-v="${a.번호}" data-enter="업${a.번호}1">${머리}
+    ${a.문구?`<div class="작">${esc(a.문구)}</div>`:""}<div class="조건글">${날글(얻.날)} 달성 · ${esc(a.조건)}</div>${a.플레이버?`<div class="플레이버">${esc(a.플레이버)}</div>`:""}</button>`;
+  if(숨김잠김) return `<div class="업적줄" data-enter="업${a.번호}0">${머리}</div>`;
+  const 진=업적진행(a), 단=x=>진?.단위==="kg"?kg(반01(x)):String(Math.round(x));
+  return `<div class="업적줄" data-enter="업${a.번호}0">${머리}<div class="조건글">${esc(a.조건)}</div>
+    ${준비?`<div class="아주작 옅음">${준비}</div>`:진?`<div class="진행줄"><div class="막대 채움"><i style="width:${자름(진.x/진.n*100)}%"></i></div><span class="아주작 흐림 숫">${단(Math.min(진.x,진.n))} / ${단(진.n)}${진.단위}</span></div>`:""}</div>`; }
+/* 달성 알림 — 아래 띠 (팝업 대신 · U5-3). 5초 뒤 사라진다 */
+let 띠번호=0;
+function 업적알림(새){ if(!새||!새.length) return; 새.forEach(n=>발자취(`업적 ${n} · 『${업적찾기(n).칭호}』`));
+  const id=++띠번호; U.업적띠={목록:[...새,...(U.업적띠?.목록||[])], id};   // 새로 얻은 것을 앞에
+  setTimeout(()=>{ if(U.업적띠?.id!==id) return; U.업적띠=null; document.querySelectorAll(".업적띠").forEach(el=>{ el.classList.add("나감띠"); setTimeout(()=>el.remove(),200); }); }, 5000); }
+function 업적띠(){ const b=U.업적띠; if(!b||!b.목록.length) return ""; const a=업적찾기(b.목록[0]);
+  return `<div class="아래띠 업적띠" role="status" data-enter="업적띠${b.id}"><span class="채움">업적 달성 · 칭호 <b>『${esc(a.칭호)}』</b>${b.목록.length>1?` 외 ${b.목록.length-1}개`:""}</span><button data-act="업적띠보기">보기</button></div>`; }
+/* 저장 · 날 바꿈 · 불러오기 뒤 — 지난 상태에 없던 칸 채우기 */
+function 새칸채움(){ S.대표칭호=S.대표칭호??null;
+  if(!S.업적) 업적소급(); if(!S.스탯기록||!Object.keys(S.스탯기록).length) 스탯소급(); }
+</script>
 <script>
 "use strict";
 /* ═════════════ 상태 — 이 브라우저에만 저장 ═════════════ */
@@ -383,25 +977,28 @@ const 새id = ()=> Math.random().toString(36).slice(2,9);
 let S = null;
 let 아침 = {};   // 일차 → 그 날 아침 상태(되돌리기용)
 const U = {탭:"캘린더", 보는달:null, 고른날:null, 집은날:null, 시트:null, 루틴열림:null, 방식펼침:null, 메모글:"", 확인:null, 되돌림:null, 스크롤:null, 새종목:"", 새종목칸:"가슴", 칸고름:"가슴", 방금:[],
-  플랜폼:null, 플랜결과:null, 고침:null};
+  플랜폼:null, 플랜결과:null, 고침:null, 스탯:null, 업적띠:null};
 const 오늘 = ()=> 날더하기(S.시작일, S.일차-1);
 const 플랜 = id => S.플랜들.find(p=>p.id===id);
 const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const 발자취 = 글 => { S.발자취.push(`${S.일차}일차 · ${글}`); if(S.발자취.length>40) S.발자취.shift(); };
 function 폼초기(){ return {종목:"벤치프레스", 이름:"", 현재무게:"", 현재횟수:"", 목표방식:"RM", 목표무게:"", 목표횟수:"", 정자세:"", 보조모드:0, 보조무게:"", 보조횟수:"", 목표개수:"", 주당:2, 방식번호:1, 강도:1, 세트수:0, 직접횟수:0, 오류:""}; }
-U.플랜폼 = 폼초기();
+U.플랜폼 = 폼초기(); U.종목펼침 = null;
 
 function 세트들(n,w,r,휴){ return Array.from({length:n},()=>({w,r,휴})); }
 function 처음상태(){
   S = {시작일:실제오늘, 일차:1, 빨리:1, 시계:0,
     몸:{나이:35, 남:true, 체중:80},
     설정:{자동진행:true, 넘어가기전확인:false, 소리진동:true, 화면유지:true, 번호보기:false, 무게폭:1, 기본세트:1, 기본휴식:60,
-          볼륨켬:false, 볼륨방식:"%", 볼륨값:2.5, 볼륨언제:"성공", 볼륨배분:"횟수", 횟수상한:12},
+          볼륨켬:false, 볼륨방식:"%", 볼륨값:2.5, 볼륨언제:"성공", 볼륨배분:"횟수", 횟수상한:12,
+          배너:"근육 2장", 회복시간:24, 색표:"heat"},
+    피로:{}, 최대볼륨:{}, 날시작시계:0,
     카테고리:["가슴","등","하체","어깨","팔","맨몸"],
     종목표:[["벤치프레스","가슴"],["인클라인 벤치프레스","가슴"],["덤벨 플라이","가슴"],["턱걸이","등"],["펜들레이 로우","등"],["랫풀다운","등"],
       ["백 스쿼트","하체"],["데드리프트","하체"],["레그 프레스","하체"],["오버헤드 프레스","어깨"],["사이드 레터럴 레이즈","어깨"],
       ["바벨 컬","팔"],["트라이셉스 푸시다운","팔"],["팔굽혀펴기","맨몸"],["맨몸 스쿼트","맨몸"]].map(([이름,칸])=>({이름,칸})),
-    루틴들:[], 예정:{}, 예정고정:{}, 미실시:{}, 기록:{}, 플랜들:[], 향상기록들:[], 세션:null, 결과:null, 메모:[], 발자취:[]};
+    루틴들:[], 예정:{}, 예정고정:{}, 미실시:{}, 기록:{}, 플랜들:[], 향상기록들:[], 세션:null, 결과:null, 메모:[], 발자취:[],
+    업적:null, 대표칭호:null, 스탯기록:{}};
   const 시=S.시작일;
   // 예시 플랜 2개 — 벤치는 14회까지 해 온 것으로, 턱걸이는 어시스트로 막 시작
   S.플랜들.push({id:"p1", 이름:"벤치프레스", 종목:"벤치프레스", 목표방식:"RM", 목표무게:100, 목표횟수:1, 시작1RM:85, 시작개수:0, 목표개수:0,
@@ -429,13 +1026,29 @@ function 처음상태(){
     S.기록[k].초 = Math.round(예상초({종목:S.기록[k].종목.map(e=>({세트:e.세트.map(s=>({...s,휴:90}))}))})*1.1);
   };
   예시(-7,"r1"); 예시(-6,"r2",true); 예시(-4,"r4"); 예시(-3,"r1"); 예시(-1,"r4");
+  // 예시 기록으로 근육 피로 · 이전 최대를 쌓는다 (저녁 7시에 끝낸 것으로)
+  Object.keys(S.기록).sort().forEach(k=>피로저장(S.기록[k].종목, 날(k).getTime()+19*3600e3));
   S.예정 = {[날더하기(시,-2)]:"r2", [날더하기(시,-5)]:"r3"};
   예정초기화(오늘());
+  // 스탯 · 업적 — 지난 기록(예시 한 주)으로 소급 (명세 5절)
+  업적알림(업적소급()); 스탯소급();
   아침 = {1: 스냅()};
 }
 const 스냅 = ()=> JSON.stringify(S);
 function 저장(){ try{ localStorage.setItem(저장키, JSON.stringify({S, 아침})); }catch(e){} }
-function 불러오기(){ try{ const t=localStorage.getItem(저장키); if(!t) return false; const o=JSON.parse(t); if(!o||!o.S||!o.S.시작일) return false; S=o.S; 아침=o.아침||{}; return true; }catch(e){ return false; } }
+function 불러오기(){ try{ const t=localStorage.getItem(저장키); if(!t) return false; const o=JSON.parse(t); if(!o||!o.S||!o.S.시작일) return false; S=o.S; 아침=o.아침||{};
+  S.설정={배너:"근육 2장", 회복시간:24, 색표:"heat", ...S.설정}; S.피로=S.피로||{}; S.최대볼륨=S.최대볼륨||{}; S.날시작시계=S.날시작시계??0; return true; }catch(e){ return false; } }
+/* 종목 사진 — 기록과 따로 둔다 (날마다 남기는 아침 사본에 사진이 겹쳐 쌓이지 않게) */
+let 사진함={}; try{ 사진함=JSON.parse(localStorage.getItem(저장키+"-사진")||"{}")||{}; }catch(e){ 사진함={}; }
+const 사진목록 = 이름 => 사진함[이름]||[];
+function 사진저장(){ try{ localStorage.setItem(저장키+"-사진", JSON.stringify(사진함)); }catch(e){ 토스트("저장 공간이 모자라 사진은 이 화면에만 남습니다"); } }
+function 줄인사진(f){ return new Promise((ok,no)=>{ const rd=new FileReader(); rd.onload=()=>{ const im=new Image(); im.onload=()=>{ const k=Math.min(1,480/Math.max(im.width,im.height)), c=document.createElement("canvas");
+  c.width=Math.max(1,Math.round(im.width*k)); c.height=Math.max(1,Math.round(im.height*k)); c.getContext("2d").drawImage(im,0,0,c.width,c.height); ok(c.toDataURL("image/jpeg",0.72)); }; im.onerror=no; im.src=rd.result; }; rd.onerror=no; rd.readAsDataURL(f); }); }
+async function 사진넣기(이름, files){ const l=사진함[이름]=사진함[이름]||[];
+  for(const f of files){ if(l.length>=10){ 토스트("종목당 10장까지"); break; } try{ l.push(await 줄인사진(f)); }catch(e){ 토스트("이 사진은 읽지 못했습니다"); } }
+  사진저장(); 발자취(`사진 ${files.length}장 · ${이름}`); 그리기(); }
+/* 근육 회복을 셀 때의 '지금' — 그 날 저녁 6시에서 시작해 체험 시계만큼 흐른다 */
+const 모의시각 = ()=> 날(오늘()).getTime() + 18*3600e3 + (S.시계-(S.날시작시계||0));
 
 /* ═════════════ 플랜 줄 · 기록 계산 ═════════════ */
 function 플랜처방(p){ const 계=다음회(p); if(!계) return null; return {계, 목:회처방(p,계.목표값,계.측정일)}; }
@@ -459,19 +1072,20 @@ function 운동시작(rid){
     return {이름:e.이름, 플랜id:e.플랜id||null, 회:계?.회??null, 측정일:!!계?.측정일,
       세트:줄세트(e).map(s=>({w:s.w, r:s.r, 목r:s.r, 휴:s.휴, 완료:false}))}; }).filter(e=>e.세트.length);
   if(!종목.length){ 토스트("종목이 없는 루틴입니다"); return; }
-  S.세션 = {루틴id:rid, 이름:r.이름, 날:오늘(), 시작:S.시계, 마지막:S.시계, 종목, 지금:{i:0,k:0}, 휴식:null, 접기:{}, 끝화면:false, 끝:null};
-  U.탭="운동"; U.스크롤=0; 발자취(`운동 시작 · ${r.이름}`);
+  S.세션 = {루틴id:rid, 이름:r.이름, 날:오늘(), 시작:S.시계, 시작시각:모의시각(), 마지막:S.시계, 종목, 지금:{i:0,k:0}, 휴식:null, 접기:{}, 끝화면:false, 끝:null};
+  U.탭="운동"; U.스크롤=0; U.본=0; 발자취(`운동 시작 · ${r.이름}`);
 }
 function 다음세트(i,k){ const ss=S.세션; const 줄=[]; ss.종목.forEach((e,a)=>e.세트.forEach((s,b)=>줄.push({i:a,k:b,s})));
   const 여기=줄.findIndex(x=>x.i===i&&x.k===k);
   for(let n=1;n<=줄.length;n++){ const x=줄[(여기+n)%줄.length]; if(!x.s.완료) return {i:x.i,k:x.k}; } return null; }
 function 체크(i,k){ const ss=S.세션, s=ss.종목[i].세트[k]; s.완료=!s.완료; ss.마지막=S.시계;
   if(s.완료){ const 다=다음세트(i,k);
-    if(다){ ss.휴식={i,k,끝:S.시계+s.휴*1000,길이:s.휴}; ss.지금=다; if(다.i!==i) U.스크롤=다.i; }
+    ss.사진i=[Math.floor(Math.random()*1e6),Math.floor(Math.random()*1e6)];   // 세트를 끝낼 때마다 사진을 바꾼다 (08 3절)
+    if(다){ ss.휴식={i,k,끝:S.시계+s.휴*1000,길이:s.휴}; ss.지금=다;  }
     else { ss.휴식=null; 토스트("모든 세트를 끝냈습니다"); } }
   else { if(ss.휴식&&ss.휴식.i===i&&ss.휴식.k===k) ss.휴식=null; ss.지금={i,k}; } }
-function 세션기록(ss){ return {루틴id:ss.루틴id, 이름:ss.이름, 초:Math.round(((ss.끝??S.시계)-ss.시작)/1000),
-  종목:ss.종목.map(e=>({이름:e.이름, 플랜id:e.플랜id, 회:e.회, 측정일:e.측정일, 세트:e.세트.map(s=>({w:s.w,r:s.r,목r:s.목r,완료:s.완료}))}))}; }
+function 세션기록(ss){ return {루틴id:ss.루틴id, 이름:ss.이름, 초:Math.round(((ss.끝??S.시계)-ss.시작)/1000), 시작시각:ss.시작시각||0,
+  종목:ss.종목.map(e=>({이름:e.이름, 플랜id:e.플랜id, 회:e.회, 측정일:e.측정일, 세트:e.세트.map(s=>({w:s.w,r:s.r,목r:s.목r,휴:s.휴,완료:s.완료}))}))}; }
 function 볼륨올리기(row){ const s=S.설정; const 더=v=> s.볼륨방식==="%" ? v.w*s.볼륨값/100 : s.볼륨값; const 반=x=>Math.round(x*10)/10;
   if(s.볼륨배분==="무게") row.세트.forEach(v=>{ v.w=반(v.w+더(v)); });
   else if(row.세트.some(v=>v.r<s.횟수상한)) row.세트.forEach(v=>{ v.r=Math.min(s.횟수상한,v.r+1); });
@@ -480,16 +1094,42 @@ function 루틴반영(ss){ const r=루틴(ss.루틴id); if(!r) return; const 성
   r.종목.forEach(row=>{ if(row.플랜id) return; const e=ss.종목.find(x=>x.이름===row.이름&&!x.플랜id); if(!e) return;
     row.세트.forEach((t,k)=>{ const s=e.세트[k]; if(s&&s.완료){ t.w=s.w; t.r=s.r; t.휴=s.휴; } }); });
   if(S.설정.볼륨켬 && (S.설정.볼륨언제==="항상"||성공)) r.종목.forEach(row=>{ if(!row.플랜id) 볼륨올리기(row); }); }
+/* 10-01 매 회차 자기조절 — 앱 Plan.kt 와 같은 규칙 */
+const 환산최대횟수 = 10;
+const 처방세트 = 목 => 목.flatMap(x=>Array.from({length:x.세트},()=>({w:x.무게,r:x.횟수})));
+function 실제진행값(p,목표값,처방,실제){ if(!처방.length||목표값<=0) return null; const t=찾표(p.종목);
+  const 비=실제.filter(s=>s.r>0&&s.w>0).map(s=>{ const 목=처방.reduce((a,b)=>Math.abs(b.w-s.w)<Math.abs(a.w-s.w)?b:a), 분=일RM(목.w,목.r);
+    const r=맨몸(t)?s.r:Math.min(s.r,Math.max(목.r,환산최대횟수)); return 분>0?일RM(s.w,r)/분:null; }).filter(x=>x!=null).sort((a,b)=>b-a).slice(0,처방.length);
+  if(!비.length) return null; const 평=비.reduce((a,b)=>a+b,0)/비.length;
+  if(!맨몸(t)) return 목표값*평; const 정=유효부하(t,S.몸.체중); if(정<=0) return null; return Math.max(1,30*(정*(1+목표값/30)*평/정-1)); }
+function 측정날값(p,세){ const t=찾표(p.종목);
+  if(맨몸(t)){ const 정=유효부하(t,S.몸.체중), l=세.filter(s=>s.w>=정-0.01).map(s=>s.r); return l.length?Math.max(...l):null; }
+  const l=세.filter(s=>s.r<=환산최대횟수).map(s=>일RM(s.w,s.r)); return l.length?Math.max(...l):null; }
 function 플랜반영(rec, 날){
   for(const p of S.플랜들){ const e=rec.종목.find(x=>x.플랜id===p.id); if(!e) continue;
     const 세=e.세트.filter(s=>s.완료&&s.r>0); if(!세.length) continue;
     const 계=다음회(p), t=찾표(p.종목), 회=p.한회+1; p.한회=회; p.누적볼륨=(p.누적볼륨||0)+세.reduce((a,s)=>a+s.w*s.r,0);
-    if(계&&계.측정일){ const 최고 = 맨몸(t) ? 세.reduce((a,s)=>s.r>a.r?s:a) : 세.reduce((a,s)=>일RM(s.w,s.r)>일RM(a.w,a.r)?s:a);
-      p.측정들.push({회, 날, 무게:최고.w, 횟수:최고.r});
-      S.향상기록들.push({날짜:날, 종목:p.종목, 측정값:맨몸(t)?최고.r:일RM(최고.w,최고.r), 예상값:계.목표값}); } } }
-function 운동저장하기(){ const ss=S.세션; if(!ss) return null; if(ss.끝==null) ss.끝=S.시계;
+    if(!계) continue;
+    const 실제=실제진행값(p,계.목표값,처방세트(회처방(p,계.목표값,계.측정일)),세);
+    if(계.측정일){ const 값=Math.max(측정날값(p,세)??0, 실제??0); if(!(값>0)) continue;
+      const 최고=세.filter(s=>s.r<=환산최대횟수).reduce((a,s)=>!a||일RM(s.w,s.r)>일RM(a.w,a.r)?s:a,null);
+      const m = 맨몸(t) ? {회,날,무게:유효부하(t,S.몸.체중),횟수:Math.max(1,Math.round(값))}
+        : (최고&&일RM(최고.w,최고.r)>=값-1e-9 ? {회,날,무게:최고.w,횟수:최고.r} : {회,날,무게:값,횟수:1});
+      p.측정들.push(m); S.향상기록들.push({날짜:날, 종목:p.종목, 측정값:맨몸(t)?m.횟수:일RM(m.무게,m.횟수), 예상값:계.목표값}); }
+    else if(실제!=null && Math.abs(실제-계.목표값)>1e-6) p.재기준={회,날,값:실제}; } }
+function 플랜미리(e, 저장됨){ const p=플랜(e.플랜id), 세=e.세트.filter(s=>s.완료&&s.r>0); if(!p||!세.length) return "";
+  if(저장됨) return `플랜 ${e.회}회차 반영됨`;
+  const 계=다음회(p); if(!계) return `플랜 ${e.회}회차`; const t=찾표(p.종목), 실=실제진행값(p,계.목표값,처방세트(회처방(p,계.목표값,계.측정일)),세);
+  if(계.측정일) return `측정 ${값글(t,Math.max(측정날값(p,세)??0,실??0))}`;
+  if(실==null||Math.abs(실-계.목표값)<=1e-6) return `플랜 ${e.회}회차 · 계획대로`;
+  return `플랜 ${e.회}회차 · ${실<계.목표값?"덜 함":"더 함"} → ${값글(t,실)}에서 다시 계산`; }
+function 운동저장하기(){ const ss=S.세션; if(!ss) return null;
+  if(!ss.종목.some(e=>e.세트.some(s=>s.완료))){ S.세션=null; 발자취("체크 없는 운동은 저장하지 않음"); return null; }   /* 22 버그 #4 */
+  if(ss.끝==null) ss.끝=S.시계;
   const rec=세션기록(ss); let key=ss.날, n=2; while(S.기록[key]) key=`${ss.날}~${n++}`;
-  S.기록[key]=rec; 루틴반영(ss); 플랜반영(rec, ss.날); delete S.미실시[ss.날]; S.세션=null; 발자취(`운동 저장 · ${rec.이름}`); return key; }
+  const 향상앞=S.향상기록들.length;
+  S.기록[key]=rec; 루틴반영(ss); 플랜반영(rec, ss.날); 피로저장(rec.종목, 모의시각()); delete S.미실시[ss.날]; S.세션=null; 발자취(`운동 저장 · ${rec.이름}`);
+  업적알림(업적판정("저장", key, S.향상기록들.slice(향상앞))); 스탯남기기(); return key; }
 /* 날이 바뀌면 — 앱의 '오래된운동정리' 처럼: 체크한 세트가 있으면 저장하고 결과 화면을 한 번 보여 준다 */
 function 세션정리(){ const ss=S.세션; if(!ss) return;
   if(!ss.종목.some(e=>e.세트.some(s=>s.완료))){ S.세션=null; 발자취("체크 없는 운동은 버림"); return; }
@@ -502,11 +1142,11 @@ const 아이콘 = (()=>{ const a=d=>`<svg viewBox="0 0 24 24" fill="none" stroke
     톱니:a('<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/>'), 연필:a('<path d="M4 20h4L19 9l-4-4L4 16v4z"/>'),
     체크:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>`}; })();
 const 번 = n => ` data-n="${n}"`;
-const 스위치 = (on, act, f, v="")=> `<button class="스위치 ${on?"켬":""}" role="switch" aria-checked="${on}" data-act="${act}" data-f="${f}" data-v="${v}"><i></i></button>`;
+const 스위치 = (on, act, f, v="")=> `<button class="스위치 ${on?"켬":""}" data-enter="${act}${f}${v}${on}" role="switch" aria-checked="${on}" data-act="${act}" data-f="${f}" data-v="${v}"><i></i></button>`;
 const 설정줄 = (제목, 곁, 오른)=> `<div class="설정줄"><div class="채움"><div>${제목}</div>${곁?`<div class="아주작 옅음">${곁}</div>`:""}</div>${오른||""}</div>`;
-const 칩줄 = (act, f, 목록, 현재, 글=x=>x)=> `<div class="칩줄">${목록.map(v=>`<button class="칩 ${String(v)===String(현재)?"켬":""}" data-act="${act}" data-f="${f}" data-v="${v}">${글(v)}</button>`).join("")}</div>`;
+const 칩줄 = (act, f, 목록, 현재, 글=x=>x)=> `<div class="칩줄">${목록.map(v=>`<button class="칩 ${String(v)===String(현재)?"켬":""}"${String(v)===String(현재)?` data-enter="칩${act}${f}${v}"`:""} data-act="${act}" data-f="${f}" data-v="${v}">${글(v)}</button>`).join("")}</div>`;
 const 스크롤 = {}; let 앞화면키 = "";
-function 화면키(){ return S.세션&&U.탭==="운동" ? "운동" : U.탭+(U.루틴열림||""); }
+function 화면키(){ return S.세션&&U.탭==="운동" ? "운동" : U.스탯 ? "스탯"+U.스탯.보기+(U.스탯.보기==="업적"?U.스탯.분류:"") : U.탭+(U.루틴열림||""); }
 
 function 그리기(){
   const 폰=document.getElementById("폰");
@@ -517,20 +1157,38 @@ function 그리기(){
   const 새=폰.querySelector(".넘김");
   if(새){ if(k==="운동" && U.스크롤!=null){ const el=폰.querySelector("#상자"+U.스크롤); if(el) 새.scrollTop=el.offsetTop-새.offsetTop-90; U.스크롤=null; }
     else if(스크롤[k]!=null) 새.scrollTop=스크롤[k]; }
-  체험막대(); 맞춤하기(폰); 시계그리기(); 저장();
+  const 넘키=폰.querySelector(".넘김"); if(넘키) 넘키.dataset.enter="화면"+(S.세션?.끝화면?"끝":"")+(!S.세션&&S.결과?"결과":"")+k;
+  체험막대(); 맞춤하기(폰); 시계그리기(); 애니(폰); 저장();
 }
+/* ── 움직임 — 새로 나타난 것은 들어오고(data-enter), 값이 바뀐 것은 앞 값에서 이어진다(data-anim-*) ── */
+let 앞키=new Set(); const 앞값={};
+const 움직임줄임 = ()=>{ try{ return matchMedia("(prefers-reduced-motion: reduce)").matches; }catch(e){ return false; } };
+function 애니(root){ const 지금키=new Set();
+  root.querySelectorAll("[data-enter]").forEach(el=>{ const k=el.dataset.enter; 지금키.add(k); if(!앞키.has(k)) el.classList.add("들어옴"); });
+  앞키=지금키;
+  const 이을=[];
+  root.querySelectorAll("[data-anim-w],[data-anim-h],[data-anim-fill]").forEach(el=>{
+    for(const [a,p] of [["animW","width"],["animH","height"],["animFill","fill"]]){ const k=el.dataset[a]; if(!k) continue;
+      const 목=el.style[p], 앞=앞값[p+k]; 앞값[p+k]=목; if(앞!=null&&앞!==목){ el.style.transition="none"; el.style[p]=앞; 이을.push([el,p,목]); } } });
+  if(이을.length){ void root.offsetWidth; 이을.forEach(([el,p,v])=>{ el.style.transition=""; el.style[p]=v; }); }
+  if(!움직임줄임()) root.querySelectorAll(".넘김.들어옴 [data-count]").forEach(el=>{ const 끝=+el.dataset.count, 시=performance.now(), 길=Math.min(2000,500+String(끝).length*250);
+    const 돌=now=>{ const t=Math.min(1,(now-시)/길), v=끝*(1-Math.pow(1-t,3)); el.textContent=콤마(v); if(t<1) requestAnimationFrame(돌); }; requestAnimationFrame(돌); }); }
+/* 시트를 닫을 때 — 내려가는 움직임 뒤에 지운다 */
+function 시트닫기애니(){ const g=document.querySelector("#폰 .가림"); if(!g||움직임줄임()){ U.시트=null; 그리기(); return; }
+  g.classList.remove("들어옴"); g.querySelector(".시트")?.classList.remove("들어옴"); g.classList.add("나감"); setTimeout(()=>{ U.시트=null; 그리기(); },170); }
 function 화면(){
-  if(S.세션 && (U.탭==="운동" || S.세션.끝화면)){ U.탭="운동"; return S.세션.끝화면 ? 결과뷰(세션기록(S.세션), null)+탭줄() : 운동화면(); }
-  if(!S.세션 && S.결과 && S.기록[S.결과.key]) return 결과뷰(S.기록[S.결과.key], S.결과.key)+탭줄();
+  if(S.세션 && (U.탭==="운동" || S.세션.끝화면)){ U.탭="운동"; return (S.세션.끝화면 ? 결과뷰(세션기록(S.세션), null)+탭줄() : 운동화면())+업적띠(); }
+  if(!S.세션 && S.결과 && S.기록[S.결과.key]) return 결과뷰(S.기록[S.결과.key], S.결과.key)+탭줄()+업적띠();
   if(U.탭==="운동") U.탭="캘린더";
+  if(U.스탯) return 스탯화면();
   let 몸통 = U.탭==="캘린더"?캘린더():U.탭==="루틴"?루틴탭():U.탭==="플랜"?플랜탭():U.탭==="종목"?종목탭():설정탭();
   const 띠 = S.세션 ? `<button class="운동띠" data-act="탭" data-t="운동"><span class="채움">운동 중 · ${esc(S.세션.이름)}</span><span class="숫" data-timer="경과"></span><span>돌아가기 ›</span></button>` : "";
-  return `<div class="화면">${띠}${몸통}${아래띠()}${시트()}</div>${탭줄()}`;
+  return `<div class="화면">${띠}${몸통}${아래띠()}${업적띠()}${시트()}</div>${탭줄()}`;
 }
 function 탭줄(){ const 탭들=[["캘린더",아이콘.달력],["루틴",아이콘.루틴],["플랜",아이콘.과녁],["종목",아이콘.바벨],["설정",아이콘.톱니],["메모",아이콘.연필]];
   return `<nav class="탭줄">${탭들.map(([t,i])=>`<button data-act="탭" data-t="${t}" class="${U.탭===t||(t==="메모"&&U.시트?.종류==="메모")?"켬":""}">${i}<span>${t}</span></button>`).join("")}</nav>`; }
 function 아래띠(){ if(!U.집은날) return ""; const r=루틴(S.예정[U.집은날]);
-  return `<div class="아래띠"><span class="채움">${날글(U.집은날)} ${esc(r?.이름||"")} — 옮길 날을 누르세요</span><button data-act="집기취소">취소</button></div>`; }
+  return `<div class="아래띠" data-enter="띠"><span class="채움">${날글(U.집은날)} ${esc(r?.이름||"")} — 옮길 날을 누르세요</span><button data-act="집기취소">취소</button></div>`; }
 
 /* ── 캘린더 ── */
 function 칸내용(k){ const 록=기록목록(k);
@@ -545,11 +1203,11 @@ function 캘린더(){
     const 끌림 = k>=오 && S.예정[k] && !기록있음(k);
     칸+=`<button class="칸날 번호 ${k===오?"오늘":""} ${k===(U.고른날||오)?"고름":""} ${k===U.집은날?"집음":""}" data-act="날" data-k="${k}" data-drop="날" ${끌림?`data-drag="날"`:""}>
       <span class="일">${d}</span>${x?`<span class="루 ${x.종류==="예"?"예":x.종류==="휴"?"휴":""}">${esc(x.글)}</span>${x.상?`<span class="상 ${x.상}">${x.상}</span>`:""}`:""}</button>`; }
-  return `<div class="띠 번호" data-drop="달"${번("캘0")}><button data-act="달" data-d="-1" aria-label="이전 달">‹</button><b class="채움">${y}년 ${m}월</b>${달!==오.slice(0,7)?`<button class="작은흰" data-act="오늘달">오늘</button>`:""}<button data-act="달" data-d="1" aria-label="다음 달">›</button></div>
-    <div class="넘김" style="padding:0"><div class="달력">${[..."일월화수목금토"].map(w=>`<div class="요일">${w}</div>`).join("")}${칸}</div>${날판(U.고른날||오)}</div>`;
+  return `<div class="띠 번호" data-drop="달"${번("캘0")}><button data-act="달" data-d="-1" aria-label="이전 달">‹</button><b class="채움">${y}년 ${m}월</b>${달!==오.slice(0,7)?`<button class="작은흰" data-act="오늘달">오늘</button>`:""}<button data-act="달" data-d="1" aria-label="다음 달">›</button><button class="작은흰 칭호칩 번호" data-act="스탯열기" aria-label="스탯 · 업적"${번("캘칩")}>${대표()?`『${esc(대표().칭호)}』`:"스탯"}</button></div>
+    <div class="넘김" style="padding:0"><div class="달력" data-enter="달${달}">${[..."일월화수목금토"].map(w=>`<div class="요일">${w}</div>`).join("")}${칸}</div>${날판(U.고른날||오)}</div>`;
 }
 function 날판(k){ const 오=오늘(), 록=기록목록(k);
-  let h=`<div class="판 번호"${번("캘1")}><b class="큰">${날글(k)} (${요일(k)})${k===오?" · 오늘":""}</b>`;
+  let h=`<div class="판 번호" data-enter="판${k}"${번("캘1")}><b class="큰">${날글(k)} (${요일(k)})${k===오?" · 오늘":""}</b>`;
   for(const [,r] of 록){ const 달=기록달성(r);
     h+=`<div class="판줄"><span class="이름">${r.예시?"예시":"기록"}</span><div class="채움"><div class="줄"><b class="채움 한줄">${esc(r.이름)}</b><span class="알약 ${달?"달성":"미달성"}">${달?"달성":"미달성"}</span></div>
       <div class="맞춤 작 흐림 숫">${완료수(r)}/${전체수(r)}세트 · ${시간글(r.초)} · ${콤마(기록볼륨(r))}kg</div></div>${k===오&&루틴(r.루틴id)?`<button class="버튼 낮" data-act="시작" data-v="${r.루틴id}">한 번 더</button>`:""}</div>`; }
@@ -567,7 +1225,7 @@ function 날판(k){ const 오=오늘(), 록=기록목록(k);
 function 루틴탭(){ const r=U.루틴열림&&루틴(U.루틴열림); if(r) return `<div class="넘김">${루틴상세(r)}</div>`;
   let 순=0;
   return `<div class="넘김"><h1>루틴</h1><div class="쌓기">${S.루틴들.map((r,i)=>{ const 실=실제루틴(r);
-    return `<button class="카드 루틴카드 번호 ${r.자동생성?"자동":""}" data-act="루틴열기" data-v="${r.id}" data-drag="루틴" data-i="${i}" data-drop="루틴"${번("루"+(i+1))}>
+    return `<button class="카드 루틴카드 번호 ${r.자동생성?"자동":""}" data-enter="루틴${r.id}" data-act="루틴열기" data-v="${r.id}" data-drag="루틴" data-i="${i}" data-drop="루틴"${번("루"+(i+1))}>
       <div class="줄"><b class="채움">${esc(r.이름)}</b>${r.자동생성?`<span class="알약 강조">${++순}번째</span>`:`<span class="아주작 옅음">수동</span>`}</div>
       <span class="맞춤 작 흐림">${r.휴식일?"휴식일":`${r.종목.length}종목 · ${총세트(실)}세트 · 예상 ${시간글(예상초(실))}`}</span></button>`; }).join("")}
     <div class="줄"><button class="버튼 채움" data-act="루틴추가">+ 루틴</button><button class="버튼 채움" data-act="휴식일추가">+ 휴식일</button></div></div></div>`; }
@@ -632,17 +1290,22 @@ function 회블록(표){ const out=[]; let a=0; 표.forEach((x,j)=>{ if(x.측정
 /* ── 종목 ── */
 function 플랜카드(p,i){ const t=찾표(p.종목), 표=플랜회표(p), 끝=표.length?표[표.length-1].회:p.한회, 다=표.find(x=>x.회>p.한회), 측=표.find(x=>x.회>p.한회&&x.측정일);
   const 시=시작진행값(p), 목=목표진행값(p), 현=현재값(p), fr=Math.max(0,Math.min(1,(현-시)/((목-시)||1)));
-  return `<div class="카드 플랜카드 번호" data-drag="플랜" data-i="${i}" data-drop="플랜"${번("종"+(i+1))}>
+  return `<div class="카드 플랜카드 번호" data-enter="플랜${p.id}" data-drag="플랜" data-i="${i}" data-drop="플랜"${번("종"+(i+1))}>
     <div class="줄"><b class="채움">${esc(p.이름)}</b><span class="아주작 옅음 숫">${p.한회}/${끝}회</span></div>
-    <div class="게이지3"><i style="width:${fr*100}%"></i></div>
+    <div class="게이지3"><i data-anim-w="게${p.id}" style="width:${fr*100}%"></i></div>
     <div class="줄 아주작 흐림 숫"><span>시작 ${값글(t,시)}</span><span class="채움" style="text-align:center">지금 ${값글(t,현)}</span><span>목표 ${값글(t,목)}</span></div>
     <div class="맞춤 작">${다?`${다.측정일?"측정 · ":""}${다.회}회차 ${처방글(회처방(p,다.목표값,다.측정일))}`:"목표 달성"}</div>
     <div class="맞춤 아주작 옅음">${측?`다음 측정 ${측.회}회차 · `:""}주 ${p.주당}회 · 속도 ${속도출처(p.종목)}</div>
     <div class="줄"><button class="버튼 낮 채움" data-act="플랜고치기" data-v="${p.id}">고치기 · 지금 실력 넣기</button><button class="버튼 낮 나쁨" data-act="플랜지움" data-v="${p.id}">${U.확인==="플랜"+p.id?"한 번 더":"지우기"}</button></div></div>`; }
+function 종목줄(x){ const l=사진목록(x.이름), 펼=U.종목펼침===x.이름;
+  return `<div class="종목줄">
+    <button class="줄 작 종목줄머리" data-act="종목펼침" data-v="${esc(x.이름)}">${l.length?`<img class="작은사진" src="${l[0]}" alt="">`:`<span class="작은사진 빈"></span>`}<span class="채움">${esc(x.이름)}</span>${찾표(x.이름)?`<span class="아주작 옅음">플랜 가능</span>`:""}<span class="아주작 옅음 접힘표 ${펼?"펼":""}">▾</span></button>
+    ${펼?`<div class="종목펼속" data-enter="펼속${esc(x.이름)}"><div class="사진줄"><label class="사진추가">＋<small>사진 추가</small><input type="file" accept="image/*" multiple data-in="사진" data-v="${esc(x.이름)}" hidden></label>${l.map((src,j)=>`<button class="사진칸" data-act="사진지움" data-v="${esc(x.이름)}" data-n="${j}" aria-label="사진 ${j+1} 지우기"><img src="${src}" alt="">${U.확인===`사진${x.이름}${j}`?'<span class="지움표">지우기</span>':''}</button>`).join("")}</div>
+      <div class="맞춤 아주작 흐림">${근육글(종목근육(x.이름))}</div></div>`:""}</div>`; }
 function 종목탭(){
   return `<div class="넘김"><h1>종목</h1>
     <div class="이름표">운동 플랜</div><div class="쌓기">${S.플랜들.map(플랜카드).join("")||`<div class="빈칸">플랜 탭에서 만들 수 있습니다</div>`}</div>
-    ${S.카테고리.map(c=>{ const l=S.종목표.filter(x=>x.칸===c); return `<div class="이름표">${c}</div><div class="카드 쌓기" style="border-width:1px;border-color:var(--선)">${l.map(x=>`<div class="줄 작"><span class="채움">${esc(x.이름)}</span>${찾표(x.이름)?`<span class="아주작 옅음">플랜 가능</span>`:""}</div>`).join("")||`<span class="작 옅음">없음</span>`}</div>`; }).join("")}
+    ${S.카테고리.map(c=>{ const l=S.종목표.filter(x=>x.칸===c); return `<div class="이름표">${c}</div><div class="카드 쌓기" style="border-width:1px;border-color:var(--선)">${l.map(종목줄).join("")||`<span class="작 옅음">없음</span>`}</div>`; }).join("")}
     <div class="이름표">종목 추가</div><div class="카드 쌓기" style="border-width:1px">${칩줄("새종목칸","",S.카테고리,U.새종목칸)}<div class="줄"><input class="입력 채움" data-in="새종목" placeholder="종목 이름" value="${esc(U.새종목)}"><button class="버튼 주" data-act="종목만들기">넣기</button></div></div></div>`; }
 
 /* ── 설정 ── */
@@ -666,6 +1329,10 @@ function 설정탭(){ const s=S.설정, 몸=S.몸;
       <div class="구분" style="margin-top:10px"></div>${설정줄("언제","성공 = 계획한 세트를 다 했을 때","")}${칩줄("설정칩","볼륨언제",["성공","항상"],s.볼륨언제)}
       <div class="구분" style="margin-top:10px"></div>${설정줄("어디에 붙일까",s.볼륨배분==="횟수"?`횟수를 올리다 ${s.횟수상한}회를 넘으면 무게로`:"무게를 올립니다","")}${칩줄("설정칩","볼륨배분",["횟수","무게"],s.볼륨배분)}
       ${s.볼륨배분==="횟수"?`<div class="구분" style="margin-top:10px"></div>${설정줄("횟수 상한","여기를 넘으면 무게로 넘깁니다","")}${칩줄("설정칩","횟수상한",[8,10,12,15,20],s.횟수상한)}`:""}`:""}</div>
+    <div class="이름표">운동 중 그림</div><div class="카드 번호"${번("설5")}>
+      ${설정줄("보기","위쪽 그림 칸","")}${칩줄("설정칩","배너",["근육 2장","근육 + 사진","사진 1장","사진 2장","숨김"],s.배너)}<div class="구분" style="margin-top:10px"></div>
+      ${설정줄("근육 회복 시간","가장 빨갛던 근육이 원래 색으로 돌아오는 시간","")}${칩줄("설정칩","회복시간",[6,12,24,36,48,72,96,120,144,168],s.회복시간,h=>h<48?h+"시간":(h/24)+"일")}<div class="구분" style="margin-top:10px"></div>
+      ${설정줄("색","","")}${칩줄("설정칩","색표",["heat","red","blue"],s.색표,v=>({heat:"노랑→빨강",red:"빨강",blue:"파랑"})[v])}</div>
     <div class="이름표">데이터</div><div class="카드 번호"${번("설4")}><div class="작 흐림">체험 기록은 이 브라우저에만 남습니다.</div><div style="height:8px"></div><button class="버튼 넓 나쁨" data-act="처음부터">${U.확인==="처음"?"한 번 더 누르면 처음부터":"체험 처음부터"}</button></div>
     <div style="height:12px"></div></div>`; }
 
@@ -694,11 +1361,21 @@ function 시트(){ if(!U.시트) return ""; const 종=U.시트.종류; let 안="
   else if(종==="방식"){ 안 = 방식시트(); 높=true; }
   else if(종==="플랜결과"){ 안 = 플랜결과시트(); 높=true; }
   else if(종==="고침"){ 안 = 고침시트(); 높=true; }
+  else if(종==="근육"){ const ss=S.세션, 단=지금단계(ss?ss.종목:null,모의시각()), e=ss?ss.종목[U.본??0]:null;
+    const 줄=Object.entries(단).filter(([,x])=>x>=0.5).sort((a,b)=>b[1]-a[1]).slice(0,12), 사=e?사진목록(e.이름):[];
+    const 띠색=[1,5,10,15,20].map(k=>단계색(k)).join(",");
+    안 = 머리("지금 몸") + `<div class="큰몸">${몸그림(단,{키:"시트전신"})}</div>
+      <div class="몸눈금"><span>0</span><span class="바" style="background:linear-gradient(90deg,${띠색})"></span><span>20단계</span></div>
+      ${e?`<div class="작">${esc(e.이름)} — ${근육글(종목근육(e.이름))}</div>`:""}
+      ${사.length?`<div class="줄">${사.slice(0,3).map(u=>`<img class="시트사진" src="${u}" alt="${esc(e.이름)} 사진">`).join("")}</div>`:""}
+      <table class="몸표"><thead><tr><th>근육</th><th class="ㄱ">단계</th></tr></thead><tbody>${줄.length?줄.map(([l,x])=>`<tr><td><span class="몸점" style="background:${단계색(x)}"></span>${esc((근육이름[l]||l).replace(/ \(.*\)/,""))}</td><td class="ㄱ">${Math.round(x)}</td></tr>`).join(""):`<tr><td colspan="2" class="옅음">아직 쌓인 피로가 없습니다</td></tr>`}</tbody></table>
+      <div class="아주작 옅음">단계 = 20 × 오늘 유효 볼륨 ÷ 이전 최대 + 남은 피로 · 주동 1.0 · 보조 0.5 · 협응 0.25</div>
+      <button class="버튼" data-act="그림감추기">운동 화면에서 그림 감추기</button>`; 높=true; }
   else if(종==="메모"){
     안 = 머리("메모") + `<div class="줄"><input class="입력 채움" data-in="메모글" placeholder="고칠 점을 적어 두세요" value="${esc(U.메모글)}"><button class="버튼 주" data-act="메모넣기">넣기</button></div>
       ${S.메모.map((m,j)=>`<div class="줄 작"><span class="옅음 숫">${m.날.slice(5)}</span><span class="채움">${esc(m.글)}</span><button class="닫기" data-act="메모지움" data-n="${j}" aria-label="지우기">✕</button></div>`).join("")}
       <div class="아주작 옅음" style="margin-top:6px">발자취</div>${S.발자취.slice(-10).reverse().map(x=>`<div class="아주작 흐림">${esc(x)}</div>`).join("")||`<div class="아주작 옅음">아직 없음</div>`}`; }
-  return `<div class="가림" data-act="시트닫기"><div class="시트 ${높?"높이":""}" role="dialog">${안}</div></div>`; }
+  return `<div class="가림" data-enter="가림" data-act="시트닫기"><div class="시트 ${높?"높이":""}" data-enter="시트${종}${U.시트.k||""}${U.시트.대상||""}" role="dialog">${안}</div></div>`; }
 function 대상폼(){ return U.시트?.대상==="고침" ? U.고침 : U.플랜폼; }
 function 방식시트(){ const 대=대상폼(), 열=U.방식펼침??대.방식번호;
   return `<div class="머리"><b>훈련 방식</b><button class="닫기" data-act="방식닫기">닫기</button></div><div class="방식목록">${훈련방식들.map(b=>{ const 골=b.번호===대.방식번호;
@@ -709,7 +1386,7 @@ function 방식속(b,대){ let 칸;
       <div class="줄 작"><span class="흐림">세트</span><span class="수칸"><button data-act="폼수" data-f="세트수" data-d="-1">−</button><b class="숫">${세}</b><button data-act="폼수" data-f="세트수" data-d="1">＋</button></span>
       <span class="흐림">횟수</span><span class="수칸"><button data-act="폼수" data-f="직접횟수" data-d="-1">−</button><b class="숫">${회}</b><button data-act="폼수" data-f="직접횟수" data-d="1">＋</button></span><span class="채움 굵" style="text-align:right;white-space:nowrap">총 ${세*회}회</span></div>`; }
   else 칸 = `<div class="작 숫">${방식세트(b.번호,100,대).map(x=>`${x.라벨?x.라벨+" ":""}${x.세트}×${x.횟수}${x.더?"+":""}`).join(" · ")}</div>`;
-  return `<div class="방식속"><div class="작">${b.특징}</div><div class="맞춤 아주작 옅음">주 ${b.주당}회 · ${b.근거}</div>${칸}<button class="버튼 주 넓" data-act="방식고름" data-n="${b.번호}">이 방식으로</button></div>`; }
+  return `<div class="방식속" data-enter="방식${b.번호}"><div class="작">${b.특징}</div><div class="맞춤 아주작 옅음">주 ${b.주당}회 · ${b.근거}</div>${칸}<button class="버튼 주 넓" data-act="방식고름" data-n="${b.번호}">이 방식으로</button></div>`; }
 function 플랜결과시트(){ const {p,표}=U.플랜결과, t=찾표(p.종목), 끝=표[표.length-1];
   return `<div class="머리"><b>${esc(p.이름)} 플랜</b><button class="닫기" data-act="시트닫기">고치기</button></div>
     <div class="맞춤 작 굵">${값글(t,시작진행값(p))} → ${값글(t,목표진행값(p))} · 주 ${p.주당}회 · 총 ${끝.회}회 (약 ${끝.주}주)</div>
@@ -729,40 +1406,104 @@ function 고침시트(){ const g=U.고침, p=플랜(g.id); if(!p){ U.시트=null
 
 /* ── 운동 중 ── */
 function 경과초(){ const ss=S.세션; return ss?((ss.끝화면&&ss.끝!=null?ss.끝:S.시계)-ss.시작)/1000:0; }
-function 운동화면(){ const ss=S.세션, 지=ss.지금.i, e=ss.종목[지];
-  const 전=ss.종목.reduce((a,x)=>a+x.세트.length,0), 끝낸=ss.종목.reduce((a,x)=>a+x.세트.filter(s=>s.완료).length,0);
-  return `<div class="화면"><div class="머리줄"><button class="버튼 낮" data-act="탭" data-t="캘린더" aria-label="나가기">‹</button><b class="채움 한줄">${esc(ss.이름)}</b><span class="숫 굵 큰" data-timer="경과"></span></div>
-    <div class="넘김"><div class="고정띠 번호"${번("운0")}><div class="띠"><div class="채움"><div class="이름">${esc(e.이름)}</div><div class="아주작 숫">${e.세트.filter(s=>s.완료).length}/${e.세트.length}세트 · 전체 ${Math.round(끝낸/전*100)}%</div></div>${ss.종목.length>1?`<button class="작은흰" data-act="다음종목">다음 ›</button>`:""}</div></div>
-    ${ss.종목.map((x,i)=>운동상자(x,i)).join("")}</div>
-    <div class="아랫줄"><button class="버튼 주 채움" data-act="끝내기">운동 끝내기</button></div></div>`; }
+function 운동화면(){ const ss=S.세션, n=ss.종목.length;
+  /* 10-02 — 한 화면에 한 종목. 보는 종목(U.본)은 손으로만 바뀐다. 체크해도 화면이 저절로 넘어가지 않는다 */
+  if(U.본==null||U.본>=n||U.본<0) U.본=Math.min(Math.max(ss.지금.i,0),n-1);
+  const 본=U.본, e=ss.종목[본], 완=x=>x.세트.filter(s=>s.완료).length;
+  const 전=ss.종목.reduce((a,x)=>a+x.세트.length,0), 끝낸=ss.종목.reduce((a,x)=>a+완(x),0);
+  const 끝종=ss.종목.filter(x=>x.세트.length&&완(x)===x.세트.length).length;
+  const 볼=(x,다)=>x.세트.reduce((a,s)=>a+((다||s.완료)?유효무게(s.w)*(다?(s.목r||s.r):s.r):0),0);
+  const 총볼=ss.종목.reduce((a,x)=>a+볼(x),0), 총목=ss.종목.reduce((a,x)=>a+볼(x,true),0);
+  const 이=ss.종목[본-1], 다=ss.종목[본+1];
+  const 단=지금단계(ss.종목,모의시각()), 근=종목근육(e.이름);
+  const 잎최대=id=>Math.max(0,...잎(id).map(l=>단[l]||0));
+  const 근줄=Object.entries(근).sort((a,b)=>"PSY".indexOf(a[1])-"PSY".indexOf(b[1]));
+  const 칩=근줄.slice(0,2).map(([id,r])=>
+    `<span class="${r==="P"?"주":""}"><i style="background:${단계색(잎최대(id))||"var(--속선)"}"></i>${esc((근육이름[id]||id).replace(/ \(.*\)/,""))}</span>`).join("")
+    + (근줄.length>2?`<span>+${근줄.length-2}</span>`:"");   // 칩은 둘까지 + 나머지 수 — 잘려 보이지 않게 (U2-7)
+  const 세=e.세트.filter(s=>s.완료), 맨=맨몸(찾표(e.이름));
+  const 오=세.length?(맨?Math.max(...세.map(s=>s.r)):Math.max(...세.map(s=>일RM(s.w,s.r)))):null;
+  const 지=운최고(e.이름,맨), 단위=맨?"회":"kg";
+  const 비=(이름,기)=>{ if(오==null||기==null) return `<span class="운칩 빈">${이름} —</span>`; const d=Math.round((오-기)*2)/2;
+    return `<span class="운칩 ${d>0?"오름":d<0?"내림":""}">${이름} ${d===0?"유지":(d>0?"▲ ":"▼ ")+kg(Math.abs(d))+단위}</span>`; };
+  const 칩줄=비("1주",지.주)+비("최고",지.최고);
+  const 다음i=ss.종목.findIndex((x,i)=>i>본&&완(x)<x.세트.length), 첫i=ss.종목.findIndex(x=>완(x)<x.세트.length);
+  const 갈곳=다음i>=0?다음i:(첫i>=0&&첫i!==본?첫i:-1), 지금k=e.세트.findIndex(s=>!s.완료);
+  const 모=S.설정.배너, 그림보임=모!=="숨김"&&!ss.배너숨김;
+  let 그림="";
+  if(그림보임){ const 사=사진목록(e.이름), 사진모=(모==="사진 1장"||모==="사진 2장")&&사.length;
+    const 안=사진모?`<img src="${사[0]}" alt="${esc(e.이름)} 사진">`:몸그림(단,{자르기:확대상자(e.이름),키:"운몸"});
+    그림=`<button class="운몸" data-act="몸크게" aria-label="근육지도 크게 보기"><span class="운몸속">${안}</span><span class="글">누르면 크게</span></button>`; }
+  return `<div class="화면"><div class="머리줄"><button class="버튼 낮" data-act="탭" data-t="캘린더" aria-label="나가기">‹</button><b class="채움 한줄">${esc(ss.이름)}</b>${그림보임?"":`<button class="버튼 낮" data-act="배너보기">그림</button>`}<span class="숫 굵 큰" data-timer="경과"></span></div>
+    <div class="운전체"><div class="운막대"><i style="width:${전?끝낸/전*100:0}%"></i></div>
+      <div class="운요약"><span>종목 <b>${끝종}/${n}</b></span><span>세트 <b>${끝낸}/${전}</b></span><span>볼륨 <b>${콤마(Math.round(총볼))}</b>/${콤마(Math.round(총목))}kg</span></div></div>
+    <div class="운띠 번호"${번("운띠")}>${ss.종목.map((x,i)=>{ const m=x.세트.length, k=완(x), 다끝=m&&k===m;
+      return `<button class="운칸 ${i===본?"지금":""} ${다끝&&i!==본?"끝":""}" data-act="본종목" data-i="${i}" aria-label="${esc(x.이름)} ${k}/${m}세트"><div class="ㅇ">${esc(x.이름)}</div><div class="ㅅ">${k}/${m}</div><div class="ㅁ"><i style="width:${m?k/m*100:0}%"></i></div></button>`; }).join("")}</div>
+    <div class="운넘"><button class="ㄴ" data-act="이전종목" ${이?"":"disabled"}>‹ ${이?esc(이.이름):"처음"}</button><span class="ㅈ">${본+1} / ${n}</span><button class="ㄷ" data-act="다음종목" ${다?"":"disabled"}>${다?esc(다.이름):"마지막"} ›</button></div>
+    <div class="운머리 번호"${번("운0")}><div class="운글"><div class="운이름">${esc(e.이름)}</div>
+        ${e.플랜id?`<div class="운곁">플랜 ${e.회}회차${e.측정일?" · 측정일":""}</div>`:""}
+        <div class="운근육">${칩||`<span>근육 정보 없음</span>`}</div>
+        <div class="운지표"><span>${맨?"최고":"1RM"} <b>${오==null?"—":kg(Math.round(오*2)/2)+단위}</b></span>${칩줄}</div>
+        <div class="운지표"><span>달성 <b>${e.세트.length?Math.round(완(e)/e.세트.length*100):0}%</b></span><span>볼륨 <b>${콤마(Math.round(볼(e)))}</b>/${콤마(Math.round(볼(e,true)))}kg</span></div></div>${그림}</div>
+    <div class="운세트들"><div class="세트머리 아주작 옅음"><span>세트</span><span>kg</span><span>회</span><span>휴식</span><span>완료</span></div>
+      ${e.세트.map((s,k)=>운세트줄(본,s,k,지금k)).join("")}
+      <div class="줄"><button class="버튼 낮 채움" data-act="세트더" data-i="${본}">+ 세트</button>${e.세트.length>1?`<button class="버튼 낮" data-act="세트빼기" data-i="${본}">− 세트</button>`:""}</div></div>
+    <div class="아랫줄"><button class="버튼" data-act="끝내기">운동 끝내기</button>${갈곳>=0?`<button class="버튼 주 채움 한줄" data-act="본종목" data-i="${갈곳}">다음 · ${esc(ss.종목[갈곳].이름)} ›</button>`:`<button class="버튼 주 채움" data-act="끝내기">마무리</button>`}</div>
+    ${시트()}</div>`; }
+function 운세트줄(i,s,k,지금k){ const ss=S.세션, 쉼=ss.휴식&&ss.휴식.i===i&&ss.휴식.k===k;
+  const 값=(f,v)=>`<div class="값칸"><button data-act="세트값" data-f="${f}" data-i="${i}" data-k="${k}" data-d="-1" aria-label="빼기">−</button><input data-in="세트값" data-f="${f}" data-i="${i}" data-k="${k}" inputmode="decimal" value="${f==="w"?kg(v):v}"><button data-act="세트값" data-f="${f}" data-i="${i}" data-k="${k}" data-d="1" aria-label="더하기">＋</button></div>`;
+  return `<div class="세트줄 ${k===지금k&&!쉼?"지금":""}"><span class="k">${k+1}</span>${값("w",s.w)}${값("r",s.r)}
+    ${쉼?`<button class="휴식칸" data-act="휴식건너뛰기" aria-label="휴식 건너뛰기"><span class="밑" data-timer="휴식"></span><span class="위" data-쉼바><span data-timer="휴식"></span></span></button>`:`<div class="휴식칸 빈 숫">${분초(s.휴)}</div>`}
+    <button class="체크 ${s.완료?"켬":""}" data-enter="체${i}-${k}-${s.완료?1:0}" data-act="체크" data-i="${i}" data-k="${k}" aria-label="${k+1}세트 ${s.완료?"체크 풀기":"완료"}">${s.완료?아이콘.체크:""}</button></div>`; }
+/* 같은 종목의 지난 기록 중 최고 (오늘 앞) · 1주 = 7일 전 ~ 전날 (v0.6.10) */
+function 운최고(이름,맨){ const 오=오늘(), 주앞=날더하기(오,-7); let 최고=null, 주=null;
+  for(const [k,r] of Object.entries(S.기록)){ const 날=k.split("~")[0]; if(날>=오) continue;
+    for(const e of r.종목){ if(e.이름!==이름) continue;
+      for(const s of e.세트){ if(!s.완료) continue; const v=맨?s.r:일RM(s.w,s.r);
+        if(최고==null||v>최고) 최고=v; if(날>=주앞&&(주==null||v>주)) 주=v; } } }
+  return {최고,주}; }
+/* 운동 중 그림 칸 (08 3절) — 근육 2장 · 근육 + 사진 · 사진 1장 · 사진 2장. 쉬는 동안 칸이 커진다 */
+function 배너(){ const ss=S.세션, 모=S.설정.배너; if(모==="숨김"||ss.배너숨김) return "";
+  const e=ss.종목[ss.지금.i], 단=지금단계(ss.종목,모의시각()), 높=ss.휴식?168:124;
+  const 끝낸=ss.종목.reduce((a,x)=>a+x.세트.filter(s=>s.완료).length,0);
+  const 전신=()=>그림판("지금 몸", 몸그림(단,{키:"전신"}), "근육전신");
+  const 확대=()=>{ const 상=확대상자(e.이름); return 그림판(esc(e.이름), 몸그림(단,{자르기:상,키:"확대"}), "근육확대"); };
+  const 사진=slot=>{ const l=사진목록(e.이름);
+    if(!l.length) return 그림판(esc(e.이름), `<div class="사진없음">사진 없음<br><small>종목 탭에서 넣기</small></div>`, "사진없음"+slot);
+    const i=((ss.사진i?.[slot]??slot)+(slot&&l.length>1&&((ss.사진i?.[0]??0)%l.length)===((ss.사진i?.[1]??1)%l.length)?1:0))%l.length;
+    return 그림판(`${i+1}/${l.length}`, `<img src="${l[i]}" alt="${esc(e.이름)} 사진">`, `사진${slot}-${e.이름}-${i}-${끝낸}`, 더미(l.length-(모==="사진 2장"?2:1))); };
+  const 칸 = 모==="근육 2장" ? [전신(),확대()] : 모==="근육 + 사진" ? [끝낸%2?확대():전신(), 사진(0)] : 모==="사진 1장" ? [사진(0)] : [사진(0),사진(1)];
+  return `<div class="배너 번호" style="height:${높}px" data-anim-h="배너"${번("운그림")}>${칸.join("")}<button class="배너닫기" data-act="배너숨김" aria-label="그림 감추기">✕</button></div>`; }
+const 그림판=(제목,안,키,덧="")=>`<div class="그림판" data-enter="${esc(키)}"><div class="그림속">${안}</div><span class="그림이름">${제목}</span>${덧}</div>`;
+const 더미=n=>{ n=Math.max(0,Math.min(9,n)); return n?`<div class="더미" aria-hidden="true">${"<i></i>".repeat(n)}</div>`:""; };
 function 운동상자(x,i){ const ss=S.세션, 지금=ss.지금.i===i, 다=x.세트.every(s=>s.완료), 접=ss.접기[i]??(다&&!지금), n=x.세트.filter(s=>s.완료).length;
-  if(접) return `<button class="종목상자 접힘" id="상자${i}" data-act="접기" data-i="${i}"><span class="채움 한줄">${다?"✓ ":""}${esc(x.이름)}</span><span class="작 숫">${n}/${x.세트.length}</span></button>`;
+  if(접) return `<button class="종목상자 접힘" id="상자${i}" data-act="접기" data-i="${i}" data-enter="접${i}"><span class="채움 한줄">${다?"✓ ":""}${esc(x.이름)}</span><span class="작 숫">${n}/${x.세트.length}</span></button>`;
   const 값 = (f,v,k)=> `<div class="값칸"><button data-act="세트값" data-f="${f}" data-i="${i}" data-k="${k}" data-d="-1" aria-label="빼기">−</button><input data-in="세트값" data-f="${f}" data-i="${i}" data-k="${k}" inputmode="decimal" value="${f==="w"?kg(v):v}"><button data-act="세트값" data-f="${f}" data-i="${i}" data-k="${k}" data-d="1" aria-label="더하기">＋</button></div>`;
-  return `<div class="종목상자 ${지금?"지금":""}" id="상자${i}"><button class="종목머리" data-act="접기" data-i="${i}"><div class="채움"><div class="굵 이름2">${esc(x.이름)}</div><div class="아주작 흐림">${x.플랜id?`플랜 ${x.회}회차${x.측정일?" · 측정일":""} · `:""}${n}/${x.세트.length}세트</div></div></button>
+  return `<div class="종목상자 ${지금?"지금":""}" id="상자${i}" data-enter="펼${i}"><button class="종목머리" data-act="접기" data-i="${i}"><div class="채움"><div class="굵 이름2">${esc(x.이름)}</div><div class="아주작 흐림">${x.플랜id?`플랜 ${x.회}회차${x.측정일?" · 측정일":""} · `:""}${n}/${x.세트.length}세트</div></div></button>
     <div class="세트머리 아주작 옅음"><span>세트</span><span>kg</span><span>회</span><span>휴식</span><span>완료</span></div>
     ${x.세트.map((s,k)=>{ const 쉼=ss.휴식&&ss.휴식.i===i&&ss.휴식.k===k;
       return `<div class="세트줄 ${ss.지금.i===i&&ss.지금.k===k&&!s.완료?"지금":""}"><span class="k">${k+1}</span>${값("w",s.w,k)}${값("r",s.r,k)}
         ${쉼?`<button class="휴식칸" data-act="휴식건너뛰기" aria-label="휴식 건너뛰기"><i data-bar></i><span data-timer="휴식"></span></button>`:`<div class="휴식칸 빈 숫">${분초(s.휴)}</div>`}
-        <button class="체크 ${s.완료?"켬":""}" data-act="체크" data-i="${i}" data-k="${k}" aria-label="${k+1}세트 완료">${s.완료?아이콘.체크:""}</button></div>`; }).join("")}
+        <button class="체크 ${s.완료?"켬":""}" data-enter="체${i}-${k}-${s.완료?1:0}" data-act="체크" data-i="${i}" data-k="${k}" aria-label="${k+1}세트 완료">${s.완료?아이콘.체크:""}</button></div>`; }).join("")}
     <div class="줄"><button class="버튼 낮 채움" data-act="세트더" data-i="${i}">+ 세트</button>${x.세트.length>1?`<button class="버튼 낮" data-act="세트빼기" data-i="${i}">− 세트</button>`:""}</div></div>`; }
 function 결과뷰(rec, 저장키값){ const 날=저장키값?저장키값.split("~")[0]:S.세션.날;
   const 같은=Object.entries(S.기록).filter(([k,r])=>k!==저장키값&&r.루틴id===rec.루틴id&&k.split("~")[0]<=날).sort(([a],[b])=>a<b?-1:1);
   const 볼=기록볼륨(rec), 지난=같은.length?같은[같은.length-1]:null, 최고=같은.reduce((a,[,r])=>Math.max(a,기록볼륨(r)),0);
   const 퍼=(a,b)=> b>0?`${a>=b?"+":"−"}${Math.abs((a-b)/b*100).toFixed(1)}%`:"—";
   const 줄=rec.종목.map(e=>{ const 세=e.세트.filter(s=>s.완료); const 좋=세.reduce((a,s)=>!a||일RM(s.w,s.r)>일RM(a.w,a.r)?s:a,null);
-    let 플글=""; if(e.플랜id){ const p=플랜(e.플랜id); if(p&&세.length){ 플글 = 저장키값?`플랜 ${e.회}회차 반영됨`:`플랜 ${e.회}회차가 반영됩니다`;
-      if(e.측정일) 플글 += ` · 측정 ${맨몸(찾표(p.종목))?`${Math.max(...세.map(s=>s.r))}회`:`1RM 약 ${kg(Math.round(Math.max(...세.map(s=>일RM(s.w,s.r)))*2)/2)}kg`}`; } }
+    const 플글 = e.플랜id ? 플랜미리(e, !!저장키값) : "";
     return `<div class="판줄"><div class="채움"><div class="줄"><b class="채움">${esc(e.이름)}</b><span class="작 숫">${세.length}/${e.세트.length}</span></div>
       <div class="맞춤 아주작 흐림 숫">${좋?`최고 ${kg(좋.w)}kg × ${좋.r} · 1RM 약 ${kg(Math.round(일RM(좋.w,좋.r)*2)/2)}kg`:"한 세트도 안 함"}${플글?" · "+플글:""}</div></div></div>`; }).join("");
   return `<div class="화면"><div class="넘김"><h1>${저장키값?"지난 운동 결과":"운동 끝"}</h1><div class="작 흐림" style="margin-bottom:8px">${esc(rec.이름)} · ${날글(날)} (${요일(날)})${저장키값?" · 저장했습니다":""}</div>
-    <div class="타일들 번호"${번("결0")}><div class="타일"><span>세트</span><b>${완료수(rec)}/${전체수(rec)}</b></div><div class="타일"><span>시간</span><b>${분초(rec.초)}</b></div><div class="타일"><span>볼륨 kg</span><b>${콤마(볼)}</b></div></div>
+    <div class="타일들 번호"${번("결0")}><div class="타일"><span>세트</span><b>${완료수(rec)}/${전체수(rec)}</b></div><div class="타일"><span>시간</span><b>${분초(rec.초)}</b></div><div class="타일"><span>볼륨 kg</span><b data-count="${Math.round(볼)}">${콤마(볼)}</b></div></div>
     <div class="판" style="padding:10px 0"><div class="판줄"><span class="이름">지난번</span><span class="채움 작">${지난?`${날글(지난[0])} 대비 <b>${퍼(볼,기록볼륨(지난[1]))}</b>`:"같은 루틴 기록 없음"}</span></div>
       <div class="판줄"><span class="이름">최고</span><span class="채움 작">${최고>0?(볼>최고?"<b>최고 기록 경신</b>":`최고 대비 <b>${퍼(볼,최고)}</b>`):"—"}</span></div>${줄}</div></div>
     <div class="아랫줄">${저장키값?`<button class="버튼 주 채움" data-act="결과확인">확인</button>`:`<button class="버튼" data-act="운동으로">돌아가기</button><button class="버튼 주 채움" data-act="운동저장">저장</button>`}</div></div>`; }
 
 /* ── 7일 막대 ── */
 function 체험막대(){
-  document.getElementById("체험제목").textContent = `7일 체험 · ${S.일차}일차 · ${날글(오늘())} (${요일(오늘())})`;
+  const 시각=new Date(모의시각()), 몇일=Math.floor((시각-날(오늘()))/864e5);
+  document.getElementById("체험제목").textContent = `7일 체험 · ${S.일차}일차 · ${날글(오늘())} (${요일(오늘())}) ${몇일>0?`+${몇일}일 `:""}${String(시각.getHours()).padStart(2,"0")}:${String(시각.getMinutes()).padStart(2,"0")}`;
   document.getElementById("빨리").textContent = `시간 ×${S.빨리}`;
   document.getElementById("날들").innerHTML = Array.from({length:7},(_,j)=>{ const n=j+1, k=날더하기(S.시작일,j); const d=날(k);
     return `<button data-act="일차" data-n="${n}" class="${n===S.일차?"켬":n<S.일차?"지남":""}" aria-label="${n}일차 ${날글(k)}">${n}일차<br>${d.getMonth()+1}/${d.getDate()} ${요일(k)}</button>`; }).join("");
@@ -775,7 +1516,8 @@ function 시계그리기(){ const ss=S.세션; if(!ss) return;
   document.querySelectorAll('[data-timer="경과"]').forEach(el=>el.textContent=분초(경과초()));
   if(ss.휴식){ const 남=Math.max(0,(ss.휴식.끝-S.시계)/1000), p=1-남/Math.max(1,ss.휴식.길이);
     document.querySelectorAll('[data-timer="휴식"]').forEach(el=>el.textContent=분초(남));
-    document.querySelectorAll('[data-bar]').forEach(el=>el.style.transform=`scaleX(${p})`); } }
+    document.querySelectorAll('[data-bar]').forEach(el=>el.style.transform=`scaleX(${p})`);
+    document.querySelectorAll('[data-쉼바]').forEach(el=>el.style.clipPath=`inset(0 ${(p*100).toFixed(1)}% 0 0)`); } }
 let 토스트타이머=null;
 function 토스트(글){ const 폰=document.getElementById("폰"); 폰.querySelectorAll(".토스트").forEach(x=>x.remove());
   const el=document.createElement("div"); el.className="토스트"; el.setAttribute("role","status"); el.textContent=글; 폰.appendChild(el);
@@ -783,27 +1525,31 @@ function 토스트(글){ const 폰=document.getElementById("폰"); 폰.querySele
 
 /* ═════════════ 누르기 ═════════════ */
 function 일차누름(n){ if(n===S.일차) return;
-  if(n>S.일차){ for(let d=S.일차+1; d<=n; d++){ 세션정리(); S.일차=d; 예정맞추기(오늘()); 아침[d]=스냅(); } 발자취(`${n}일차 시작`); U.되돌림=null; }
+  if(n>S.일차){ for(let d=S.일차+1; d<=n; d++){ 세션정리(); S.일차=d; S.날시작시계=S.시계; 예정맞추기(오늘()); 업적알림(업적판정("켤때")); 스탯남기기(); 아침[d]=스냅(); } 발자취(`${n}일차 시작`); U.되돌림=null; }
   else { if(U.되돌림!==n){ U.되돌림=n; 토스트(`한 번 더 누르면 ${n}일차 아침으로 돌아갑니다`); return; }
-    if(!아침[n]) return; S=JSON.parse(아침[n]); for(const d of Object.keys(아침)) if(+d>n) delete 아침[d]; U.되돌림=null; }
+    if(!아침[n]) return; S=JSON.parse(아침[n]); 새칸채움(); for(const d of Object.keys(아침)) if(+d>n) delete 아침[d]; U.되돌림=null; U.업적띠=null; }
   Object.assign(U,{고른날:null, 집은날:null, 시트:null, 보는달:null, 루틴열림:null, 확인:null}); U.탭 = S.세션?"운동":"캘린더"; 그리기();
   if(S.결과) 토스트("어제 운동을 저장했습니다"); }
 function 숫(v){ const x=parseFloat(String(v).replace(",",".")); return isFinite(x)?x:0; }
 function 행동(a, d){
   const 오=오늘(); const ss=S.세션; let 다시=true;
-  if(a!=="루틴지움"&&a!=="플랜지움"&&a!=="처음부터") U.확인=null;
+  if(a!=="루틴지움"&&a!=="플랜지움"&&a!=="처음부터"&&a!=="사진지움") U.확인=null;
   switch(a){
     case "탭": if(d.t==="메모"){ U.시트={종류:"메모"}; break; }
       if(ss&&ss.끝화면&&d.t!=="운동"){ 운동저장하기(); 토스트("저장했습니다"); }
       if(S.결과&&!S.세션) S.결과=null;
-      U.탭=d.t; U.시트=null; if(d.t!=="루틴") U.루틴열림=null; if(d.t==="운동") U.스크롤=ss?.지금.i??null; break;
+      U.탭=d.t; U.시트=null; U.스탯=null; if(d.t!=="루틴") U.루틴열림=null; if(d.t==="운동") U.스크롤=ss?.지금.i??null; break;
     case "달": { const 기=U.보는달||오.slice(0,7), [y,m]=기.split("-").map(Number), x=new Date(y,m-1+(+d.d),1); U.보는달=키(x).slice(0,7); break; }
     case "오늘달": U.보는달=null; U.고른날=null; break;
     case "날": if(U.집은날){ const 원=U.집은날; U.집은날=null; if(원!==d.k){ if(예정옮기기(원,d.k,오)){ U.고른날=d.k; 발자취(`예정 옮김 ${날글(원)} → ${날글(d.k)}`); 토스트(`${날글(d.k)}로 옮겼습니다`); } else 토스트("그 날로는 옮길 수 없습니다"); } }
       else U.고른날=d.k; break;
     case "변경": U.시트={종류:"변경",k:d.k}; break;
     case "시트": U.시트={종류:d.t, k:d.k??U.시트?.k, 대상:d.v, 모드:"이 날만"}; if(d.t==="종목넣기") U.방금=[]; if(d.t==="방식") U.방식펼침=null; break;
-    case "시트닫기": U.시트=null; break;
+    case "시트닫기": 시트닫기애니(); 다시=false; break;
+    case "배너숨김": S.세션.배너숨김=true; break;
+    case "배너보기": S.세션.배너숨김=false; break;
+    case "종목펼침": U.종목펼침 = U.종목펼침===d.v ? null : d.v; break;
+    case "사진지움": { const 키=`사진${d.v}${d.n}`; if(U.확인!==키){ U.확인=키; break; } 사진목록(d.v).splice(+d.n,1); 사진저장(); U.확인=null; 발자취(`사진 지움 · ${d.v}`); break; }
     case "모드": U.시트.모드=d.v; break;
     case "루틴꽂기": { const k=U.시트.k; if(U.시트.모드==="이 날만") 그날만바꾸기(d.v,k); else 꽂기(d.v,k,오); U.시트=null; 발자취(`${날글(k)} → ${루틴(d.v).이름}`); 토스트(`${날글(k)} ${루틴(d.v).이름}`); break; }
     case "집기": U.집은날=d.k; U.시트=null; break;
@@ -811,6 +1557,15 @@ function 행동(a, d){
     case "휴식적용": { const k=U.시트.k; 날휴식(d.v==="미루기",k,오); U.시트=null; 발자취(`${날글(k)} 휴식 (${d.v})`); 토스트(`${날글(k)} 휴식 · ${d.v}`); break; }
     case "예정지움": 예정지우기(d.k); U.시트=null; 발자취(`${날글(d.k)} 예정 지움`); break;
     case "시작": 운동시작(d.v); break;
+    /* 스탯 · 업적 */
+    case "스탯열기": U.스탯={보기:"스탯", 분류:"전체", 고름:"체력"}; break;
+    case "스탯닫기": U.스탯=null; break;
+    case "스탯보기": U.스탯.보기=d.v; break;
+    case "업적분류": U.스탯.분류=d.v; break;
+    case "스탯고름": U.스탯.고름=d.v; break;
+    case "업적누름": { const x=업적찾기(d.v); if(!x||!S.업적?.[x.번호]) break; S.대표칭호 = S.대표칭호===x.칭호번호 ? null : x.칭호번호;
+      발자취(S.대표칭호?`대표 칭호 『${x.칭호}』`:"대표 칭호 뺌"); { const 글=S.대표칭호?`대표 칭호 『${x.칭호}』`:"대표 칭호를 뺐습니다"; setTimeout(()=>토스트(글),0); } break; }
+    case "업적띠보기": U.스탯={보기:"업적", 분류:"풀림", 고름:"체력"}; U.업적띠=null; U.시트=null; break;
     /* 운동 중 */
     case "체크": 체크(+d.i,+d.k); break;
     case "세트값": { const s=ss.종목[+d.i].세트[+d.k]; if(d.f==="w") s.w=Math.max(0,Math.round((s.w+(+d.d)*S.설정.무게폭)*10)/10); else s.r=Math.max(0,s.r+(+d.d)); ss.마지막=S.시계; break; }
@@ -818,11 +1573,15 @@ function 행동(a, d){
     case "세트빼기": { const x=ss.종목[+d.i]; if(x.세트.length>1){ x.세트.pop(); if(ss.지금.i===+d.i&&ss.지금.k>=x.세트.length) ss.지금={i:+d.i,k:x.세트.length-1}; } break; }
     case "접기": { const i=+d.i, x=ss.종목[i], 다=x.세트.every(s=>s.완료), 지금접힘=ss.접기[i]??(다&&ss.지금.i!==i); ss.접기[i]=!지금접힘;
       if(지금접힘 && !다){ const k=x.세트.findIndex(s=>!s.완료); ss.지금={i,k}; } U.스크롤=i; break; }
-    case "다음종목": { const n=ss.종목.length; for(let j=1;j<=n;j++){ const i=(ss.지금.i+j)%n, k=ss.종목[i].세트.findIndex(s=>!s.완료); if(k>=0){ ss.지금={i,k}; ss.접기[i]=false; U.스크롤=i; break; } } break; }
+    case "다음종목": U.본=Math.min(ss.종목.length-1,(U.본??0)+1); break;
+    case "이전종목": U.본=Math.max(0,(U.본??0)-1); break;
+    case "본종목": U.본=+d.i; break;
+    case "몸크게": U.시트={종류:"근육"}; break;
+    case "그림감추기": S.세션.배너숨김=true; U.시트=null; break;
     case "휴식건너뛰기": ss.휴식=null; break;
     case "끝내기": ss.끝화면=true; ss.끝=S.시계; ss.휴식=null; break;
     case "운동으로": ss.끝화면=false; ss.끝=null; break;
-    case "운동저장": 운동저장하기(); U.탭="캘린더"; U.고른날=null; 토스트("저장했습니다"); break;
+    case "운동저장": { const 키=운동저장하기(); U.탭="캘린더"; U.고른날=null; 토스트(키?"저장했습니다":"체크한 세트가 없어 저장하지 않았습니다"); break; }
     case "결과확인": S.결과=null; U.탭="캘린더"; break;
     /* 루틴 */
     case "루틴열기": U.루틴열림=d.v; break;
@@ -833,16 +1592,16 @@ function 행동(a, d){
       for(const k of Object.keys(S.예정)) if(S.예정[k]===d.v) delete S.예정[k]; for(const k of Object.keys(S.예정고정)) if(S.예정고정[k]===d.v) delete S.예정고정[k];
       예정맞추기(오); U.루틴열림=null; U.확인=null; 발자취(`루틴 지움 · ${r.이름}`); } break;
     case "루값": { const r=루틴(U.루틴열림), s=r.종목[+d.i].세트[+d.k], dd=+d.d;
-      if(d.f==="w") s.w=Math.max(0,Math.round((s.w+dd*S.설정.무게폭)*10)/10); else if(d.f==="r") s.r=Math.max(1,s.r+dd); else s.휴=Math.max(0,s.휴+dd*15); break; }
+      if(d.f==="w") s.w=Math.max(0,Math.round((s.w+dd*S.설정.무게폭)*10)/10); else if(d.f==="r") s.r=Math.max(1,s.r+dd); else { s.휴=Math.max(0,s.휴+dd*15); 업적알림(업적판정("루틴")); } break; }
     case "루세트": { const e=루틴(U.루틴열림).종목[+d.i]; if(+d.d>0){ const l=e.세트[e.세트.length-1]||{w:20,r:10,휴:S.설정.기본휴식}; e.세트.push({...l}); } else if(e.세트.length>1) e.세트.pop(); break; }
     case "종목빼기": { const r=루틴(U.루틴열림); r.종목.splice(+d.i,1); break; }
     case "칸고름": U.칸고름=d.v; break;
     case "종목넣기": { const r=루틴(U.루틴열림), 열=`e:${d.v}`;
       if(U.방금.includes(열)){ const k=r.종목.map(e=>e.이름===d.v&&!e.플랜id).lastIndexOf(true); if(k>=0) r.종목.splice(k,1); U.방금=U.방금.filter(x=>x!==열); }
-      else { r.종목.push({이름:d.v, 세트:세트들(S.설정.기본세트,20,10,S.설정.기본휴식)}); U.방금.push(열); } break; }
+      else { r.종목.push({이름:d.v, 세트:세트들(S.설정.기본세트,20,10,S.설정.기본휴식)}); U.방금.push(열); 업적알림(업적판정("루틴")); } break; }
     case "플랜넣기": { const r=루틴(U.루틴열림), p=플랜(d.v), 열=`p:${d.v}`;
       if(U.방금.includes(열)){ const k=r.종목.map(e=>e.플랜id===d.v).lastIndexOf(true); if(k>=0) r.종목.splice(k,1); U.방금=U.방금.filter(x=>x!==열); }
-      else { const e={이름:p.이름, 플랜id:p.id, 세트:[]}; e.세트=줄세트(e); r.종목.push(e); U.방금.push(열); } break; }
+      else { const e={이름:p.이름, 플랜id:p.id, 세트:[]}; e.세트=줄세트(e); r.종목.push(e); U.방금.push(열); 업적알림(업적판정("루틴")); } break; }
     /* 플랜 */
     case "폼값": { const f=U.플랜폼; const v = ["주당","보조모드"].includes(d.f) ? +d.v : d.v; f[d.f]=v; f.오류="";
       if(d.f==="종목"){ const 새=폼초기(); 새.종목=v; 새.주당=f.주당; U.플랜폼=새; } break; }
@@ -870,14 +1629,15 @@ function 행동(a, d){
     /* 종목 · 설정 · 메모 */
     case "새종목칸": U.새종목칸=d.v; break;
     case "종목만들기": { const n=U.새종목.trim(); if(!n){ 토스트("이름을 넣어 주세요"); break; } if(S.종목표.some(x=>x.이름===n)){ 토스트("이미 있습니다"); break; } S.종목표.push({이름:n, 칸:U.새종목칸}); U.새종목=""; 발자취(`종목 추가 · ${n}`); break; }
-    case "성별": S.몸.남 = d.v==="남"; break;
+    case "성별": S.몸.남 = d.v==="남"; 스탯남기기(); break;
     case "스위치": S.설정[d.f]=!S.설정[d.f]; break;
     case "설정칩": S.설정[d.f] = isNaN(+d.v) ? d.v : +d.v; break;
     case "볼륨방식": { const 목=d.v==="%"?[1,2.5,5]:[1,2.5,5,10,20]; S.설정.볼륨방식=d.v; if(!목.includes(S.설정.볼륨값)) S.설정.볼륨값=목[Math.floor(목.length/2)]; break; }
     case "메모넣기": { const t=U.메모글.trim(); if(!t) break; S.메모.unshift({날:오, 글:t}); U.메모글=""; break; }
     case "메모지움": S.메모.splice(+d.n,1); break;
     case "처음부터": if(U.확인!=="처음"){ U.확인="처음"; if(U.탭!=="설정") 토스트("한 번 더 누르면 처음부터"); break; }
-      try{ localStorage.removeItem(저장키); }catch(e){} 처음상태(); Object.assign(U,{탭:"캘린더", 시트:null, 루틴열림:null, 고른날:null, 집은날:null, 확인:null, 플랜폼:폼초기()}); 토스트("처음부터 다시"); break;
+      try{ localStorage.removeItem(저장키); }catch(e){} 처음상태(); Object.assign(U,{탭:"캘린더", 시트:null, 루틴열림:null, 고른날:null, 집은날:null, 확인:null, 플랜폼:폼초기(), 스탯:null}); 토스트("처음부터 다시"); break;
+    case "세시간": if(S.세션){ 토스트("운동 중에는 시간을 건너뛸 수 없습니다"); break; } S.시계+=3*3600e3; 발자취("3시간 지남"); 토스트("3시간이 지났습니다"); break;
     case "빨리": S.빨리 = S.빨리===1?10:1; 토스트(S.빨리===10?"시간이 10배로 흐릅니다 (휴식 · 운동 시간)":"보통 빠르기"); break;
     case "일차": 일차누름(+d.n); 다시=false; break;
     default: 다시=false;
@@ -902,9 +1662,11 @@ document.addEventListener("input", e=>{ const el=e.target, w=el.dataset.in; if(!
   else if(w==="루값"){ const s=루틴(U.루틴열림).종목[+d.i].세트[+d.k]; if(d.f==="w") s.w=Math.max(0,숫(v)); else s.r=Math.max(1,Math.round(숫(v))); }
   저장();
 });
-document.addEventListener("keydown", e=>{ if(e.key==="Escape"&&U.시트){ U.시트=null; 그리기(); }
+document.addEventListener("keydown", e=>{ if(e.key==="Escape"&&U.시트){ U.시트=null; 그리기(); } else if(e.key==="Escape"&&U.스탯){ U.스탯=null; 그리기(); }
   if(e.key==="Enter"&&e.target.dataset?.in==="메모글") 행동("메모넣기",{}); });
-document.addEventListener("change", e=>{ const w=e.target.dataset?.in; if(w==="루틴이름"||w==="루값"||w==="몸") 그리기(); });
+document.addEventListener("change", e=>{ const w=e.target.dataset?.in; if(w==="사진"){ const f=[...(e.target.files||[])]; if(f.length) 사진넣기(e.target.dataset.v, f); return; }
+  if(w==="몸") 스탯남기기();
+  if(w==="루틴이름"||w==="루값"||w==="몸") 그리기(); });
 
 /* ═════════════ 꾹 눌러 끌기 — 캘린더 날 · 루틴 · 루틴 안 종목 · 플랜 (작동 방식 하나) ═════════════ */
 let 끌=null;
@@ -955,7 +1717,9 @@ setInterval(()=>{ const now=performance.now(), dt=now-앞틱; 앞틱=now; if(!S)
   if(now-저장틱>3000){ 저장틱=now; 저장(); } }, 200);
 
 /* ═════════════ 시작 ═════════════ */
-if(!불러오기()) 처음상태();
+if(!불러오기()) 처음상태(); else { 새칸채움(); 업적알림(업적판정("켤때")); 스탯남기기(); }
 U.탭 = S.세션 ? "운동" : "캘린더";
 그리기();
 </script>
+
+</body></html>
