@@ -646,6 +646,12 @@ function 근육글(m){ const 묶=Object.entries(역할이름).map(([r,n])=>{ con
 .배너닫기{top:12px}
 .그림이름{left:8px}
 .판줄:has(.예목록){align-items:flex-start}   /* 목록이 길면 '예정' 이름표를 위에 붙인다 */
+
+/* ═══ 10-03 날짜 판 — 종목이 많으면 접기 · 운동 시작 붙박이 ═══ */
+.예접기{display:flex;align-items:center;gap:8px;width:100%;height:32px;padding:0;border:0;border-bottom:1px solid var(--선);background:none;font-size:13px;font-weight:700;color:var(--강조);text-align:left;font-family:inherit;cursor:pointer}
+.예접기 .번{width:16px;flex:none}
+.예접기 svg{width:18px;height:18px;display:block}
+.판단추{position:sticky;bottom:0;z-index:2;background:var(--바탕);padding:8px 0;margin:-6px 0 -10px}
 </style>
 <script>
 "use strict";
@@ -1185,6 +1191,7 @@ const 아이콘 = (()=>{ const a=d=>`<svg viewBox="0 0 24 24" fill="none" stroke
   return {달력:a('<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>'), 루틴:a('<path d="M9 6h12M9 12h12M9 18h12M4 6h1M4 12h1M4 18h1"/>'),
     과녁:a('<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/>'), 바벨:a('<path d="M2 12h20M5 8v8M8 6v12M16 6v12M19 8v8"/>'),
     톱니:a('<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/>'), 연필:a('<path d="M4 20h4L19 9l-4-4L4 16v4z"/>'),
+    아래:a('<path d="M6 9l6 6 6-6"/>'),
     체크:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>`}; })();
 const 번 = n => ` data-n="${n}"`;
 const 스위치 = (on, act, f, v="")=> `<button class="스위치 ${on?"켬":""}" data-enter="${act}${f}${v}${on}" role="switch" aria-checked="${on}" data-act="${act}" data-f="${f}" data-v="${v}"><i></i></button>`;
@@ -1256,23 +1263,29 @@ function 캘린더(){
 const 폭글=(l,f)=>{ const a=Math.min(...l), b=Math.max(...l); return a===b?f(a):`${f(a)}~${f(b)}`; };
 function 세트글(세){ if(!세.length) return ""; const w=세.map(s=>+s.w||0), r=세.map(s=>s.r);
   return (w.every(x=>x===0)?"맨몸":폭글(w,kg)+"kg")+" × "+폭글(r,x=>x)+"회"; }
-function 예정상세(실){ const 볼=실.종목.reduce((a,e)=>a+e.세트.reduce((b,s)=>b+유효무게(s.w)*s.r,0),0);
-  const 줄=실.종목.map((e,i)=>`<div class="예줄"><span class="번">${i+1}</span><span class="채움 한줄">${esc(e.이름)}</span><span class="숫 흐림">${e.세트.length}세트 · ${세트글(e.세트)}</span></div>`).join("");
-  return `<div class="예칩"><span>예상 ${시간글(예상초(실))}</span><span>${총세트(실)}세트</span><span>볼륨 ${콤마(Math.round(볼))}kg</span></div><div class="예목록">${줄}</div>`; }
-function 기록상세(r){ const 줄=r.종목.map((e,i)=>{ const 세=e.세트.filter(s=>s.완료);
-    return `<div class="예줄"><span class="번">${i+1}</span><span class="채움 한줄">${esc(e.이름)}</span><span class="숫 흐림">${세.length}/${e.세트.length}세트${세.length?" · "+세트글(세):""}</span></div>`; }).join("");
-  return 줄?`<div class="예목록">${줄}</div>`:""; }
+/* 종목 줄이 6개 이상이면 4줄 + '외 n종목' (10-03) — 5개까지는 접어도 높이가 같아 그냥 다 보인다 */
+const 접는수 = 4;
+function 접는목록(줄들, 키){ const n=줄들.length; if(n<=접는수+1) return 줄들.join("");
+  const 펼=U.예펼침===키;
+  return (펼?줄들:줄들.slice(0,접는수)).join("")
+    + `<button class="예접기" data-act="예펼침" data-v="${키}" aria-expanded="${펼}"><span class="번"></span><span class="채움">${펼?"접기":`외 ${n-접는수}종목`}</span><span class="접힘표 ${펼?"펼":""}">${아이콘.아래}</span></button>`; }
+function 예정상세(실, 키){ const 볼=실.종목.reduce((a,e)=>a+e.세트.reduce((b,s)=>b+유효무게(s.w)*s.r,0),0);
+  const 줄=실.종목.map((e,i)=>`<div class="예줄"><span class="번">${i+1}</span><span class="채움 한줄">${esc(e.이름)}</span><span class="숫 흐림">${e.세트.length}세트 · ${세트글(e.세트)}</span></div>`);
+  return `<div class="예칩"><span>예상 ${시간글(예상초(실))}</span><span>${총세트(실)}세트</span><span>볼륨 ${콤마(Math.round(볼))}kg</span></div><div class="예목록">${접는목록(줄, 키)}</div>`; }
+function 기록상세(r, 키){ const 줄=r.종목.map((e,i)=>{ const 세=e.세트.filter(s=>s.완료);
+    return `<div class="예줄"><span class="번">${i+1}</span><span class="채움 한줄">${esc(e.이름)}</span><span class="숫 흐림">${세.length}/${e.세트.length}세트${세.length?" · "+세트글(세):""}</span></div>`; });
+  return 줄.length?`<div class="예목록">${접는목록(줄, 키)}</div>`:""; }
 function 날판(k){ const 오=오늘(), 록=기록목록(k);
   let h=`<div class="판 번호" data-enter="판${k}"${번("캘1")}><b class="큰">${날글(k)} (${요일(k)})${k===오?" · 오늘":""}</b>`;
-  for(const [,r] of 록){ const 달=기록달성(r);
+  for(const [rk,r] of 록){ const 달=기록달성(r);
     h+=`<div class="판줄"><span class="이름">${r.예시?"예시":"기록"}</span><div class="채움"><div class="줄"><b class="채움 한줄">${esc(r.이름)}</b><span class="알약 ${달?"달성":"미달성"}">${달?"달성":"미달성"}</span></div>
-      <div class="맞춤 작 흐림 숫">${완료수(r)}/${전체수(r)}세트 · ${시간글(r.초)} · ${콤마(기록볼륨(r))}kg</div>${기록상세(r)}</div>${k===오&&루틴(r.루틴id)?`<button class="버튼 낮" data-act="시작" data-v="${r.루틴id}">한 번 더</button>`:""}</div>`; }
+      <div class="맞춤 작 흐림 숫">${완료수(r)}/${전체수(r)}세트 · ${시간글(r.초)} · ${콤마(기록볼륨(r))}kg</div>${기록상세(r, "록"+rk)}</div>${k===오&&루틴(r.루틴id)?`<button class="버튼 낮" data-act="시작" data-v="${r.루틴id}">한 번 더</button>`:""}</div>`; }
   if(!록.length && S.미실시[k]) h+=`<div class="판줄"><span class="이름">미실시</span><b class="채움">${esc(S.미실시[k])}</b></div>`;
   const r=루틴(S.예정[k]);
   if(k>=오 && !(k===오&&록.length)){
     if(r){ const 실=실제루틴(r);
-      h+=`<div class="판줄"><span class="이름">${r.휴식일?"휴식":"예정"}</span><div class="채움"><b>${esc(r.이름)}</b>${r.휴식일?"":예정상세(실)}</div></div>
-        <div class="줄">${k===오&&!r.휴식일?`<button class="버튼 주 채움" data-act="시작" data-v="${r.id}">운동 시작</button>`:""}<button class="버튼 ${k===오&&!r.휴식일?"":"채움"}" data-act="변경" data-k="${k}">변경</button></div>`; }
+      h+=`<div class="판줄"><span class="이름">${r.휴식일?"휴식":"예정"}</span><div class="채움"><b>${esc(r.이름)}</b>${r.휴식일?"":예정상세(실, "예"+k)}</div></div>
+        <div class="줄 판단추">${k===오&&!r.휴식일?`<button class="버튼 주 채움" data-act="시작" data-v="${r.id}">운동 시작</button>`:""}<button class="버튼 ${k===오&&!r.휴식일?"":"채움"}" data-act="변경" data-k="${k}">변경</button></div>`; }
     else h+=`<div class="판줄"><span class="이름">예정</span><span class="채움 흐림 작">없음</span><button class="버튼 낮" data-act="시트" data-t="루틴고르기" data-k="${k}">루틴 넣기</button></div>`;
   }
   return h+`</div>`; }
@@ -1603,6 +1616,7 @@ function 행동(a, d){
     case "배너숨김": S.세션.배너숨김=true; break;
     case "배너보기": S.세션.배너숨김=false; break;
     case "종목펼침": U.종목펼침 = U.종목펼침===d.v ? null : d.v; break;
+    case "예펼침": U.예펼침 = U.예펼침===d.v ? null : d.v; break;
     case "사진지움": { const 키=`사진${d.v}${d.n}`; if(U.확인!==키){ U.확인=키; break; } 사진목록(d.v).splice(+d.n,1); 사진저장(); U.확인=null; 발자취(`사진 지움 · ${d.v}`); break; }
     case "모드": U.시트.모드=d.v; break;
     case "루틴꽂기": { const k=U.시트.k; if(U.시트.모드==="이 날만") 그날만바꾸기(d.v,k); else 꽂기(d.v,k,오); U.시트=null; 발자취(`${날글(k)} → ${루틴(d.v).이름}`); 토스트(`${날글(k)} ${루틴(d.v).이름}`); break; }
