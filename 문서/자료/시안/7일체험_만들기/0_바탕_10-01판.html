@@ -37,9 +37,9 @@ input{font:inherit;color:var(--글)}
 .체험 .날들 button.켬{background:#fff;color:#084B83;font-weight:700}
 .체험 .날들 button.지남{opacity:.55}
 .체험 small{font-size:11px;opacity:.8}
-.체험 .작은{font-size:11px;border:1px solid #ffffff44;border-radius:8px;padding:2px 7px;color:var(--체험글)}
+.체험 .작은{font-size:11px;border:1px solid #ffffff44;border-radius:6px;padding:2px 7px;color:var(--체험글)}
 /* ── 휴대폰 한 화면 ── */
-.폰{flex:1;min-height:560px;max-height:860px;background:var(--바탕);border:1px solid var(--선);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;position:relative}
+.폰{flex:1;min-height:560px;max-height:860px;background:var(--바탕);border:1px solid var(--선);border-radius:22px;overflow:hidden;display:flex;flex-direction:column;position:relative}
 .화면{flex:1;min-height:0;display:flex;flex-direction:column;position:relative}
 .넘김{overflow-y:auto;min-height:0;flex:1;padding:0 12px 12px}
 .탭줄{display:flex;background:var(--면);border-top:1px solid var(--선);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -70,33 +70,33 @@ h1{font-size:22px;font-weight:700;letter-spacing:-0.02em;margin:14px 0 8px;text-
 .입력{height:40px;border:1px solid var(--속선);border-radius:var(--r-작게);background:var(--면);padding:0 10px;width:100%;min-width:0}
 label.칸{display:flex;flex-direction:column;gap:2px;font-size:11px;color:var(--옅음);flex:1;min-width:0}
 .구분{height:1px;background:var(--선)}
-.알약{font-size:11px;font-weight:700;border-radius:8px;padding:1px 6px}
+.알약{font-size:11px;font-weight:700;border-radius:6px;padding:1px 6px}
 .알약.달성{background:var(--좋음옅음);color:var(--좋음)}
 .알약.미달성{color:var(--나쁨);border:1px solid var(--나쁨)}
 .알약.강조{background:var(--강조);color:var(--강조글)}
 .번호{position:relative}
-.번호[data-n]::before{content:attr(data-n);position:absolute;left:2px;top:2px;font-size:11px;font-weight:700;color:#fff;background:#1e6fd9;border-radius:8px;padding:0 3px;z-index:3;pointer-events:none}
+.번호[data-n]::before{content:attr(data-n);position:absolute;left:2px;top:2px;font-size:9px;font-weight:700;color:#fff;background:#1e6fd9;border-radius:4px;padding:0 3px;z-index:3;pointer-events:none}
 .번호끔 .번호[data-n]::before{display:none}
 /* ── 시트 ── */
 .가림{position:absolute;inset:0;background:#0006;display:flex;align-items:flex-end;z-index:20}
 .시트{background:var(--면);width:100%;max-height:88%;border-radius:16px 16px 0 0;padding:14px 14px 18px;overflow-y:auto;display:flex;flex-direction:column;gap:8px}
 .시트 .머리{display:flex;align-items:center;gap:8px}
 .시트 .머리 b{flex:1;font-size:18px}
-.아래띠{position:absolute;left:10px;right:10px;bottom:62px;background:var(--흐림);color:var(--바탕);border-radius:8px;padding:10px 12px;display:flex;gap:10px;align-items:center;z-index:15;font-size:13px}
+.아래띠{position:absolute;left:10px;right:10px;bottom:62px;background:var(--흐림);color:var(--바탕);border-radius:12px;padding:10px 12px;display:flex;gap:10px;align-items:center;z-index:15;font-size:13px}
 .아래띠 button{font-weight:700;color:var(--바탕);text-decoration:underline}
 /* ── 캘린더 ── */
 .띠{background:var(--강조);color:var(--강조글);min-height:40px;display:flex;align-items:center;gap:8px;padding:6px 12px}
 .띠 b{font-size:18px}
 .달력{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;padding:4px 6px 6px;user-select:none;-webkit-user-select:none;touch-action:pan-y}
 .요일{font-size:11px;text-align:center;color:var(--옅음);padding:2px 0}
-.칸날{height:64px;border-radius:8px;padding:4px 2px;display:flex;flex-direction:column;align-items:center;gap:0;font-size:11px;position:relative;border:1px solid transparent}
-.칸날 .일{font-size:13px;font-weight:600}
-.칸날.오늘 .일{background:var(--강조);color:var(--강조글);border-radius:8px;padding:0 4px}
+.칸날{height:56px;border-radius:8px;padding:3px 2px;display:flex;flex-direction:column;align-items:center;gap:1px;font-size:11px;position:relative;border:1px solid transparent}
+.칸날 .일{font-size:12px;font-weight:600}
+.칸날.오늘 .일{background:var(--강조);color:var(--강조글);border-radius:6px;padding:0 4px}
 .칸날.고름{border-color:var(--강조);background:var(--강조옅음)}
-.칸날 .루{font-size:11px;max-width:100%;overflow:hidden;white-space:nowrap;letter-spacing:-0.05em;border-radius:8px;padding:0 2px}
+.칸날 .루{font-size:10px;max-width:100%;overflow:hidden;white-space:nowrap;letter-spacing:-0.05em;border-radius:4px;padding:0 2px}
 .칸날 .루.예{background:var(--강조옅음);color:var(--강조)}
 .칸날 .루.휴{border:1px solid var(--속선);color:var(--옅음)}
-.칸날 .상{font-size:11px;font-weight:700}
+.칸날 .상{font-size:9px;font-weight:700}
 .칸날.놓기{background:var(--강조);color:var(--강조글)}
 .칸날.못놓{border:2px solid var(--나쁨)}
 .칸날.집음{outline:2px dashed var(--강조);opacity:.55}
@@ -112,65 +112,64 @@ label.칸{display:flex;flex-direction:column;gap:2px;font-size:11px;color:var(--
 /* ── 운동 중 ── */
 .머리줄{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--면);font-size:11px}
 .머리줄 b{font-size:13px}
-.고정띠{position:absolute;left:12px;right:12px;top:4px;z-index:5;border:2px solid var(--강조);border-radius:16px;overflow:hidden;background:var(--면)}
+.고정띠{position:absolute;left:12px;right:12px;top:4px;z-index:5;border:2px solid var(--강조);border-radius:12px;overflow:hidden;background:var(--면)}
 .고정띠 .띠{align-items:flex-start}
 .고정띠 .이름{font-size:18px;font-weight:700;line-height:1.25;overflow-wrap:anywhere}
-.세트줄{display:grid;grid-template-columns:28px 1fr 1fr 64px 28px;gap:4px;align-items:center;padding:4px 0}
+.세트줄{display:grid;grid-template-columns:36px 1fr 1fr 62px 36px;gap:4px;align-items:center;padding:4px 0}
 .세트줄.지금{background:var(--강조옅음);border-radius:8px}
 .세트줄.워밍{box-shadow:inset 3px 0 0 var(--연두)}
 .세트줄 .k{font-weight:700;text-align:center}
-.값칸{display:flex;align-items:center;border:1px solid var(--속선);border-radius:8px;height:40px;overflow:hidden}
-.값칸 button{width:28px;height:100%;color:var(--강조);font-weight:700}
+.값칸{display:flex;align-items:center;border:1px solid var(--속선);border-radius:8px;height:36px;overflow:hidden}
+.값칸 button{width:26px;height:100%;color:var(--강조);font-weight:700}
 .값칸 span{flex:1;text-align:center;font-weight:700;font-size:13px;font-variant-numeric:tabular-nums}
-.체크{width:28px;height:28px;border-radius:50%;border:2px solid var(--속선);display:flex;align-items:center;justify-content:center}
+.체크{width:32px;height:32px;border-radius:50%;border:2px solid var(--속선);display:flex;align-items:center;justify-content:center}
 .체크.켬{background:var(--강조);border-color:var(--강조);color:var(--강조글)}
-.휴식칸{height:40px;border-radius:8px;border:1px solid var(--강조);position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--강조)}
+.휴식칸{height:36px;border-radius:8px;border:1px solid var(--강조);position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--강조)}
 .휴식칸 i{position:absolute;inset:0;background:var(--강조);transform-origin:left}
-.휴식칸 .밑{position:relative;color:var(--강조)}
-.휴식칸 .위{position:absolute;inset:0;background:var(--강조);color:var(--강조글);display:flex;align-items:center;justify-content:center}
-.종목상자{border:1px solid var(--속선);border-radius:16px;padding:8px;background:var(--면)}
+.휴식칸 span{position:relative;mix-blend-mode:difference;color:#fff}
+.종목상자{border:1px solid var(--속선);border-radius:12px;padding:8px;background:var(--면)}
 .종목상자.지금{border:2px solid var(--강조)}
 .아랫줄{display:flex;gap:8px;padding:8px 12px;background:var(--면);border-top:1px solid var(--선)}
-.게이지{height:20px;border-radius:8px;background:var(--면2);border:1px solid var(--속선);position:relative;overflow:hidden}
+.게이지{height:20px;border-radius:10px;background:var(--면2);border:1px solid var(--속선);position:relative;overflow:hidden}
 .게이지 i{position:absolute;inset:0 auto 0 0;background:var(--강조)}
 .게이지 span{position:relative;display:block;text-align:center;font-size:11px;font-weight:700;line-height:18px;mix-blend-mode:difference;color:#fff}
-.가는바{height:8px;border-radius:4px;background:var(--면2);overflow:hidden}.가는바 i{display:block;height:100%;background:var(--강조)}
+.가는바{height:4px;border-radius:2px;background:var(--면2);overflow:hidden}.가는바 i{display:block;height:100%;background:var(--강조)}
 .방식띠{min-height:40px;border-radius:8px;background:linear-gradient(90deg,var(--강조),color-mix(in srgb,var(--강조) 82%,transparent));color:var(--강조글);display:flex;align-items:center;gap:6px;padding:6px 10px;width:100%;text-align:left}
 .방식띠.골름{box-shadow:inset 0 0 0 3px var(--강조),inset 0 0 0 5.5px var(--강조글)}
 .방식속{background:var(--면2);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:6px}
-.빈칸{border:1px dashed var(--속선);border-radius:8px;padding:14px;text-align:center;color:var(--옅음);font-size:13px}
+.빈칸{border:1px dashed var(--속선);border-radius:12px;padding:14px;text-align:center;color:var(--옅음);font-size:13px}
 .수칸{display:flex;align-items:center;gap:4px}
 .수칸 button{width:28px;height:28px;border:1px solid var(--속선);border-radius:8px;font-weight:700}
 .수칸 b{min-width:30px;text-align:center}
 .토스트{position:absolute;left:50%;top:50px;transform:translateX(-50%);background:var(--흐림);color:var(--바탕);padding:6px 12px;border-radius:8px;font-size:13px;z-index:40;white-space:nowrap}
 /* ── 운동 중 그림 칸 ── */
-.배너{display:flex;gap:8px;padding:8px 12px;position:relative;flex:none;box-sizing:border-box;background:var(--면);border-bottom:1px solid var(--선);cursor:pointer}
-.그림판{flex:1;min-width:0;position:relative;background:var(--면);border:1px solid var(--선);border-radius:8px;overflow:hidden;display:flex}
+.배너{display:flex;gap:6px;padding:6px 12px 0;position:relative;flex:none;transition:height .35s cubic-bezier(.2,.8,.2,1)}
+.그림판{flex:1;min-width:0;position:relative;background:var(--면);border:1px solid var(--선);border-radius:12px;overflow:hidden;display:flex}
 .그림속{flex:1;min-width:0;display:flex;align-items:center;justify-content:center;padding:4px}
 .그림속 svg{width:100%;height:100%;display:block}
 .그림속 img{width:100%;height:100%;object-fit:cover;display:block}
 .그림판:has(img) .그림속{padding:0}
-.그림이름{position:absolute;left:6px;bottom:4px;font-size:11px;font-weight:700;color:var(--흐림);background:color-mix(in srgb,var(--면) 82%,transparent);padding:0 4px;border-radius:8px;max-width:calc(100% - 20px);white-space:nowrap;overflow:hidden}
+.그림이름{position:absolute;left:6px;bottom:4px;font-size:11px;font-weight:700;color:var(--흐림);background:color-mix(in srgb,var(--면) 82%,transparent);padding:0 4px;border-radius:4px;max-width:calc(100% - 20px);white-space:nowrap;overflow:hidden}
 .배너닫기{position:absolute;top:10px;right:16px;width:24px;height:24px;border-radius:50%;background:color-mix(in srgb,var(--면) 85%,transparent);font-size:11px;color:var(--흐림);z-index:2}
 .더미{position:absolute;right:2px;top:8px;bottom:8px;display:flex;gap:1px;pointer-events:none}
-.더미 i{width:3px;border-radius:50%;background:var(--속선);opacity:.75}
-.사진없음{font-size:13px;color:var(--옅음);text-align:center;line-height:1.4}
+.더미 i{width:3px;border-radius:1px;background:var(--속선);opacity:.75}
+.사진없음{font-size:12px;color:var(--옅음);text-align:center;line-height:1.4}
 .몸바탕{fill:var(--피부)} .몸결{fill:none;stroke:var(--결);stroke-width:.7;opacity:.8}
 .몸근{stroke:var(--면);stroke-width:1.2;stroke-linejoin:round;transition:fill .6s ease}
 /* ── 종목 사진 ── */
 .종목줄{border-bottom:1px solid var(--선);padding:6px 0}
 .종목줄:last-child{border-bottom:0}
 .종목줄머리{width:100%;text-align:left}
-.작은사진{width:28px;height:28px;border-radius:8px;object-fit:cover;flex:none}
+.작은사진{width:28px;height:28px;border-radius:6px;object-fit:cover;flex:none}
 .작은사진.빈{background:var(--면2);border:1px dashed var(--속선)}
 .접힘표{transition:transform .25s}.접힘표.펼{transform:rotate(180deg)}
 .종목펼속{display:flex;flex-direction:column;gap:6px;padding-top:8px}
 .사진줄{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
-.사진추가,.사진칸{width:72px;height:72px;flex:none;border-radius:8px;position:relative;overflow:hidden}
-.사진추가{border:1px dashed var(--속선);display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--강조);font-size:22px;cursor:pointer;line-height:1.1}
-.사진추가 small{font-size:11px;color:var(--흐림)}
+.사진추가,.사진칸{width:72px;height:72px;flex:none;border-radius:10px;position:relative;overflow:hidden}
+.사진추가{border:1px dashed var(--속선);display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--강조);font-size:20px;cursor:pointer;line-height:1.1}
+.사진추가 small{font-size:10px;color:var(--흐림)}
 .사진칸 img{width:100%;height:100%;object-fit:cover}
-.지움표{position:absolute;inset:0;background:#000a;color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.지움표{position:absolute;inset:0;background:#000a;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
 /* ── 움직임 (UI 동작 전부) ── */
 button{transition:transform .12s ease, background-color .2s, color .2s, box-shadow .2s, opacity .2s}
 button:active:not(:disabled){transform:scale(.96)}
@@ -205,23 +204,11 @@ button:active:not(:disabled){transform:scale(.96)}
       <button class="작은" data-act="세시간" id="세시간">+3시간</button>
       <button class="작은" data-act="빨리" id="빨리">휴식 ×1</button>
       <button class="작은" data-act="처음부터">처음부터</button>
-      <button class="작은 표시단추" id="표시단추" type="button" aria-pressed="false">✎ 표시</button>
     </div>
     <div class="날들" id="날들"></div>
-    <div class="표시줄" id="표시줄" hidden>
-      <div class="표시안내">폰 화면 위에 손가락으로 빨갛게 그으세요. 그리는 동안은 앱을 누를 수 없습니다.</div>
-      <div class="표시칸">
-        <input id="표시메모" class="표시메모" maxlength="300" placeholder="무엇이 문제인지 한 줄 (적지 않아도 됨)" autocomplete="off">
-        <button class="작은" id="표시되돌" type="button">되돌리기</button>
-        <button class="작은" id="표시지움" type="button">지우기</button>
-        <button class="작은 표시저장" id="표시저장" type="button">저장</button>
-      </div>
-    </div>
-    <div class="표시알림" id="표시알림" role="status" hidden></div>
-    <small id="체험설명">날짜를 누르면 그 날 저녁 6시가 됩니다. 기록 · 예정 · 플랜 · 근육 피로가 이어지고, 지난 날짜를 두 번 누르면 그 날로 돌아갑니다. '+3시간'으로 근육이 풀리는 것을 볼 수 있습니다. 운동 화면은 10-02 새 시안입니다 — 한 화면에 한 종목, 근육 그림은 오른쪽에 붙박이.</small>
+    <small id="체험설명">날짜를 누르면 그 날 저녁 6시가 됩니다. 기록 · 예정 · 플랜 · 근육 피로가 이어지고, 지난 날짜를 두 번 누르면 그 날로 돌아갑니다. '+3시간'으로 근육이 풀리는 것을 볼 수 있습니다.</small>
   </section>
   <div class="폰" id="폰"></div>
-  <canvas class="표시판" id="표시판" hidden aria-label="빨간 펜으로 표시하는 칸"></canvas>
 </div>
 <script>
 "use strict";
@@ -465,41 +452,41 @@ function 근육글(m){ const 묶=Object.entries(역할이름).map(([r,n])=>{ con
 .종목상자{display:flex;flex-direction:column;gap:4px;margin-bottom:8px;scroll-margin-top:96px;width:100%;text-align:left}
 .종목상자.접힘{flex-direction:row;align-items:center;gap:8px;padding:10px;color:var(--흐림)}
 .종목머리{display:flex;align-items:flex-start;gap:8px;width:100%;text-align:left}
-.이름2{font-size:18px;line-height:1.3;overflow-wrap:anywhere}
-.세트머리{display:grid;grid-template-columns:28px 1fr 1fr 64px 28px;gap:4px;text-align:center}
+.이름2{font-size:16px;line-height:1.3;overflow-wrap:anywhere}
+.세트머리{display:grid;grid-template-columns:36px 1fr 1fr 62px 36px;gap:4px;text-align:center}
 .세트머리.루{grid-template-columns:28px 1fr 1fr 1fr}
 .루세트{display:grid;grid-template-columns:28px 1fr 1fr 1fr;gap:4px;align-items:center}
 .루세트 .k{font-weight:700;text-align:center;font-size:13px}
-.값칸 input{flex:1;min-width:0;width:100%;border:0;background:transparent;text-align:center;font-weight:700;font-size:15px;font-variant-numeric:tabular-nums;padding:0}
+.값칸 input{flex:1;min-width:0;width:100%;border:0;background:transparent;text-align:center;font-weight:700;font-size:14px;font-variant-numeric:tabular-nums;padding:0}
 .휴식칸.빈{border-color:var(--선);color:var(--옅음);font-weight:500}
-.체크 svg{width:16px;height:16px}
+.체크 svg{width:18px;height:18px}
 .세트줄 .체크{justify-self:center}
 .설정줄{display:flex;align-items:center;gap:8px;padding:8px 0}
 .스위치{width:44px;height:26px;border-radius:13px;background:var(--속선);position:relative;flex:none;transition:background .15s}
 .스위치 i{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .15s}
 .스위치.켬{background:var(--강조)}.스위치.켬 i{transform:translateX(18px)}
-.이름표{font-size:13px;font-weight:700;color:var(--흐림);margin:14px 2px 6px}
+.이름표{font-size:12px;font-weight:700;color:var(--흐림);margin:14px 2px 6px}
 .입력줄{display:flex;align-items:center;gap:4px}
-.입력줄 em{font-style:normal;font-size:13px;color:var(--옅음)}
+.입력줄 em{font-style:normal;font-size:12px;color:var(--옅음)}
 .루틴카드{display:flex;flex-direction:column;gap:2px;width:100%;text-align:left;border-width:1px;border-color:var(--속선)}
 .루틴카드.자동{border-left:4px solid var(--강조)}
 .플랜카드{display:flex;flex-direction:column;gap:6px}
-.게이지3{height:8px;border-radius:4px;background:var(--면2);border:1px solid var(--속선);overflow:hidden}
+.게이지3{height:10px;border-radius:5px;background:var(--면2);border:1px solid var(--속선);overflow:hidden}
 .게이지3 i{display:block;height:100%;background:var(--강조)}
-.회블록{border:1px solid var(--선);border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;gap:2px}
+.회블록{border:1px solid var(--선);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:2px}
 .방식목록{display:flex;flex-direction:column;gap:3px}
 .방식목록 .방식띠{min-height:34px;padding:4px 10px}
-.방식목록 .방식띠 b{font-size:15px}
+.방식목록 .방식띠 b{font-size:14px}
 .방식목록 .방식띠 span{font-size:11px;opacity:.85}
 .시트.높이{max-height:96%}
 .타일들{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
-.타일{background:var(--면);border:1px solid var(--선);border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.타일{background:var(--면);border:1px solid var(--선);border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:2px;min-width:0}
 .타일 b{font-size:18px;font-variant-numeric:tabular-nums}
 .타일 span{font-size:11px;color:var(--옅음)}
 .닫기{font-size:13px;font-weight:600;color:var(--강조);padding:4px 6px}
 .시트 .고르기 b{font-weight:600}
 .고르기.나쁨 b{color:var(--나쁨)}
-.회색칸{background:var(--면2);border-radius:8px;padding:8px 10px}
+.회색칸{background:var(--면2);border-radius:10px;padding:8px 10px}
 .칸날 .루{max-width:100%}
 .칸날 .상.달성{color:var(--좋음)}.칸날 .상.미달성{color:var(--나쁨)}.칸날 .상.미실시{color:var(--옅음)}
 </style>
@@ -560,92 +547,6 @@ function 근육글(m){ const 묶=Object.entries(역할이름).map(([r,n])=>{ con
 .스탯칸.들어옴 .더,.체력칸.들어옴 .더{animation:자람 .7s .2s cubic-bezier(.2,.8,.2,1) both}
 .스탯칸.들어옴,.체력칸.들어옴{animation:none}
 .업적줄.풀림.들어옴 .칭호표{animation:톡 .35s ease-out both}
-
-/* ═══ 운동 중 — 10-02 새 시안: 한 화면에 한 종목 · 근육 그림 붙박이 ═══
-   칸마다 높이가 정해져 있어 무엇을 눌러도 다른 칸이 움직이지 않는다 (11 UI지침 U5-6 · U5-7) */
-.운전체{flex:none;padding:8px 12px;background:var(--면);border-bottom:1px solid var(--선)}
-.운막대{height:8px;border-radius:4px;background:var(--면2);overflow:hidden}
-.운막대 i{display:block;height:100%;background:var(--강조);border-radius:4px}
-.운요약{display:flex;gap:12px;margin-top:8px;font-size:11px;color:var(--흐림);font-variant-numeric:tabular-nums}
-.운요약 b{color:var(--글)}
-.운띠{flex:none;display:flex;gap:4px;padding:8px 12px;background:var(--면2);border-bottom:1px solid var(--선);overflow-x:auto;scrollbar-width:none}
-.운띠::-webkit-scrollbar{display:none}
-.운칸{flex:0 0 72px;background:var(--면);border:1px solid var(--선);border-radius:8px;padding:4px 8px 8px;text-align:left;color:var(--글)}
-.운칸.지금{border:2px solid var(--강조);padding:3px 7px 7px;background:var(--강조옅음)}
-.운칸.끝{opacity:.55}
-.운칸 .ㅇ{font-size:11px;font-weight:700;line-height:1.25;height:28px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:keep-all}
-.운칸 .ㅅ{font-size:11px;color:var(--흐림);font-variant-numeric:tabular-nums}
-.운칸 .ㅁ{height:8px;border-radius:4px;background:var(--면2);margin-top:4px;overflow:hidden}
-.운칸 .ㅁ i{display:block;height:100%;background:var(--강조)}
-.운칸.끝 .ㅁ i{background:var(--좋음)}
-.운넘{flex:none;display:flex;align-items:center;gap:8px;padding:4px 12px;background:var(--면);border-bottom:1px solid var(--선);font-size:11px}
-.운넘 button{flex:1 1 0;min-width:0;height:32px;border-radius:8px;color:var(--흐림);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 4px}
-.운넘 button:disabled{opacity:.35}
-.운넘 .ㄴ{text-align:left}.운넘 .ㄷ{text-align:right}
-.운넘 .ㅈ{flex:none;font-weight:700;font-variant-numeric:tabular-nums}
-.운머리{flex:none;display:flex;gap:8px;align-items:flex-start;padding:8px 12px;background:var(--면);border-bottom:1px solid var(--선)}
-.운글{flex:1;min-width:0}
-.운이름{font-size:18px;font-weight:700;line-height:1.3;word-break:keep-all}
-.운곁{font-size:11px;color:var(--흐림);margin-top:4px}
-.운근육{display:flex;gap:4px;flex-wrap:nowrap;overflow:hidden;margin-top:8px}
-.운근육 span{flex:none;height:28px;padding:0 8px;border:1px solid var(--속선);border-radius:8px;font-size:11px;color:var(--흐림);display:inline-flex;align-items:center;gap:4px}
-.운근육 span.주{color:var(--글);border-color:var(--글);font-weight:700}
-.운근육 i{width:8px;height:8px;border-radius:50%;flex:none}
-.운지표{display:flex;gap:8px;flex-wrap:nowrap;white-space:nowrap;overflow:hidden;align-items:center;margin-top:8px;font-size:11px;color:var(--흐림);font-variant-numeric:tabular-nums}
-.운지표 b{font-size:15px;color:var(--글)}
-.운칩{height:28px;padding:0 8px;border-radius:8px;border:1px solid var(--속선);font-size:11px;display:inline-flex;align-items:center}
-.운칩.오름{color:var(--나쁨);border-color:var(--나쁨)}
-.운칩.내림{color:var(--강조);border-color:var(--강조)}
-.운칩.빈{color:var(--옅음)}
-.운몸{flex:0 0 88px;background:var(--면2);border:1px solid var(--선);border-radius:8px;padding:4px;display:flex;flex-direction:column;align-items:center;gap:4px}
-.운몸속{width:80px;height:80px;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:8px}
-.운몸속 svg{width:100%;height:100%;display:block}
-.운몸속 img{width:100%;height:100%;object-fit:cover;display:block}
-.운몸 .글{font-size:11px;color:var(--옅음)}
-.운세트들{flex:1;min-height:0;overflow-y:auto;padding:8px 12px;display:flex;flex-direction:column;gap:4px}
-.큰몸{display:flex;justify-content:center}
-.큰몸 svg{width:100%;height:auto;max-height:280px}
-.몸눈금{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--흐림)}
-.몸눈금 .바{flex:1;height:8px;border-radius:4px}
-.몸표{width:100%;border-collapse:collapse;font-size:13px}
-.몸표 td,.몸표 th{padding:8px 0;border-bottom:1px solid var(--선);text-align:left}
-.몸표 th{font-size:11px;color:var(--옅음);font-weight:400}
-.몸표 .ㄱ{text-align:right;font-variant-numeric:tabular-nums;color:var(--흐림)}
-.몸점{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:8px}
-.시트사진{width:88px;height:88px;object-fit:cover;border-radius:8px}
-
-/* ═══ 표시 도구 (10-02) — 폰 화면 위에 빨갛게 긋고 저장하면 Claude 가 읽어 간다 ═══ */
-.틀{position:relative}
-.표시단추[aria-pressed="true"]{background:var(--나쁨);border-color:var(--나쁨);color:#fff;font-weight:700}
-.표시줄{display:flex;flex-direction:column;gap:8px}
-.표시줄[hidden]{display:none}
-.표시안내{font-size:11px;opacity:.85}
-.표시칸{display:flex;gap:4px;align-items:center}
-.표시메모{flex:1;min-width:0;height:32px;border-radius:8px;border:1px solid #ffffff55;background:#ffffff14;color:var(--체험글);padding:0 8px;font-size:13px;font-family:inherit}
-.표시메모::placeholder{color:var(--체험글);opacity:.6}
-.표시줄 .작은{height:32px;padding:0 8px}
-.표시저장{background:var(--나쁨);border-color:var(--나쁨);color:#fff;font-weight:700}
-.표시알림{font-size:11px;font-weight:700}
-.표시판{position:absolute;z-index:60;touch-action:none;cursor:crosshair;border-radius:16px}
-
-/* ═══ 10-02 표시 반영 ═══ */
-.예칩{display:flex;gap:4px;flex-wrap:wrap;margin-top:8px}
-.예칩 span{height:28px;padding:0 8px;border:1px solid var(--속선);border-radius:8px;font-size:11px;color:var(--흐림);display:inline-flex;align-items:center;font-variant-numeric:tabular-nums}
-.예목록{display:flex;flex-direction:column;margin-top:8px;border-top:1px solid var(--선)}
-.예줄{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--선);font-size:13px;min-width:0}
-.예줄 .번{width:16px;flex:none;font-size:11px;font-weight:700;color:var(--옅음);text-align:center}
-.예줄 .숫{flex:none;font-size:11px;white-space:nowrap;font-variant-numeric:tabular-nums}
-.운나감{flex:none}
-.운오른{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:8px}
-.운아래{flex:none;padding:8px 12px;background:var(--면2);border-top:1px solid var(--선)}
-.운아래 .운요약{margin-top:0;align-items:baseline;min-width:0}
-.운아래 .운루틴{flex:1;min-width:0;font-size:13px;color:var(--글)}
-.운아래 .운막대{margin-top:8px}
-.운아래 .운띠{padding:8px 0 0;background:none;border:0}
-.운이전{flex:none}
-.배너닫기{top:12px}
-.그림이름{left:8px}
-.판줄:has(.예목록){align-items:flex-start}   /* 목록이 길면 '예정' 이름표를 위에 붙인다 */
 </style>
 <script>
 "use strict";
@@ -1118,7 +1019,7 @@ function 운동시작(rid){
       세트:줄세트(e).map(s=>({w:s.w, r:s.r, 목r:s.r, 휴:s.휴, 완료:false}))}; }).filter(e=>e.세트.length);
   if(!종목.length){ 토스트("종목이 없는 루틴입니다"); return; }
   S.세션 = {루틴id:rid, 이름:r.이름, 날:오늘(), 시작:S.시계, 시작시각:모의시각(), 마지막:S.시계, 종목, 지금:{i:0,k:0}, 휴식:null, 접기:{}, 끝화면:false, 끝:null};
-  U.탭="운동"; U.스크롤=0; U.본=0; 발자취(`운동 시작 · ${r.이름}`);
+  U.탭="운동"; U.스크롤=0; 발자취(`운동 시작 · ${r.이름}`);
 }
 function 다음세트(i,k){ const ss=S.세션; const 줄=[]; ss.종목.forEach((e,a)=>e.세트.forEach((s,b)=>줄.push({i:a,k:b,s})));
   const 여기=줄.findIndex(x=>x.i===i&&x.k===k);
@@ -1126,7 +1027,7 @@ function 다음세트(i,k){ const ss=S.세션; const 줄=[]; ss.종목.forEach((
 function 체크(i,k){ const ss=S.세션, s=ss.종목[i].세트[k]; s.완료=!s.완료; ss.마지막=S.시계;
   if(s.완료){ const 다=다음세트(i,k);
     ss.사진i=[Math.floor(Math.random()*1e6),Math.floor(Math.random()*1e6)];   // 세트를 끝낼 때마다 사진을 바꾼다 (08 3절)
-    if(다){ ss.휴식={i,k,끝:S.시계+s.휴*1000,길이:s.휴}; ss.지금=다;  }
+    if(다){ ss.휴식={i,k,끝:S.시계+s.휴*1000,길이:s.휴}; ss.지금=다; if(다.i!==i) U.스크롤=다.i; }
     else { ss.휴식=null; 토스트("모든 세트를 끝냈습니다"); } }
   else { if(ss.휴식&&ss.휴식.i===i&&ss.휴식.k===k) ss.휴식=null; ss.지금={i,k}; } }
 function 세션기록(ss){ return {루틴id:ss.루틴id, 이름:ss.이름, 초:Math.round(((ss.끝??S.시계)-ss.시작)/1000), 시작시각:ss.시작시각||0,
@@ -1168,9 +1069,7 @@ function 플랜미리(e, 저장됨){ const p=플랜(e.플랜id), 세=e.세트.fi
   if(계.측정일) return `측정 ${값글(t,Math.max(측정날값(p,세)??0,실??0))}`;
   if(실==null||Math.abs(실-계.목표값)<=1e-6) return `플랜 ${e.회}회차 · 계획대로`;
   return `플랜 ${e.회}회차 · ${실<계.목표값?"덜 함":"더 함"} → ${값글(t,실)}에서 다시 계산`; }
-function 운동저장하기(){ const ss=S.세션; if(!ss) return null;
-  if(!ss.종목.some(e=>e.세트.some(s=>s.완료))){ S.세션=null; 발자취("체크 없는 운동은 저장하지 않음"); return null; }   /* 22 버그 #4 */
-  if(ss.끝==null) ss.끝=S.시계;
+function 운동저장하기(){ const ss=S.세션; if(!ss) return null; if(ss.끝==null) ss.끝=S.시계;
   const rec=세션기록(ss); let key=ss.날, n=2; while(S.기록[key]) key=`${ss.날}~${n++}`;
   const 향상앞=S.향상기록들.length;
   S.기록[key]=rec; 루틴반영(ss); 플랜반영(rec, ss.날); 피로저장(rec.종목, 모의시각()); delete S.미실시[ss.날]; S.세션=null; 발자취(`운동 저장 · ${rec.이름}`);
@@ -1251,27 +1150,16 @@ function 캘린더(){
   return `<div class="띠 번호" data-drop="달"${번("캘0")}><button data-act="달" data-d="-1" aria-label="이전 달">‹</button><b class="채움">${y}년 ${m}월</b>${달!==오.slice(0,7)?`<button class="작은흰" data-act="오늘달">오늘</button>`:""}<button data-act="달" data-d="1" aria-label="다음 달">›</button><button class="작은흰 칭호칩 번호" data-act="스탯열기" aria-label="스탯 · 업적"${번("캘칩")}>${대표()?`『${esc(대표().칭호)}』`:"스탯"}</button></div>
     <div class="넘김" style="padding:0"><div class="달력" data-enter="달${달}">${[..."일월화수목금토"].map(w=>`<div class="요일">${w}</div>`).join("")}${칸}</div>${날판(U.고른날||오)}</div>`;
 }
-
-/* 10-02 표시 2 · 3 — "가로로 표시되니까 운동이 다 안 나오잖아 · 아래로 여유 있게" */
-const 폭글=(l,f)=>{ const a=Math.min(...l), b=Math.max(...l); return a===b?f(a):`${f(a)}~${f(b)}`; };
-function 세트글(세){ if(!세.length) return ""; const w=세.map(s=>+s.w||0), r=세.map(s=>s.r);
-  return (w.every(x=>x===0)?"맨몸":폭글(w,kg)+"kg")+" × "+폭글(r,x=>x)+"회"; }
-function 예정상세(실){ const 볼=실.종목.reduce((a,e)=>a+e.세트.reduce((b,s)=>b+유효무게(s.w)*s.r,0),0);
-  const 줄=실.종목.map((e,i)=>`<div class="예줄"><span class="번">${i+1}</span><span class="채움 한줄">${esc(e.이름)}</span><span class="숫 흐림">${e.세트.length}세트 · ${세트글(e.세트)}</span></div>`).join("");
-  return `<div class="예칩"><span>예상 ${시간글(예상초(실))}</span><span>${총세트(실)}세트</span><span>볼륨 ${콤마(Math.round(볼))}kg</span></div><div class="예목록">${줄}</div>`; }
-function 기록상세(r){ const 줄=r.종목.map((e,i)=>{ const 세=e.세트.filter(s=>s.완료);
-    return `<div class="예줄"><span class="번">${i+1}</span><span class="채움 한줄">${esc(e.이름)}</span><span class="숫 흐림">${세.length}/${e.세트.length}세트${세.length?" · "+세트글(세):""}</span></div>`; }).join("");
-  return 줄?`<div class="예목록">${줄}</div>`:""; }
 function 날판(k){ const 오=오늘(), 록=기록목록(k);
   let h=`<div class="판 번호" data-enter="판${k}"${번("캘1")}><b class="큰">${날글(k)} (${요일(k)})${k===오?" · 오늘":""}</b>`;
   for(const [,r] of 록){ const 달=기록달성(r);
     h+=`<div class="판줄"><span class="이름">${r.예시?"예시":"기록"}</span><div class="채움"><div class="줄"><b class="채움 한줄">${esc(r.이름)}</b><span class="알약 ${달?"달성":"미달성"}">${달?"달성":"미달성"}</span></div>
-      <div class="맞춤 작 흐림 숫">${완료수(r)}/${전체수(r)}세트 · ${시간글(r.초)} · ${콤마(기록볼륨(r))}kg</div>${기록상세(r)}</div>${k===오&&루틴(r.루틴id)?`<button class="버튼 낮" data-act="시작" data-v="${r.루틴id}">한 번 더</button>`:""}</div>`; }
+      <div class="맞춤 작 흐림 숫">${완료수(r)}/${전체수(r)}세트 · ${시간글(r.초)} · ${콤마(기록볼륨(r))}kg</div></div>${k===오&&루틴(r.루틴id)?`<button class="버튼 낮" data-act="시작" data-v="${r.루틴id}">한 번 더</button>`:""}</div>`; }
   if(!록.length && S.미실시[k]) h+=`<div class="판줄"><span class="이름">미실시</span><b class="채움">${esc(S.미실시[k])}</b></div>`;
   const r=루틴(S.예정[k]);
   if(k>=오 && !(k===오&&록.length)){
     if(r){ const 실=실제루틴(r);
-      h+=`<div class="판줄"><span class="이름">${r.휴식일?"휴식":"예정"}</span><div class="채움"><b>${esc(r.이름)}</b>${r.휴식일?"":예정상세(실)}</div></div>
+      h+=`<div class="판줄"><span class="이름">${r.휴식일?"휴식":"예정"}</span><div class="채움"><b>${esc(r.이름)}</b>${r.휴식일?"":`<div class="맞춤 작 흐림">예상 ${시간글(예상초(실))} · ${총세트(실)}세트 · ${r.종목.map(e=>esc(e.이름)).join(" · ")}</div>`}</div></div>
         <div class="줄">${k===오&&!r.휴식일?`<button class="버튼 주 채움" data-act="시작" data-v="${r.id}">운동 시작</button>`:""}<button class="버튼 ${k===오&&!r.휴식일?"":"채움"}" data-act="변경" data-k="${k}">변경</button></div>`; }
     else h+=`<div class="판줄"><span class="이름">예정</span><span class="채움 흐림 작">없음</span><button class="버튼 낮" data-act="시트" data-t="루틴고르기" data-k="${k}">루틴 넣기</button></div>`;
   }
@@ -1417,16 +1305,6 @@ function 시트(){ if(!U.시트) return ""; const 종=U.시트.종류; let 안="
   else if(종==="방식"){ 안 = 방식시트(); 높=true; }
   else if(종==="플랜결과"){ 안 = 플랜결과시트(); 높=true; }
   else if(종==="고침"){ 안 = 고침시트(); 높=true; }
-  else if(종==="근육"){ const ss=S.세션, 단=지금단계(ss?ss.종목:null,모의시각()), e=ss?ss.종목[U.본??0]:null;
-    const 줄=Object.entries(단).filter(([,x])=>x>=0.5).sort((a,b)=>b[1]-a[1]).slice(0,12), 사=e?사진목록(e.이름):[];
-    const 띠색=[1,5,10,15,20].map(k=>단계색(k)).join(",");
-    안 = 머리("지금 몸") + `<div class="큰몸">${몸그림(단,{키:"시트전신"})}</div>
-      <div class="몸눈금"><span>0</span><span class="바" style="background:linear-gradient(90deg,${띠색})"></span><span>20단계</span></div>
-      ${e?`<div class="작">${esc(e.이름)} — ${근육글(종목근육(e.이름))}</div>`:""}
-      ${사.length?`<div class="줄">${사.slice(0,3).map(u=>`<img class="시트사진" src="${u}" alt="${esc(e.이름)} 사진">`).join("")}</div>`:""}
-      <table class="몸표"><thead><tr><th>근육</th><th class="ㄱ">단계</th></tr></thead><tbody>${줄.length?줄.map(([l,x])=>`<tr><td><span class="몸점" style="background:${단계색(x)}"></span>${esc((근육이름[l]||l).replace(/ \(.*\)/,""))}</td><td class="ㄱ">${Math.round(x)}</td></tr>`).join(""):`<tr><td colspan="2" class="옅음">아직 쌓인 피로가 없습니다</td></tr>`}</tbody></table>
-      <div class="아주작 옅음">단계 = 20 × 오늘 유효 볼륨 ÷ 이전 최대 + 남은 피로 · 주동 1.0 · 보조 0.5 · 협응 0.25</div>
-      <button class="버튼" data-act="그림감추기">운동 화면에서 그림 감추기</button>`; 높=true; }
   else if(종==="메모"){
     안 = 머리("메모") + `<div class="줄"><input class="입력 채움" data-in="메모글" placeholder="고칠 점을 적어 두세요" value="${esc(U.메모글)}"><button class="버튼 주" data-act="메모넣기">넣기</button></div>
       ${S.메모.map((m,j)=>`<div class="줄 작"><span class="옅음 숫">${m.날.slice(5)}</span><span class="채움">${esc(m.글)}</span><button class="닫기" data-act="메모지움" data-n="${j}" aria-label="지우기">✕</button></div>`).join("")}
@@ -1462,63 +1340,17 @@ function 고침시트(){ const g=U.고침, p=플랜(g.id); if(!p){ U.시트=null
 
 /* ── 운동 중 ── */
 function 경과초(){ const ss=S.세션; return ss?((ss.끝화면&&ss.끝!=null?ss.끝:S.시계)-ss.시작)/1000:0; }
-function 운동화면(){ const ss=S.세션, n=ss.종목.length;
-  /* 10-02 표시 4~7 — 맨 위: 지금 종목 정보(③) · 그 아래: 근육 그림 두 장(전신 · 부위) · 세트 ·
-     아래: 루틴 진행 + 종목 띠(②) · 맨 아래: 이전 / 운동 끝내기 / 다음. 보는 종목(U.본)은 손으로만 바뀐다 */
-  if(U.본==null||U.본>=n||U.본<0) U.본=Math.min(Math.max(ss.지금.i,0),n-1);
-  const 본=U.본, e=ss.종목[본], 완=x=>x.세트.filter(s=>s.완료).length;
-  const 전=ss.종목.reduce((a,x)=>a+x.세트.length,0), 끝낸=ss.종목.reduce((a,x)=>a+완(x),0);
-  const 끝종=ss.종목.filter(x=>x.세트.length&&완(x)===x.세트.length).length;
-  const 볼=(x,다)=>x.세트.reduce((a,s)=>a+((다||s.완료)?유효무게(s.w)*(다?(s.목r||s.r):s.r):0),0);
-  const 총볼=ss.종목.reduce((a,x)=>a+볼(x),0), 총목=ss.종목.reduce((a,x)=>a+볼(x,true),0);
-  const 단=지금단계(ss.종목,모의시각()), 근=종목근육(e.이름);
-  const 잎최대=id=>Math.max(0,...잎(id).map(l=>단[l]||0));
-  const 근줄=Object.entries(근).sort((a,b)=>"PSY".indexOf(a[1])-"PSY".indexOf(b[1]));
-  const 칩=근줄.slice(0,2).map(([id,r])=>
-    `<span class="${r==="P"?"주":""}"><i style="background:${단계색(잎최대(id))||"var(--속선)"}"></i>${esc((근육이름[id]||id).replace(/ \(.*\)/,""))}</span>`).join("")
-    + (근줄.length>2?`<span>+${근줄.length-2}</span>`:"");
-  const 세=e.세트.filter(s=>s.완료), 맨=맨몸(찾표(e.이름));
-  const 오=세.length?(맨?Math.max(...세.map(s=>s.r)):Math.max(...세.map(s=>일RM(s.w,s.r)))):null;
-  const 지=운최고(e.이름,맨), 단위=맨?"회":"kg";
-  const 비=(이름,기)=>{ if(오==null||기==null) return `<span class="운칩 빈">${이름} —</span>`; const d=Math.round((오-기)*2)/2;
-    return `<span class="운칩 ${d>0?"오름":d<0?"내림":""}">${이름} ${d===0?"유지":(d>0?"▲ ":"▼ ")+kg(Math.abs(d))+단위}</span>`; };
-  const 다음i=ss.종목.findIndex((x,i)=>i>본&&완(x)<x.세트.length), 첫i=ss.종목.findIndex(x=>완(x)<x.세트.length);
-  const 갈곳=다음i>=0?다음i:(첫i>=0&&첫i!==본?첫i:-1), 지금k=e.세트.findIndex(s=>!s.완료);
-  const 그림보임=S.설정.배너!=="숨김"&&!ss.배너숨김;
-  return `<div class="화면">
-    <div class="운머리 번호"${번("운0")}><button class="버튼 낮 운나감" data-act="탭" data-t="캘린더" aria-label="나가기">‹</button>
-      <div class="운글"><div class="운이름">${esc(e.이름)}</div>
-        ${e.플랜id?`<div class="운곁">플랜 ${e.회}회차${e.측정일?" · 측정일":""}</div>`:""}
-        <div class="운근육">${칩||`<span>근육 정보 없음</span>`}</div>
-        <div class="운지표"><span>${맨?"최고":"1RM"} <b>${오==null?"—":kg(Math.round(오*2)/2)+단위}</b></span>${비("1주",지.주)}${비("최고",지.최고)}</div>
-        <div class="운지표"><span>달성 <b>${e.세트.length?Math.round(완(e)/e.세트.length*100):0}%</b></span><span>볼륨 <b>${콤마(Math.round(볼(e)))}</b>/${콤마(Math.round(볼(e,true)))}kg</span></div></div>
-      <div class="운오른"><span class="숫 굵 큰" data-timer="경과"></span>${그림보임?"":`<button class="버튼 낮" data-act="배너보기">그림</button>`}</div></div>
+function 운동화면(){ const ss=S.세션, 지=ss.지금.i, e=ss.종목[지];
+  const 전=ss.종목.reduce((a,x)=>a+x.세트.length,0), 끝낸=ss.종목.reduce((a,x)=>a+x.세트.filter(s=>s.완료).length,0);
+  const 숨김=S.설정.배너!=="숨김"&&ss.배너숨김;
+  return `<div class="화면"><div class="머리줄"><button class="버튼 낮" data-act="탭" data-t="캘린더" aria-label="나가기">‹</button><b class="채움 한줄">${esc(ss.이름)}</b>${숨김?`<button class="버튼 낮" data-act="배너보기">그림</button>`:""}<span class="숫 굵 큰" data-timer="경과"></span></div>
     ${배너()}
-    <div class="운세트들"><div class="세트머리 아주작 옅음"><span>세트</span><span>kg</span><span>회</span><span>휴식</span><span>완료</span></div>
-      ${e.세트.map((s,k)=>운세트줄(본,s,k,지금k)).join("")}
-      <div class="줄"><button class="버튼 낮 채움" data-act="세트더" data-i="${본}">+ 세트</button>${e.세트.length>1?`<button class="버튼 낮" data-act="세트빼기" data-i="${본}">− 세트</button>`:""}</div></div>
-    <div class="운아래 번호"${번("운띠")}>
-      <div class="운요약"><b class="운루틴 한줄">${esc(ss.이름)}</b><span>종목 <b>${끝종}/${n}</b></span><span>세트 <b>${끝낸}/${전}</b></span><span>볼륨 <b>${콤마(Math.round(총볼))}</b>/${콤마(Math.round(총목))}</span></div>
-      <div class="운막대"><i style="width:${전?끝낸/전*100:0}%"></i></div>
-      <div class="운띠">${ss.종목.map((x,i)=>{ const m=x.세트.length, k=완(x), 다끝=m&&k===m;
-        return `<button class="운칸 ${i===본?"지금":""} ${다끝&&i!==본?"끝":""}" data-act="본종목" data-i="${i}" aria-label="${esc(x.이름)} ${k}/${m}세트"><div class="ㅇ">${esc(x.이름)}</div><div class="ㅅ">${k}/${m}</div><div class="ㅁ"><i style="width:${m?k/m*100:0}%"></i></div></button>`; }).join("")}</div></div>
-    <div class="아랫줄"><button class="버튼 운이전" data-act="이전종목" ${본>0?"":"disabled"}>‹ 이전</button><button class="버튼" data-act="끝내기">운동 끝내기</button>${갈곳>=0?`<button class="버튼 주 채움 한줄" data-act="본종목" data-i="${갈곳}">다음 · ${esc(ss.종목[갈곳].이름)} ›</button>`:`<button class="버튼 주 채움" data-act="끝내기">마무리</button>`}</div>
-    ${시트()}</div>`; }
-function 운세트줄(i,s,k,지금k){ const ss=S.세션, 쉼=ss.휴식&&ss.휴식.i===i&&ss.휴식.k===k;
-  const 값=(f,v)=>`<div class="값칸"><button data-act="세트값" data-f="${f}" data-i="${i}" data-k="${k}" data-d="-1" aria-label="빼기">−</button><input data-in="세트값" data-f="${f}" data-i="${i}" data-k="${k}" inputmode="decimal" value="${f==="w"?kg(v):v}"><button data-act="세트값" data-f="${f}" data-i="${i}" data-k="${k}" data-d="1" aria-label="더하기">＋</button></div>`;
-  return `<div class="세트줄 ${k===지금k&&!쉼?"지금":""}"><span class="k">${k+1}</span>${값("w",s.w)}${값("r",s.r)}
-    ${쉼?`<button class="휴식칸" data-act="휴식건너뛰기" aria-label="휴식 건너뛰기"><span class="밑" data-timer="휴식"></span><span class="위" data-쉼바><span data-timer="휴식"></span></span></button>`:`<div class="휴식칸 빈 숫">${분초(s.휴)}</div>`}
-    <button class="체크 ${s.완료?"켬":""}" data-enter="체${i}-${k}-${s.완료?1:0}" data-act="체크" data-i="${i}" data-k="${k}" aria-label="${k+1}세트 ${s.완료?"체크 풀기":"완료"}">${s.완료?아이콘.체크:""}</button></div>`; }
-/* 같은 종목의 지난 기록 중 최고 (오늘 앞) · 1주 = 7일 전 ~ 전날 (v0.6.10) */
-function 운최고(이름,맨){ const 오=오늘(), 주앞=날더하기(오,-7); let 최고=null, 주=null;
-  for(const [k,r] of Object.entries(S.기록)){ const 날=k.split("~")[0]; if(날>=오) continue;
-    for(const e of r.종목){ if(e.이름!==이름) continue;
-      for(const s of e.세트){ if(!s.완료) continue; const v=맨?s.r:일RM(s.w,s.r);
-        if(최고==null||v>최고) 최고=v; if(날>=주앞&&(주==null||v>주)) 주=v; } } }
-  return {최고,주}; }
+    <div class="넘김"><div class="고정띠 번호"${번("운0")}><div class="띠"><div class="채움"><div class="이름">${esc(e.이름)}</div><div class="아주작 숫">${e.세트.filter(s=>s.완료).length}/${e.세트.length}세트 · 전체 ${Math.round(끝낸/전*100)}%</div></div>${ss.종목.length>1?`<button class="작은흰" data-act="다음종목">다음 ›</button>`:""}</div></div>
+    ${ss.종목.map((x,i)=>운동상자(x,i)).join("")}</div>
+    <div class="아랫줄"><button class="버튼 주 채움" data-act="끝내기">운동 끝내기</button></div></div>`; }
 /* 운동 중 그림 칸 (08 3절) — 근육 2장 · 근육 + 사진 · 사진 1장 · 사진 2장. 쉬는 동안 칸이 커진다 */
 function 배너(){ const ss=S.세션, 모=S.설정.배너; if(모==="숨김"||ss.배너숨김) return "";
-  const e=ss.종목[U.본??ss.지금.i], 단=지금단계(ss.종목,모의시각()), 높=144;   /* 10-02: 보는 종목 기준 · 높이 고정(쉬는 동안 124→168 로 커지며 화면이 흔들렸다) */
+  const e=ss.종목[ss.지금.i], 단=지금단계(ss.종목,모의시각()), 높=ss.휴식?168:124;
   const 끝낸=ss.종목.reduce((a,x)=>a+x.세트.filter(s=>s.완료).length,0);
   const 전신=()=>그림판("지금 몸", 몸그림(단,{키:"전신"}), "근육전신");
   const 확대=()=>{ const 상=확대상자(e.이름); return 그림판(esc(e.이름), 몸그림(단,{자르기:상,키:"확대"}), "근육확대"); };
@@ -1527,7 +1359,7 @@ function 배너(){ const ss=S.세션, 모=S.설정.배너; if(모==="숨김"||ss
     const i=((ss.사진i?.[slot]??slot)+(slot&&l.length>1&&((ss.사진i?.[0]??0)%l.length)===((ss.사진i?.[1]??1)%l.length)?1:0))%l.length;
     return 그림판(`${i+1}/${l.length}`, `<img src="${l[i]}" alt="${esc(e.이름)} 사진">`, `사진${slot}-${e.이름}-${i}-${끝낸}`, 더미(l.length-(모==="사진 2장"?2:1))); };
   const 칸 = 모==="근육 2장" ? [전신(),확대()] : 모==="근육 + 사진" ? [끝낸%2?확대():전신(), 사진(0)] : 모==="사진 1장" ? [사진(0)] : [사진(0),사진(1)];
-  return `<div class="배너 번호" style="height:${높}px" data-act="몸크게" aria-label="근육지도 크게 보기"${번("운그림")}>${칸.join("")}<button class="배너닫기" data-act="배너숨김" aria-label="그림 감추기">✕</button></div>`; }
+  return `<div class="배너 번호" style="height:${높}px" data-anim-h="배너"${번("운그림")}>${칸.join("")}<button class="배너닫기" data-act="배너숨김" aria-label="그림 감추기">✕</button></div>`; }
 const 그림판=(제목,안,키,덧="")=>`<div class="그림판" data-enter="${esc(키)}"><div class="그림속">${안}</div><span class="그림이름">${제목}</span>${덧}</div>`;
 const 더미=n=>{ n=Math.max(0,Math.min(9,n)); return n?`<div class="더미" aria-hidden="true">${"<i></i>".repeat(n)}</div>`:""; };
 function 운동상자(x,i){ const ss=S.세션, 지금=ss.지금.i===i, 다=x.세트.every(s=>s.완료), 접=ss.접기[i]??(다&&!지금), n=x.세트.filter(s=>s.완료).length;
@@ -1570,8 +1402,7 @@ function 시계그리기(){ const ss=S.세션; if(!ss) return;
   document.querySelectorAll('[data-timer="경과"]').forEach(el=>el.textContent=분초(경과초()));
   if(ss.휴식){ const 남=Math.max(0,(ss.휴식.끝-S.시계)/1000), p=1-남/Math.max(1,ss.휴식.길이);
     document.querySelectorAll('[data-timer="휴식"]').forEach(el=>el.textContent=분초(남));
-    document.querySelectorAll('[data-bar]').forEach(el=>el.style.transform=`scaleX(${p})`);
-    document.querySelectorAll('[data-쉼바]').forEach(el=>el.style.clipPath=`inset(0 ${(p*100).toFixed(1)}% 0 0)`); } }
+    document.querySelectorAll('[data-bar]').forEach(el=>el.style.transform=`scaleX(${p})`); } }
 let 토스트타이머=null;
 function 토스트(글){ const 폰=document.getElementById("폰"); 폰.querySelectorAll(".토스트").forEach(x=>x.remove());
   const el=document.createElement("div"); el.className="토스트"; el.setAttribute("role","status"); el.textContent=글; 폰.appendChild(el);
@@ -1627,15 +1458,11 @@ function 행동(a, d){
     case "세트빼기": { const x=ss.종목[+d.i]; if(x.세트.length>1){ x.세트.pop(); if(ss.지금.i===+d.i&&ss.지금.k>=x.세트.length) ss.지금={i:+d.i,k:x.세트.length-1}; } break; }
     case "접기": { const i=+d.i, x=ss.종목[i], 다=x.세트.every(s=>s.완료), 지금접힘=ss.접기[i]??(다&&ss.지금.i!==i); ss.접기[i]=!지금접힘;
       if(지금접힘 && !다){ const k=x.세트.findIndex(s=>!s.완료); ss.지금={i,k}; } U.스크롤=i; break; }
-    case "다음종목": U.본=Math.min(ss.종목.length-1,(U.본??0)+1); break;
-    case "이전종목": U.본=Math.max(0,(U.본??0)-1); break;
-    case "본종목": U.본=+d.i; break;
-    case "몸크게": U.시트={종류:"근육"}; break;
-    case "그림감추기": S.세션.배너숨김=true; U.시트=null; break;
+    case "다음종목": { const n=ss.종목.length; for(let j=1;j<=n;j++){ const i=(ss.지금.i+j)%n, k=ss.종목[i].세트.findIndex(s=>!s.완료); if(k>=0){ ss.지금={i,k}; ss.접기[i]=false; U.스크롤=i; break; } } break; }
     case "휴식건너뛰기": ss.휴식=null; break;
     case "끝내기": ss.끝화면=true; ss.끝=S.시계; ss.휴식=null; break;
     case "운동으로": ss.끝화면=false; ss.끝=null; break;
-    case "운동저장": { const 키=운동저장하기(); U.탭="캘린더"; U.고른날=null; 토스트(키?"저장했습니다":"체크한 세트가 없어 저장하지 않았습니다"); break; }
+    case "운동저장": 운동저장하기(); U.탭="캘린더"; U.고른날=null; 토스트("저장했습니다"); break;
     case "결과확인": S.결과=null; U.탭="캘린더"; break;
     /* 루틴 */
     case "루틴열기": U.루틴열림=d.v; break;
@@ -1774,83 +1601,6 @@ setInterval(()=>{ const now=performance.now(), dt=now-앞틱; 앞틱=now; if(!S)
 if(!불러오기()) 처음상태(); else { 새칸채움(); 업적알림(업적판정("켤때")); 스탯남기기(); }
 U.탭 = S.세션 ? "운동" : "캘린더";
 그리기();
-</script>
-
-<script>
-/* ═══ 표시 도구 — 저장하면 db 의 'marks' 모음에 한 줄 (모음 이름은 영문만 된다), 화면 사진은 assets 에 ═══
-   Claude 는 ArtifactData 로 'marks' 를 읽고, 그림 id 로 사진을 받아 본다 */
-(()=>{
-  const 폰=document.getElementById("폰"), 판=document.getElementById("표시판"), 단추=document.getElementById("표시단추");
-  const 줄=document.getElementById("표시줄"), 메모칸=document.getElementById("표시메모"), 알림칸=document.getElementById("표시알림");
-  const 저장단추=document.getElementById("표시저장");
-  let 켬=false, 선들=[], 지금선=null, 알림시계=null, 남은수=0, 저장중=false;
-  const 붓색=()=>getComputedStyle(document.documentElement).getPropertyValue("--나쁨").trim()||"#B3261E";
-  const 쓰기=n=> (window.claude && typeof window.claude.use==="function") ? window.claude.use(n).catch(()=>null) : Promise.resolve(null);
-
-  function 알림(글, 오래=false){ 알림칸.textContent=글; 알림칸.hidden=false; clearTimeout(알림시계); 알림시계=setTimeout(()=>{ 알림칸.hidden=true; }, 오래?9000:3500); }
-  function 단추글(){ 단추.textContent = "✎ 표시" + (남은수>0?` · ${남은수}`:""); }
-
-  function 맞추기(){ if(!켬) return; const dpr=window.devicePixelRatio||1;
-    판.style.left=폰.offsetLeft+"px"; 판.style.top=폰.offsetTop+"px"; 판.style.width=폰.offsetWidth+"px"; 판.style.height=폰.offsetHeight+"px";
-    판.width=Math.round(폰.offsetWidth*dpr); 판.height=Math.round(폰.offsetHeight*dpr); 다시그림(); }
-  function 긋기(ctx, 줄들, w, h, 굵기){ ctx.strokeStyle=붓색(); ctx.lineWidth=굵기; ctx.lineCap="round"; ctx.lineJoin="round"; ctx.globalAlpha=.9;
-    for(const l of 줄들){ if(!l.length) continue; ctx.beginPath(); ctx.moveTo(l[0][0]*w,l[0][1]*h);
-      if(l.length===1) ctx.lineTo(l[0][0]*w+0.1,l[0][1]*h); for(let i=1;i<l.length;i++) ctx.lineTo(l[i][0]*w,l[i][1]*h); ctx.stroke(); }
-    ctx.globalAlpha=1; }
-  function 다시그림(){ const c=판.getContext("2d"); c.clearRect(0,0,판.width,판.height); 긋기(c, 지금선?[...선들,지금선]:선들, 판.width, 판.height, 4*(window.devicePixelRatio||1)); }
-
-  function 켜기(v){ 켬=v; 단추.setAttribute("aria-pressed", v?"true":"false"); 줄.hidden=!v; 판.hidden=!v;
-    if(v){ 맞추기(); } else { 지금선=null; } }
-  단추.addEventListener("click", ()=>켜기(!켬));
-  new ResizeObserver(맞추기).observe(폰); window.addEventListener("resize", 맞추기);
-
-  const 자리=e=>{ const r=판.getBoundingClientRect(); return [Math.min(1,Math.max(0,(e.clientX-r.left)/r.width)), Math.min(1,Math.max(0,(e.clientY-r.top)/r.height))]; };
-  판.addEventListener("pointerdown", e=>{ e.preventDefault(); 판.setPointerCapture(e.pointerId); 지금선=[자리(e)]; 다시그림(); });
-  판.addEventListener("pointermove", e=>{ if(!지금선) return; const p=자리(e), q=지금선[지금선.length-1], r=판.getBoundingClientRect();
-    if(Math.hypot((p[0]-q[0])*r.width,(p[1]-q[1])*r.height)<2) return; 지금선.push(p); 다시그림(); });
-  const 끝=()=>{ if(!지금선) return; 선들.push(지금선.map(([x,y])=>[+x.toFixed(4),+y.toFixed(4)])); 지금선=null; 다시그림(); };
-  판.addEventListener("pointerup", 끝); 판.addEventListener("pointercancel", 끝);
-  document.getElementById("표시되돌").addEventListener("click", ()=>{ 선들.pop(); 다시그림(); });
-  document.getElementById("표시지움").addEventListener("click", ()=>{ 선들=[]; 다시그림(); });
-
-  /* 화면 사진 — html2canvas 를 처음 저장할 때만 불러온다 */
-  let 도구=null;
-  function 사진도구(){ if(window.html2canvas) return Promise.resolve(window.html2canvas); if(도구) return 도구;
-    도구=new Promise((ok,no)=>{ const t=document.createElement("script"); t.src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
-      t.onload=()=>ok(window.html2canvas); t.onerror=()=>{ 도구=null; no(new Error("사진 도구를 못 불러옴")); }; document.head.appendChild(t); }); return 도구; }
-  async function 화면사진(){ const h2c=await 사진도구(); const 배=getComputedStyle(폰).backgroundColor;
-    const c=await h2c(폰,{backgroundColor:배, scale:1.5, logging:false, useCORS:true});
-    const x=c.getContext("2d"); x.setTransform(1,0,0,1,0,0);   // html2canvas 가 남긴 이동 · 확대를 지우고 긋는다 (안 지우면 선이 폰 위치만큼 밀린다)
-    긋기(x, 선들, c.width, c.height, 6);
-    return await new Promise((ok,no)=>c.toBlob(b=>b?ok(b):no(new Error("사진 만들기 실패")),"image/jpeg",0.85)); }
-  /* 그때 앱 상태 — 사진(data:)은 빼고. Claude 가 같은 화면을 다시 띄워 볼 때 쓴다 */
-  function 상태글(){ return JSON.stringify({S, U:{탭:U.탭, 시트:U.시트||null, 루틴열림:U.루틴열림??null, 고른날:U.고른날??null, 본:U.본??null}},
-    (k,v)=> typeof v==="string" && v.startsWith("data:") ? "(사진 생략)" : v); }
-
-  저장단추.addEventListener("click", async ()=>{
-    if(저장중) return; const 메모=메모칸.value.trim();
-    if(!선들.length && !메모){ 알림("먼저 빨갛게 그어 주세요"); return; }
-    저장중=true; 저장단추.textContent="저장 중…";
-    try{
-      const db=await 쓰기("db");
-      if(!db){ 알림("이 화면에서는 저장할 수 없습니다 — claude.ai 에 로그인한 채 열어 주세요", true); return; }
-      const assets=await 쓰기("assets"); let 그림=null, 상태=null, 그림오류=null;
-      if(assets){
-        try{ 그림=(await assets.upload(await 화면사진(), {type:"image/jpeg"})).id; }catch(e){ 그림오류=String(e?.code||e?.message||e); }
-        try{ 상태=(await assets.upload(new Blob([상태글()],{type:"application/json"}), {type:"application/json"})).id; }catch(e){}
-      } else 그림오류="사진 저장 권한 없음";
-      await db.collection("marks").add({ 시각:new Date().toISOString(), 일차:S.일차, 날:오늘(), 화면:화면키(), 탭:U.탭,
-        시트:U.시트?.종류||null, 본:U.본??null, 메모, 선:선들, 폭:폰.offsetWidth, 높이:폰.offsetHeight, 그림, 상태, 그림오류, 확인:false });
-      선들=[]; 메모칸.value=""; 켜기(false);
-      알림(그림?"저장했습니다 — Claude 에게 '표시해 놨어' 라고 말해 주세요":"선과 메모는 저장했습니다 (화면 사진은 못 찍음) — Claude 에게 말해 주세요", true);
-    }catch(e){ 알림("저장하지 못했습니다 — "+(e?.code==="quota_exceeded"?"저장 칸이 찼습니다":"잠시 뒤 다시 눌러 주세요"), true); }
-    finally{ 저장중=false; 저장단추.textContent="저장"; }
-  });
-
-  /* 아직 Claude 가 확인하지 않은 표시 수를 단추에 */
-  쓰기("db").then(db=>{ if(!db) return;
-    db.collection("marks").where("확인","==",false).onSnapshot(q=>{ 남은수=q.size; 단추글(); }, ()=>{}); });
-})();
 </script>
 
 </body></html>
