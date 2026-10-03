@@ -22,3 +22,6 @@ python3 patch_v9_W.py 7day-v8.html _9a.html       # 운동 세트 줄 · ✓ 초
 python3 patch_v9_R.py _9a.html _9b.html           # 운동 보고서 · 프로필 · 두 칸 10개 · 펼침 · 설정
 python3 patch_v9_P.py _9b.html _9c.html           # 플랜 판정 자리 · 처방 글 세트→무게→횟수 · 고침 시트 · 종목 탭 [플랜]
 python3 patch_v9_C.py _9c.html 7day-v9.html       # 기록 날 판 · 띠 단추 흰 박스 · 달 고르기 · 휴식력 저장
+# 10-03 밤 표시 7개 — 보고서 · 프로필 탭(R) 위에 운동 세트 줄(W)
+python3 patch_v10_R.py 7day-v9.html _10R.html     # 루틴 상자 · 프로필 상자 2×2 ▲ · 톱니 시트 · 상세 세트 순서 · 프로필 탭
+python3 patch_v10_W.py _10R.html 7day-v10.html    # 체크 파랑 · 번호 보통 굵기 · 쉬는 동안 ± 감춤 · 끝난 줄 --면2
