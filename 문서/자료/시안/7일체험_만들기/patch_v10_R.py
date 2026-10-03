@@ -66,9 +66,10 @@ function 큰값맞춤(폰){ 폰.querySelectorAll(".결과수.큰수").forEach(�
   const 맞음=()=>bs.every(b=>{ const 칸=b.closest(".결과수.큰수>div"), z=getComputedStyle(칸); return b.getBoundingClientRect().width<=칸.clientWidth-parseFloat(z.paddingLeft)-parseFloat(z.paddingRight)+0.5; });
   bs.forEach(b=>b.style.fontSize=""); if(맞음()) return;
   const 처음=parseFloat(getComputedStyle(bs[0]).fontSize);
-  for(const fs of [15,13,11]){ if(fs>=처음) continue; bs.forEach(b=>b.style.fontSize=fs+"px"); if(맞음()) break; } }); }
+  for(const fs of [15,13,11]){ if(fs>=처음) continue; bs.forEach(b=>b.style.fontSize=fs+"px"); if(맞음()) break; }
+  if(!맞음()) bs.forEach(b=>b.style.letterSpacing="-0.06em"); }); }
 function 큰운동판(칸, 차보임, 톱니){ const 열=칸.length;
-  return `<div class="결과수 큰수 열${열}${톱니?" 톱니비킴":""}" style="--열:${열}">${칸.map(x=>`<div><div class="큰값"><b>${x.v>0?차kg(x.v)+"kg":"—"}</b>${차보임&&x.v>0&&x.앞>0?보고차(x.v-x.앞,""):""}</div><span>${esc(x.글)}</span></div>`).join("")}</div>`; }
+  return `<div class="결과수 큰수 열${열}${톱니?" 톱니비킴":""}" style="--열:${열}">${칸.map(x=>`<div><div class="큰값"><b>${x.v>0?차kg(x.v):"—"}</b>${차보임&&x.v>0&&x.앞>0?보고차(x.v-x.앞,""):""}</div><span>${esc(x.글)}</span></div>`).join("")}</div>`; }
 /* 프로필 동그라미 속 — 사진 / 닉네임 첫 글자 / 사람 그림 (보고서 · 프로필 탭 · 탭줄이 같이 쓴다) */
 function 프로필그림(){ const 닉=String(S.설정.닉네임||"").trim(); return 프로필사진?`<img src="${프로필사진}" alt="">`:닉?`<b>${esc([...닉][0])}</b>`:사람그림; }
 const 프로필고르기 = 큰 => `<label class="보고사진${큰?" "+큰:""}" aria-label="프로필 사진 고르기">${프로필그림()}<input type="file" accept="image/*" data-pf="사진" hidden></label>`;
@@ -172,28 +173,24 @@ css = '''
 .결과수.큰수>div{padding:0 4px;gap:0}
 .결과수.큰수.열3>div:nth-child(3n+1){border-left:0}
 .결과수.큰수 b{font-size:18px;line-height:24px}
-/* 늘 한 줄 — 5칸 15 · 6칸 13 (글자 목록 값). 칸 이름은 줄임말(벤치 · 데드 · OHP 처럼) — 로우 · C&J
+/* 늘 한 줄(좁은 폰도) — 5~6칸은 칸 좌우 여백 1 · 5칸 15 · 6칸 13 (글자 목록 값). 칸 이름은 줄임말(벤치 · 데드 · OHP 처럼) — 로우 · C&J
    (6칸이면 칸이 약 48px 라 '바벨 로우' · '클린 앤 저크' 가 안 들어간다. 시트 칩은 원래 이름 그대로) */
 .결과수.큰수.열5 b{font-size:15px}
 .결과수.큰수.열6 b{font-size:13px}
+.결과수.큰수.열5>div,.결과수.큰수.열6>div{padding:0 1px}
 /* 좁은 폰(상자 안쪽 331 이하)만 — 5~6칸은 한 줄에 숫자가 안 들어가 3칸씩 (폰 420 · 388 에서는 안 걸린다) */
-@container (max-width:331px){ .보고프로필 .결과수.큰수.열5,.보고프로필 .결과수.큰수.열6{grid-template-columns:repeat(3,minmax(0,1fr))}
-  .보고프로필 .결과수.큰수.열5>div:nth-child(3n+1),.보고프로필 .결과수.큰수.열6>div:nth-child(3n+1){border-left:0} }
 .결과수.큰수>div>span{line-height:16px;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .큰값{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:center;column-gap:4px;max-width:100%;color:var(--글)}
 .큰값 .보고차{margin-left:0}
 .결과수 .보고차 span{color:inherit}
 /* 톱니가 같은 상자에 있으면 첫 줄이 톱니(28) 밑으로 — 위 여백 12 + 16 */
-.결과수.큰수.톱니비킴{padding-top:16px}
+/* 10-03 홍겸 님 "톱니 때문에 줄이 생긴 것처럼 커졌다 · 박스 가운데로" — 톱니는 모서리에 겹쳐 띄우기만, 칸은 상자 세로 가운데 · 단위 kg 뺌 */
+.결과수.큰수.톱니비킴{padding-top:0;align-self:center}
 /* 사진 칸 72 → 64 (새 값: 사진 58 + 좌우 3) — 큰 운동 4칸이 폰 388 에서도 한 줄에 들어가게 */
 .보고프로필 .보고나{width:64px}
 /* 좁은 폰 — 칸에 숫자가 안 들어가면 두 칸씩. 기준(새 값) = 상자 안쪽 폭이 '칸마다 64'(숫자 '81.7kg' 18 Bold 약 56 + 여백 8,
    5~6칸은 합계 '1,000kg' 약 70 + 8 = 78) + 사진 칸 64 + 틈 12 보다 좁을 때. 폰 420 · 388 에서는 안 걸린다 */
 .보고상자{container-type:inline-size}
-@container (max-width:331px){ .보고프로필 .결과수.큰수.열4{grid-template-columns:repeat(2,minmax(0,1fr))} .보고프로필 .결과수.큰수.열4>div:nth-child(2n+1){border-left:0} }
-@container (max-width:309px){ .보고프로필 .결과수.큰수.열3{grid-template-columns:repeat(2,minmax(0,1fr))} .보고프로필 .결과수.큰수.열3>div:nth-child(3n+1){border-left:1px solid var(--선)} .보고프로필 .결과수.큰수.열3>div:nth-child(2n+1){border-left:0} }
-@container (max-width:255px){ .프로필큰 .결과수.큰수.열4{grid-template-columns:repeat(2,minmax(0,1fr))} .프로필큰 .결과수.큰수.열4>div:nth-child(2n+1){border-left:0} }
-@container (max-width:233px){ .프로필큰 .결과수.큰수.열3{grid-template-columns:repeat(2,minmax(0,1fr))} .프로필큰 .결과수.큰수.열3>div:nth-child(3n+1){border-left:1px solid var(--선)} .프로필큰 .결과수.큰수.열3>div:nth-child(2n+1){border-left:0} }
 /* ua0b 톱니 — 상자 오른쪽 위 모서리에 겹쳐 띄움 · 누르는 칸 28 · 아이콘 18 */
 .톱니단추{position:absolute;top:0;right:0;width:28px;height:28px;display:flex;align-items:center;justify-content:center;color:var(--흐림);z-index:2}
 .톱니단추 svg{width:18px;height:18px}

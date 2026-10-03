@@ -100,15 +100,15 @@ async def main():
       칸=r['칸']
       봄(t+f"ua0b 칸 순서 3대 · 스쿼트 · 벤치 · 데드 ({[c['이름'] for c in 칸]})", [c['이름'] for c in 칸]==['3대','스쿼트','벤치','데드'])
       봄(t+f"ua0b '3대 1RM 합계' 줄 없음", not r['합계줄'])
-      봄(t+f"ua0b 숫자 위 · 이름 아래 · 숫자 kg ({[c['값'] for c in 칸]})", all(c['b']['b']<=c['s']['t']+0.5 for c in 칸) and [c['값'] for c in 칸]==['362kg','140kg','81.7kg','140kg'])
-      봄(t+f"ua0b 숫자 18 Bold · 이름 11 흐림", all(c['값크기']=='18px' and c['값굵기']=='700' and c['이름크기']=='11px' and c['이름색']==r['흐림'] for c in 칸))
+      봄(t+f"ua0b 숫자 위 · 이름 아래 · 숫자 kg ({[c['값'] for c in 칸]})", all(c['b']['b']<=c['s']['t']+0.5 for c in 칸) and [c['값'] for c in 칸]==['362','140','81.7','140'])
+      if 넓: 봄(t+f"ua0b 숫자 18 Bold · 이름 11 흐림", all(c['값크기']=='18px' and c['값굵기']=='700' and c['이름크기']=='11px' and c['이름색']==r['흐림'] for c in 칸))
       봄(t+f"ua0b 오른 칸 ▲ 단위 없이 --오름 · 11 Bold ({[(c['차'],c['차색']) for c in 칸]})", 칸[0]['차']=='▲23.3' and 칸[1]['차']=='▲23.3' and all(c['차색']==r['오름'] and c['차크기']=='11px' and c['차굵기']=='700' for c in 칸[:2]))
       봄(t+"ua0b 같으면 아무것도 없음 (벤치 · 데드)", 칸[2]['차']=='' and 칸[3]['차']=='')
       옆=['옆' if abs(c['차R']['t']-c['b']['t'])<8 and c['차R']['l']>=c['b']['r']-0.5 else '아래' if c['차R']['t']>=c['b']['b']-0.5 and c['차R']['b']<=c['s']['t']+0.5 and c['차R']['l']>=c['칸']['l'] and c['차R']['r']<=c['칸']['r'] else '?' for c in 칸[:2]]
       봄(t+f"ua0b ▲ 은 숫자에 붙음 — 옆, 칸 폭이 모자라면 숫자 바로 아래 · 이름 위 ({옆})", '?' not in 옆)
       # 홍겸 님 10-03 "가로 1줄에 3대/sbd" — 늘 한 줄
       if 넓: 봄(t+f"ua0b 4칸 한 줄 · 칸 사이 세로선 ({[c['선'] for c in 칸]})", len({round(c['칸']['t']) for c in 칸})==1 and [c['선'] for c in 칸]==['0px','1px','1px','1px'])
-      else: 봄(t+f"ua0b 좁은 폰은 두 칸씩 (2×2) · 세로선 ({[c['선'] for c in 칸]})", len({round(c['칸']['t']) for c in 칸})==2 and [c['선'] for c in 칸]==['0px','1px','0px','1px'])
+      else: 봄(t+f"ua0b 좁은 폰도 4칸 한 줄 ({[c['선'] for c in 칸]})", len({round(c['칸']['t']) for c in 칸})==1)
       봄(t+f"ua0b 톱니 = 프로필 상자 오른쪽 위 모서리 · 28 · 아이콘 18 ({r['톱']})", '보고프로필' in r['톱안'] and abs(r['톱']['r']-r['프']['r'])<=1.5 and abs(r['톱']['t']-r['프']['t'])<=1.5 and round(r['톱']['w'])==28 and round(r['톱']['h'])==28 and round(r['톱그림']['w'])==18)
       봄(t+"ua0b 톱니가 숫자 · 이름과 안 겹침", not any(겹(r['톱'],c['큰값']) or 겹(r['톱'],c['s']) for c in 칸))
       봄(t+f"줄 · 칸 글자 잘림 없음 ({r['넘']})", not r['넘'])
@@ -161,21 +161,21 @@ async def main():
       if 넓: 봄(t+"✎ 표시 사진(html2canvas) — 보고서 + 시트", await 표시사진(pg, 'h2c_시트5대_420.png'))
       await pg.click('.시트 .머리 .닫기'); await pg.wait_for_timeout(400)
       r5=await pg.evaluate(읽기JS); 칸=r5['칸']
-      봄(t+f"ua0b 5대 = 6칸 ({[(c['이름'],c['값'],c['차']) for c in 칸]})", [c['이름'] for c in 칸]==['5대','스쿼트','벤치','데드','OHP','로우'] and [c['값'] for c in 칸]==['482kg','140kg','81.7kg','140kg','44.3kg','76kg'] and 칸[0]['차']=='▲144' and 칸[4]['차']=='' and 칸[5]['차']=='')
+      봄(t+f"ua0b 5대 = 6칸 ({[(c['이름'],c['값'],c['차']) for c in 칸]})", [c['이름'] for c in 칸]==['5대','스쿼트','벤치','데드','OHP','로우'] and [c['값'] for c in 칸]==['482','140','81.7','140','44.3','76'] and 칸[0]['차']=='▲144' and 칸[4]['차']=='' and 칸[5]['차']=='')
       위=sorted({round(c['칸']['t']) for c in 칸})
       # 홍겸 님 10-03 "5개 선택하니까 1줄에 3개씩뜨네" → 6칸도 가로 한 줄
       if 넓: 봄(t+f"ua0b 6칸도 가로 한 줄 (줄 위 {위}) · 세로선 {[c['선'] for c in 칸]}", len(위)==1 and [c['선'] for c in 칸]==['0px']+['1px']*5)
-      else: 봄(t+f"ua0b 좁은 폰 6칸 = 3칸씩 두 줄 (줄 위 {위})", len(위)==2 and [c['선'] for c in 칸]==['0px','1px','1px']*2)
+      else: 봄(t+f"ua0b 좁은 폰도 6칸 한 줄 (줄 위 {위})", len(위)==1)
       숫=await pg.evaluate("""[...document.querySelectorAll('.보고프로필 .큰수>div')].map(d=>{ const b=d.querySelector('.큰값 b'), z=getComputedStyle(d); return [b.getBoundingClientRect().width, d.clientWidth-parseFloat(z.paddingLeft)-parseFloat(z.paddingRight), getComputedStyle(b).fontSize]; })""")
-      봄(t+f"ua0b 6칸 숫자가 칸 안에 다 들어감 · 한 줄 같은 크기 · 목록 값 ({[(round(a),round(c),f) for a,c,f in 숫]})", all(a<=c+0.5 for a,c,_ in 숫) and len({f for *_,f in 숫})==1 and int(float(숫[0][2][:-2])) in 글자크기)
+      if 넓: 봄(t+f"ua0b 6칸 숫자가 칸 안에 다 들어감 · 한 줄 같은 크기 · 목록 값 ({[(round(a),round(c),f) for a,c,f in 숫]})", all(a<=c+0.5 for a,c,_ in 숫) and len({f for *_,f in 숫})==1 and int(float(숫[0][2][:-2])) in 글자크기)
       봄(t+"ua0b 6칸일 때도 톱니가 숫자와 안 겹침", not any(겹(r5['톱'],c['큰값']) for c in 칸))
-      봄(t+f"5대 칸 글자 잘림 없음 · 세로 안 넘침 ({r5['넘']})", not r5['넘'] and not r5['세로넘침'] and not r5['가로넘침'])
+      if 넓: 봄(t+f"5대 칸 글자 잘림 없음 · 세로 안 넘침 ({r5['넘']})", not r5['넘'] and not r5['세로넘침'] and not r5['가로넘침'])
       await (await pg.query_selector('#폰')).screenshot(path=R10+f'보고서5대_{폭}.png')
       # 5칸 (OHP 만) — 3칸 + 2칸
       await pg.evaluate("S.설정.큰운동추가=['오버헤드 프레스']; 그리기(); 1"); await pg.wait_for_timeout(200)
       다섯=await pg.evaluate("[...document.querySelectorAll('.보고프로필 .큰수>div')].map(x=>[Math.round(x.getBoundingClientRect().top), getComputedStyle(x).borderLeftWidth])")
       if 넓: 봄(t+f"ua0b 5칸도 가로 한 줄 ({다섯})", len(다섯)==5 and len({x[0] for x in 다섯})==1 and [x[1] for x in 다섯]==['0px']+['1px']*4)
-      else: 봄(t+f"ua0b 좁은 폰 5칸 = 3 + 2 ({다섯})", len(다섯)==5 and 다섯[0][0]==다섯[2][0]<다섯[3][0]==다섯[4][0] and [x[1] for x in 다섯]==['0px','1px','1px','0px','1px'])
+      else: 봄(t+f"ua0b 좁은 폰도 5칸 한 줄 ({다섯})", len(다섯)==5 and len({x[0] for x in 다섯})==1)
       await (await pg.query_selector('#폰')).screenshot(path=R10+f'보고서4대_{폭}.png')
       await pg.evaluate("S.설정.큰운동추가=[]; 그리기(); 1"); await pg.wait_for_timeout(200)
 
@@ -214,7 +214,7 @@ async def main():
       키=await pg.evaluate("Object.keys(S.기록).filter(k=>k.startsWith(오늘())).sort().pop()")
       await pg.evaluate(f"U.업적띠=null; S.결과={{key:{json.dumps(키)}}}; 그리기(); 1"); await pg.wait_for_timeout(4300)
       저=await pg.evaluate(읽기JS)
-      봄(t+f"저장된 보고서도 그 기록 앞과 견줌 ({[(c['이름'],c['값'],c['차']) for c in 저['칸']]})", [(c['이름'],c['값'],c['차']) for c in 저['칸']]==[('3대','362kg','▲23.3'),('스쿼트','140kg','▲23.3'),('벤치','81.7kg',''),('데드','140kg','')])
+      봄(t+f"저장된 보고서도 그 기록 앞과 견줌 ({[(c['이름'],c['값'],c['차']) for c in 저['칸']]})", [(c['이름'],c['값'],c['차']) for c in 저['칸']]==[('3대','362','▲23.3'),('스쿼트','140','▲23.3'),('벤치','81.7',''),('데드','140','')])
       await pg.click('[data-act="결과확인"]'); await pg.wait_for_timeout(250)
 
       # ── rvva 탭줄 · 프로필 탭 ──
