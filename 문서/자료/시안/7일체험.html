@@ -1220,6 +1220,13 @@ button.오목,label.오목{animation:오목 .2s ease-out}
 .인핀 svg{width:16px;height:16px}
 .인큰사진{display:block;width:100%;max-height:50vh;object-fit:contain;border-radius:8px;margin-bottom:12px;background:var(--면2)}
 .록단추 .버튼{min-width:0;padding-left:8px;padding-right:8px;white-space:nowrap}
+
+/* ═══ 10-04 v12 — 캘린더 7칸 폭 같게(글이 길어도 칸이 안 늘어남) · 가려진 칭호 보기 ═══ */
+.달력{grid-template-columns:repeat(7,minmax(0,1fr))}
+.칸날{min-width:0;overflow:hidden}
+.칸날>*{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+button.칭호표.잠김{font-family:inherit;background:none;cursor:pointer}
+.칭호표.잠김.보임{color:var(--흐림);text-shadow:none}
 </style>
 <script>
 "use strict";
@@ -1633,9 +1640,10 @@ function 업적판(){ const u=U.스탯, 얻=S.업적||{}, 풀=업적표.filter(a
     <div class="업적위 번호"${번("업0")}><div class="맞춤 아주작 옅음">${대?`대표 『${esc(대.칭호)}』 · 달성한 칭호를 누르면 바뀝니다`:"달성한 칭호를 누르면 대표 칭호가 됩니다"}</div>
       <div class="칩줄">${칩("달성")}${칩("전체")}<button class="칩 ${갈래?"켬":""}" data-act="업적분류더" aria-expanded="${!!u.더}" aria-label="분류별로 보기">+</button></div>
       ${u.더?`<div class="가로밀기" data-enter="업적분류줄">${칩줄("업적분류","",분류들,u.분류,v=>esc(짧은분류(v)))}</div>`:""}</div>
-    <div class="넘김 업적목록 번호"${번("업1")} data-enter="업적목록${u.분류}">${목록.map(업적줄).join("")||`<div class="빈칸" style="margin-top:12px">아직 없습니다</div>`}</div>`; }
+    <div class="넘김 업적목록 번호"${번("업1")} data-enter="업적목록${u.분류}">${u.분류==="달성" ? 풀.slice().sort((a,b)=>얻[b.번호].순-얻[a.번호].순).map(업적줄).join("")+`<div class="이름표">아직 달성하지 못한 업적</div>`+업적표.filter(a=>!얻[a.번호]).map(업적줄).join("")
+      : 목록.map(업적줄).join("")||`<div class="빈칸" style="margin-top:12px">아직 없습니다</div>`}</div>`; }
 function 업적줄(a){ const 얻=S.업적?.[a.번호], 대=S.대표칭호===a.칭호번호, 등=a.숨김?"숨은":a.등급, 숨김잠김=a.숨김&&!얻;
-  const 표 = 얻 ? `<span class="칭호표 등급-${등}">${esc(a.칭호)}</span>` : 숨김잠김 ? `<span class="칭호표 숨음">???</span>` : `<span class="칭호표 잠김 등급-${등}" aria-label="잠긴 칭호">${esc(a.칭호)}</span>`;
+  const 표 = 얻 ? `<span class="칭호표 등급-${등}">${esc(a.칭호)}</span>` : 숨김잠김 ? `<span class="칭호표 숨음">???</span>` : `<button class="칭호표 잠김 등급-${등}${U.칭호보기===a.번호?" 보임":""}" data-act="칭호보기" data-v="${a.번호}" aria-label="잠긴 칭호 보기">${esc(a.칭호)}</button>`;
   const 준비 = a.구현==="예" ? "" : `판정 준비 중 · ${a.구현==="새 칸"?"새 칸 필요":"다른 기능 먼저"}`;
   const 머리 = `<div class="줄">${표}<span class="아주작 옅음 숫">${a.번호}</span><span class="업적이름">${숨김잠김?"???":esc(a.이름)}</span>${숨김잠김&&준비?`<span class="아주작 옅음">${a.구현==="새 칸"?"새 칸":"나중"}</span>`:""}${대?`<span class="알약 강조">대표</span>`:`<span class="등급글 등급-${등}">${등}</span>`}</div>`;
   if(얻) return `<button class="업적줄 풀림" data-act="업적누름" data-v="${a.번호}" data-enter="업${a.번호}1">${머리}
@@ -2650,6 +2658,7 @@ function 행동(a, d){
     case "스탯닫기": U.스탯=null; break;
     case "스탯보기": U.스탯.보기=d.v; break;
     case "업적분류": U.스탯.분류=d.v; break;
+    case "칭호보기": U.칭호보기 = U.칭호보기===d.v ? null : d.v; break;
     case "업적분류더": U.스탯.더=!U.스탯.더; break;
     case "스탯단위": U.스탯.단위=d.v; break;
     /* 같은 칸을 다시 누르거나 ✕ 면 그래프를 닫는다. 그래프가 열리며 줄어든 칸 안에서 누른 칸이 가려지지 않게 */
