@@ -248,7 +248,7 @@ const 되ep = (rm,r)=> r<=1 ? rm : rm/(1+r/30);
 const 일RM = (w,r)=> r<=0?0 : r===1? w : w*(1+r/30);
 const 무게맞춤 = (kg,폭)=> 폭<=0?kg : Math.max(폭, Math.round(kg/폭)*폭);
 const 훈련방식들 = [
- {번호:1,이름:"꾸준히 늘리기",특징:"근육과 기초 근력을 함께 · 세트·횟수는 자유",수준:"입문~초급",주당:"2~3",근거:"DeLorme·Watkins 1945~51 · ACSM 2009",강도단계:true},
+ {번호:1,이름:"꾸준히 늘리기",특징:"근육과 기초 근력을 함께",수준:"입문~초급",주당:"2~3",근거:"DeLorme·Watkins 1945~51 · ACSM 2009",강도단계:true},
  {번호:2,이름:"3×5 스타팅 스트렝스",특징:"가장 빠른 초보 근력 · 매 운동 증량",수준:"입문~초급",주당:"3",근거:"Rippetoe·Kilgore 2005"},
  {번호:3,이름:"5×5 스트롱리프트",특징:"볼륨을 얹은 초보 근력 · A/B 두 날",수준:"입문~초급",주당:"3",근거:"Mehdi 2007",딸림:4},
  {번호:4,이름:"매드카우 5×5",특징:"5×5 가 막혔을 때 넘어가는 곳",수준:"중급",주당:"3",근거:"익명 Madcow 2005년경",딸림임:true},
@@ -259,10 +259,19 @@ const 훈련방식들 = [
  {번호:10,이름:"10×10 저먼 볼륨",특징:"짧고 굵게 근육량 · 6주만",수준:"중급",주당:"1~2",근거:"Poliquin 1996"},
  {번호:12,이름:"PHUL / PHAT",특징:"근력과 근육을 같은 주에",수준:"중급 이상",주당:"4~5",근거:"Norton · Campbell"},
 ];
+/* 10-03 꾸준히 늘리기 = 5세트 × 8~15회 이중 진행 (홍겸 님 ✎ 표시)
+   무게 사다리는 플랜을 시작한 실력의 8회 무게에서 출발해 칸마다 ×(1+15/30)/(1+8/30) — 15회 무게와 다음 칸 8회 무게가 같은 실력.
+   이번 회 처방 1RM(목표 × 0.9)으로 8회 이상 되는 가장 무거운 칸을 고르고, 그 무게로 되는 횟수(8~15)를 낸다.
+   → 실력이 오르면 횟수가 8 → 15 로 오르고, 넘치면 무게가 한 칸 오르며 8회로 돌아간다 */
+const 이중 = {세트:5, 낮:8, 높:15};
+function 이중진행(t, p){ const 폭=S.설정.무게폭||2.5, 비=(1+이중.높/30)/(1+이중.낮/30);
+  const 기=(p&&p.시작1RM>0)?p.시작1RM:t, 첫=되ep(기,이중.낮)*플랜표.처방비율, 할=t*플랜표.처방비율;
+  let i=Math.floor(Math.log(되ep(할,이중.낮)/첫)/Math.log(비)+1e-9); if(!isFinite(i)) i=0;
+  const 무게=무게맞춤(첫*Math.pow(비,i),폭), 횟수=Math.min(이중.높, Math.max(이중.낮, Math.floor(30*(할/무게-1)+1e-9)));
+  return {무게, 횟수, 세트:이중.세트}; }
 function 방식세트(번호, t, p){
-  const s = 강도들[p.강도] || 강도들[1];
   switch(번호){
-    case 1: { const 세트=p.세트수>0?p.세트수:s.세트, 횟수=p.직접횟수>0?p.직접횟수:s.횟수; return [{무게:되ep(t,횟수)*0.9,횟수,세트}]; }
+    case 1: return [이중진행(t, p)];
     case 2: return [{무게:되ep(t,5)*0.9,횟수:5,세트:3}];
     case 3: return [{무게:되ep(t,5)*0.9,횟수:5,세트:5}];
     case 4: return [{무게:되ep(t,5)*0.9,횟수:5,세트:5,라벨:"월"},{무게:되ep(t,5)*0.765,횟수:5,세트:4,라벨:"수"},{무게:되ep(t,5)*0.9,횟수:5,세트:4,라벨:"금"}];
@@ -652,6 +661,21 @@ function 근육글(m){ const 묶=Object.entries(역할이름).map(([r,n])=>{ con
 .예접기 .번{width:16px;flex:none}
 .예접기 svg{width:18px;height:18px;display:block}
 .판단추{position:sticky;bottom:0;z-index:2;background:var(--바탕);padding:8px 0;margin:-6px 0 -10px}
+
+/* ═══ 10-03 표시 9개 ═══ */
+/* 시트 머리 = 띠 (캘린더 년월 띠와 같은 값 · 강조 바탕 · 강조글) — 붙박이라 긴 시트도 머리가 남는다.
+   top:-14px — 붙박이 기준 칸은 시트의 안쪽 여백(14)을 뺀 곳이라, 0 이면 띠 위에 흰 줄이 남고 아래 글을 덮는다 */
+.시트 .머리{position:sticky;top:-14px;z-index:3;margin:-14px -14px 0;min-height:40px;padding:6px 12px;background:var(--강조);color:var(--강조글)}
+.시트 .머리 .닫기{color:var(--강조글)}
+/* 날짜 판 — 루틴 이름 줄에 칩 · 변경, 운동 시작은 맨 아래 */
+.캘넘김{display:flex;flex-direction:column}
+.캘넘김>*{flex-shrink:0}
+.캘넘김>.판{flex:1 0 auto}
+.예머리{display:flex;align-items:center;gap:8px;border-top:1px solid var(--선);padding-top:8px;min-width:0}
+.예이름{flex:none;max-width:40%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.예머리 .예칩{flex:1;min-width:0;margin-top:0}
+.예머리 .버튼{flex:none}
+.판단추{margin-top:auto}
 </style>
 <script>
 "use strict";
@@ -1256,7 +1280,7 @@ function 캘린더(){
     칸+=`<button class="칸날 번호 ${k===오?"오늘":""} ${k===(U.고른날||오)?"고름":""} ${k===U.집은날?"집음":""}" data-act="날" data-k="${k}" data-drop="날" ${끌림?`data-drag="날"`:""}>
       <span class="일">${d}</span>${x?`<span class="루 ${x.종류==="예"?"예":x.종류==="휴"?"휴":""}">${esc(x.글)}</span>${x.상?`<span class="상 ${x.상}">${x.상}</span>`:""}`:""}</button>`; }
   return `<div class="띠 번호" data-drop="달"${번("캘0")}><button data-act="달" data-d="-1" aria-label="이전 달">‹</button><b class="채움">${y}년 ${m}월</b>${달!==오.slice(0,7)?`<button class="작은흰" data-act="오늘달">오늘</button>`:""}<button data-act="달" data-d="1" aria-label="다음 달">›</button><button class="작은흰 칭호칩 번호" data-act="스탯열기" aria-label="스탯 · 업적"${번("캘칩")}>${대표()?`『${esc(대표().칭호)}』`:"스탯"}</button></div>
-    <div class="넘김" style="padding:0"><div class="달력" data-enter="달${달}">${[..."일월화수목금토"].map(w=>`<div class="요일">${w}</div>`).join("")}${칸}</div>${날판(U.고른날||오)}</div>`;
+    <div class="넘김 캘넘김" style="padding:0"><div class="달력" data-enter="달${달}">${[..."일월화수목금토"].map(w=>`<div class="요일">${w}</div>`).join("")}${칸}</div>${날판(U.고른날||오)}</div>`;
 }
 
 /* 10-02 표시 2 · 3 — "가로로 표시되니까 운동이 다 안 나오잖아 · 아래로 여유 있게" */
@@ -1269,9 +1293,11 @@ function 접는목록(줄들, 키){ const n=줄들.length; if(n<=접는수+1) re
   const 펼=U.예펼침===키;
   return (펼?줄들:줄들.slice(0,접는수)).join("")
     + `<button class="예접기" data-act="예펼침" data-v="${키}" aria-expanded="${펼}"><span class="번"></span><span class="채움">${펼?"접기":`외 ${n-접는수}종목`}</span><span class="접힘표 ${펼?"펼":""}">${아이콘.아래}</span></button>`; }
+function 예정칩(실){ const 볼=실.종목.reduce((a,e)=>a+e.세트.reduce((b,s)=>b+유효무게(s.w)*s.r,0),0);
+  return `<div class="예칩"><span>${총세트(실)}세트</span><span>볼륨 ${콤마(Math.round(볼))}kg</span><span>예상 ${시간글(예상초(실))}</span></div>`; }
 function 예정상세(실, 키){ const 볼=실.종목.reduce((a,e)=>a+e.세트.reduce((b,s)=>b+유효무게(s.w)*s.r,0),0);
   const 줄=실.종목.map((e,i)=>`<div class="예줄"><span class="번">${i+1}</span><span class="채움 한줄">${esc(e.이름)}</span><span class="숫 흐림">${e.세트.length}세트 · ${세트글(e.세트)}</span></div>`);
-  return `<div class="예칩"><span>예상 ${시간글(예상초(실))}</span><span>${총세트(실)}세트</span><span>볼륨 ${콤마(Math.round(볼))}kg</span></div><div class="예목록">${접는목록(줄, 키)}</div>`; }
+  return `<div class="예목록">${접는목록(줄, 키)}</div>`; }
 function 기록상세(r, 키){ const 줄=r.종목.map((e,i)=>{ const 세=e.세트.filter(s=>s.완료);
     return `<div class="예줄"><span class="번">${i+1}</span><span class="채움 한줄">${esc(e.이름)}</span><span class="숫 흐림">${세.length}/${e.세트.length}세트${세.length?" · "+세트글(세):""}</span></div>`; });
   return 줄.length?`<div class="예목록">${접는목록(줄, 키)}</div>`:""; }
@@ -1284,9 +1310,10 @@ function 날판(k){ const 오=오늘(), 록=기록목록(k);
   const r=루틴(S.예정[k]);
   if(k>=오 && !(k===오&&록.length)){
     if(r){ const 실=실제루틴(r);
-      h+=`<div class="판줄"><span class="이름">${r.휴식일?"휴식":"예정"}</span><div class="채움"><b>${esc(r.이름)}</b>${r.휴식일?"":예정상세(실, "예"+k)}</div></div>
-        <div class="줄 판단추">${k===오&&!r.휴식일?`<button class="버튼 주 채움" data-act="시작" data-v="${r.id}">운동 시작</button>`:""}<button class="버튼 ${k===오&&!r.휴식일?"":"채움"}" data-act="변경" data-k="${k}">변경</button></div>`; }
-    else h+=`<div class="판줄"><span class="이름">예정</span><span class="채움 흐림 작">없음</span><button class="버튼 낮" data-act="시트" data-t="루틴고르기" data-k="${k}">루틴 넣기</button></div>`;
+      h+=`<div class="예머리"><b class="예이름">${esc(r.이름)}</b>${r.휴식일?`<span class="예칩"><span>휴식일</span></span>`:예정칩(실)}<button class="버튼 낮" data-act="변경" data-k="${k}">변경</button></div>
+        ${r.휴식일?"":예정상세(실, "예"+k)}
+        ${k===오&&!r.휴식일?`<div class="줄 판단추"><button class="버튼 주 채움" data-act="시작" data-v="${r.id}">운동 시작</button></div>`:""}`; }
+    else h+=`<div class="예머리"><span class="예이름 흐림 작">예정 없음</span><span class="예칩"></span><button class="버튼 낮" data-act="시트" data-t="루틴고르기" data-k="${k}">루틴 넣기</button></div>`;
   }
   return h+`</div>`; }
 
@@ -1323,7 +1350,7 @@ function 폼안내(){ const f=U.플랜폼, t=찾표(f.종목), n=x=>parseFloat(x
     if(v==null) return ""; if(모드!==0){ const 환=맨몸환산값(t,S.몸,모드,n(f.보조무게),n(f.보조횟수)); return 환<1?"정자세 1회 미만 → 1회부터 시작":`정자세로 약 ${환.toFixed(1)}회 · ${수준이름[수준보기(t,v,S.몸)]}`; }
     return `수준 ${수준이름[수준보기(t,v,S.몸)]}`; }
   const rm=일RM(n(f.현재무게),Math.round(n(f.현재횟수))); return rm>0?`1RM 약 ${kg(Math.round(rm*2)/2)}kg · ${수준이름[수준보기(t,rm,S.몸)]}`:""; }
-const 방식요약 = 대 => { if(대.방식번호!==1) return ""; const s=강도들[대.강도]; return `${대.세트수>0?대.세트수:s.세트}×${대.직접횟수>0?대.직접횟수:s.횟수}`; };
+const 방식요약 = 대 => 대.방식번호===1 ? `${이중.세트}×${이중.낮}~${이중.높}` : "";
 function 플랜탭(){ const f=U.플랜폼, t=찾표(f.종목); let 지금칸, 목표칸;
   if(맨몸(t)){
     지금칸 = (t.보조?칩줄("폼값","보조모드",[0,1,2],f.보조모드,j=>["정자세","어시스트","과부하"][j]):"")
@@ -1365,7 +1392,7 @@ function 플랜카드(p,i){ const t=찾표(p.종목), 표=플랜회표(p), 끝=�
     <div class="줄 아주작 흐림 숫"><span>시작 ${값글(t,시)}</span><span class="채움" style="text-align:center">지금 ${값글(t,현)}</span><span>목표 ${값글(t,목)}</span></div>
     <div class="맞춤 작">${다?`${다.측정일?"측정 · ":""}${다.회}회차 ${처방글(회처방(p,다.목표값,다.측정일))}`:"목표 달성"}</div>
     <div class="맞춤 아주작 옅음">${측?`다음 측정 ${측.회}회차 · `:""}주 ${p.주당}회 · 속도 ${속도출처(p.종목)}</div>
-    <div class="줄"><button class="버튼 낮 채움" data-act="플랜고치기" data-v="${p.id}">고치기 · 지금 실력 넣기</button><button class="버튼 낮 나쁨" data-act="플랜지움" data-v="${p.id}">${U.확인==="플랜"+p.id?"한 번 더":"지우기"}</button></div></div>`; }
+    <div class="줄"><button class="버튼 낮 채움" data-act="플랜고치기" data-v="${p.id}">변경</button><button class="버튼 낮 나쁨" data-act="플랜지움" data-v="${p.id}">${U.확인==="플랜"+p.id?"한 번 더":"지우기"}</button></div></div>`; }
 function 종목줄(x){ const l=사진목록(x.이름), 펼=U.종목펼침===x.이름;
   return `<div class="종목줄">
     <button class="줄 작 종목줄머리" data-act="종목펼침" data-v="${esc(x.이름)}">${l.length?`<img class="작은사진" src="${l[0]}" alt="">`:`<span class="작은사진 빈"></span>`}<span class="채움">${esc(x.이름)}</span>${찾표(x.이름)?`<span class="아주작 옅음">플랜 가능</span>`:""}<span class="아주작 옅음 접힘표 ${펼?"펼":""}">▾</span></button>
@@ -1426,7 +1453,7 @@ function 시트(){ if(!U.시트) return ""; const 종=U.시트.종류; let 안="
       return `<button class="고르기" data-act="플랜넣기" data-v="${p.id}"><b class="${넣?"강조":""}">${esc(p.이름)}</b><span class="곁">${x?`${x.계.측정일?"측정 · ":""}${x.계.회}회차 ${처방글(x.목)}`:"목표 달성"}</span>${넣?"✓":몇?"있음":"＋"}</button>`; }).join("");
     const 목=S.종목표.filter(x=>x.칸===U.칸고름).map(x=>{ const 넣=U.방금.includes("e:"+x.이름), 있=r.종목.some(e=>e.이름===x.이름&&!e.플랜id);
       return `<button class="고르기" data-act="종목넣기" data-v="${esc(x.이름)}"><b class="${넣?"강조":""}">${esc(x.이름)}</b><span class="곁"></span>${넣?"✓":있?"있음":"＋"}</button>`; }).join("");
-    안 = 머리(`${esc(r.이름)}에 넣기`,"다 했음") + (플?`<div class="아주작 옅음">운동 플랜</div>${플}`:"") + 칩줄("칸고름","",S.카테고리,U.칸고름) + 목; 높=true; }
+    안 = 머리(`${esc(r.이름)}에 넣기`) + (플?`<div class="아주작 옅음">운동 플랜</div>${플}`:"") + 칩줄("칸고름","",S.카테고리,U.칸고름) + 목; 높=true; }
   else if(종==="방식"){ 안 = 방식시트(); 높=true; }
   else if(종==="플랜결과"){ 안 = 플랜결과시트(); 높=true; }
   else if(종==="고침"){ 안 = 고침시트(); 높=true; }
@@ -1450,10 +1477,7 @@ function 방식시트(){ const 대=대상폼(), 열=U.방식펼침??대.방식�
   return `<div class="머리"><b>훈련 방식</b><button class="닫기" data-act="방식닫기">닫기</button></div><div class="방식목록">${훈련방식들.map(b=>{ const 골=b.번호===대.방식번호;
     return `<button class="방식띠 ${골?"골름":""}" data-act="방식펼침" data-n="${b.번호}"><b class="채움 한줄">${b.번호}. ${b.이름}</b><span>${b.수준}</span></button>${b.번호===열?방식속(b,대):""}`; }).join("")}</div>`; }
 function 방식속(b,대){ let 칸;
-  if(b.번호===1){ const 세=대.세트수>0?대.세트수:강도들[대.강도].세트, 회=대.직접횟수>0?대.직접횟수:강도들[대.강도].횟수, 직접=대.세트수>0||대.직접횟수>0;
-    칸 = `<div class="칩줄">${강도들.map((s,j)=>`<button class="칩 ${대.강도===j&&!직접?"켬":""}" data-act="강도" data-n="${j}">${s.이름}</button>`).join("")}</div>
-      <div class="줄 작"><span class="흐림">세트</span><span class="수칸"><button data-act="폼수" data-f="세트수" data-d="-1">−</button><b class="숫">${세}</b><button data-act="폼수" data-f="세트수" data-d="1">＋</button></span>
-      <span class="흐림">횟수</span><span class="수칸"><button data-act="폼수" data-f="직접횟수" data-d="-1">−</button><b class="숫">${회}</b><button data-act="폼수" data-f="직접횟수" data-d="1">＋</button></span><span class="채움 굵" style="text-align:right;white-space:nowrap">총 ${세*회}회</span></div>`; }
+  if(b.번호===1) 칸 = `<div class="작 숫">${방식요약({방식번호:1})} · ${이중.높}회가 되면 무게를 올리고 ${이중.낮}회부터</div>`;
   else 칸 = `<div class="작 숫">${방식세트(b.번호,100,대).map(x=>`${x.라벨?x.라벨+" ":""}${x.세트}×${x.횟수}${x.더?"+":""}`).join(" · ")}</div>`;
   return `<div class="방식속" data-enter="방식${b.번호}"><div class="작">${b.특징}</div><div class="맞춤 아주작 옅음">주 ${b.주당}회 · ${b.근거}</div>${칸}<button class="버튼 주 넓" data-act="방식고름" data-n="${b.번호}">이 방식으로</button></div>`; }
 function 플랜결과시트(){ const {p,표}=U.플랜결과, t=찾표(p.종목), 끝=표[표.length-1];
@@ -1464,14 +1488,15 @@ function 플랜결과시트(){ const {p,표}=U.플랜결과, t=찾표(p.종목),
     <button class="버튼 주 넓" data-act="플랜저장">플랜 저장</button>`; }
 function 고침입력(f,라벨,단위,문자){ return `<label class="칸">${라벨}<span class="입력줄"><input class="입력" data-in="고침" data-f="${f}" ${문자?"":`inputmode="decimal"`} value="${esc(U.고침[f])}">${단위?`<em>${단위}</em>`:""}</span></label>`; }
 function 고침시트(){ const g=U.고침, p=플랜(g.id); if(!p){ U.시트=null; return ""; } const t=찾표(p.종목), 방=훈련방식들.find(b=>b.번호===g.방식번호);
-  return `<div class="머리"><b>플랜 고치기</b><button class="닫기" data-act="시트닫기">닫기</button></div>
-    <div class="줄">${고침입력("이름","이름","",true)}${맨몸(t)?고침입력("목표개수","목표 개수","회"):고침입력("목표무게",p.목표방식==="RM"?"목표 1RM":`목표 무게 (×${p.목표횟수}회)`,"kg")}</div>
-    <div class="줄"><b class="작 채움">주당</b>${칩줄("고침값","주당",[1,2,3,4,5,6,7],g.주당)}</div>
-    ${맨몸(t)?(t.보조?`${칩줄("고침값","보조모드",[0,1,2],g.보조모드,j=>["정자세","어시스트","과부하"][j])}${g.보조모드?`<div class="줄">${고침입력("보조무게",g.보조모드===1?"보조 무게":"추가 무게","kg")}</div>`:""}`:"")
-      :`<button class="고르기" data-act="시트" data-t="방식" data-v="고침"><b>훈련 방식</b><span class="곁">${방.번호}. ${방.이름}${방식요약(g)?" · "+방식요약(g):""}</span>›</button>`}
+  return `<div class="머리"><b>플랜 고치기</b>${맨몸(t)?"":`<button class="작은흰" data-act="시트" data-t="방식" data-v="고침">훈련 방식 ›</button>`}</div>
+    ${맨몸(t)?`<div class="줄">${고침입력("이름","이름","",true)}${고침입력("목표개수","목표 개수","회")}</div>`
+      :`<div class="줄">${고침입력("이름","이름","",true)}</div>
+    ${칩줄("고침목표방식","",["RM","회"],g.목표방식,v=>v==="RM"?"1RM":"무게 × 횟수")}
+    <div class="줄">${고침입력("목표무게",g.목표방식==="RM"?"목표 1RM":"목표 무게","kg")}${g.목표방식==="회"?고침입력("목표횟수","횟수","회"):""}</div>`}
+    ${맨몸(t)&&t.보조?`${칩줄("고침값","보조모드",[0,1,2],g.보조모드,j=>["정자세","어시스트","과부하"][j])}${g.보조모드?`<div class="줄">${고침입력("보조무게",g.보조모드===1?"보조 무게":"추가 무게","kg")}</div>`:""}`:""}
     <div class="회색칸 쌓기"><div class="줄"><b class="작 채움">지금 실력 넣기</b><span class="아주작 흐림">지금 ${값글(t,지금진행값(p))} · ${p.한회}회차</span></div>
       <div class="줄">${맨몸(t)?고침입력("측정횟수","정자세 개수","회"):고침입력("측정무게","무게","kg")+고침입력("측정횟수","횟수","회")}<button class="버튼" data-act="측정넣기" style="align-self:flex-end">넣기</button></div></div>
-    <button class="버튼 주 넓" data-act="고침저장">저장</button>`; }
+    <div class="줄"><button class="버튼 주 채움" data-act="고침저장">저장</button><button class="버튼" data-act="시트닫기">닫기</button></div>`; }
 
 /* ── 운동 중 ── */
 function 경과초(){ const ss=S.세션; return ss?((ss.끝화면&&ss.끝!=null?ss.끝:S.시계)-ss.시작)/1000:0; }
@@ -1675,17 +1700,20 @@ function 행동(a, d){
       if(d.f==="종목"){ const 새=폼초기(); 새.종목=v; 새.주당=f.주당; U.플랜폼=새; } break; }
     case "방식펼침": U.방식펼침 = (U.방식펼침??대상폼().방식번호)===+d.n ? -1 : +d.n; break;
     case "방식닫기": U.시트 = U.시트.대상==="고침" ? {종류:"고침"} : null; break;
-    case "강도": { const 대=대상폼(); 대.강도=+d.n; 대.세트수=0; 대.직접횟수=0; break; }
-    case "폼수": { const 대=대상폼(), s=강도들[대.강도]; const 지금=대[d.f]>0?대[d.f]:(d.f==="세트수"?s.세트:s.횟수); 대[d.f]=Math.max(1,지금+(+d.d)); break; }
     case "방식고름": { const 대=대상폼(); 대.방식번호=+d.n; U.시트 = U.시트.대상==="고침" ? {종류:"고침"} : null; break; }
     case "플랜만들기": { const x=폼플랜(); if(x.오류){ U.플랜폼.오류=x.오류; break; } U.플랜결과=x; U.시트={종류:"플랜결과"}; break; }
     case "플랜저장": { const p=U.플랜결과.p; S.플랜들.push(p); 발자취(`플랜 저장 · ${p.이름}`); U.플랜결과=null; U.시트=null; U.플랜폼=폼초기(); U.탭="종목"; 토스트("종목 탭에 넣었습니다"); break; }
     case "플랜지움": if(U.확인!=="플랜"+d.v){ U.확인="플랜"+d.v; break; } { const p=플랜(d.v); S.플랜들=S.플랜들.filter(x=>x.id!==d.v);
       S.루틴들.forEach(r=>r.종목=r.종목.filter(e=>e.플랜id!==d.v)); U.확인=null; 발자취(`플랜 지움 · ${p.이름}`); } break;
-    case "플랜고치기": { const p=플랜(d.v); U.고침={id:p.id, 이름:p.이름, 목표무게:p.목표무게, 목표개수:p.목표개수, 주당:p.주당, 방식번호:p.방식번호, 강도:p.강도, 세트수:p.세트수, 직접횟수:p.직접횟수, 보조모드:p.보조모드, 보조무게:p.보조무게, 측정무게:"", 측정횟수:""}; U.시트={종류:"고침"}; break; }
+    case "플랜고치기": { const p=플랜(d.v); U.고침={id:p.id, 이름:p.이름, 목표방식:p.목표방식||"RM", 목표무게:p.목표무게, 목표횟수:p.목표횟수||1, 목표개수:p.목표개수, 주당:p.주당, 방식번호:p.방식번호, 강도:p.강도, 세트수:p.세트수, 직접횟수:p.직접횟수, 보조모드:p.보조모드, 보조무게:p.보조무게, 측정무게:"", 측정횟수:""}; U.시트={종류:"고침"}; break; }
     case "고침값": U.고침[d.f]=+d.v; break;
-    case "고침저장": { const g=U.고침, p=플랜(g.id), t=찾표(p.종목), 새={...p, 이름:String(g.이름).trim()||t.이름, 주당:g.주당, 방식번호:g.방식번호, 강도:g.강도, 세트수:g.세트수, 직접횟수:g.직접횟수, 보조모드:g.보조모드, 보조무게:숫(g.보조무게)};
-      if(맨몸(t)) 새.목표개수=숫(g.목표개수); else 새.목표무게=숫(g.목표무게);
+    case "고침목표방식": { const g=U.고침, 폭=S.설정.무게폭||2.5, w=숫(g.목표무게), r=Math.max(1,Math.round(숫(g.목표횟수)||1));
+      if(d.v===g.목표방식) break;   // 바꿀 때 같은 실력으로 환산 — 1RM 100 ↔ 75kg × 10회
+      if(d.v==="회"){ const n=r>1?r:10; g.목표횟수=n; if(w>0) g.목표무게=무게맞춤(되ep(w,n),폭); }
+      else { if(w>0) g.목표무게=무게맞춤(일RM(w,r),폭); g.목표횟수=1; }
+      g.목표방식=d.v; break; }
+    case "고침저장": { const g=U.고침, p=플랜(g.id), t=찾표(p.종목), 새={...p, 이름:String(g.이름).trim()||t.이름, 방식번호:g.방식번호, 강도:g.강도, 세트수:g.세트수, 직접횟수:g.직접횟수, 보조모드:g.보조모드, 보조무게:숫(g.보조무게)};
+      if(맨몸(t)) 새.목표개수=숫(g.목표개수); else { 새.목표방식=g.목표방식; 새.목표무게=숫(g.목표무게); 새.목표횟수=g.목표방식==="RM"?1:Math.max(1,Math.round(숫(g.목표횟수))); }
       if(!(목표진행값(새)>지금진행값(새))){ 토스트("목표가 지금보다 커야 합니다"); break; }
       Object.assign(p,새); S.루틴들.forEach(r=>r.종목.forEach(e=>{ if(e.플랜id===p.id) e.이름=p.이름; })); U.시트=null; 발자취(`플랜 고침 · ${p.이름}`); 토스트("저장했습니다"); break; }
     case "측정넣기": { const g=U.고침, p=플랜(g.id), t=찾표(p.종목), r=Math.round(숫(g.측정횟수)), w=맨몸(t)?유효부하(t,S.몸.체중):숫(g.측정무게);
