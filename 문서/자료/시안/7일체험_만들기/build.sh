@@ -30,3 +30,4 @@ python3 patch_v12.py 7day-v11.html 7day-v12.html    # 캘린더 칸 폭 같게 �
 python3 patch_v13.py 7day-v12.html 7day-v13.html    # 운동 중 종목 넣기 · N대 파란 상자
 python3 patch_v14.py 7day-v13.html 7day-v14.html    # 종목 칸 꾹 눌러 좌우 끌기 · [＋] 붙박이 · 보는 칸 맨 앞
 python3 patch_v15.py 7day-v14.html 7day-v15.html    # N대 상자 kg −25% · 너비 −15% · 사이 −50% · 프로필 업적 −25% · 인증샷 글 지움
+python3 patch_v16.py 7day-v15.html 7day-v16.html    # N대 상자 칸 줄 전체 − 좌우 15 · 사이 −35%
