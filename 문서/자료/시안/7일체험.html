@@ -1239,6 +1239,13 @@ button.칭호표.잠김{font-family:inherit;background:none;cursor:pointer}
 .결과수.큰수>div:nth-child(2){border-left:0}
 .결과수.큰수.열3>div:nth-child(3n+1){border-left:1px solid var(--선)}
 .결과수.큰수.열3>div:nth-child(2){border-left:0}
+
+/* ═══ 10-04 v14 — 종목 칸 꾹 눌러 좌우 끌기 · [＋] 오른쪽 붙박이 ═══ */
+.운띠 .운칸[data-drag]{touch-action:pan-x}
+.운칸.선위{box-shadow:inset 3px 0 0 var(--강조)}
+.운칸.선아래{box-shadow:inset -3px 0 0 var(--강조)}
+.운칸.끌림{opacity:.5}
+.운띠 .운칸.운더{position:sticky;right:0;flex:0 0 44px;z-index:1;background:var(--면);box-shadow:-4px 0 0 var(--면2)}
 </style>
 <script>
 "use strict";
@@ -2349,7 +2356,7 @@ function 운동화면(){ const ss=S.세션, n=ss.종목.length;
       <div class="운요약"><b class="운루틴 한줄">${esc(ss.이름)}</b><span>종목 <b>${끝종}/${n}</b></span><span>세트 <b>${끝낸}/${전}</b></span><span>볼륨 <b>${콤마(Math.round(총볼))}</b>/${콤마(Math.round(총목))}</span></div>
       <div class="운막대"><i style="width:${전?끝낸/전*100:0}%"></i></div>
       <div class="운띠">${ss.종목.map((x,i)=>{ const m=x.세트.length, k=완(x), 다끝=m&&k===m;
-        return `<button class="운칸 ${i===본?"지금":""} ${다끝&&i!==본?"끝":""}" data-act="본종목" data-i="${i}" aria-label="${esc(x.이름)} ${k}/${m}세트"><div class="ㅇ">${esc(x.이름)}</div><div class="ㅅ">${k}/${m}</div><div class="ㅁ"><i style="width:${m?k/m*100:0}%"></i></div></button>`; }).join("")}<button class="운칸 운더" data-act="시트" data-t="종목넣기" data-v="운동" aria-label="종목 넣기">＋</button></div></div>
+        return `<button class="운칸 ${i===본?"지금":""} ${다끝&&i!==본?"끝":""}" data-act="본종목" data-i="${i}" data-drag="운칸" data-drop="운칸" aria-label="${esc(x.이름)} ${k}/${m}세트"><div class="ㅇ">${esc(x.이름)}</div><div class="ㅅ">${k}/${m}</div><div class="ㅁ"><i style="width:${m?k/m*100:0}%"></i></div></button>`; }).join("")}<button class="운칸 운더" data-act="시트" data-t="종목넣기" data-v="운동" aria-label="종목 넣기">＋</button></div></div>
     <div class="아랫줄"><button class="버튼 운이전" data-act="이전종목" ${본>0?"":"disabled"}>‹ 이전</button><button class="버튼" data-act="끝내기">운동 끝내기</button>${갈곳>=0?`<button class="버튼 주 채움 한줄" data-act="본종목" data-i="${갈곳}">다음 · ${esc(ss.종목[갈곳].이름)} ›</button>`:`<button class="버튼 주 채움" data-act="끝내기">마무리</button>`}</div>
     ${시트()}</div>${운지움띠()}`; }
 /* 10-03 ✎ 9a8l "맨 아래 세트를 체크하면 맨 위로 이동" — 원인: 그리기()는 화면을 통째로 새로 만들어
@@ -2379,7 +2386,8 @@ function 운자리맞춤(폰){ const ss=S.세션, 목=폰.querySelector(".운세
     if(r){ const 끝=목.scrollHeight-목.clientHeight, 목표=Math.max(0,Math.min(끝, r.offsetTop+r.offsetHeight/2-목.clientHeight/2));
       if(목표>목.scrollTop+1) 목.scrollTo({top:목표, behavior:움}); } }              // 아래 줄을 올리기만 한다
   const 칸=줄.querySelector(".운칸.지금");
-  if(칸 && !같은종목){ const 끝=줄.scrollWidth-줄.clientWidth, 목표=Math.max(0,Math.min(끝, 칸.offsetLeft+칸.offsetWidth/2-줄.clientWidth/2));
+  const 당김=운자리.당김; 운자리.당김=false;
+  if(칸 && (!같은종목 || 당김)){ const 첫=줄.querySelector(".운칸"), 끝=줄.scrollWidth-줄.clientWidth, 목표=Math.max(0,Math.min(끝, 칸.offsetLeft-(첫?첫.offsetLeft:0)));   // 10-04 보는 칸을 맨 앞(왼쪽)에
     if(Math.abs(목표-줄.scrollLeft)>1) 줄.scrollTo({left:목표, behavior:같은운동?움:"auto"}); } }
 /* 10-03 ✎ khmo "꾹 눌러서 왼쪽 오른쪽으로 이동하면 같이" — 종목 칸 줄을 마우스 · 펜으로 누른 채 좌우로 끌면 줄이 따라 움직인다.
    스크롤바는 그대로 숨김. 8px 넘게 움직였으면 끌기로 보고, 손을 뗄 때 생기는 클릭(칸 고르기)은 막음클릭으로 막는다.
@@ -2639,6 +2647,7 @@ function 숫(v){ const x=parseFloat(String(v).replace(",",".")); return isFinite
 function 행동(a, d){
   const 오=오늘(); const ss=S.세션; let 다시=true;
   if(a!=="루틴지움"&&a!=="플랜지움"&&a!=="처음부터"&&a!=="사진지움") U.확인=null;
+  if(["체크","세트값","휴식건너뛰기","세트지움","세트더","세트빼기","본종목"].includes(a)) 운자리.당김=true;   // 10-04 보는 종목 칸을 다시 맨 앞으로
   switch(a){
     case "탭":
       if(ss&&ss.끝화면&&d.t!=="운동"){ 운동저장하기(); 토스트("저장했습니다"); }
@@ -2820,7 +2829,7 @@ document.addEventListener("input", e=>{ const el=e.target, w=el.dataset.in; if(!
   else if(w==="메모글") U.메모글=v;
   else if(w==="새종목") U.새종목=v;
   else if(w==="루틴이름"){ const r=루틴(U.루틴열림); if(r) r.이름=v; }
-  else if(w==="세트값"){ const s=S.세션.종목[+d.i].세트[+d.k]; if(d.f==="w") s.w=Math.max(0,숫(v)); else s.r=Math.max(0,Math.round(숫(v))); }
+  else if(w==="세트값"){ 운자리.당김=true; const s=S.세션.종목[+d.i].세트[+d.k]; if(d.f==="w") s.w=Math.max(0,숫(v)); else s.r=Math.max(0,Math.round(숫(v))); }
   else if(w==="루값"){ const s=루틴(U.루틴열림).종목[+d.i].세트[+d.k]; if(d.f==="w") s.w=Math.max(0,숫(v)); else s.r=Math.max(1,Math.round(숫(v))); }
   저장();
 });
@@ -2845,6 +2854,7 @@ document.addEventListener("pointermove", e=>{ if(!끌) return;
   e.preventDefault(); 끌.유령.style.left=e.clientX+"px"; 끌.유령.style.top=e.clientY+"px";
   document.querySelectorAll(".선위,.선아래,.놓기,.못놓").forEach(x=>x.classList.remove("선위","선아래","놓기","못놓"));
   const 밑=document.elementFromPoint(e.clientX,e.clientY);
+  if(끌.종류==="운칸"){ const 줄=끌.el.closest(".운띠"), r=줄?.getBoundingClientRect(); if(r){ if(e.clientX<r.left+32) 줄.scrollLeft-=10; else if(e.clientX>r.right-76) 줄.scrollLeft+=10; } }
   if(끌.종류==="날"){ const 달=밑?.closest('[data-drop="달"]');
     if(달){ const r=달.getBoundingClientRect(), fr=(e.clientX-r.left)/r.width, 방=fr<1/3?-1:fr>2/3?1:0;
       if(방 && !끌.달타이머) 끌.달타이머=setTimeout(()=>{ if(!끌) return; 끌.달타이머=null; 행동("달",{d:String(방)}); }, 600);
@@ -2853,7 +2863,7 @@ document.addEventListener("pointermove", e=>{ if(!끌) return;
     const 칸=밑?.closest('[data-drop="날"]'); 끌.대상=칸?칸.dataset.k:null;
     if(칸 && 끌.대상!==끌.원) 칸.classList.add(끌.대상>=오늘()&&!기록있음(끌.대상)?"놓기":"못놓"); return; }
   const 칸=밑?.closest(`[data-drop="${끌.종류}"]`); if(!칸){ 끌.대상=null; return; }
-  const r=칸.getBoundingClientRect(), 아래=e.clientY>r.top+r.height/2; 끌.대상={i:+칸.dataset.i, 아래}; 칸.classList.add(아래?"선아래":"선위");
+  const r=칸.getBoundingClientRect(), 가로=끌.종류==="운칸", 아래=가로?e.clientX>r.left+r.width/2:e.clientY>r.top+r.height/2; 끌.대상={i:+칸.dataset.i, 아래}; 칸.classList.add(아래?"선아래":"선위");
 }, {passive:false});
 document.addEventListener("touchmove", e=>{ if(끌&&끌.켜짐) e.preventDefault(); }, {passive:false});
 document.addEventListener("contextmenu", e=>{ if(e.target.closest("[data-drag]")) e.preventDefault(); });
@@ -2868,6 +2878,11 @@ function 끌끝(놓음){ if(!끌) return; clearTimeout(끌.타이머); clearTime
   if(x.종류==="루틴"){ if(옮김(S.루틴들,x.원,x.대상)) 발자취("루틴 순서 바꿈"); }
   else if(x.종류==="종목줄"){ 옮김(루틴(U.루틴열림).종목,x.원,x.대상); }
   else if(x.종류==="플랜"){ 옮김(S.플랜들,x.원,x.대상); }
+  else if(x.종류==="운칸"){ const ss=S.세션; if(ss){ const 전=ss.종목.slice(), 본e=전[U.본], 지e=전[ss.지금.i], 휴e=ss.휴식?전[ss.휴식.i]:null, 접=ss.접기;
+      if(옮김(ss.종목,x.원,x.대상)){ const 새=e=>ss.종목.indexOf(e);
+        if(본e) U.본=새(본e); if(지e) ss.지금.i=새(지e); if(휴e) ss.휴식.i=새(휴e);
+        if(접){ const n={}; 전.forEach((e,j)=>{ if(접[j]!=null) n[새(e)]=접[j]; }); ss.접기=n; }
+        운자리.당김=true; 발자취("운동 순서 바꿈"); } } }
   그리기(); }
 document.addEventListener("pointerup", ()=>끌끝(true));
 document.addEventListener("pointercancel", ()=>끌끝(false));
