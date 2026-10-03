@@ -221,7 +221,8 @@ button:active:not(:disabled){transform:scale(.96)}
     <div class="표시알림" id="표시알림" role="status" hidden></div>
     <div class="기준칸" id="기준칸" hidden>
       <div class="기준안내">시안에서만 쓰는 임시 칸 — 넣은 값은 Claude 가 읽어 갑니다</div>
-      <div class="기준안내 흐린">넣은 볼륨(kg)이면 가장 빨강 · 비우면 지금 규칙(최대 → 계획)</div>
+      <div class="기준안내 흐린">부위 칸을 비우면 공식 = 주동 종목 최대 세트 볼륨 × 10 × 휴식력 (하체 5부위는 하체 종목 전체) · 숫자를 넣으면 그 값</div>
+      <label class="기준설정"><b>휴식력</b><input class="기준수" id="휴식력칸" type="number" inputmode="decimal" min="0" step="0.1" placeholder="1.0" aria-label="휴식력 — 기준에 곱하는 수"><span class="기준설명">기준에 곱하는 수 · 비우면 1.0</span></label>
       <div class="기준목록" id="기준목록"></div>
     </div>
     <small id="체험설명">날짜를 누르면 그 날 저녁 6시가 됩니다. 기록 · 예정 · 플랜 · 근육 피로가 이어지고, 지난 날짜를 두 번 누르면 그 날로 돌아갑니다. '+3시간'으로 근육이 풀리는 것을 볼 수 있습니다. 운동 화면은 10-02 새 시안입니다 — 한 화면에 한 종목, 근육 그림은 오른쪽에 붙박이.</small>
@@ -234,7 +235,12 @@ button:active:not(:disabled){transform:scale(.96)}
 /* ═════════════ 계산 — 앱의 Plan.kt · Logic.kt 를 옮긴 것 (숫자는 전부 여기 한곳) ═════════════ */
 const 수준이름 = ["입문","초급","중급","고급","상급"];
 const 플랜표 = {
-  기준속도:[5,3,1.5,2,1.5], 측정주기:[4,4,8,12,12], 표준주당:2, 처방비율:0.9, 최대회:6000,
+  /* 9rvs 주당 고르기를 없앴다 — 회차만 센다. 값은 예전 '주 2회'와 같다: 속도표(한 달 %)는 한 달 = 8회차, 측정은 예전 4·4·8·12·12주 × 2회 */
+  기준속도:[5,3,1.5,2,1.5], 월회차:8, 측정회차:[8,8,16,24,24], 처방비율:0.9, 최대회:6000,
+  /* sjb8 판정 [제안 · 근거 확인 전] — 수준 5단계(입문·초급·중급·고급·상급)를 4가지 말로: 입문+초급 = 초보자.
+     수준 경계 4개(남/여 체중비 · 맨몸 횟수경계)를 하위 20 · 50 · 80 · 95% 지점으로 보고 사이는 선형 (strengthlevel.com 식).
+     미입력비: '입력하지 않음' 일 때 미리 보는 시작값이 목표를 넘지 않게 — 시작 = min(초보자 시작값, 목표 × 0.8) */
+  판정말:["초보자","초보자","중급자","상급자","미친사람"], 경계백분위:[20,50,80,95], 미입력비:0.8,
   맨몸보통비:0.5, 맨몸세트:5, 맨몸휴식:120, 어시하:5, 어시상:10, 학습최소:3, 회당초:4, 종목전환초:60,
   측정워밍업:[[0.4,5],[0.6,3],[0.9,1]],
   종목들:[
@@ -248,7 +254,6 @@ const 플랜표 = {
     {이름:"맨몸 스쿼트",부위:"하체",장비:"맨몸",맨몸비:0.85,횟수경계:[19,43,72,104],속도표:[30,30,17,11,10],문서:"21"},
   ],
 };
-const 빈도세기 = {상체:1.0, 하체:0.2};
 const 강도들 = [{이름:"여유있게",세트:3,횟수:12},{이름:"보통",세트:4,횟수:10},{이름:"힘들게",세트:5,횟수:8}];
 const 되ep = (rm,r)=> r<=1 ? rm : rm/(1+r/30);
 const 일RM = (w,r)=> r<=0?0 : r===1? w : w*(1+r/30);
@@ -293,22 +298,31 @@ function 방식세트(번호, t, p){
 const 찾표 = 이름 => 플랜표.종목들.find(t=>t.이름===이름);
 const 맨몸 = t => !!(t && t.맨몸비);
 const 나이배수 = n => n<20?1.05 : n<40?1.0 : n<50?0.9 : n<60?0.8 : 0.7;
-const 포화 = f => (1-Math.exp(-f/2))/(1-Math.exp(-1));
-const 빈도배수 = (f,부위) => 1 + 빈도세기[부위]*(포화(f)-1);
 function 수준보기(t, v, 몸){
   let 경 = 맨몸(t) ? t.횟수경계 : (몸.남?t.남:t.여);
   let x = 맨몸(t) ? v : (몸.체중>0 ? v/몸.체중 : 0);
   let i=0; while(i<4 && x>=경[i]) i++; return i;
 }
-const 기대속도 = (t,lv,몸,f,보정=1)=> (t.속도표 ? t.속도표[lv] : 플랜표.기준속도[lv]*t.배) * 나이배수(몸.나이) * 빈도배수(f,t.부위) * 보정;
-function 회표(t, 시작, 목표, f, 몸, 보정=1){
-  const out=[]; if(!(시작>0) || !(목표>시작) || f<=0) return out;
+/* 9rvs 주당(f) 인자를 뺐다 — 빈도배수는 주 2회에서 1.00 이었으므로 곱하지 않는 것과 같다 */
+const 기대속도 = (t,lv,몸,보정=1)=> (t.속도표 ? t.속도표[lv] : 플랜표.기준속도[lv]*t.배) * 나이배수(몸.나이) * 보정;
+function 회표(t, 시작, 목표, 몸, 보정=1){
+  const out=[]; if(!(시작>0) || !(목표>시작)) return out;
   let v=시작, n=0;
-  while(v<목표 && n<플랜표.최대회){ n++; const lv=수준보기(t,v,몸); const 넉=기대속도(t,lv,몸,f,보정); if(넉<=0) break;
-    v*=Math.pow(1+넉/100, 1/(4*f)); const 간격=Math.max(1,플랜표.측정주기[lv]*f);
-    out.push({회:n,주:Math.ceil(n/f),목표값:v,수준:lv,측정일:n%간격===0}); }
+  while(v<목표 && n<플랜표.최대회){ n++; const lv=수준보기(t,v,몸); const 넉=기대속도(t,lv,몸,보정); if(넉<=0) break;
+    v*=Math.pow(1+넉/100, 1/플랜표.월회차);
+    out.push({회:n,목표값:v,수준:lv,측정일:n%플랜표.측정회차[lv]===0}); }
   return out;
 }
+/* sjb8 목표 근력 '상위 N%' — 경계 4개를 플랜표.경계백분위 지점으로 보고 사이는 선형.
+   첫 경계 아래는 0~20%, 마지막 경계 위는 마지막 칸 폭만큼 더 가면 99% 에 닿는다 [제안 · 근거 확인 전] */
+function 백분위(t, v, 몸){ const 경=맨몸(t)?t.횟수경계:(몸.남?t.남:t.여), x=맨몸(t)?v:(몸.체중>0?v/몸.체중:0), P=플랜표.경계백분위;
+  if(!(x>0)) return null;
+  if(x<경[0]) return P[0]*x/경[0];
+  for(let i=0;i<3;i++) if(x<경[i+1]) return P[i]+(P[i+1]-P[i])*(x-경[i])/(경[i+1]-경[i]);
+  return Math.min(99, P[3]+(99-P[3])*(x-경[3])/(경[3]-경[2])); }
+const 상위글 = 백 => 백==null ? "" : `상위 ${Math.max(1,Math.round(100-백))}%`;
+/* sjb8 '입력하지 않음' 일 때 미리 보는 시작값 [제안] — 초보자(입문+초급) 구간 가운데인 입문→초급 경계. 1회차 측정으로 곧 바뀐다 */
+const 초보자시작 = (t,몸)=> 맨몸(t) ? t.횟수경계[0] : 몸.체중*(몸.남?t.남:t.여)[0];
 const 유효부하 = (t,체중,조절=0)=> 맨몸(t) ? Math.max(1, 체중*t.맨몸비+조절) : 0;
 const 보조조절 = (m,w)=> m===1?-w : m===2?+w : 0;
 const 어시스트횟수 = (rm,부하)=> 부하<=0?0 : 30*(rm/부하-1);
@@ -335,8 +349,8 @@ function 보정배수(종목){ const g=S.향상기록들.filter(x=>x.종목===�
   const m=g.reduce((a,x)=>a+x.측정값/x.예상값,0)/g.length; return Math.min(2,Math.max(0.5,m)); }
 function 속도출처(종목){ const n=S.향상기록들.filter(x=>x.종목===종목&&x.예상값>0&&x.측정값>0).length; return n>=플랜표.학습최소?`내 기록 (${n}회)`:"기본표"; }
 function 플랜회표(p){ const t=찾표(p.종목); if(!t) return []; const 앞=기준회(p);
-  return 회표(t, 지금진행값(p), 목표진행값(p), p.주당, S.몸, 보정배수(p.종목)??1).map(x=>{ const 회=x.회+앞, 간격=Math.max(1,플랜표.측정주기[x.수준]*p.주당);
-    return {...x, 회, 주:Math.ceil(회/p.주당), 측정일:회%간격===0}; }); }   // 측정일은 처음부터 센 회로
+  return 회표(t, 지금진행값(p), 목표진행값(p), S.몸, 보정배수(p.종목)??1).map(x=>{ const 회=x.회+앞;
+    return {...x, 회, 측정일:회%플랜표.측정회차[x.수준]===0 || (!!p.측정먼저 && 회===1)}; }); }   // 측정일은 처음부터 센 회로 · sjb8 현재 근력을 안 넣은 플랜은 1회차가 측정
 const 다음회 = p => 플랜회표(p).find(x=>x.회>p.한회) || null;
 function 회처방(p, 목표값, 측정일){
   const t=찾표(p.종목), 폭=S.설정.무게폭;
@@ -351,11 +365,6 @@ function 회처방(p, 목표값, 측정일){
 }
 const 처방글 = 목 => 목.length===1 ? `${kg(목[0].무게)}kg × ${목[0].횟수}${목[0].더?"+":""}회 × ${목[0].세트}세트`
   : 목.map(x=>`${x.라벨?x.라벨+" ":""}${kg(x.무게)}×${x.횟수}${x.더?"+":""}×${x.세트}`).join(" / ");
-function 빈도경고(f,t){ const pp=x=>Math.round((빈도배수(x,t.부위)-빈도배수(x-1,t.부위))*100);
-  if(f===1) return "주 1회도 근력과 근육은 분명히 늘어납니다. 다만 진행이 절반 정도로 느려질 수 있습니다.";
-  if(f===2) return ""; if(f===3) return "휴식과 컨디션 조절에 능숙한 경우에만 권장합니다.";
-  if(f<7) return `주 ${f-1}→${f}회로 늘려 얻는 이득은 +${pp(f)}%p 뿐입니다. 휴식과 컨디션 조절에 유의하세요.`;
-  return `쉬는 날이 하루도 없다는 뜻입니다. 추가 이득은 +${pp(7)}%p 로 거의 없습니다.`; }
 /* ═════════════ 날짜 · 예정표 — Logic.kt 그대로 ═════════════ */
 const 날 = k => { const [y,m,d]=k.split("~")[0].split("-").map(Number); return new Date(y,m-1,d); };
 const 키 = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
@@ -440,9 +449,30 @@ const 근육기준값 = {};   // 키 → {볼륨:kg|null, 메모}
 let 잎부위표 = null;
 function 잎부위(l){ if(!잎부위표){ 잎부위표={}; for(const [k] of 기준부위) for(const x of 잎(k)) 잎부위표[x]=k; } return 잎부위표[l]; }
 function 정한기준(l){ const x=근육기준값[잎부위(l)]; return x&&x.볼륨>0 ? x.볼륨 : 0; }
-/* 오늘 오른 단계 = 20 × 오늘 볼륨 ÷ 기준 — 기준은 (넣은 값) → 이전 최대 → (처음이면) 오늘 계획. 20 에서 멈춘다 */
-function 오늘단계(종목들){ const v=잎볼륨(종목들), 계=잎볼륨(종목들,true), out={};
-  for(const [l,x] of Object.entries(v)){ const 정=정한기준(l), 기=정>0?정:S.최대볼륨[l]>0?S.최대볼륨[l]:(계[l]||x); out[l]=Math.min(20,20*x/기); } return out; }
+/* 10-03 cxi1 후속 — 홍겸 님이 12부위 칸 모두에 적은 계산 메모 "○○운동 단일종목 중 최대 세트볼륨 X10 X휴식력" (하체 5부위는 '하체운동')
+   공식 기준 = (그 부위를 주동(P)으로 쓰는 종목들 — 하체 5부위는 하체 종목 전체 — 의 한 세트 무게×횟수 중 가장 큰 값) × 10 × 휴식력
+   · 한 세트 = 지난 기록 전부(체크한 세트) + 오늘 종목(계획 · 한 세트 모두) [해석]. 무게는 잎볼륨과 같은 유효무게(맨몸 = 체중 60%)
+   · 하체 종목 = 종목 칸이 '하체' 이거나 주동 근육이 하체 5부위 중 하나 (맨몸 스쿼트 · 런지 · 카프 레이즈도 들어간다)
+   · 휴식력은 뜻이 아직 확실치 않다 — 기본 1.0, 근육 기준 칸 맨 위에서 바꾼다 */
+const 하체부위 = ["glutes","quads","hamstrings","adductors","calves"];
+const 근육기준설정 = {휴식력:1};
+function 주동부위(이름){ const 부=new Set(), 표=S.종목표.find(x=>x.이름===이름);
+  for(const [id,역] of Object.entries(종목근육(이름))) if(역==="P") for(const l of 잎(id)){ const k=잎부위(l); if(k) 부.add(k); }
+  if((표&&표.칸==="하체") || 하체부위.some(k=>부.has(k))) 하체부위.forEach(k=>부.add(k));
+  return 부; }
+/* 부위 키 → {값: 가장 큰 한 세트 볼륨, 종목, w, r, 날} */
+function 부위최대세트(종목들){ const 최={}, 캐={};
+  const 봄=(e,세트들,날)=>{ const 부=캐[e.이름]||(캐[e.이름]=주동부위(e.이름)); if(!부.size) return;
+    for(const st of 세트들){ const v=유효무게(+st.w||0)*(+st.r||0); if(!(v>0)) continue;
+      for(const k of 부) if(!최[k]||v>최[k].값) 최[k]={값:v, 종목:e.이름, w:+st.w||0, r:+st.r||0, 날}; } };
+  for(const [rk,r] of Object.entries(S.기록||{})) for(const e of r.종목||[]) 봄(e, (e.세트||[]).filter(st=>st.완료), rk.split("~")[0]);
+  for(const e of 종목들||[]) 봄(e, e.세트||[], "오늘");
+  return 최; }
+const 공식기준 = (k, 최) => 최[k] ? 최[k].값*10*근육기준설정.휴식력 : 0;
+/* 오늘 오른 단계 = 20 × 오늘 볼륨 ÷ 기준 — 기준은 (부위 칸에 넣은 값) → 공식 → (공식이 없으면) 이전 최대 → 오늘 계획. 20 에서 멈춘다 */
+function 오늘단계(종목들){ const v=잎볼륨(종목들), 계=잎볼륨(종목들,true), 최=부위최대세트(종목들), out={};
+  for(const [l,x] of Object.entries(v)){ const 정=정한기준(l), k=잎부위(l), 공=k?공식기준(k,최):0;
+    const 기=정>0?정 : 공>0?공 : S.최대볼륨[l]>0?S.최대볼륨[l] : (계[l]||x); out[l]=Math.min(20,20*x/기); } return out; }
 /* 남은 피로 — lv0 에서 끝 시각까지 곧게 내려간다 */
 function 남은피로(l,t){ const f=S.피로[l]; if(!f||t>=f.끝) return 0; if(t<=f.시작) return f.lv0; return f.lv0*(f.끝-t)/(f.끝-f.시작); }
 function 지금단계(종목들,t){ const 오=종목들?오늘단계(종목들):{}, out={};
@@ -804,15 +834,158 @@ function 근육글(m){ const 묶=Object.entries(역할이름).map(([r,n])=>{ con
 .운머리 .운이름{display:inline;font-size:18px}
 .운머리 .운곁{display:inline-block;margin:0 0 0 8px;font-size:13px;color:var(--강조글);white-space:nowrap}
 .운머리 .운오른{flex-direction:row;align-items:center;gap:8px}
-/* zx75 — 이 종목 지표 두 줄을 아래 상자 맨 위로. 루틴 진행과는 선 하나로 나눈다 */
-.운지표들{display:flex;flex-direction:column;gap:4px;padding-bottom:8px;margin-bottom:8px;border-bottom:1px solid var(--선)}
-.운지표들 .운지표{margin-top:0;min-width:0}
+/* zx75 지표 두 줄 → 10-03 ✎ 3ehg 로 띠 둘째 줄로 옮겼다 (아래 '운동 화면 ✎ 표시 4개') */
 /* 9a8l · h6tu · i4gd — 세트 줄 · 종목 칸의 offsetTop/Left 를 스크롤 칸 기준으로 재려고 기준 칸으로 둔다 */
 .운세트들,.운띠{position:relative}
 /* khmo — 마우스로 끄는 동안 글자가 잡히지 않게 · 누른 칸이 작아진 채 남지 않게 */
 .운띠{-webkit-user-select:none;user-select:none}
 .운띠.끄는중{cursor:grabbing}
 .운띠.끄는중 .운칸{transform:none}
+
+/* ═══ 10-03 ✎ 표시 — 루틴 상세 · 종목 넣기 시트 · ＋/− 누름 움직임 (patch_v8_R) ═══ */
+/* 401d · a8es 맨 위 띠 — .띠 그대로(강조 바탕 · 강조글 · 40 · 6/12). 이름 칸은 흰 바탕 입력(높이 32 · 이름 15 Bold) + 안쪽 오른쪽에 흐린 예상 11 */
+.루띠{flex:none}
+.루이름칸{flex:1;min-width:0;height:32px;display:flex;align-items:center;gap:8px;padding:0 8px;background:var(--면);color:var(--글);border-radius:8px;cursor:text}
+.루이름칸 input{flex:1 1 0;min-width:5em;height:100%;border:0;background:transparent;padding:0;font-size:15px;font-weight:700;color:var(--글)}
+.루이름칸 input:focus-visible{outline:none}
+.루이름칸:focus-within{outline:2px solid var(--강조글);outline-offset:1px}
+/* 좁은 폰에서는 이름이 먼저 — 예상 글이 말줄임으로 줄어든다 (이름 칸은 최소 5글자 폭) */
+.루예상{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:11px;color:var(--옅음);white-space:nowrap}
+.루자동{display:flex;align-items:center;gap:4px;flex:none;font-size:11px;font-weight:700;cursor:pointer}
+/* 띠 위 스위치 — 켬이 강조 바탕에 묻히지 않게: 켬 = 강조글 길 · 강조 손잡이, 끔 = 옅은 강조글 길 · 강조글 손잡이 */
+.루띠 .스위치{background:color-mix(in srgb,var(--강조글) 35%,transparent)}
+.루띠 .스위치 i{background:var(--강조글)}
+.루띠 .스위치.켬{background:var(--강조글)}
+.루띠 .스위치.켬 i{background:var(--강조)}
+/* a8es · mqjf 파란 [+ 종목 추가] — 띠 바로 아래 · 목록 끝 */
+.루추가.위{margin:12px 0 8px}
+.루추가.끝{margin:0 0 0}
+/* izyq 종목 상자 머리 — 상자 안쪽 여백(8)만큼 밖으로 꺼내 가장자리까지. 모서리 15 = 상자 16 − 테두리 1 */
+.루머리{display:flex;align-items:center;gap:8px;min-height:40px;margin:-8px -8px 0;padding:4px 4px 4px 12px;background:var(--강조옅음);border-radius:15px 15px 0 0}
+.루머리>b{font-size:15px;font-weight:700;min-width:0;overflow-wrap:anywhere}
+.루머리 .닫기{flex:none;min-width:32px;min-height:32px}
+/* c1gz 플랜 상자 = 머리 한 줄뿐 */
+.종목상자.루플랜{padding:0}
+.루플랜 .루머리{margin:0;border-radius:15px}
+.루플랜줄{display:flex;align-items:center;gap:8px;min-width:0;min-height:32px;cursor:pointer;white-space:nowrap}
+.루플랜줄 .이름플랜 b{font-size:15px;font-weight:700}
+.루플랜글{font-size:13px;color:var(--흐림);min-width:0;overflow:hidden;text-overflow:ellipsis}
+/* c1gz · jmg1 [플랜] 표 — 강조 바탕 · 강조글 · 11 Bold · 모서리 8. 이름 오른쪽 끝 5px · 위쪽 5px(글자 윗선 기준) 겹친다 */
+.이름플랜{display:inline-flex;align-items:flex-start;flex:none;min-width:0;max-width:100%}
+.이름플랜>b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.플랜표{position:relative;top:-6px;margin-left:-5px;flex:none;font-size:11px;font-weight:700;line-height:14px;padding:0 6px;border-radius:8px;background:var(--강조);color:var(--강조글);white-space:nowrap}
+/* h627 · 9kht 세트 줄 — [번호 16][무게][횟수][휴식][휴지통 28]. 칸 높이 40 → 28 · 틈 4 (줄 간격 44 → 32).
+   세 칸 폭은 들어갈 글자 폭대로 83 : 70 : 79 (무게 '62.5' · 횟수 '12' · 휴식 '1:30') */
+.세트머리.루,.루세트{grid-template-columns:16px minmax(0,83fr) minmax(0,70fr) minmax(0,79fr) 28px}
+.세트머리.루 span{white-space:nowrap}
+.루세트 .값칸{height:28px}
+/* 360 폭(폰 칸 328)에서는 휴지통 칸 28 이 들어온 만큼 모자라 '10' 이 '1' 로 잘렸다 →
+   이 화면 세트 줄만 ± 단추 폭 28 → 24 (높이 28 그대로) · 상자 좌우 여백 8 → 4 */
+@media (max-width:400px){
+  .루넘김 .종목상자:not(.루플랜){padding:8px 4px}
+  .루넘김 .종목상자:not(.루플랜)>.루머리{margin:-8px -4px 0}
+  .루세트 .값칸 button{width:24px}
+}
+.루지움{width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;color:var(--옅음);border-radius:8px}
+.루지움 svg{width:16px;height:16px}
+.루지움:disabled{opacity:.35;cursor:default}
+.루지움띠.나감띠{opacity:0;transition:opacity .2s}
+/* w0fo 종목 넣기 — 칩 7개 같은 폭 한 줄 · 목록 줄 높이 70% (줄 사이 틈 8 없앰 · 위아래 12 → 8: 52.5 → 36.5) */
+.넣기칩 .칩줄{flex-wrap:nowrap}
+.넣기칩 .칩{flex:1;justify-content:center;padding:0 4px;min-width:0}
+.넣기목록{display:flex;flex-direction:column}
+.넣기줄{padding:8px 0}
+.넣기줄 .곁{text-overflow:ellipsis}
+/* ls4v ＋ 볼록 · − 오목 — 0.2초. 배율(--눌림)은 단추 크기에 맞춰 JS 가 넣는다 (넓은 단추는 6px 안쪽) */
+@keyframes 볼록{0%{transform:scale(1)}45%{transform:scale(var(--눌림,1.12))}100%{transform:scale(1)}}
+@keyframes 오목{0%{transform:scale(1)}45%{transform:scale(var(--눌림,.88))}100%{transform:scale(1)}}
+button.볼록,label.볼록{animation:볼록 .2s ease-out}
+button.오목,label.오목{animation:오목 .2s ease-out}
+
+/* ═══ 10-03 운동 화면 ✎ 표시 4개 (r0yk · 5gd1 · 3ehg · ai39) ═══ */
+/* 3ehg — 띠 두 줄. 첫 줄 = ‹ · 이름[플랜] · N회차 · 타이머 / 둘째 줄 = 이 종목 지표 한 줄 */
+.운머리.띠.두줄{flex-direction:column;align-items:stretch;gap:4px}
+.운첫줄{display:flex;align-items:center;gap:8px;min-height:32px;padding-top:4px}   /* 위 4 — 이름 위로 올라간 [플랜] 표가 띠 밖으로 안 나가게 */
+/* 5gd1 — 타이머를 왼쪽으로 20px (홍겸 님이 준 값) */
+.운머리 .운시계{margin-right:20px}
+/* r0yk — [플랜] 표: 이름 끝 낱말 오른쪽 위에 5px 겹친다 (가로 −5px · 표 아래 끝이 글자 잉크 위 끝보다 5px 아래).
+   띠도 강조 바탕이라 1px 강조글 테두리로 가른다. 끝 낱말과 표는 떨어져 감기지 않는다 */
+.운머리 .운끝말{white-space:nowrap}
+.운머리 .운플랜표{display:inline-block;position:relative;vertical-align:text-top;top:-8px;margin-left:-5px;font-style:normal;
+  height:16px;line-height:14px;padding:0 4px;box-sizing:border-box;border:1px solid var(--강조글);border-radius:8px;background:var(--강조);color:var(--강조글);font-size:11px;font-weight:700}
+.운머리 .운플랜표::before{content:"플랜"}
+.운머리 .운곁{margin-left:8px}
+/* 3ehg — 지표 한 줄. 높이 28 고정(값이 바뀌어도 띠가 안 움직인다) · 좁으면 맞춤글이 줄인다 — 그래서 글자는 em (11 · 15 = 15/11 em) */
+.운머리 .운수치{display:flex;align-items:center;gap:4px;height:28px;min-width:0;white-space:nowrap;overflow:hidden;font-size:11px;color:var(--강조글);font-variant-numeric:tabular-nums}
+.운머리 .운수치>span{flex:none}
+.운머리 .운수치 b{font-size:calc(1em * 15 / 11);color:var(--강조글)}
+.운머리 .운수치 .운칩{font-size:1em;padding:0 4px;color:var(--강조글);border-color:color-mix(in srgb,var(--강조글) 55%,transparent)}
+.운머리 .운수치 .운점{font-style:normal;flex:none;margin:0 4px}
+/* 좁은 폰(맞춤글로 10% 넘게 줄여야 할 때) — 볼륨 목표(/2,700)를 감춘다. 9px 까지 줄이면 못 읽는다 */
+.운머리 .운수치.좁 .운목표{display:none}
+/* ai39 — 세트 줄: [번호 동그라미 28] [kg] [회] [휴식 = 남는 폭] [휴지통 28].
+   홍겸 님 폰(폭 420 · 목록 안쪽 396)에서 kg 78 · 회 98 = 지금(130)의 60% · 75%, 휴식 148.
+   더 좁은 폰에서는 같은 비율로 줄되 kg 76 · 회 64 · 휴식 56 아래로는 안 줄어든다 (− 값 ＋ 가 들어갈 만큼) */
+.운세트들 .세트머리,.운세트들 .세트줄{grid-template-columns:28px minmax(76px,78fr) minmax(64px,98fr) minmax(56px,148fr) 28px}
+.운세트들 .값칸 button{width:20px;flex:none}
+.운세트들 .세트번호{justify-self:center;font-size:13px;font-weight:700;color:var(--글);font-variant-numeric:tabular-nums}
+.운세트들 .세트번호.켬{color:var(--강조글)}
+.세트지움{width:28px;height:40px;display:flex;align-items:center;justify-content:center;color:var(--옅음)}
+.세트지움 svg{width:18px;height:18px}
+.세트지움:disabled{opacity:.35}
+/* ai39 — 쉬는 동안 휴식 칸 = 남은 시간 + '건너뛰기'. 넓으면 한 줄, 좁으면 두 줄 (높이 40 그대로) */
+.운세트들 .휴식칸.쉼 .밑,.운세트들 .휴식칸.쉼 .위{position:absolute;inset:0;display:flex;flex-wrap:wrap;align-items:center;align-content:center;justify-content:center;column-gap:4px;line-height:1.15}
+.운세트들 .휴식칸.쉼 b{font-size:13px}
+.운세트들 .휴식칸.쉼 small{font-size:11px;font-weight:700}
+.운지움띠.나감띠{opacity:0;transition:opacity .2s}
+
+/* ═══ v8 P — 플랜 탭 · 플랜 결과 시트 (10-03 ✎ sjb8 · 9rvs · 15lk · ksao · e8am) ═══ */
+/* sjb8 판정 알약 — 카드 제목 줄 오른쪽 · 비어 있으면 숨김 */
+.판정{flex:none;white-space:nowrap}
+.판정:empty{display:none}
+/* sjb8 [입력하지 않음] 켜짐 — 흰 바탕 · 빨간 글자 그대로, 테두리만 빨강 + ✓ · 입력 칸은 흐리게(누를 수 없음) */
+.안함단추{flex:none}
+.안함단추.켬{border-color:var(--나쁨)}
+.흐린칸{opacity:.4;pointer-events:none}
+.폼안내{text-align:right}
+/* 15lk 훈련 방식 — 카드 하나 = 누르는 줄 44 · 1px --강조(옆 카드와 같은 색 · 모서리 16) · 이름표 11 · 방식 이름 15 Bold · 요약 칩 · › */
+.방식고름줄{display:flex;align-items:center;gap:8px;height:44px;padding:0 12px;border:1px solid var(--강조);border-radius:var(--r-보통);background:var(--면);width:100%;text-align:left}
+.방식고름줄>span:first-child{flex:none}
+.방식고름줄 b{font-size:15px;font-weight:700}
+.방식고름줄 .칩{flex:none}
+.방식고름줄 .화살{flex:none;font-size:15px;color:var(--옅음)}
+/* e8am 플랜 결과 시트 줄 간격 절반 — 시트 칸 사이 8→4 · 묶음 사이 8→4 · 묶음 안 여백 8→4 · 줄 사이 2→0 */
+[data-enter="시트플랜결과"]{gap:4px}
+.결과묶음들{display:flex;flex-direction:column;gap:4px}
+.결과묶음들 .회블록{padding:4px 10px;gap:0}
+
+/* ═══ 10-03 v8 C — 캘린더 ✎ 표시 (vj5s · avk4 · s48f) · 근육 기준 공식 (cxi1 후속) ═══ */
+/* vj5s 폰 안 스크롤 칸은 스크롤바를 그리지 않는다 — 폰 앱처럼. 날짜를 누르면 날짜 판이 6px 아래에서 올라오며(.들어옴) 잠깐 넘쳐
+   15px 스크롤바가 생겼다 사라졌고, 그만큼 달력이 옆으로 밀렸다. 스크롤바가 없으면 칸 폭이 절대 안 바뀐다. 손가락 · 바퀴 스크롤은 그대로 */
+.폰 *{scrollbar-width:none}
+.폰 *::-webkit-scrollbar{display:none}
+/* s48f 일요일 빨강 · 토요일 파랑 — 날짜 숫자와 요일 머리. 오늘(강조 바탕) · 끌어 놓는 칸(강조 바탕)의 숫자는 강조글 그대로 */
+.요일.일요,.칸날.일요:not(.오늘):not(.놓기) .일{color:var(--나쁨)}
+.요일.토요,.칸날.토요:not(.오늘):not(.놓기) .일{color:var(--강조)}
+/* avk4 종목 목록 두 칸 격자 — 왼쪽 칸 위→아래, 다음 오른쪽 칸. 줄 위아래 여백 8 → 4 (줄 간격 절반) */
+.예목록.날판목록{display:grid;grid-template-columns:repeat(var(--열),minmax(0,1fr));grid-template-rows:repeat(var(--행),auto);grid-auto-flow:column;column-gap:12px}
+.날판목록 .예줄{padding:4px 0;align-items:flex-start;gap:4px}
+.날판목록 .예줄 .번{line-height:18px}
+.예글{display:flex;flex-direction:column;min-width:0;flex:1}
+.예이름칸{font-size:13px;line-height:18px;text-overflow:ellipsis}
+.날판목록 .예줄 .숫{flex:none;white-space:normal;line-height:16px}
+.날판목록 .예줄 .숫>span{white-space:nowrap}
+.날판목록 .예접기{height:auto;min-height:32px;gap:4px}
+.날판목록 .예접기 .채움{white-space:nowrap}
+/* cxi1 후속 근육 기준 칸 — 한 줄 = 이름 · 숫자 · 메모, 다음 줄 = 흐린 공식 글. 맨 위 휴식력 칸도 같은 칸 나눔 */
+.기준줄{grid-template-columns:60px 64px minmax(0,1fr);row-gap:2px}
+/* 공식 글은 자르지 않는다 — 길면 다음 줄로 (폰 밖이라 높이 여유가 있다). 오늘 글은 그 뒤에 붙거나 다음 줄 */
+.기준줄 .기준지금{grid-column:2/-1;flex-direction:row;flex-wrap:wrap;gap:0 8px;line-height:14px;white-space:normal}
+.기준줄 .기준지금 span{white-space:normal;overflow:visible}
+.기준줄 .기준지금 span:last-child{white-space:nowrap}
+.기준설정{display:grid;grid-template-columns:60px 64px minmax(0,1fr);gap:4px;align-items:center;margin-top:4px}
+.기준설정 b{font-size:13px;color:#fff;white-space:nowrap}
+.기준설명{font-size:11px;opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 </style>
 <script>
 "use strict";
@@ -1262,7 +1435,7 @@ const 오늘 = ()=> 날더하기(S.시작일, S.일차-1);
 const 플랜 = id => S.플랜들.find(p=>p.id===id);
 const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const 발자취 = 글 => { S.발자취.push(`${S.일차}일차 · ${글}`); if(S.발자취.length>40) S.발자취.shift(); };
-function 폼초기(){ return {종목:"벤치프레스", 이름:"", 현재무게:"", 현재횟수:"", 목표방식:"RM", 목표무게:"", 목표횟수:"", 정자세:"", 보조모드:0, 보조무게:"", 보조횟수:"", 목표개수:"", 주당:2, 방식번호:1, 강도:1, 세트수:0, 직접횟수:0, 오류:""}; }
+function 폼초기(){ return {종목:"벤치프레스", 이름:"", 현재무게:"", 현재횟수:"", 목표방식:"RM", 목표무게:"", 목표횟수:"", 정자세:"", 보조모드:0, 보조무게:"", 보조횟수:"", 목표개수:"", 입력안함:false, 방식번호:1, 강도:1, 세트수:0, 직접횟수:0, 오류:""}; }
 U.플랜폼 = 폼초기(); U.종목펼침 = null;
 
 function 세트들(n,w,r,휴){ return Array.from({length:n},()=>({w,r,휴})); }
@@ -1478,38 +1651,47 @@ function 칸내용(k){ const 록=기록목록(k);
   if(록.length){ const r=록[0][1]; return {글:r.이름+(록.length>1?` +${록.length-1}`:""), 상:록.every(([,x])=>기록달성(x))?"달성":"미달성", 종류:"록"}; }
   if(S.미실시[k]) return {글:S.미실시[k], 상:"미실시", 종류:"미"};
   const r=루틴(S.예정[k]); if(r) return {글:r.이름, 종류:r.휴식일?"휴":"예"}; return null; }
+/* s48f 요일 → 칸 이름. 0 = 일요일(빨강) · 6 = 토요일(파랑) — 색은 CSS 에서 (--나쁨 · --강조) */
+const 주말글 = i => i===0 ? "일요" : i===6 ? "토요" : "";
 function 캘린더(){
   const 오=오늘(), 달=U.보는달||오.slice(0,7), [y,m]=달.split("-").map(Number);
   const 앞=new Date(y,m-1,1).getDay(), 날수=new Date(y,m,0).getDate();
   let 칸=""; for(let i=0;i<앞;i++) 칸+=`<div class="칸날 딴달"></div>`;
   for(let d=1; d<=날수; d++){ const k=`${달}-${String(d).padStart(2,"0")}`, x=칸내용(k);
     const 끌림 = k>=오 && S.예정[k] && !기록있음(k);
-    칸+=`<button class="칸날 번호 ${k===오?"오늘":""} ${k===(U.고른날||오)?"고름":""} ${k===U.집은날?"집음":""}" data-act="날" data-k="${k}" data-drop="날" ${끌림?`data-drag="날"`:""}>
+    칸+=`<button class="칸날 번호 ${주말글((앞+d-1)%7)} ${k===오?"오늘":""} ${k===(U.고른날||오)?"고름":""} ${k===U.집은날?"집음":""}" data-act="날" data-k="${k}" data-drop="날" ${끌림?`data-drag="날"`:""}>
       <span class="일">${d}</span>${x?`<span class="루 ${x.종류==="예"?"예":x.종류==="휴"?"휴":""}">${esc(x.글)}</span>${x.상?`<span class="상 ${x.상}">${x.상}</span>`:""}`:""}</button>`; }
   for(let i=(앞+날수)%7; i&&i<7; i++) 칸+=`<div class="칸날 딴달"></div>`;   /* upy8 끝 주 채움 — 구분선이 반듯한 격자가 되게 */
   /* pd7g 왼쪽 끝 [스탯] · 가운데 ‹ 년월 › · 오른쪽 끝 [업적]. [오늘] 은 날짜 판 띠에 (위 패치 주석) */
   return `<div class="띠 번호 년월띠" data-drop="달"${번("캘0")}><button class="작은흰 번호" data-act="스탯열기" data-v="스탯"${번("캘칩")}>스탯</button><span class="년월"><button class="달넘김" data-act="달" data-d="-1" aria-label="이전 달">‹</button><b>${y}년 ${m}월</b><button class="달넘김" data-act="달" data-d="1" aria-label="다음 달">›</button></span><button class="작은흰" data-act="스탯열기" data-v="업적">업적</button></div>
-    <div class="넘김 캘넘김" style="padding:0"><div class="달력" data-enter="달${달}">${[..."일월화수목금토"].map(w=>`<div class="요일">${w}</div>`).join("")}${칸}</div>${날판(U.고른날||오)}</div>`;
+    <div class="넘김 캘넘김" style="padding:0"><div class="달력" data-enter="달${달}">${[..."일월화수목금토"].map((w,i)=>`<div class="요일 ${주말글(i)}">${w}</div>`).join("")}${칸}</div>${날판(U.고른날||오)}</div>`;
 }
 
 /* 10-02 표시 2 · 3 — "가로로 표시되니까 운동이 다 안 나오잖아 · 아래로 여유 있게" */
 const 폭글=(l,f)=>{ const a=Math.min(...l), b=Math.max(...l); return a===b?f(a):`${f(a)}~${f(b)}`; };
 function 세트글(세){ if(!세.length) return ""; const w=세.map(s=>+s.w||0), r=세.map(s=>s.r);
   return (w.every(x=>x===0)?"맨몸":폭글(w,kg)+"kg")+" × "+폭글(r,x=>x)+"회"; }
-/* 종목 줄이 6개 이상이면 4줄 + '외 n종목' (10-03) — 5개까지는 접어도 높이가 같아 그냥 다 보인다 */
-const 접는수 = 4;
-function 접는목록(줄들, 키){ const n=줄들.length; if(n<=접는수+1) return 줄들.join("");
-  const 펼=U.예펼침===키;
-  return (펼?줄들:줄들.slice(0,접는수)).join("")
-    + `<button class="예접기" data-act="예펼침" data-v="${키}" aria-expanded="${펼}"><span class="번"></span><span class="채움">${펼?"접기":`외 ${n-접는수}종목`}</span><span class="접힘표 ${펼?"펼":""}">${아이콘.아래}</span></button>`; }
+/* avk4 날짜 판 종목 목록 — 홍겸 님 "왼쪽 오른쪽으로 나눠서 최대 9개 · 마지막 10번째 칸에 외 N종목 펼치기 (1줄로 바꿀 수도 있음)"
+   날판열 = 칸 수 (1 로 바꾸면 한 줄 목록). 날판칸 = 접었을 때 칸 수 — 종목이 이보다 많으면 (날판칸-1)개 + '외 N종목'.
+   10개까지는 접어도 높이가 같아 그냥 다 보인다. 칸은 왼쪽 칸을 위→아래로 채운 뒤 오른쪽 칸 (왼쪽 · 오른쪽으로 나눔) */
+const 날판열 = 2, 날판칸 = 10;
+function 접는목록(줄들, 키){ const n=줄들.length, 접=n>날판칸, 펼=접&&U.예펼침===키;
+  const 칸들 = 접&&!펼 ? 줄들.slice(0,날판칸-1) : 줄들.slice();
+  if(접) 칸들.push(`<button class="예접기" data-act="예펼침" data-v="${키}" aria-expanded="${펼}"><span class="번"></span><span class="채움">${펼?"접기":`외 ${n-(날판칸-1)}종목`}</span><span class="접힘표 ${펼?"펼":""}">${아이콘.아래}</span></button>`);
+  return 칸들.join(""); }
+/* 목록 틀 — 행 수를 넘겨 줘야 왼쪽 칸부터 위→아래로 채운다 (grid-auto-flow:column) */
+const 날판틀 = (줄들, 키) => { const n=줄들.length, 칸수 = n>날판칸 ? (U.예펼침===키 ? n+1 : 날판칸) : n;
+  return `<div class="예목록 날판목록" style="--열:${날판열};--행:${Math.ceil(칸수/날판열)}">${접는목록(줄들, 키)}</div>`; };
+/* 칸 하나 = 번호 · 이름(한 줄, 말줄임 — 이름이니까) / 다음 줄 흐린 세트 글. 세트 글은 자르지 않고 '·' 에서만 줄을 바꾼다 */
+const 날판줄 = (i, 이름, 곁들) => `<div class="예줄"><span class="번">${i+1}</span><span class="예글"><span class="예이름칸 한줄">${esc(이름)}</span><span class="숫 흐림">${곁들.filter(Boolean).map(x=>`<span>${x}</span>`).join(" · ")}</span></span></div>`;
 function 예정칩(실){ const 볼=실.종목.reduce((a,e)=>a+e.세트.reduce((b,s)=>b+유효무게(s.w)*s.r,0),0);
   return `<div class="예칩"><span>${총세트(실)}세트</span><span>볼륨 ${콤마(Math.round(볼))}kg</span><span>예상 ${시간글(예상초(실))}</span></div>`; }
 function 예정상세(실, 키){ const 볼=실.종목.reduce((a,e)=>a+e.세트.reduce((b,s)=>b+유효무게(s.w)*s.r,0),0);
-  const 줄=실.종목.map((e,i)=>`<div class="예줄"><span class="번">${i+1}</span><span class="채움 한줄">${esc(e.이름)}</span><span class="숫 흐림">${e.세트.length}세트 · ${세트글(e.세트)}</span></div>`);
-  return `<div class="예목록">${접는목록(줄, 키)}</div>`; }
+  const 줄=실.종목.map((e,i)=>날판줄(i, e.이름, [`${e.세트.length}세트`, 세트글(e.세트)]));
+  return 날판틀(줄, 키); }
 function 기록상세(r, 키){ const 줄=r.종목.map((e,i)=>{ const 세=e.세트.filter(s=>s.완료);
-    return `<div class="예줄"><span class="번">${i+1}</span><span class="채움 한줄">${esc(e.이름)}</span><span class="숫 흐림">${세.length}/${e.세트.length}세트${세.length?" · "+세트글(세):""}</span></div>`; });
-  return 줄.length?`<div class="예목록">${접는목록(줄, 키)}</div>`:""; }
+    return 날판줄(i, e.이름, [`${세.length}/${e.세트.length}세트`, 세.length?세트글(세):""]); });
+  return 줄.length?날판틀(줄, 키):""; }
 /* c77y 날짜 판 제목을 띠로 — 오른쪽 끝 단추: 예정이 있으면 [변경] · 없으면 [루틴 넣기] · 기록만 있는 날은 비움.
    pd7g 로 년월 띠에서 빠진 [오늘] 은 다른 달을 볼 때 그 왼쪽에 (같은 행동 '오늘달') */
 function 날판띠(k, 예, r){ const 오=오늘(), 다른달=(U.보는달||오.slice(0,7))!==오.slice(0,7);
@@ -1533,40 +1715,85 @@ function 날판(k){ const 오=오늘(), 록=기록목록(k), 예=k>=오 && !(k==
   return h+`</div>`; }
 
 /* ── 루틴 ── */
-function 루틴탭(){ const r=U.루틴열림&&루틴(U.루틴열림); if(r) return `<div class="넘김">${루틴상세(r)}</div>`;
+function 루틴탭(){ const r=U.루틴열림&&루틴(U.루틴열림);
+  if(r){ queueMicrotask(루끝단추맞춤); return `${루틴상세띠(r)}<div class="넘김 루넘김">${루틴상세(r)}</div>${세트지움띠()}`; }
   let 순=0;
   return `<div class="넘김"><h1>루틴</h1><div class="쌓기">${S.루틴들.map((r,i)=>{ const 실=실제루틴(r);
     return `<button class="카드 루틴카드 번호 ${r.자동생성?"자동":""}" data-enter="루틴${r.id}" data-act="루틴열기" data-v="${r.id}" data-drag="루틴" data-i="${i}" data-drop="루틴"${번("루"+(i+1))}>
       <div class="줄"><b class="채움">${esc(r.이름)}</b>${r.자동생성?`<span class="알약 강조">${++순}번째</span>`:`<span class="아주작 옅음">수동</span>`}</div>
       <span class="맞춤 작 흐림">${r.휴식일?"휴식일":`${r.종목.length}종목 · ${총세트(실)}세트 · 예상 ${시간글(예상초(실))}`}</span></button>`; }).join("")}
     <div class="줄"><button class="버튼 채움" data-act="루틴추가">+ 루틴</button><button class="버튼 채움" data-act="휴식일추가">+ 휴식일</button></div></div></div>`; }
-function 루틴상세(r){ const 실=실제루틴(r);
-  return `<div class="줄" style="margin:12px 0 6px"><button class="버튼 낮" data-act="루틴닫기">‹ 루틴</button><input class="입력 채움" data-in="루틴이름" value="${esc(r.이름)}" aria-label="루틴 이름"></div>
-    ${설정줄("자동으로 돌리기","캘린더에 순서대로 깔립니다",스위치(r.자동생성,"루틴자동",r.id))}
-    ${r.휴식일?`<div class="빈칸">휴식일</div>`:`<div class="맞춤 아주작 옅음" style="margin-bottom:6px">예상 ${시간글(예상초(실))} · ${총세트(실)}세트</div>
+/* ═══ 10-03 ✎ 표시 — 루틴 상세 · 종목 넣기 시트 · ＋/− 누름 움직임 (patch_v8_R) ═══ */
+아이콘.휴지통 = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg>`;   // h627
+/* jmg1 · c1gz [플랜] 표 — 이름 오른쪽 위에 5px 겹친다 (홍겸 님이 준 값). 루틴 상자와 종목 넣기 시트가 같은 부품을 쓴다 */
+const 플랜딱지 = `<span class="플랜표">플랜</span>`;
+/* w0fo 종목 넣기 시트는 처음 열면 [전체] — 맨 왼쪽 칩이 기본. 한 번 고른 칸은 그대로 기억한다 */
+U.칸고름 = "전체";
+
+/* 401d 맨 위 띠 = [‹ 루틴][이름 칸 + 흐린 예상][자동 스위치]. 이름 칸은 띠 위에서도 '고치는 칸' 으로 읽히게 흰 바탕(--면) 입력.
+   '캘린더에 순서대로 깔립니다' 설명 줄은 홍겸 님이 지웠다 — 스위치 옆 '자동' 두 글자만.
+   스위치 루틴 id 는 넷째 인자(data-v)로 — v7 까지 셋째(data-f)로 넘겨 '루틴자동' 이 루틴(d.v)=undefined 로 멈췄다(스위치가 안 바뀜) */
+function 루틴상세띠(r){ const 실=실제루틴(r);
+  return `<div class="띠 루띠"><button class="작은흰" data-act="루틴닫기">‹ 루틴</button>
+    <label class="루이름칸"><input data-in="루틴이름" value="${esc(r.이름)}" aria-label="루틴 이름">${r.휴식일?"":`<span class="루예상 숫">예상 ${시간글(예상초(실))} · ${총세트(실)}세트</span>`}</label>
+    <label class="루자동"><span>자동</span>${스위치(r.자동생성,"루틴자동","",r.id)}</label></div>`; }
+function 루틴상세(r){
+  const 추가 = 곳=> `<button class="버튼 주 넓 루추가 ${곳}" data-act="시트" data-t="종목넣기">+ 종목 추가</button>`;
+  return `${r.휴식일?`<div class="빈칸" style="margin-top:12px">휴식일</div>`:`${추가("위")}
     ${r.종목.map((e,i)=>루틴종목상자(e,i)).join("")||`<div class="빈칸">종목을 넣어 주세요</div>`}
-    <button class="버튼 넓" data-act="시트" data-t="종목넣기" style="margin-top:4px">+ 종목</button>`}
+    ${r.종목.length?추가("끝"):""}`}
     <button class="버튼 넓 나쁨" data-act="루틴지움" data-v="${r.id}" style="margin-top:12px">${U.확인==="루틴"+r.id?"한 번 더 누르면 지웁니다":"이 루틴 지우기"}</button>`; }
+/* mqjf 끝 [+ 종목 추가] 는 맨 아래까지 내렸을 때 위 단추가 화면 밖으로 나갈 때만 보인다.
+   그리기() 가 끝난 뒤(마이크로태스크) 재고 한 번만 정한다 — 끝 단추를 늘 그려 두고 필요 없으면 숨기는 쪽이라
+   스크롤을 되살린 자리가 끝 단추 높이만큼 잘리지 않는다 */
+function 루끝단추맞춤(){ const 넘=document.querySelector("#폰 .루넘김"), 위=넘?.querySelector(".루추가.위"), 끝=넘?.querySelector(".루추가.끝"); if(!위||!끝) return;
+  끝.style.display=""; const 넘q=넘.getBoundingClientRect(), 위아래=위.getBoundingClientRect().bottom-넘q.top+넘.scrollTop;
+  const 끝몫=끝.getBoundingClientRect().height+parseFloat(getComputedStyle(끝).marginTop||0), 끝없이최대=넘.scrollHeight-끝몫-넘.clientHeight;
+  if(끝없이최대<=위아래) 끝.style.display="none"; }
+/* c1gz 플랜 줄은 div 라 Enter · 스페이스로도 누를 수 있게 (단추와 같게) */
+document.addEventListener("keydown", e=>{ if((e.key==="Enter"||e.key===" ") && e.target.matches?.(".루플랜줄[data-act]")){ e.preventDefault(); e.target.click(); } });
+/* h627 지운 세트 되돌리기 — 아래띠 6초 (U5-4 묻지 않고 지우고 되돌린다) */
+let 루지움번호=0;
+function 세트지움띠(){ const x=U.세트지움; if(!x) return "";
+  return `<div class="아래띠 루지움띠" role="status" data-enter="세트지움${x.id}"><span class="채움">${esc(x.이름)} ${x.k+1}세트를 지웠습니다</span><button data-act="루세트되돌림">되돌리기</button></div>`; }
 function 루값(f,v,i,k){ const 글 = f==="휴" ? 분초(v) : f==="w" ? kg(v) : v;
   return `<div class="값칸"><button data-act="루값" data-f="${f}" data-i="${i}" data-k="${k}" data-d="-1" aria-label="빼기">−</button>${f==="휴"?`<span>${글}</span>`:`<input data-in="루값" data-f="${f}" data-i="${i}" data-k="${k}" inputmode="decimal" value="${글}">`}<button data-act="루값" data-f="${f}" data-i="${i}" data-k="${k}" data-d="1" aria-label="더하기">＋</button></div>`; }
+/* izyq 이름 줄 = 상자 머리 (--강조옅음 바탕 · 이름 15 Bold) — 흰 세트 칸들과 바탕이 달라 상자끼리 한눈에 갈린다
+   c1gz 플랜 상자는 머리 한 줄뿐: '이름[플랜] · 15회차 60kg × 9회 × 5세트'. 그 줄을 누르면 종목 탭 [변경]과 같은 '플랜 고치기'.
+        줄은 <button> 이 아니라 data-act 를 단 div — 상자를 꾹 눌러 끄는 동작(끌기는 단추 위에서 시작하지 않는다)을 살리려고 */
 function 루틴종목상자(e,i){
-  const 머리 = `<div class="줄">${e.플랜id?`<span class="알약 강조">플랜</span>`:""}<b class="채움">${esc(e.이름)}</b><button class="닫기" data-act="종목빼기" data-i="${i}" aria-label="빼기">✕</button></div>`;
-  if(e.플랜id){ const p=플랜(e.플랜id), x=p&&플랜처방(p);
-    return `<div class="종목상자" data-drag="종목줄" data-i="${i}" data-drop="종목줄">${머리}<div class="맞춤 작 흐림">${x?`${x.계.측정일?"측정 · ":""}${x.계.회}회차 ${처방글(x.목)}`:"목표 달성"}</div></div>`; }
-  return `<div class="종목상자" data-drag="종목줄" data-i="${i}" data-drop="종목줄">${머리}
-    <div class="세트머리 루 아주작 옅음"><span>세트</span><span>무게 kg</span><span>횟수</span><span>휴식</span></div>
-    ${e.세트.map((s,k)=>`<div class="루세트"><span class="k">${k+1}</span>${루값("w",s.w,i,k)}${루값("r",s.r,i,k)}${루값("휴",s.휴,i,k)}</div>`).join("")}
-    <div class="줄"><button class="버튼 낮 채움" data-act="루세트" data-i="${i}" data-d="1">+ 세트</button>${e.세트.length>1?`<button class="버튼 낮" data-act="루세트" data-i="${i}" data-d="-1">− 세트</button>`:""}</div></div>`; }
+  const 빼기 = `<button class="닫기" data-act="종목빼기" data-i="${i}" aria-label="빼기">✕</button>`;
+  if(e.플랜id){ const p=플랜(e.플랜id), x=p&&플랜처방(p), 글=x?`${x.계.측정일?"측정 · ":""}${x.계.회}회차 ${처방글(x.목)}`:"목표 달성";
+    return `<div class="종목상자 루플랜" data-drag="종목줄" data-i="${i}" data-drop="종목줄"><div class="루머리"><div class="채움 루플랜줄"${p?` data-act="플랜고치기" data-v="${p.id}" role="button" tabindex="0" aria-label="${esc(e.이름)} 플랜 고치기"`:""}><span class="이름플랜"><b>${esc(e.이름)}</b>${플랜딱지}</span><span class="루플랜글 숫">· ${글}</span></div>${빼기}</div></div>`; }
+  /* h627 · 9kht 세트 줄 = [번호][무게][횟수][휴식][휴지통] · 높이 28. 세트가 하나면 휴지통은 꺼 둔다 */
+  const 하나 = e.세트.length<=1;
+  return `<div class="종목상자" data-drag="종목줄" data-i="${i}" data-drop="종목줄"><div class="루머리"><b class="채움">${esc(e.이름)}</b>${빼기}</div>
+    <div class="세트머리 루 아주작 옅음"><span>세트</span><span>무게 kg</span><span>횟수</span><span>휴식</span><span></span></div>
+    ${e.세트.map((s,k)=>`<div class="루세트"><span class="k">${k+1}</span>${루값("w",s.w,i,k)}${루값("r",s.r,i,k)}${루값("휴",s.휴,i,k)}<button class="루지움" data-act="루세트지움" data-i="${i}" data-k="${k}" aria-label="${k+1}세트 지우기"${하나?" disabled":""}>${아이콘.휴지통}</button></div>`).join("")}
+    <button class="버튼 낮 넓" data-act="루세트" data-i="${i}" data-d="1">+ 세트</button></div>`; }
 
 /* ── 플랜 만들기 ── */
 function 폼입력(f, 라벨, 단위){ return `<label class="칸">${라벨}<span class="입력줄"><input class="입력" data-in="폼" data-f="${f}" inputmode="decimal" value="${esc(U.플랜폼[f])}"><em>${단위}</em></span></label>`; }
 function 폼안내(){ const f=U.플랜폼, t=찾표(f.종목), n=x=>parseFloat(x)||0;
+  if(f.입력안함) return "1회차에 근력 측정";
   if(맨몸(t)){ const 모드=t.보조?f.보조모드:0, v=맨몸시작값(t,S.몸,모드,n(f.정자세),n(f.보조무게),n(f.보조횟수));
-    if(v==null) return ""; if(모드!==0){ const 환=맨몸환산값(t,S.몸,모드,n(f.보조무게),n(f.보조횟수)); return 환<1?"정자세 1회 미만 → 1회부터 시작":`정자세로 약 ${환.toFixed(1)}회 · ${수준이름[수준보기(t,v,S.몸)]}`; }
-    return `수준 ${수준이름[수준보기(t,v,S.몸)]}`; }
-  const rm=일RM(n(f.현재무게),Math.round(n(f.현재횟수))); return rm>0?`1RM 약 ${kg(Math.round(rm*2)/2)}kg · ${수준이름[수준보기(t,rm,S.몸)]}`:""; }
+    if(v==null || 모드===0) return ""; const 환=맨몸환산값(t,S.몸,모드,n(f.보조무게),n(f.보조횟수)); return 환<1?"정자세 1회 미만 → 1회부터 시작":`정자세로 약 ${환.toFixed(1)}회`; }
+  const rm=일RM(n(f.현재무게),Math.round(n(f.현재횟수))); return rm>0?`1RM 약 ${kg(Math.round(rm*2)/2)}kg`:""; }
+/* sjb8 판정 — 현재 근력: 초보자 · 중급자 · 상급자 · 미친사람 / 목표 근력: 상위 N% (1RM 이든 무게 × 횟수든 1RM 으로 환산) */
+function 폼판정(){ const f=U.플랜폼, t=찾표(f.종목), n=x=>parseFloat(x)||0, 몸=S.몸, 무게씀=!맨몸(t);
+  let 지=null;
+  if(!f.입력안함){ if(맨몸(t)) 지=맨몸시작값(t,몸,t.보조?f.보조모드:0,n(f.정자세),n(f.보조무게),n(f.보조횟수));
+    else { const rm=일RM(n(f.현재무게),Math.round(n(f.현재횟수))); 지=rm>0?rm:null; } }
+  let 목=null;
+  if(맨몸(t)) 목=n(f.목표개수)>0?n(f.목표개수):null;
+  else if(n(f.목표무게)>0) 목 = f.목표방식==="회" ? (n(f.목표횟수)>=1?일RM(n(f.목표무게),Math.round(n(f.목표횟수))):null) : n(f.목표무게);
+  const 체중없음 = 무게씀 && !(몸.체중>0);   // 바벨은 체중비로 가른다 — 체중이 없으면 판정하지 않는다
+  return {현재: 지==null||체중없음 ? "" : 플랜표.판정말[수준보기(t,지,몸)], 목표: 목==null||체중없음 ? "" : 상위글(백분위(t,목,몸))}; }
+function 폼판정그림(){ const 판=폼판정(), 안=document.getElementById("폼안내");
+  if(안){ 안.textContent=폼안내(); 맞춤하기(안.parentElement); }
+  for(const [id,글] of [["현재판정",판.현재],["목표판정",판.목표]]){ const el=document.getElementById(id); if(el) el.textContent=글; } }
 const 방식요약 = 대 => 대.방식번호===1 ? `${이중.세트}×${이중.낮}~${이중.높}` : "";
-function 플랜탭(){ const f=U.플랜폼, t=찾표(f.종목); let 지금칸, 목표칸;
+function 플랜탭(){ const f=U.플랜폼, t=찾표(f.종목), 안함=!!f.입력안함; let 지금칸, 목표칸;
   if(맨몸(t)){
     지금칸 = (t.보조?칩줄("폼값","보조모드",[0,1,2],f.보조모드,j=>["정자세","어시스트","과부하"][j]):"")
       + (f.보조모드===0||!t.보조 ? `<div class="줄">${폼입력("정자세","정자세 개수","회")}</div>` : `<div class="줄">${폼입력("보조무게",f.보조모드===1?"보조 무게":"추가 무게","kg")}${폼입력("보조횟수","횟수","회")}</div>`);
@@ -1575,26 +1802,43 @@ function 플랜탭(){ const f=U.플랜폼, t=찾표(f.종목); let 지금칸, �
     지금칸 = `<div class="줄">${폼입력("현재무게","무게","kg")}${폼입력("현재횟수","횟수","회")}</div>`;
     목표칸 = 칩줄("폼값","목표방식",["RM","회"],f.목표방식,v=>v==="RM"?"1RM":"무게 × 횟수") + `<div class="줄">${폼입력("목표무게","목표 무게","kg")}${f.목표방식==="회"?폼입력("목표횟수","횟수","회"):""}</div>`;
   }
-  const 방=훈련방식들.find(b=>b.번호===f.방식번호), 경=빈도경고(f.주당,t);
+  const 방=훈련방식들.find(b=>b.번호===f.방식번호), 요=방식요약(f), 판=폼판정();
+  /* sjb8 목표 근력(위) · 현재 근력(아래) — 카드 번호(플2 · 플1)는 내용을 따라간다
+     9rvs 주당 줄 삭제 · 15lk 훈련 방식은 카드 하나 = 누르는 줄 44: [이름표 '훈련 방식' · 방식 이름 15 Bold · 요약 칩 · ›]
+     (제목 줄을 따로 두지 않았다 — 360 폭 체험 화면에서 54px 아껴 예전보다 덜 넘친다) */
   return `<div class="넘김"><h1>운동 플랜</h1><div class="쌓기">
     <div class="번호"${번("플0")}>${칩줄("폼값","종목",플랜표.종목들.map(x=>x.이름),f.종목)}</div>
-    <div class="카드 쌓기 번호"${번("플1")}><b class="작">지금</b>${지금칸}<div class="아주작 흐림 맞춤" id="폼안내">${폼안내()}</div></div>
-    <div class="카드 쌓기 번호"${번("플2")}><b class="작">목표</b>${목표칸}</div>
-    <div class="카드 쌓기 번호"${번("플3")}><div class="줄"><b class="작 채움">주당</b>${칩줄("폼값","주당",[1,2,3,4,5,6,7],f.주당)}</div>${경?`<div class="아주작 옅음">${경}</div>`:""}
-      ${맨몸(t)?"":`<button class="고르기" data-act="시트" data-t="방식" data-v="폼"><b>훈련 방식</b><span class="곁">${방.번호}. ${방.이름}${방식요약(f)?" · "+방식요약(f):""}</span>›</button>`}</div>
+    <div class="카드 쌓기 번호"${번("플2")}><div class="줄"><b class="작 채움">목표 근력</b><span class="알약 강조 판정" id="목표판정">${판.목표}</span></div>${목표칸}</div>
+    <div class="카드 쌓기 번호"${번("플1")}><div class="줄"><b class="작 채움">현재 근력</b><span class="알약 강조 판정" id="현재판정">${판.현재}</span></div>
+      <div class="쌓기 현재칸${안함?" 흐린칸":""}"${안함?' aria-disabled="true"':""}>${지금칸}</div>
+      <div class="줄"><button class="버튼 낮 나쁨 안함단추${안함?" 켬":""}" data-act="폼입력안함" aria-pressed="${안함}">${안함?"✓ ":""}입력하지 않음</button><span class="아주작 흐림 맞춤 채움 폼안내" id="폼안내">${폼안내()}</span></div></div>
+    ${맨몸(t)?"":`<button class="방식고름줄 번호"${번("플3")} data-act="시트" data-t="방식" data-v="폼"><span class="아주작 옅음">훈련 방식</span><b class="채움 한줄">${방.번호}. ${방.이름}</b>${요?`<span class="칩">${요}</span>`:""}<span class="화살">›</span></button>`}
     ${f.오류?`<div class="작 나쁨">${f.오류}</div>`:""}
     <button class="버튼 주 넓" data-act="플랜만들기">플랜 만들기</button></div></div>`; }
-function 폼플랜(){ const f=U.플랜폼, t=찾표(f.종목), n=x=>parseFloat(x)||0;
-  const p={id:새id(), 이름:t.이름, 종목:t.이름, 주당:f.주당, 방식번호:맨몸(t)?1:f.방식번호, 강도:f.강도, 세트수:f.세트수, 직접횟수:f.직접횟수,
-    보조모드:t.보조?f.보조모드:0, 보조무게:n(f.보조무게), 보조횟수:n(f.보조횟수), 측정들:[], 한회:0, 누적볼륨:0, 만든날:오늘(), 목표방식:"RM", 목표무게:0, 목표횟수:1, 시작1RM:0, 시작개수:0, 목표개수:0};
-  if(S.플랜들.some(x=>x.종목===t.이름)) return {오류:`${t.이름} 플랜이 이미 있습니다 — 종목 탭에서 고치세요`};
+/* ksao 같은 종목 플랜도 여러 개 — 두 번째부터 '벤치프레스 2' · '벤치프레스 3' (이름이 겹치지 않는 가장 작은 수).
+   다른 곳은 플랜을 이름이 아니라 플랜 id 로 찾는다 (루틴 넣기 · 운동 화면 · 플랜반영 · 정식이름) */
+function 새플랜이름(종목){ const 있=new Set(S.플랜들.map(x=>x.이름));
+  if(!S.플랜들.some(x=>x.종목===종목) && !있.has(종목)) return 종목;
+  let i=2; while(있.has(`${종목} ${i}`)) i++; return `${종목} ${i}`; }
+function 폼플랜(){ const f=U.플랜폼, t=찾표(f.종목), n=x=>parseFloat(x)||0, 안함=!!f.입력안함;
+  const p={id:새id(), 이름:새플랜이름(t.이름), 종목:t.이름, 방식번호:맨몸(t)?1:f.방식번호, 강도:f.강도, 세트수:f.세트수, 직접횟수:f.직접횟수,
+    보조모드:t.보조&&!안함?f.보조모드:0, 보조무게:n(f.보조무게), 보조횟수:n(f.보조횟수), 측정들:[], 한회:0, 누적볼륨:0, 만든날:오늘(), 목표방식:"RM", 목표무게:0, 목표횟수:1, 시작1RM:0, 시작개수:0, 목표개수:0};
+  /* sjb8 '입력하지 않음' — 1회차를 근력 측정일로(p.측정먼저), 그 전 회차표는 초보자 시작값으로 미리 본다 [제안].
+     시작값은 체중으로 잡으므로 체중이 있어야 한다 · 목표를 넘지 않게 min(초보자 시작값, 목표 × 미입력비) */
+  if(안함 && !(S.몸.체중>0)) return {오류:"설정에서 체중을 먼저 넣어 주세요"};
   if(맨몸(t)){ if(!(S.몸.체중>0)) return {오류:"설정에서 체중을 먼저 넣어 주세요"};
-    const v=맨몸시작값(t,S.몸,p.보조모드,n(f.정자세),p.보조무게,p.보조횟수);
-    if(v==null) return {오류:p.보조모드===0?"정자세 개수를 넣어 주세요":"보조 무게와 횟수를 넣어 주세요"};
-    p.시작개수=v; p.목표개수=n(f.목표개수); if(!(p.목표개수>v)) return {오류:`목표는 지금(${v.toFixed(1)}회)보다 커야 합니다`}; }
-  else { const w=n(f.현재무게), r=Math.round(n(f.현재횟수)); if(!(w>0&&r>=1)) return {오류:"지금 드는 무게와 횟수를 넣어 주세요"};
-    p.시작1RM=일RM(w,r); p.목표방식=f.목표방식; p.목표무게=n(f.목표무게); p.목표횟수=f.목표방식==="RM"?1:Math.max(1,Math.round(n(f.목표횟수)));
-    if(!(목표1RM(p)>p.시작1RM)) return {오류:`목표가 지금(1RM 약 ${kg(Math.round(p.시작1RM*2)/2)}kg)보다 커야 합니다`}; }
+    p.목표개수=n(f.목표개수);
+    if(안함){ p.측정먼저=true; p.시작개수=Math.max(1, Math.min(초보자시작(t,S.몸), p.목표개수*플랜표.미입력비));
+      if(!(p.목표개수>p.시작개수)) return {오류:p.목표개수>0?"목표는 1회보다 커야 합니다":"목표 개수를 넣어 주세요"}; }
+    else { const v=맨몸시작값(t,S.몸,p.보조모드,n(f.정자세),p.보조무게,p.보조횟수);
+      if(v==null) return {오류:p.보조모드===0?"정자세 개수를 넣어 주세요":"보조 무게와 횟수를 넣어 주세요"};
+      p.시작개수=v; if(!(p.목표개수>v)) return {오류:`목표는 현재 근력(${v.toFixed(1)}회)보다 커야 합니다`}; } }
+  else { p.목표방식=f.목표방식; p.목표무게=n(f.목표무게); p.목표횟수=f.목표방식==="RM"?1:Math.max(1,Math.round(n(f.목표횟수)));
+    if(안함){ if(!(목표1RM(p)>0)) return {오류:"목표 무게를 넣어 주세요"};
+      p.측정먼저=true; p.시작1RM=Math.min(초보자시작(t,S.몸), 목표1RM(p)*플랜표.미입력비); }
+    else { const w=n(f.현재무게), r=Math.round(n(f.현재횟수)); if(!(w>0&&r>=1)) return {오류:"현재 근력을 넣어 주세요"};
+      p.시작1RM=일RM(w,r);
+      if(!(목표1RM(p)>p.시작1RM)) return {오류:`목표가 현재 근력(1RM 약 ${kg(Math.round(p.시작1RM*2)/2)}kg)보다 커야 합니다`}; } }
   const 표=플랜회표(p); if(!표.length) return {오류:"계산할 수 없습니다 — 값을 확인해 주세요"}; return {p,표}; }
 function 회블록(표){ const out=[]; let a=0; 표.forEach((x,j)=>{ if(x.측정일||j===표.length-1){ out.push(표.slice(a,j+1)); a=j+1; } }); return out; }
 
@@ -1606,7 +1850,7 @@ function 플랜카드(p,i){ const t=찾표(p.종목), 표=플랜회표(p), 끝=�
     <div class="게이지3"><i data-anim-w="게${p.id}" style="width:${fr*100}%"></i></div>
     <div class="줄 아주작 흐림 숫"><span>시작 ${값글(t,시)}</span><span class="채움" style="text-align:center">지금 ${값글(t,현)}</span><span>목표 ${값글(t,목)}</span></div>
     <div class="맞춤 작">${다?`${다.측정일?"측정 · ":""}${다.회}회차 ${처방글(회처방(p,다.목표값,다.측정일))}`:"목표 달성"}</div>
-    <div class="맞춤 아주작 옅음">${측?`다음 측정 ${측.회}회차 · `:""}주 ${p.주당}회 · 속도 ${속도출처(p.종목)}</div>
+    <div class="맞춤 아주작 옅음">${측?`다음 측정 ${측.회}회차 · `:""}속도 ${속도출처(p.종목)}</div>
     <div class="줄"><button class="버튼 낮 채움" data-act="플랜고치기" data-v="${p.id}">변경</button><button class="버튼 낮 나쁨" data-act="플랜지움" data-v="${p.id}">${U.확인==="플랜"+p.id?"한 번 더":"지우기"}</button></div></div>`; }
 function 종목줄(x){ const l=사진목록(x.이름), 펼=U.종목펼침===x.이름;
   return `<div class="종목줄">
@@ -1648,6 +1892,23 @@ function 설정탭(){ const s=S.설정, 몸=S.몸;
     <div style="height:12px"></div></div>`; }
 
 /* ── 시트 ── */
+/* jmg1 · w0fo 종목 넣기 목록 — 종목표 + 플랜. 플랜이 있는 종목은 그 줄이 플랜 줄이 된다(플랜이 여럿이면 플랜마다 한 줄).
+   누르면 플랜 종목으로 넣는다(전과 같은 '플랜넣기'). 이름 가나다순. 이름 옆에 그 종목의 가장 최근 기록을 흐리게 */
+function 넣기목록(r){ const 칸=U.칸고름, 줄=[];
+  for(const x of S.종목표){ if(칸!=="전체" && x.칸!==칸) continue; const 플=S.플랜들.filter(p=>p.종목===x.이름);
+    if(플.length) 플.forEach(p=>줄.push({이름:p.이름, p, 종목:x.이름})); else 줄.push({이름:x.이름, 종목:x.이름}); }
+  if(칸==="전체") S.플랜들.filter(p=>!S.종목표.some(x=>x.이름===p.종목)).forEach(p=>줄.push({이름:p.이름, p, 종목:p.종목}));   // 종목표에 없는 종목의 플랜도 잃지 않게
+  줄.sort((a,b)=>a.이름.localeCompare(b.이름,"ko"));
+  return 줄.map(z=>{ const 열=z.p?"p:"+z.p.id:"e:"+z.이름, 넣=U.방금.includes(열), 있=z.p?r.종목.some(e=>e.플랜id===z.p.id):r.종목.some(e=>e.이름===z.이름&&!e.플랜id);
+    return `<button class="고르기 넣기줄" data-act="${z.p?"플랜넣기":"종목넣기"}" data-v="${z.p?z.p.id:esc(z.이름)}"><span class="이름플랜"><b class="${넣?"강조":""}">${esc(z.이름)}</b>${z.p?플랜딱지:""}</span><span class="곁 숫">${최근기록글(z.종목)}</span>${넣?"✓":있?"있음":"＋"}</button>`; }).join("")
+    || `<div class="빈칸">이 칸에 종목이 없습니다</div>`; }
+/* w0fo 가장 최근에 한 날(체크한 세트만) — '최근 3세트 · 최고 60kg×9 · 1RM 78kg · 휴식 1:30'. 최고 = 가장 무거운 세트(같으면 횟수 많은 것).
+   맨몸(0kg)은 '최고 12회' 만 · 기록이 없으면 비움 */
+function 최근기록글(종목){ const 줄=Object.entries(S.기록).sort(([a],[b])=>키순(b,a));
+  for(const [,rec] of 줄){ const 세=rec.종목.filter(e=>정식이름(e)===종목||e.이름===종목).flatMap(한세트); if(!세.length) continue;
+    const 최=세.reduce((a,b)=>(+b.w>+a.w||(+b.w===+a.w&&b.r>a.r))?b:a), rm=Math.max(0,...세.map(RM값)), 휴=세.find(x=>x.휴>0)?.휴;
+    return [`최근 ${세.length}세트`, 최.w>0?`최고 ${kg(+최.w)}kg×${최.r}`:`최고 ${최.r}회`, rm>0?`1RM ${kg(Math.round(rm*2)/2)}kg`:"", 휴?`휴식 ${분초(휴)}`:""].filter(Boolean).join(" · "); }
+  return ""; }
 function 시트(){ if(!U.시트) return ""; const 종=U.시트.종류; let 안="", 높=false;
   const 머리 = (제목, 닫기="닫기")=> `<div class="머리"><b>${제목}</b><button class="닫기" data-act="시트닫기">${닫기}</button></div>`;
   if(종==="변경"){ const k=U.시트.k, r=루틴(S.예정[k]), 이날=k===오늘()?"오늘":"이 날";
@@ -1664,11 +1925,8 @@ function 시트(){ if(!U.시트) return ""; const 종=U.시트.종류; let 안="
       `<button class="고르기" data-act="휴식적용" data-v="미루기"><div class="채움"><b>미루기</b><div class="아주작 옅음 맞춤">다음 날부터 ${사흘미리(true,k).map(esc).join(" → ")}</div></div>›</button>
        <button class="고르기" data-act="휴식적용" data-v="건너뛰기"><div class="채움"><b>건너뛰기</b><div class="아주작 옅음 맞춤">다음 날부터 ${사흘미리(false,k).map(esc).join(" → ")}</div></div>›</button>`; }
   else if(종==="종목넣기"){ const r=루틴(U.루틴열림); if(!r){ U.시트=null; return ""; }
-    const 플=S.플랜들.map(p=>{ const 넣=U.방금.includes("p:"+p.id), 몇=r.종목.filter(e=>e.플랜id===p.id).length, x=플랜처방(p);
-      return `<button class="고르기" data-act="플랜넣기" data-v="${p.id}"><b class="${넣?"강조":""}">${esc(p.이름)}</b><span class="곁">${x?`${x.계.측정일?"측정 · ":""}${x.계.회}회차 ${처방글(x.목)}`:"목표 달성"}</span>${넣?"✓":몇?"있음":"＋"}</button>`; }).join("");
-    const 목=S.종목표.filter(x=>x.칸===U.칸고름).map(x=>{ const 넣=U.방금.includes("e:"+x.이름), 있=r.종목.some(e=>e.이름===x.이름&&!e.플랜id);
-      return `<button class="고르기" data-act="종목넣기" data-v="${esc(x.이름)}"><b class="${넣?"강조":""}">${esc(x.이름)}</b><span class="곁"></span>${넣?"✓":있?"있음":"＋"}</button>`; }).join("");
-    안 = 머리(`${esc(r.이름)}에 넣기`) + (플?`<div class="아주작 옅음">운동 플랜</div>${플}`:"") + 칩줄("칸고름","",S.카테고리,U.칸고름) + 목; 높=true; }
+    /* jmg1 '운동 플랜' 묶음 없음 — 플랜은 목록 안에서 [플랜] 표로. w0fo [전체] 맨 왼쪽 · 칩 7개가 360 폭 한 줄에 들어가게 같은 폭 */
+    안 = 머리(`${esc(r.이름)}에 넣기`) + `<div class="넣기칩">${칩줄("칸고름","",["전체",...S.카테고리],U.칸고름)}</div><div class="넣기목록">${넣기목록(r)}</div>`; 높=true; }
   else if(종==="방식"){ 안 = 방식시트(); 높=true; }
   else if(종==="플랜결과"){ 안 = 플랜결과시트(); 높=true; }
   else if(종==="고침"){ 안 = 고침시트(); 높=true; }
@@ -1695,11 +1953,18 @@ function 방식속(b,대){ let 칸;
   if(b.번호===1) 칸 = `<div class="작 숫">${방식요약({방식번호:1})} · ${이중.높}회가 되면 무게를 올리고 ${이중.낮}회부터</div>`;
   else 칸 = `<div class="작 숫">${방식세트(b.번호,100,대).map(x=>`${x.라벨?x.라벨+" ":""}${x.세트}×${x.횟수}${x.더?"+":""}`).join(" · ")}</div>`;
   return `<div class="방식속" data-enter="방식${b.번호}"><div class="작">${b.특징}</div><div class="맞춤 아주작 옅음">주 ${b.주당}회 · ${b.근거}</div>${칸}<button class="버튼 주 넓" data-act="방식고름" data-n="${b.번호}">이 방식으로</button></div>`; }
+/* e8am 회차 묶음의 처음 처방 → 끝 처방을 한 줄로 (같으면 하나만) */
+function 처방변화글(앞, 뒤){ const a=처방글(앞), z=처방글(뒤); if(a===z) return a;
+  if(앞.length===1 || 앞.length!==뒤.length) return `${a} → ${z}`;
+  return 앞.map((x,i)=>{ const y=뒤[i]; return `${x.라벨?x.라벨+" ":""}${kg(x.무게)}${y.무게!==x.무게?"→"+kg(y.무게):""}×${x.횟수}${x.더?"+":""}×${x.세트}`; }).join(" / "); }
 function 플랜결과시트(){ const {p,표}=U.플랜결과, t=찾표(p.종목), 끝=표[표.length-1];
+  /* e8am 묶음 = [N–M회차 · 알약] + [처방 한 줄] · 'N회차에 근력 측정' · 줄 간격 절반(CSS) / 9rvs 주 · 주당 표시 삭제
+     sjb8 현재 근력을 안 넣었으면 시작값 앞에 '추정' */
   return `<div class="머리"><b>${esc(p.이름)} 플랜</b><button class="닫기" data-act="시트닫기">고치기</button></div>
-    <div class="맞춤 작 굵">${값글(t,시작진행값(p))} → ${값글(t,목표진행값(p))} · 주 ${p.주당}회 · 총 ${끝.회}회 (약 ${끝.주}주)</div>
-    <div class="쌓기">${회블록(표).map(b=>{ const a=b[0], z=b[b.length-1]; return `<div class="회블록"><div class="줄 아주작"><b class="채움">${a.회}–${z.회}회 · ${a.주}–${z.주}주</b>${z.측정일?`<span class="알약 강조">${z.회}회 측정</span>`:`<span class="알약 달성">목표</span>`}</div>
-      <div class="맞춤 작 숫">${처방글(회처방(p,a.목표값,false))}</div><div class="맞춤 작 숫 흐림">→ ${처방글(회처방(p,z.목표값,false))}</div></div>`; }).join("")}</div>
+    <div class="맞춤 작 굵">${p.측정먼저?"추정 ":""}${값글(t,시작진행값(p))} → ${값글(t,목표진행값(p))} · 총 ${끝.회}회차</div>
+    <div class="결과묶음들">${회블록(표).map(b=>{ const a=b[0], z=b[b.length-1], 앞=회처방(p,a.목표값,false), 뒤=회처방(p,z.목표값,false);
+      return `<div class="회블록"><div class="줄 아주작"><b class="채움">${a.회===z.회?a.회:`${a.회}–${z.회}`}회차</b>${z.측정일?`<span class="알약 강조">${z.회}회차에 근력 측정</span>`:`<span class="알약 달성">목표</span>`}</div>
+      <div class="작 숫${앞.length>1?"":" 맞춤"}">${처방변화글(앞,뒤)}</div></div>`; }).join("")}</div>
     <button class="버튼 주 넓" data-act="플랜저장">플랜 저장</button>`; }
 function 고침입력(f,라벨,단위,문자){ return `<label class="칸">${라벨}<span class="입력줄"><input class="입력" data-in="고침" data-f="${f}" ${문자?"":`inputmode="decimal"`} value="${esc(U.고침[f])}">${단위?`<em>${단위}</em>`:""}</span></label>`; }
 function 고침칸(f,단위,자리){ return `<span class="입력줄 채움"><input class="입력" data-in="고침" data-f="${f}" inputmode="decimal" placeholder="${자리}" aria-label="${자리}" value="${esc(U.고침[f])}">${단위?`<em>${단위}</em>`:""}</span>`; }
@@ -1732,27 +1997,32 @@ function 운동화면(){ const ss=S.세션, n=ss.종목.length;
   const 오=세.length?(맨?Math.max(...세.map(s=>s.r)):Math.max(...세.map(s=>일RM(s.w,s.r)))):null;
   const 지=운최고(e.이름,맨), 단위=맨?"회":"kg";
   const 비=(이름,기)=>{ if(오==null||기==null) return `<span class="운칩 빈">${이름} —</span>`; const d=Math.round((오-기)*2)/2;
-    return `<span class="운칩 ${d>0?"오름":d<0?"내림":""}">${이름} ${d===0?"유지":(d>0?"▲ ":"▼ ")+kg(Math.abs(d))+단위}</span>`; };
+    return `<span class="운칩 ${d>0?"오름":d<0?"내림":""}">${이름} ${d===0?"유지":(d>0?"▲":"▼")+kg(Math.abs(d))}</span>`; };   // 10-03 ✎ 3ehg — 띠 한 줄에 들어가게 단위를 뺐다
+  /* 10-03 ✎ r0yk — '플랜 15회차' → '15회차 · N주 진행 중'. 주 = 플랜 만든 날부터 오늘까지 지난 주 + 1 (만든 주 = 1주).
+     [플랜] 표는 이름 끝 낱말에 붙인 빈 <i> (글은 CSS) — 끝 낱말과 같이 감기고, 이름 글(textContent)에는 안 섞인다 */
+  const 플p=e.플랜id?플랜(e.플랜id):null, 주=플p&&플p.만든날?Math.floor(Math.max(0,날차(플p.만든날,오늘()))/7)+1:null;
+  const 낱=e.이름.split(" "), 끝말=낱.pop();
+  const 이름칸=e.플랜id?`<b class="운이름">${낱.length?esc(낱.join(" "))+" ":""}<span class="운끝말">${esc(끝말)}<i class="운플랜표" title="플랜"></i></span></b><span class="운곁">${e.회}회차${e.측정일?" · 측정일":""}${주?` · ${주}주 진행 중`:""}</span>`
+    : `<b class="운이름">${esc(e.이름)}</b>`;
   const 다음i=ss.종목.findIndex((x,i)=>i>본&&완(x)<x.세트.length), 첫i=ss.종목.findIndex(x=>완(x)<x.세트.length);
   const 갈곳=다음i>=0?다음i:(첫i>=0&&첫i!==본?첫i:-1), 지금k=e.세트.findIndex(s=>!s.완료);
   const 그림보임=S.설정.배너!=="숨김"&&!ss.배너숨김;
   return `<div class="화면">
-    <div class="운머리 띠 번호"${번("운0")}><button class="운나감" data-act="탭" data-t="캘린더" aria-label="나가기">‹</button>
-      <div class="운글"><b class="운이름">${esc(e.이름)}</b>${e.플랜id?`<span class="운곁">플랜 ${e.회}회차${e.측정일?" · 측정일":""}</span>`:""}</div>
-      <div class="운오른">${그림보임?"":`<button class="작은흰" data-act="배너보기">그림</button>`}<span class="숫 굵 큰" data-timer="경과"></span></div></div>
+    <div class="운머리 띠 두줄 번호"${번("운0")}><div class="운첫줄"><button class="운나감" data-act="탭" data-t="캘린더" aria-label="나가기">‹</button>
+      <div class="운글">${이름칸}</div>
+      <div class="운오른">${그림보임?"":`<button class="작은흰" data-act="배너보기">그림</button>`}<span class="숫 굵 큰 운시계" data-timer="경과"></span></div></div>
+      <div class="운수치 맞춤"><span>${맨?"최고":"1RM"} <b>${오==null?"—":kg(Math.round(오*2)/2)+단위}</b></span>${비("1주",지.주)}${비("최고",지.최고)}<i class="운점" aria-hidden="true">·</i><span>달성 <b>${e.세트.length?Math.round(완(e)/e.세트.length*100):0}%</b></span><i class="운점" aria-hidden="true">·</i><span>볼륨 <b>${콤마(Math.round(볼(e)))}</b><span class="운목표">/${콤마(Math.round(볼(e,true)))}</span>kg</span></div></div>
     ${배너()}
-    <div class="운세트들"><div class="세트머리 아주작 옅음"><span>세트</span><span>kg</span><span>회</span><span>휴식</span><span>완료</span></div>
+    <div class="운세트들"><div class="세트머리 아주작 옅음"><span>세트</span><span>kg</span><span>회</span><span>휴식</span><span></span></div>
       ${e.세트.map((s,k)=>운세트줄(본,s,k,지금k)).join("")}
-      <div class="줄"><button class="버튼 낮 채움" data-act="세트더" data-i="${본}">+ 세트</button>${e.세트.length>1?`<button class="버튼 낮" data-act="세트빼기" data-i="${본}">− 세트</button>`:""}</div></div>
+      <div class="줄"><button class="버튼 낮 채움" data-act="세트더" data-i="${본}">+ 세트</button></div></div>
     <div class="운아래 번호"${번("운띠")}>
-      <div class="운지표들"><div class="운지표"><span>${맨?"최고":"1RM"} <b>${오==null?"—":kg(Math.round(오*2)/2)+단위}</b></span>${비("1주",지.주)}${비("최고",지.최고)}</div>
-        <div class="운지표"><span>달성 <b>${e.세트.length?Math.round(완(e)/e.세트.length*100):0}%</b></span><span>볼륨 <b>${콤마(Math.round(볼(e)))}</b>/${콤마(Math.round(볼(e,true)))}kg</span></div></div>
       <div class="운요약"><b class="운루틴 한줄">${esc(ss.이름)}</b><span>종목 <b>${끝종}/${n}</b></span><span>세트 <b>${끝낸}/${전}</b></span><span>볼륨 <b>${콤마(Math.round(총볼))}</b>/${콤마(Math.round(총목))}</span></div>
       <div class="운막대"><i style="width:${전?끝낸/전*100:0}%"></i></div>
       <div class="운띠">${ss.종목.map((x,i)=>{ const m=x.세트.length, k=완(x), 다끝=m&&k===m;
         return `<button class="운칸 ${i===본?"지금":""} ${다끝&&i!==본?"끝":""}" data-act="본종목" data-i="${i}" aria-label="${esc(x.이름)} ${k}/${m}세트"><div class="ㅇ">${esc(x.이름)}</div><div class="ㅅ">${k}/${m}</div><div class="ㅁ"><i style="width:${m?k/m*100:0}%"></i></div></button>`; }).join("")}</div></div>
     <div class="아랫줄"><button class="버튼 운이전" data-act="이전종목" ${본>0?"":"disabled"}>‹ 이전</button><button class="버튼" data-act="끝내기">운동 끝내기</button>${갈곳>=0?`<button class="버튼 주 채움 한줄" data-act="본종목" data-i="${갈곳}">다음 · ${esc(ss.종목[갈곳].이름)} ›</button>`:`<button class="버튼 주 채움" data-act="끝내기">마무리</button>`}</div>
-    ${시트()}</div>`; }
+    ${시트()}</div>${운지움띠()}`; }
 /* 10-03 ✎ 9a8l "맨 아래 세트를 체크하면 맨 위로 이동" — 원인: 그리기()는 화면을 통째로 새로 만들어
    세트 목록(.운세트들)의 scrollTop 과 종목 칸 줄(.운띠)의 scrollLeft 가 0 으로 돌아갔다.
    스크롤될 때마다 자리를 적어 두고(운자리), 새로 그린 뒤 운자리맞춤()이 같은 운동 · 같은 종목이면 그 자리로 되돌린다.
@@ -1769,6 +2039,8 @@ function 체크자리(i,k){ 운자리.다음=null;
   if(줄.offsetTop+줄.offsetHeight/2-목.scrollTop <= 목.clientHeight/2) return;   // 보이는 칸의 위 절반 → 그대로
   const 다=e.세트.findIndex((s,j)=>j>k&&!s.완료); if(다>=0) 운자리.다음={i,k:다}; }
 function 운자리맞춤(폰){ const ss=S.세션, 목=폰.querySelector(".운세트들"), 줄=폰.querySelector(".운띠"); if(!ss||!목||!줄) return;
+  목.querySelectorAll(".값칸 input").forEach(운입력맞춤);   // 10-03 ✎ ai39
+  const 수=폰.querySelector(".운수치"); if(수 && 수.scrollWidth>수.clientWidth/0.9) 수.classList.add("좁");   // 10-03 ✎ 3ehg — 좁은 폰에서는 볼륨 목표를 감춘다
   const 같은운동=운자리.세션===ss.시작, 같은종목=같은운동&&운자리.본===U.본, 다음=운자리.다음; 운자리.다음=null;
   const 움=움직임줄임()?"auto":"smooth";
   목.scrollTop = 같은종목 ? 운자리.위 : 0;
@@ -1791,11 +2063,34 @@ document.addEventListener("pointermove", e=>{ if(!띠끌) return; const dx=e.cli
   e.preventDefault(); 띠끌.줄.scrollLeft=띠끌.옆-dx; });
 const 띠끌끝=()=>{ if(!띠끌) return; if(띠끌.켜짐){ 막음클릭=true; 띠끌.줄.classList.remove("끄는중"); } 띠끌=null; };
 document.addEventListener("pointerup", 띠끌끝); document.addEventListener("pointercancel", 띠끌끝);
+/* 10-03 ✎ ai39 — kg 칸이 좁아져 '102.5' 같은 긴 값은 글자를 줄여 넣는다 (15 → 13 → 11). 그린 뒤 · 칠 때마다 */
+function 운입력맞춤(el){ el.style.fontSize=""; for(const fs of [13,11]){ if(el.scrollWidth<=el.clientWidth+1) break; el.style.fontSize=fs+"px"; } }
+document.addEventListener("input", e=>{ if(e.target.matches?.(".운세트들 .값칸 input")) 운입력맞춤(e.target); });
+/* 10-03 ✎ ai39 — 세트 줄 맨 오른쪽 휴지통 (선 아이콘 · stroke 2). 아이콘 객체는 다른 손이 고치는 중이라 따로 둔다 */
+const 운휴지통 = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>`;
+/* 10-03 ✎ ai39 — 지우기는 묻지 않고 지우고 아래띠로 5초 되돌리기 (U5-4 · 동작방식 D3-4) */
+let 운지움번호 = 0;
+function 운지움띠(){ const z=U.운지움, ss=S.세션; if(!z||!ss||z.세션!==ss.시작) return "";
+  return `<div class="아래띠 운지움띠" role="status" data-enter="운지움${z.id}"><span class="채움">${esc(ss.종목[z.i]?.이름||"")} ${z.k+1}세트를 지웠습니다</span><button data-act="세트되돌림">되돌리기</button></div>`; }
+function 세트지우기(i,k){ const ss=S.세션, x=ss?.종목[i]; if(!x||!x.세트[k]||x.세트.length<=1) return;   // 하나 남으면 지우지 않는다
+  const id=++운지움번호; U.운지움={id, 세션:ss.시작, i, k, 세트:x.세트[k], 지금:{...ss.지금}, 휴식:ss.휴식?{...ss.휴식}:null};
+  x.세트.splice(k,1); ss.마지막=S.시계;
+  if(ss.휴식&&ss.휴식.i===i){ if(ss.휴식.k===k) ss.휴식=null; else if(ss.휴식.k>k) ss.휴식.k--; }
+  if(ss.지금.i===i&&ss.지금.k>=k){ if(ss.지금.k>k) ss.지금.k--;
+    else { const j=x.세트.findIndex((s,j)=>j>=k&&!s.완료); ss.지금 = j>=0 ? {i,k:j} : (다음세트(i,Math.max(0,k-1)) || {i,k:Math.min(k,x.세트.length-1)}); } }
+  setTimeout(()=>{ if(U.운지움?.id!==id) return; U.운지움=null;
+    document.querySelectorAll("#폰 .운지움띠").forEach(el=>{ el.classList.add("나감띠"); setTimeout(()=>el.remove(),200); }); }, 5000); }
+function 세트되돌리기(){ const z=U.운지움, ss=S.세션; U.운지움=null; if(!z||!ss||z.세션!==ss.시작) return; const x=ss.종목[z.i]; if(!x) return;
+  x.세트.splice(Math.min(z.k,x.세트.length),0,z.세트); ss.지금=z.지금;
+  if(z.휴식 && z.휴식.끝>S.시계) ss.휴식=z.휴식; else if(ss.휴식&&ss.휴식.i===z.i&&ss.휴식.k>=z.k) ss.휴식.k++; }
 function 운세트줄(i,s,k,지금k){ const ss=S.세션, 쉼=ss.휴식&&ss.휴식.i===i&&ss.휴식.k===k;
   const 값=(f,v)=>`<div class="값칸"><button data-act="세트값" data-f="${f}" data-i="${i}" data-k="${k}" data-d="-1" aria-label="빼기">−</button><input data-in="세트값" data-f="${f}" data-i="${i}" data-k="${k}" inputmode="decimal" value="${f==="w"?kg(v):v}"><button data-act="세트값" data-f="${f}" data-i="${i}" data-k="${k}" data-d="1" aria-label="더하기">＋</button></div>`;
-  return `<div class="세트줄 ${k===지금k&&!쉼?"지금":""}"><span class="k">${k+1}</span>${값("w",s.w)}${값("r",s.r)}
-    ${쉼?`<button class="휴식칸" data-act="휴식건너뛰기" aria-label="휴식 건너뛰기"><span class="밑" data-timer="휴식"></span><span class="위" data-쉼바><span data-timer="휴식"></span></span></button>`:`<div class="휴식칸 빈 숫">${분초(s.휴)}</div>`}
-    <button class="체크 ${s.완료?"켬":""}" data-enter="체${i}-${k}-${s.완료?1:0}" data-act="체크" data-i="${i}" data-k="${k}" aria-label="${k+1}세트 ${s.완료?"체크 풀기":"완료"}">${s.완료?아이콘.체크:""}</button></div>`; }
+  /* 10-03 ✎ ai39 — 세트 번호가 곧 체크 동그라미(누르면 체크/풀기 · 체크되면 채운 동그라미 + 번호). 맨 오른쪽은 휴지통.
+     쉬는 동안 휴식 칸 = '0:43 건너뛰기' (칸을 누르면 건너뛴다 — 전에는 시간만 보여 누를 수 있는 줄 몰랐다) */
+  const 하나=ss.종목[i].세트.length<=1;
+  return `<div class="세트줄 ${k===지금k&&!쉼?"지금":""}"><button class="체크 세트번호 ${s.완료?"켬":""}" data-enter="체${i}-${k}-${s.완료?1:0}" data-act="체크" data-i="${i}" data-k="${k}" aria-label="${k+1}세트 ${s.완료?"체크 풀기":"완료"}" aria-pressed="${s.완료}">${k+1}</button>${값("w",s.w)}${값("r",s.r)}
+    ${쉼?`<button class="휴식칸 쉼" data-act="휴식건너뛰기" aria-label="휴식 건너뛰기"><span class="밑"><b data-timer="휴식"></b><small>건너뛰기</small></span><span class="위" data-쉼바><b data-timer="휴식"></b><small>건너뛰기</small></span></button>`:`<div class="휴식칸 빈 숫">${분초(s.휴)}</div>`}
+    <button class="세트지움" data-act="세트지움" data-i="${i}" data-k="${k}" aria-label="${k+1}세트 지우기"${하나?" disabled":""}>${운휴지통}</button></div>`; }
 /* 같은 종목의 지난 기록 중 최고 (오늘 앞) · 1주 = 7일 전 ~ 전날 (v0.6.10) */
 function 운최고(이름,맨){ const 오=오늘(), 주앞=날더하기(오,-7); let 최고=null, 주=null;
   for(const [k,r] of Object.entries(S.기록)){ const 날=k.split("~")[0]; if(날>=오) continue;
@@ -1965,7 +2260,15 @@ function 행동(a, d){
     case "본종목": U.본=+d.i; break;
     case "몸크게": U.시트={종류:"근육"}; break;
     case "그림감추기": S.세션.배너숨김=true; U.시트=null; break;
-    case "휴식건너뛰기": ss.휴식=null; break;
+    case "휴식건너뛰기": { const 쉼=ss.휴식; ss.휴식=null;
+      /* 10-03 ✎ ai39 "마지막 세트에서 건너뛰기하면 자동으로 다음 운동으로" — 그 종목 세트가 다 끝난 뒤의 휴식이면
+         다음 안 끝난 종목(뒤쪽 먼저, 없으면 앞쪽)으로. 칸 줄은 운자리맞춤()이 따라간다 */
+      if(쉼 && U.본===쉼.i && ss.종목[쉼.i]?.세트.every(s=>s.완료)){
+        const 남=x=>x.세트.some(s=>!s.완료), 뒤=ss.종목.findIndex((x,j)=>j>쉼.i&&남(x)), 앞=ss.종목.findIndex(남), 갈=뒤>=0?뒤:앞;
+        if(갈>=0) U.본=갈; }
+      break; }
+    case "세트지움": 세트지우기(+d.i,+d.k); break;      // 10-03 ✎ ai39 — 묻지 않고 지우고 아래띠로 되돌린다 (U5-4)
+    case "세트되돌림": 세트되돌리기(); break;
     case "끝내기": ss.끝화면=true; ss.끝=S.시계; ss.휴식=null; break;
     case "운동으로": ss.끝화면=false; ss.끝=null; ss.버림=false; break;
     case "운동저장": { const 키=운동저장하기(); U.탭="캘린더"; U.고른날=null; 토스트(키?"저장했습니다":"체크한 세트가 없어 저장하지 않았습니다"); break; }
@@ -1983,6 +2286,11 @@ function 행동(a, d){
     case "루값": { const r=루틴(U.루틴열림), s=r.종목[+d.i].세트[+d.k], dd=+d.d;
       if(d.f==="w") s.w=Math.max(0,Math.round((s.w+dd*S.설정.무게폭)*10)/10); else if(d.f==="r") s.r=Math.max(1,s.r+dd); else { s.휴=Math.max(0,s.휴+dd*15); 업적알림(업적판정("루틴")); } break; }
     case "루세트": { const e=루틴(U.루틴열림).종목[+d.i]; if(+d.d>0){ const l=e.세트[e.세트.length-1]||{w:20,r:10,휴:S.설정.기본휴식}; e.세트.push({...l}); } else if(e.세트.length>1) e.세트.pop(); break; }
+    /* h627 세트 줄 휴지통 — 묻지 않고 그 세트를 지우고, 아래띠 6초 [되돌리기] (U5-4). 마지막 하나는 지우지 않는다 */
+    case "루세트지움": { const r=루틴(U.루틴열림), e=r?.종목[+d.i], k=+d.k; if(!e||e.세트.length<=1||!e.세트[k]) break;
+      const 세트=e.세트.splice(k,1)[0], id=++루지움번호; U.세트지움={r:r.id, e, k, 세트, id, 이름:e.이름}; 발자취(`세트 지움 · ${e.이름} ${k+1}세트`);
+      setTimeout(()=>{ if(U.세트지움?.id!==id) return; U.세트지움=null; document.querySelectorAll(".루지움띠").forEach(el=>{ el.classList.add("나감띠"); setTimeout(()=>el.remove(),200); }); }, 6000); break; }
+    case "루세트되돌림": { const x=U.세트지움; U.세트지움=null; const r=x&&루틴(x.r); if(r&&r.종목.includes(x.e)){ x.e.세트.splice(Math.min(x.k,x.e.세트.length),0,x.세트); 발자취(`세트 되돌림 · ${x.이름}`); } break; }
     case "종목빼기": { const r=루틴(U.루틴열림); r.종목.splice(+d.i,1); break; }
     case "칸고름": U.칸고름=d.v; break;
     case "종목넣기": { const r=루틴(U.루틴열림), 열=`e:${d.v}`;
@@ -1992,8 +2300,9 @@ function 행동(a, d){
       if(U.방금.includes(열)){ const k=r.종목.map(e=>e.플랜id===d.v).lastIndexOf(true); if(k>=0) r.종목.splice(k,1); U.방금=U.방금.filter(x=>x!==열); }
       else { const e={이름:p.이름, 플랜id:p.id, 세트:[]}; e.세트=줄세트(e); r.종목.push(e); U.방금.push(열); 업적알림(업적판정("루틴")); } break; }
     /* 플랜 */
-    case "폼값": { const f=U.플랜폼; const v = ["주당","보조모드"].includes(d.f) ? +d.v : d.v; f[d.f]=v; f.오류="";
-      if(d.f==="종목"){ const 새=폼초기(); 새.종목=v; 새.주당=f.주당; U.플랜폼=새; } break; }
+    case "폼값": { const f=U.플랜폼; const v = d.f==="보조모드" ? +d.v : d.v; f[d.f]=v; f.오류="";
+      if(d.f==="종목"){ const 새=폼초기(); 새.종목=v; U.플랜폼=새; } break; }
+    case "폼입력안함": U.플랜폼.입력안함=!U.플랜폼.입력안함; U.플랜폼.오류=""; break;   // sjb8 다시 누르면 풀린다
     case "방식펼침": U.방식펼침 = (U.방식펼침??대상폼().방식번호)===+d.n ? -1 : +d.n; break;
     case "방식닫기": U.시트 = U.시트.대상==="고침" ? {종류:"고침"} : null; break;
     case "방식고름": { const 대=대상폼(); 대.방식번호=+d.n; U.시트 = U.시트.대상==="고침" ? {종류:"고침"} : null; break; }
@@ -2001,7 +2310,7 @@ function 행동(a, d){
     case "플랜저장": { const p=U.플랜결과.p; S.플랜들.push(p); 발자취(`플랜 저장 · ${p.이름}`); U.플랜결과=null; U.시트=null; U.플랜폼=폼초기(); U.탭="종목"; 토스트("종목 탭에 넣었습니다"); break; }
     case "플랜지움": if(U.확인!=="플랜"+d.v){ U.확인="플랜"+d.v; break; } { const p=플랜(d.v); S.플랜들=S.플랜들.filter(x=>x.id!==d.v);
       S.루틴들.forEach(r=>r.종목=r.종목.filter(e=>e.플랜id!==d.v)); U.확인=null; 발자취(`플랜 지움 · ${p.이름}`); } break;
-    case "플랜고치기": { const p=플랜(d.v); U.고침={id:p.id, 이름:p.이름, 목표방식:p.목표방식||"RM", 목표무게:p.목표무게, 목표횟수:p.목표횟수||1, 목표개수:p.목표개수, 주당:p.주당, 방식번호:p.방식번호, 강도:p.강도, 세트수:p.세트수, 직접횟수:p.직접횟수, 보조모드:p.보조모드, 보조무게:p.보조무게, 측정무게:"", 측정횟수:""}; U.시트={종류:"고침"}; break; }
+    case "플랜고치기": { const p=플랜(d.v); U.고침={id:p.id, 이름:p.이름, 목표방식:p.목표방식||"RM", 목표무게:p.목표무게, 목표횟수:p.목표횟수||1, 목표개수:p.목표개수, 방식번호:p.방식번호, 강도:p.강도, 세트수:p.세트수, 직접횟수:p.직접횟수, 보조모드:p.보조모드, 보조무게:p.보조무게, 측정무게:"", 측정횟수:""}; U.시트={종류:"고침"}; break; }
     case "고침값": U.고침[d.f]=+d.v; break;
     case "고침목표방식": { const g=U.고침, 폭=S.설정.무게폭||2.5, w=숫(g.목표무게), r=Math.max(1,Math.round(숫(g.목표횟수)||1));
       if(d.v===g.목표방식) break;   // 바꿀 때 같은 실력으로 환산 — 1RM 100 ↔ 75kg × 10회
@@ -2037,6 +2346,18 @@ function 행동(a, d){
   if(다시) 그리기();
 }
 let 막음클릭=false;
+const 누름꼴 = el => { const t=(el?.textContent||"").trim(); return /^[+＋]/.test(t) ? "볼록" : /^[−\-–]/.test(t) ? "오목" : ""; };
+window.addEventListener("click", e=>{ if(막음클릭 || 움직임줄임()) return;
+  const el=e.target.closest?.("button,label.사진추가"), 꼴=누름꼴(el); if(!꼴) return;
+  const q=el.getBoundingClientRect(), x=q.left+q.width/2, y=q.top+q.height/2, 크=Math.max(q.width,q.height,1);
+  const 배 = 꼴==="볼록" ? Math.min(1.12, 1+12/크) : Math.max(0.88, 1-12/크);
+  const 표=[...el.attributes].filter(a=>a.name.startsWith("data-")&&a.name!=="data-enter").map(a=>`[${a.name}="${CSS.escape(a.value)}"]`).join("");
+  requestAnimationFrame(()=>{ let 대=el.isConnected?el:null;
+    if(!대 && 표){ let 멀=1e9; document.querySelectorAll(el.tagName+표).forEach(c=>{ if(누름꼴(c)!==꼴) return; const r=c.getBoundingClientRect(), m=Math.hypot(r.left+r.width/2-x, r.top+r.height/2-y); if(m<멀){ 멀=m; 대=c; } }); }
+    if(!대){ const c=document.elementFromPoint(x,y)?.closest("button,label.사진추가"); if(누름꼴(c)===꼴) 대=c; }
+    if(!대) return; 대.classList.remove("볼록","오목"); 대.style.setProperty("--눌림", 배); void 대.offsetWidth; 대.classList.add(꼴);
+    대.addEventListener("animationend", ()=>대.classList.remove(꼴), {once:true}); });
+}, true);
 document.addEventListener("click", e=>{
   if(막음클릭){ 막음클릭=false; e.preventDefault(); e.stopPropagation(); return; }
   const el=e.target.closest("[data-act]"); if(!el) return;
@@ -2044,7 +2365,7 @@ document.addEventListener("click", e=>{
   행동(el.dataset.act, el.dataset);
 }, true);
 document.addEventListener("input", e=>{ const el=e.target, w=el.dataset.in; if(!w) return; const v=el.value, d=el.dataset;
-  if(w==="폼"){ U.플랜폼[d.f]=v; U.플랜폼.오류=""; const 안=document.getElementById("폼안내"); if(안){ 안.textContent=폼안내(); 맞춤하기(안.parentElement); } }
+  if(w==="폼"){ U.플랜폼[d.f]=v; U.플랜폼.오류=""; 폼판정그림(); }
   else if(w==="고침") U.고침[d.f]=v;
   else if(w==="몸"){ S.몸[d.f]=숫(v); }
   else if(w==="메모글") U.메모글=v;
@@ -2202,21 +2523,30 @@ U.탭 = S.세션 ? "운동" : "캘린더";
   let db=null; const 시계={}, 줄={}, 대기={}, 사슬={};
   목록.innerHTML = 기준부위.map(([k,이름])=>`<div class="기준줄" data-k="${k}"><b>${이름}</b>
     <input class="기준수" type="number" inputmode="decimal" min="0" step="10" placeholder="kg" aria-label="${이름} 가장 빨개지는 볼륨(kg)">
-    <span class="기준지금"><span></span><span></span></span>
-    <input class="기준메모" maxlength="300" placeholder="계산 메모" autocomplete="off" aria-label="${이름} 계산 메모"></div>`).join("");
+    <input class="기준메모" maxlength="300" placeholder="계산 메모" autocomplete="off" aria-label="${이름} 계산 메모">
+    <span class="기준지금"><span></span><span></span></span></div>`).join("");
   목록.querySelectorAll(".기준줄").forEach(el=>{ 줄[el.dataset.k]={수:el.querySelector(".기준수"), 메모:el.querySelector(".기준메모"), 지금:el.querySelector(".기준지금").children}; });
 
-  /* 지금 규칙의 기준 — 잎마다 (이전 최대 → 오늘 계획) 중 가장 큰 잎 · 오늘 한 볼륨도 가장 큰 잎 */
-  function 지금기준(k){ const ss=S&&S.세션, 계=ss?잎볼륨(ss.종목,true):{}, 오=ss?잎볼륨(ss.종목):{}; let 값=0, 출처="", 오늘=0;
-    for(const l of 잎(k)){ const 최=S.최대볼륨[l]||0, b=최>0?최:(계[l]||0); if(b>값){ 값=b; 출처=최>0?"이전 최대":"오늘 계획"; } 오늘=Math.max(오늘,오[l]||0); }
-    return {값, 출처, 오늘}; }
+  /* 지금 쓰는 기준 — 넣은 값 → 공식(주동 종목 최대 세트 볼륨 × 10 × 휴식력) → 옛 규칙(잎마다 이전 최대 → 오늘 계획 중 가장 큰 잎).
+     오늘 = 오늘 한 볼륨이 가장 큰 잎 · 단계 = 그 부위 잎 중 가장 높은 단계 (그림과 같은 값) */
+  const 휴글 = h => Number.isInteger(h) ? h.toFixed(1) : String(+h.toFixed(2));
+  const 세트말 = x => `${x.종목} ${x.w>0?kg(x.w)+"kg":"맨몸"} × ${x.r}회`;
+  function 지금기준(k){ const ss=S&&S.세션, 종=ss?ss.종목:[], 계=ss?잎볼륨(종,true):{}, 오=ss?잎볼륨(종):{}, 단=ss?오늘단계(종):{};
+    const 최=부위최대세트(종)[k]||null, 휴=근육기준설정.휴식력, 공=최?최.값*10*휴:0, 넣=근육기준값[k]&&근육기준값[k].볼륨>0?근육기준값[k].볼륨:0;
+    let 옛=0, 옛출처="", 오늘=0, 단계=0;
+    for(const l of 잎(k)){ const m=S.최대볼륨[l]||0, b=m>0?m:(계[l]||0); if(b>옛){ 옛=b; 옛출처=m>0?"이전 최대":"오늘 계획"; } 오늘=Math.max(오늘,오[l]||0); 단계=Math.max(단계,단[l]||0); }
+    return {값:넣||공||옛, 출처:넣?"넣은 값":공?"공식":옛출처, 오늘, 단계, 공, 최, 휴, 옛, 옛출처}; }
   function 기준글(){ if(칸.hidden||!S) return; for(const [k] of 기준부위){ const x=지금기준(k), t=줄[k].지금;
-    /* 윗줄 = 지금 규칙의 기준과 출처(최대 = 이전 최대 · 계획 = 처음이라 오늘 계획), 아랫줄 = 오늘 한 볼륨 */
-    t[0].textContent = x.값>0 ? `${콤(x.값)} · ${x.출처==="이전 최대"?"최대":"계획"}` : "기준 없음"; t[1].textContent = x.오늘>0 ? `오늘 ${콤(x.오늘)}` : ""; } }
+    /* 윗줄 = 공식 (예: 공식 5,400 = 540 × 10 × 1.0 · 벤치프레스 60kg × 9회). 공식 값이 없으면 대신 쓰는 옛 규칙. 넣은 값이 있으면 '넣은 값 우선' */
+    const 공글 = x.최 ? `공식 ${콤(x.공)} = ${콤(x.최.값)} × 10 × ${휴글(x.휴)} · ${세트말(x.최)}`
+      : `공식 없음(주동 종목 기록 없음)${x.옛>0?` → ${x.옛출처} ${콤(x.옛)}`:""}`;
+    t[0].textContent = (x.출처==="넣은 값" ? "넣은 값 우선 · " : "") + 공글; t[0].title = t[0].textContent;
+    t[1].textContent = x.오늘>0 ? `오늘 ${콤(x.오늘)} · ${Math.round(x.단계*10)/10}단계` : ""; } }
   function 단추글(){ const n=Object.values(근육기준값).filter(x=>x&&x.볼륨>0).length; 단추.textContent="근육 기준"+(n?` · ${n}`:""); }
 
   function 올림(k){ if(!db) return; const 이름=기준부위.find(x=>x[0]===k)[1], v=근육기준값[k]||{}, x=지금기준(k);
-    const 글={부위:이름, 키:k, 볼륨:v.볼륨>0?v.볼륨:null, 메모:v.메모||"", 지금기준:Math.round(x.값), 기준출처:x.출처||null, 오늘:Math.round(x.오늘), 일차:S.일차, 바꾼때:new Date().toISOString()};
+    const 글={부위:이름, 키:k, 볼륨:v.볼륨>0?v.볼륨:null, 메모:v.메모||"", 지금기준:Math.round(x.값), 기준출처:x.출처||null, 공식:Math.round(x.공),
+      최대세트:x.최?{값:Math.round(x.최.값), 종목:x.최.종목, 무게:x.최.w, 횟수:x.최.r, 날:x.최.날}:null, 휴식력:x.휴, 오늘:Math.round(x.오늘), 일차:S.일차, 바꾼때:new Date().toISOString()};
     사슬[k]=(사슬[k]||Promise.resolve()).then(()=>db.collection("thresholds").doc(k).set(글)).catch(()=>{}).finally(()=>{ 대기[k]=false; }); }
   function 바꿈(k, 무엇, 값){ 근육기준값[k]={볼륨:null, 메모:"", ...(근육기준값[k]||{}), [무엇]:값}; 대기[k]=true;
     clearTimeout(시계[k]); 시계[k]=setTimeout(()=>올림(k), 700);   // 치는 동안은 모았다가 멈추면 한 번 저장
@@ -2225,6 +2555,12 @@ U.탭 = S.세션 ? "운동" : "캘린더";
     if(e.target.classList.contains("기준수")){ const v=parseFloat(e.target.value); 바꿈(k,"볼륨", isFinite(v)&&v>0 ? v : null); }
     else if(e.target.classList.contains("기준메모")) 바꿈(k,"메모", e.target.value); });
 
+  const 휴칸=document.getElementById("휴식력칸"); let 휴시계=0, 휴대기=false, 휴사슬=Promise.resolve();
+  휴칸.addEventListener("input", ()=>{ const v=parseFloat(휴칸.value); 근육기준설정.휴식력 = isFinite(v)&&v>0 ? v : 1; 휴대기=true;
+    clearTimeout(휴시계); 휴시계=setTimeout(()=>{ if(!db){ 휴대기=false; return; }
+      const 글={휴식력: isFinite(v)&&v>0 ? v : null, 쓰는값:근육기준설정.휴식력, 설명:"근육 기준 공식의 휴식력 (null = 기본 1.0)", 일차:S.일차, 바꾼때:new Date().toISOString()};
+      휴사슬=휴사슬.then(()=>db.collection("thresholds").doc("_settings").set(글)).catch(()=>{}).finally(()=>{ 휴대기=false; }); }, 700);
+    기준글(); 그리기(); });
   단추.addEventListener("click", ()=>{ const 켬=칸.hidden; 칸.hidden=!켬; 단추.setAttribute("aria-pressed", 켬?"true":"false"); 기준글();
     window.dispatchEvent(new Event("resize")); });   // 막대 높이가 바뀌면 ✎ 표시 판도 폰 자리에 다시 맞춘다
   /* 화면을 다시 그릴 때마다(세트 체크 · 저장 · 날 바꿈) 기준 글을 새로 — 칸이 열려 있을 때만 */
@@ -2232,12 +2568,15 @@ U.탭 = S.세션 ? "운동" : "캘린더";
 
   쓰기("db").then(d=>{ db=d; if(!db) return;
     db.collection("thresholds").onSnapshot(q=>{ let 다시=false;
-      for(const doc of q.docs){ const k=doc.id; if(!줄[k]||대기[k]) continue; const x=doc.data()||{};
+      for(const doc of q.docs){ const k=doc.id;
+        if(k==="_settings"){ if(휴대기) continue; const h=(doc.data()||{}).휴식력, 새=typeof h==="number"&&h>0?h:1;
+          if(새!==근육기준설정.휴식력){ 근육기준설정.휴식력=새; 다시=true; } if(document.activeElement!==휴칸) 휴칸.value = typeof h==="number"&&h>0 ? h : ""; continue; }
+        if(!줄[k]||대기[k]) continue; const x=doc.data()||{};
         const 볼=typeof x.볼륨==="number"&&x.볼륨>0?x.볼륨:null, 메모=typeof x.메모==="string"?x.메모:"", 앞=근육기준값[k];
         if(앞&&앞.볼륨===볼&&앞.메모===메모) continue;
         근육기준값[k]={볼륨:볼, 메모}; 다시=true;
         if(document.activeElement!==줄[k].수) 줄[k].수.value = 볼??""; if(document.activeElement!==줄[k].메모) 줄[k].메모.value = 메모; }
-      if(다시){ 단추글(); 그리기(); } }, ()=>{}); });
+      if(다시){ 단추글(); 그리기(); 기준글(); } }, ()=>{}); });
 })();
 </script>
 

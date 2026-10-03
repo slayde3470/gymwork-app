@@ -13,10 +13,13 @@ async def main():
       if not os.path.exists(st): print(mid,'상태 없음'); continue
       상태=json.load(open(st))
       await pg.goto(F); await pg.wait_for_timeout(400)
-      await pg.evaluate("""([s,w,h])=>{ S=s.S; const 시=s.U.시트; Object.assign(U, s.U, {시트:null});
-        if(시 && (시.종류==='고침' || 시.대상==='고침') && S.플랜들.length){ 행동('플랜고치기',{v:S.플랜들[0].id}); }
-        U.시트=시; const 폰=document.getElementById('폰');
-        폰.style.flex='none'; 폰.style.width=w+'px'; 폰.style.height=h+'px'; 폰.style.maxHeight=h+'px'; 그리기(); }""", [상태, d['폭'], d['높이']])
+      try:
+        await pg.evaluate("""([s,w,h])=>{ S=s.S; const 시=s.U.시트; Object.assign(U, s.U, {시트:null});
+          if(시 && (시.종류==='고침' || 시.대상==='고침') && S.플랜들.length){ 행동('플랜고치기',{v:S.플랜들[0].id}); }
+          U.시트=시; const 폰=document.getElementById('폰');
+          폰.style.flex='none'; 폰.style.width=w+'px'; 폰.style.height=h+'px'; 폰.style.maxHeight=h+'px'; 그리기(); }""", [상태, d['폭'], d['높이']])
+      except Exception as e:
+        print(mid,'다시 띄우기 실패 →',str(e)[:60]); continue
       await pg.wait_for_timeout(900)
       el=await pg.query_selector('#폰'); out=f"{M}/r_{mid}.png"; await el.screenshot(path=out)
       im=Image.open(out).convert('RGB'); W,H=im.size; dr=ImageDraw.Draw(im)

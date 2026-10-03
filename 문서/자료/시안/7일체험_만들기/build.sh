@@ -12,3 +12,8 @@ python3 patch_v7_stat.py 7day-v5.html _7a.html   # 스탯 · 업적 (그래프 �
 python3 patch_v7_res.py  _7a.html _7b.html        # 결과 화면 ▲▼ · 숫자 움직임 ×1.35 · 근육 기준 칸
 python3 patch_v7_cal.py  _7b.html _7c.html        # 캘린더 띠 · 구분선 · 날짜 띠 · 종목 추가 · 플랜 고치기
 python3 patch_v7_work.py _7c.html 7day-v7.html    # 운동 화면 띠 · 지표 아래로 · 체크 스크롤 · 칸 줄 끌기
+# 10-03 저녁 표시 22개 + 근육 기준 공식 — 네 갈래(서로 다른 구역)를 이 순서로 쌓는다
+python3 patch_v8_R.py 7day-v7.html _8a.html       # 루틴 화면 · 종목 넣기 · +/− 움직임(전체)
+python3 patch_v8_W.py _8a.html _8b.html           # 운동 화면 띠 두 줄 · 번호 체크 · 휴지통 · 건너뛰기
+python3 patch_v8_P.py _8b.html _8c.html           # 플랜 탭 · 주당 삭제 · 플랜 결과 · 같은 종목 여러 플랜
+python3 patch_v8_C.py _8c.html 7day-v8.html       # 캘린더 두 칸 · 주말 색 · 스크롤바 · 근육 기준 공식
