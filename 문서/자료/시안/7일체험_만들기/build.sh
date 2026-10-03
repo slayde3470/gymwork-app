@@ -25,3 +25,4 @@ python3 patch_v9_C.py _9c.html 7day-v9.html       # 기록 날 판 · 띠 단추
 # 10-03 밤 표시 7개 — 보고서 · 프로필 탭(R) 위에 운동 세트 줄(W)
 python3 patch_v10_R.py 7day-v9.html _10R.html     # 루틴 상자 · 프로필 상자 2×2 ▲ · 톱니 시트 · 상세 세트 순서 · 프로필 탭
 python3 patch_v10_W.py _10R.html 7day-v10.html    # 체크 파랑 · 번호 보통 굵기 · 쉬는 동안 ± 감춤 · 끝난 줄 --면2
+python3 patch_v11.py 7day-v10.html 7day-v11.html    # 프로필 탭 인스타 꼴 · 인증샷 · 캘린더 [운동 보고서]
