@@ -17,3 +17,8 @@ python3 patch_v8_R.py 7day-v7.html _8a.html       # 루틴 화면 · 종목 넣�
 python3 patch_v8_W.py _8a.html _8b.html           # 운동 화면 띠 두 줄 · 번호 체크 · 휴지통 · 건너뛰기
 python3 patch_v8_P.py _8b.html _8c.html           # 플랜 탭 · 주당 삭제 · 플랜 결과 · 같은 종목 여러 플랜
 python3 patch_v8_C.py _8c.html 7day-v8.html       # 캘린더 두 칸 · 주말 색 · 스크롤바 · 근육 기준 공식
+# 10-03 밤 표시 18개 — 네 갈래(서로 다른 구역)를 이 순서로 쌓는다
+python3 patch_v9_W.py 7day-v8.html _9a.html       # 운동 세트 줄 · ✓ 초록 · 휴식 ± · 띠 칩 흰 박스
+python3 patch_v9_R.py _9a.html _9b.html           # 운동 보고서 · 프로필 · 두 칸 10개 · 펼침 · 설정
+python3 patch_v9_P.py _9b.html _9c.html           # 플랜 판정 자리 · 처방 글 세트→무게→횟수 · 고침 시트 · 종목 탭 [플랜]
+python3 patch_v9_C.py _9c.html 7day-v9.html       # 기록 날 판 · 띠 단추 흰 박스 · 달 고르기 · 휴식력 저장
