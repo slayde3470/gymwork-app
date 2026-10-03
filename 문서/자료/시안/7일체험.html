@@ -1227,6 +1227,18 @@ button.오목,label.오목{animation:오목 .2s ease-out}
 .칸날>*{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 button.칭호표.잠김{font-family:inherit;background:none;cursor:pointer}
 .칭호표.잠김.보임{color:var(--흐림);text-shadow:none}
+
+/* ═══ 10-04 v13 — 운동 화면 [＋] 종목 넣기 · N대 파란 상자 ═══ */
+.운칸.운더{display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:var(--강조);border-style:dashed;border-color:var(--속선)}
+.결과수.큰수 .큰합{grid-column:1 / span 3;margin:0 0 4px;height:28px;border-radius:8px;background:var(--강조);color:var(--강조글);display:flex;align-items:center;justify-content:center;gap:4px;min-width:0;overflow:hidden;white-space:nowrap}
+.결과수.큰수 .큰합 b{font-size:13px;line-height:28px}
+.결과수.큰수 .큰합 small{font-size:11px;font-weight:700}
+.결과수.큰수>div{grid-row:2}
+/* 보고서: 톱니(오른쪽 위 28)와 파란 상자가 겹치지 않게 칸 묶음 오른쪽을 24 비움 */
+.보고프로필 .결과수.큰수.톱니비킴{margin-right:24px}
+.결과수.큰수>div:nth-child(2){border-left:0}
+.결과수.큰수.열3>div:nth-child(3n+1){border-left:1px solid var(--선)}
+.결과수.큰수.열3>div:nth-child(2){border-left:0}
 </style>
 <script>
 "use strict";
@@ -2193,6 +2205,8 @@ function 인증판(){ const 목=인증순();
 /* ── 시트 ── */
 /* jmg1 · w0fo 종목 넣기 목록 — 종목표 + 플랜. 플랜이 있는 종목은 그 줄이 플랜 줄이 된다(플랜이 여럿이면 플랜마다 한 줄).
    누르면 플랜 종목으로 넣는다(전과 같은 '플랜넣기'). 이름 가나다순. 이름 옆에 그 종목의 가장 최근 기록을 흐리게 */
+function 넣을곳(){ return U.시트?.대상==="운동" && S.세션 ? S.세션 : 루틴(U.루틴열림); }
+const 운세트로 = 목 => 목.map(x=>({...x, 목r:x.r, 완료:false}));
 function 넣기목록(r){ const 칸=U.칸고름, 줄=[];
   for(const x of S.종목표){ if(칸!=="전체" && x.칸!==칸) continue; const 플=S.플랜들.filter(p=>p.종목===x.이름);
     if(플.length) 플.forEach(p=>줄.push({이름:p.이름, p, 종목:x.이름})); else 줄.push({이름:x.이름, 종목:x.이름}); }
@@ -2224,7 +2238,7 @@ function 시트(){ if(!U.시트) return ""; const 종=U.시트.종류; let 안="
     안 = 머리(`${이날}은 휴식`) +
       `<button class="고르기" data-act="휴식적용" data-v="미루기"><div class="채움"><b>미루기</b><div class="아주작 옅음 맞춤">다음 날부터 ${사흘미리(true,k).map(esc).join(" → ")}</div></div>›</button>
        <button class="고르기" data-act="휴식적용" data-v="건너뛰기"><div class="채움"><b>건너뛰기</b><div class="아주작 옅음 맞춤">다음 날부터 ${사흘미리(false,k).map(esc).join(" → ")}</div></div>›</button>`; }
-  else if(종==="종목넣기"){ const r=루틴(U.루틴열림); if(!r){ U.시트=null; return ""; }
+  else if(종==="종목넣기"){ const r=넣을곳(); if(!r){ U.시트=null; return ""; }
     /* jmg1 '운동 플랜' 묶음 없음 — 플랜은 목록 안에서 [플랜] 표로. w0fo [전체] 맨 왼쪽 · 칩 7개가 360 폭 한 줄에 들어가게 같은 폭 */
     안 = 머리(`${esc(r.이름)}에 넣기`) + `<div class="넣기칩">${칩줄("칸고름","",["전체",...S.카테고리],U.칸고름)}</div><div class="넣기목록">${넣기목록(r)}</div>`; 높=true; }
   else if(종==="방식"){ 안 = 방식시트(); 높=true; }
@@ -2335,7 +2349,7 @@ function 운동화면(){ const ss=S.세션, n=ss.종목.length;
       <div class="운요약"><b class="운루틴 한줄">${esc(ss.이름)}</b><span>종목 <b>${끝종}/${n}</b></span><span>세트 <b>${끝낸}/${전}</b></span><span>볼륨 <b>${콤마(Math.round(총볼))}</b>/${콤마(Math.round(총목))}</span></div>
       <div class="운막대"><i style="width:${전?끝낸/전*100:0}%"></i></div>
       <div class="운띠">${ss.종목.map((x,i)=>{ const m=x.세트.length, k=완(x), 다끝=m&&k===m;
-        return `<button class="운칸 ${i===본?"지금":""} ${다끝&&i!==본?"끝":""}" data-act="본종목" data-i="${i}" aria-label="${esc(x.이름)} ${k}/${m}세트"><div class="ㅇ">${esc(x.이름)}</div><div class="ㅅ">${k}/${m}</div><div class="ㅁ"><i style="width:${m?k/m*100:0}%"></i></div></button>`; }).join("")}</div></div>
+        return `<button class="운칸 ${i===본?"지금":""} ${다끝&&i!==본?"끝":""}" data-act="본종목" data-i="${i}" aria-label="${esc(x.이름)} ${k}/${m}세트"><div class="ㅇ">${esc(x.이름)}</div><div class="ㅅ">${k}/${m}</div><div class="ㅁ"><i style="width:${m?k/m*100:0}%"></i></div></button>`; }).join("")}<button class="운칸 운더" data-act="시트" data-t="종목넣기" data-v="운동" aria-label="종목 넣기">＋</button></div></div>
     <div class="아랫줄"><button class="버튼 운이전" data-act="이전종목" ${본>0?"":"disabled"}>‹ 이전</button><button class="버튼" data-act="끝내기">운동 끝내기</button>${갈곳>=0?`<button class="버튼 주 채움 한줄" data-act="본종목" data-i="${갈곳}">다음 · ${esc(ss.종목[갈곳].이름)} ›</button>`:`<button class="버튼 주 채움" data-act="끝내기">마무리</button>`}</div>
     ${시트()}</div>${운지움띠()}`; }
 /* 10-03 ✎ 9a8l "맨 아래 세트를 체크하면 맨 위로 이동" — 원인: 그리기()는 화면을 통째로 새로 만들어
@@ -2508,8 +2522,9 @@ function 큰값맞춤(폰){ 폰.querySelectorAll(".결과수.큰수").forEach(�
   for(const fs of [15,13,11]){ if(fs>=처음) continue; bs.forEach(b=>b.style.fontSize=fs+"px"); if(맞음()) break; }
   if(!맞음()) bs.forEach(b=>b.style.letterSpacing="-0.06em");
   판.querySelectorAll(":scope>div>span").forEach(sp=>{ sp.style.letterSpacing=""; if(sp.scrollWidth>sp.clientWidth+0.5) sp.style.letterSpacing="-0.1em"; }); }); }
-function 큰운동판(칸, 차보임, 톱니){ const 열=칸.length;
-  return `<div class="결과수 큰수 열${열}${톱니?" 톱니비킴":""}" style="--열:${열}">${칸.map(x=>`<div><div class="큰값"><b>${x.v>0?차kg(x.v):"—"}</b>${차보임&&x.v>0&&x.앞>0?보고차(x.v-x.앞,""):""}</div><span>${esc(x.글)}</span></div>`).join("")}</div>`; }
+function 큰운동판(칸, 차보임, 톱니){ const 합=칸[0], 들=칸.slice(1), 열=Math.max(3,들.length);
+  /* 10-04 홍겸 님 — SBD 위에 파란 상자 'N대 Nkg'. 너비 = 앞 세 칸(SBD) 고정 */
+  return `<div class="결과수 큰수 열${열}${톱니?" 톱니비킴":""}" style="--열:${열}"><p class="큰합"><b>${esc(합.글)} ${합.v>0?차kg(합.v)+"kg":"—"}</b>${차보임&&합.v>0&&합.앞>0&&Math.abs(합.v-합.앞)>=0.05?`<small>${합.v>합.앞?"▲":"▼"}${차kg(Math.abs(합.v-합.앞))}</small>`:""}</p>${들.map(x=>`<div><div class="큰값"><b>${x.v>0?차kg(x.v):"—"}</b>${차보임&&x.v>0&&x.앞>0?보고차(x.v-x.앞,""):""}</div><span>${esc(x.글)}</span></div>`).join("")}</div>`; }
 /* 프로필 동그라미 속 — 사진 / 닉네임 첫 글자 / 사람 그림 (보고서 · 프로필 탭 · 탭줄이 같이 쓴다) */
 function 프로필그림(){ const 닉=String(S.설정.닉네임||"").trim(); return 프로필사진?`<img src="${프로필사진}" alt="">`:닉?`<b>${esc([...닉][0])}</b>`:사람그림; }
 const 프로필고르기 = 큰 => `<label class="보고사진${큰?" "+큰:""}" aria-label="프로필 사진 고르기">${프로필그림()}<input type="file" accept="image/*" data-pf="사진" hidden></label>`;
@@ -2716,12 +2731,12 @@ function 행동(a, d){
     case "루세트되돌림": { const x=U.세트지움; U.세트지움=null; const r=x&&루틴(x.r); if(r&&r.종목.includes(x.e)){ x.e.세트.splice(Math.min(x.k,x.e.세트.length),0,x.세트); 발자취(`세트 되돌림 · ${x.이름}`); } break; }
     case "종목빼기": { const r=루틴(U.루틴열림); r.종목.splice(+d.i,1); break; }
     case "칸고름": U.칸고름=d.v; break;
-    case "종목넣기": { const r=루틴(U.루틴열림), 열=`e:${d.v}`;
+    case "종목넣기": { const r=넣을곳(), 운=r===S.세션, 열=`e:${d.v}`;
       if(U.방금.includes(열)){ const k=r.종목.map(e=>e.이름===d.v&&!e.플랜id).lastIndexOf(true); if(k>=0) r.종목.splice(k,1); U.방금=U.방금.filter(x=>x!==열); }
-      else { r.종목.push({이름:d.v, 세트:세트들(S.설정.기본세트,20,10,S.설정.기본휴식)}); U.방금.push(열); 업적알림(업적판정("루틴")); } break; }
-    case "플랜넣기": { const r=루틴(U.루틴열림), p=플랜(d.v), 열=`p:${d.v}`;
+      else { const 세=세트들(S.설정.기본세트,20,10,S.설정.기본휴식); r.종목.push({이름:d.v, 세트:운?운세트로(세):세}); U.방금.push(열); if(!운) 업적알림(업적판정("루틴")); } break; }
+    case "플랜넣기": { const r=넣을곳(), 운=r===S.세션, p=플랜(d.v), 열=`p:${d.v}`;
       if(U.방금.includes(열)){ const k=r.종목.map(e=>e.플랜id===d.v).lastIndexOf(true); if(k>=0) r.종목.splice(k,1); U.방금=U.방금.filter(x=>x!==열); }
-      else { const e={이름:p.이름, 플랜id:p.id, 세트:[]}; e.세트=줄세트(e); r.종목.push(e); U.방금.push(열); 업적알림(업적판정("루틴")); } break; }
+      else { const e={이름:p.이름, 플랜id:p.id, 세트:[]}; e.세트=줄세트(e); if(운) e.세트=운세트로(e.세트); r.종목.push(e); U.방금.push(열); if(!운) 업적알림(업적판정("루틴")); } break; }
     /* 플랜 */
     case "폼값": { const f=U.플랜폼; const v = d.f==="보조모드" ? +d.v : d.v; f[d.f]=v; f.오류="";
       if(d.f==="종목"){ const 새=폼초기(); 새.종목=v; U.플랜폼=새; } break; }

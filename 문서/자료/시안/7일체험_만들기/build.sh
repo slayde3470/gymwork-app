@@ -27,3 +27,4 @@ python3 patch_v10_R.py 7day-v9.html _10R.html     # 루틴 상자 · 프로필 �
 python3 patch_v10_W.py _10R.html 7day-v10.html    # 체크 파랑 · 번호 보통 굵기 · 쉬는 동안 ± 감춤 · 끝난 줄 --면2
 python3 patch_v11.py 7day-v10.html 7day-v11.html    # 프로필 탭 인스타 꼴 · 인증샷 · 캘린더 [운동 보고서]
 python3 patch_v12.py 7day-v11.html 7day-v12.html    # 캘린더 칸 폭 같게 · 업적 달성 탭 · 가려진 칭호 보기
+python3 patch_v13.py 7day-v12.html 7day-v13.html    # 운동 중 종목 넣기 · N대 파란 상자
