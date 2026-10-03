@@ -2,7 +2,7 @@
 import asyncio, json, glob, os, sys
 from playwright.async_api import async_playwright
 from PIL import Image, ImageDraw
-SP=os.path.dirname(os.path.abspath(__file__)); M=SP+'/marks2'
+SP=os.path.dirname(os.path.abspath(__file__)); M=SP+'/'+(sys.argv[2] if len(sys.argv)>2 else 'marks2')
 F='file://'+SP+'/'+(sys.argv[1] if len(sys.argv)>1 else '7day-v3.html')
 async def main():
   async with async_playwright() as p:
