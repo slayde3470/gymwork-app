@@ -94,7 +94,7 @@ async def main():
       # ── 0vnw 프로필 ──
       봄(t+f"0vnw 프로필 사진 58 ({r['사진']['w']:.0f}×{r['사진']['h']:.0f} · {r['사진모']}) · v9 {v9['사진']['w']:.0f}", round(r['사진']['w'])==58 and round(r['사진']['h'])==58 and r['사진모']=='50%')
       봄(t+f"0vnw 닉네임 {v9['닉크기']} → {r['닉크기']} (−10% 에 가장 가까운 목록 값)", r['닉크기']==11 and v9['닉크기']==13)
-      봄(t+f"프로필 = 테두리 상자 (1px --선 · 바탕 --면 · 여백 {r['프여백']})", r['프'] and r['프테']=='1px' and r['프테색']==r['선'] and r['프바']==r['면'] and r['프여백']>=8)
+      봄(t+f"프로필 = 테두리 상자 (1px --선 · 바탕 --면 · 여백 {r['프여백']})", r['프'] and r['프테']=='1px' and r['프테색']==r['선'] and r['프바']==r['면'] and r['프여백']>=12)
       if 넓: 봄(t+f"프로필 상자 v9 보다 큼 ({v9['프']['h']:.0f} → {r['프']['h']:.0f})", r['프']['h']>v9['프']['h'])
       # ── pdb1 · ua0b 큰 운동 칸 ──
       칸=r['칸']
@@ -106,8 +106,8 @@ async def main():
       봄(t+"ua0b 같으면 아무것도 없음 (벤치 · 데드)", 칸[2]['차']=='' and 칸[3]['차']=='')
       옆=['옆' if abs(c['차R']['t']-c['b']['t'])<8 and c['차R']['l']>=c['b']['r']-0.5 else '아래' if c['차R']['t']>=c['b']['b']-0.5 and c['차R']['b']<=c['s']['t']+0.5 and c['차R']['l']>=c['칸']['l'] and c['차R']['r']<=c['칸']['r'] else '?' for c in 칸[:2]]
       봄(t+f"ua0b ▲ 은 숫자에 붙음 — 옆, 칸 폭이 모자라면 숫자 바로 아래 · 이름 위 ({옆})", '?' not in 옆)
-      # (Claude 10-03) 보고서 4칸은 2×2 — ▲ 가 숫자 '옆' 에 들어가도록 (한 줄 4칸이면 칸 안쪽 63px 라 아래로 밀렸다)
-      if 넓: 봄(t+f"ua0b 4칸 = 2×2 · 세로선 · ▲ 은 숫자 옆 ({[c['선'] for c in 칸]} {옆})", len({round(c['칸']['t']) for c in 칸})==2 and [c['선'] for c in 칸]==['0px','1px','0px','1px'] and 옆==['옆','옆'])
+      # 홍겸 님 10-03 "가로 1줄에 3대/sbd" — 늘 한 줄
+      if 넓: 봄(t+f"ua0b 4칸 한 줄 · 칸 사이 세로선 ({[c['선'] for c in 칸]})", len({round(c['칸']['t']) for c in 칸})==1 and [c['선'] for c in 칸]==['0px','1px','1px','1px'])
       else: 봄(t+f"ua0b 좁은 폰은 두 칸씩 (2×2) · 세로선 ({[c['선'] for c in 칸]})", len({round(c['칸']['t']) for c in 칸})==2 and [c['선'] for c in 칸]==['0px','1px','0px','1px'])
       봄(t+f"ua0b 톱니 = 프로필 상자 오른쪽 위 모서리 · 28 · 아이콘 18 ({r['톱']})", '보고프로필' in r['톱안'] and abs(r['톱']['r']-r['프']['r'])<=1.5 and abs(r['톱']['t']-r['프']['t'])<=1.5 and round(r['톱']['w'])==28 and round(r['톱']['h'])==28 and round(r['톱그림']['w'])==18)
       봄(t+"ua0b 톱니가 숫자 · 이름과 안 겹침", not any(겹(r['톱'],c['큰값']) or 겹(r['톱'],c['s']) for c in 칸))
@@ -161,18 +161,22 @@ async def main():
       if 넓: 봄(t+"✎ 표시 사진(html2canvas) — 보고서 + 시트", await 표시사진(pg, 'h2c_시트5대_420.png'))
       await pg.click('.시트 .머리 .닫기'); await pg.wait_for_timeout(400)
       r5=await pg.evaluate(읽기JS); 칸=r5['칸']
-      봄(t+f"ua0b 5대 = 6칸 ({[(c['이름'],c['값'],c['차']) for c in 칸]})", [c['이름'] for c in 칸]==['5대','스쿼트','벤치','데드','OHP','바벨 로우'] and [c['값'] for c in 칸]==['482kg','140kg','81.7kg','140kg','44.3kg','76kg'] and 칸[0]['차']=='▲144' and 칸[4]['차']=='' and 칸[5]['차']=='')
+      봄(t+f"ua0b 5대 = 6칸 ({[(c['이름'],c['값'],c['차']) for c in 칸]})", [c['이름'] for c in 칸]==['5대','스쿼트','벤치','데드','OHP','로우'] and [c['값'] for c in 칸]==['482kg','140kg','81.7kg','140kg','44.3kg','76kg'] and 칸[0]['차']=='▲144' and 칸[4]['차']=='' and 칸[5]['차']=='')
       위=sorted({round(c['칸']['t']) for c in 칸})
-      if 넓: 봄(t+f"ua0b 6칸 = 3칸씩 두 줄 (줄 위 {위}) · 세로선 {[c['선'] for c in 칸]}", len(위)==2 and all(round(c['칸']['t'])==위[i//3] for i,c in enumerate(칸)) and abs(칸[0]['칸']['l']-칸[3]['칸']['l'])<1 and [c['선'] for c in 칸]==['0px','1px','1px','0px','1px','1px'])
-      else: 봄(t+f"ua0b 좁은 폰 6칸 = 두 칸씩 세 줄 (줄 위 {위}) · 세로선 {[c['선'] for c in 칸]}", len(위)==3 and [c['선'] for c in 칸]==['0px','1px']*3)
-      봄(t+"ua0b 두 줄일 때도 톱니가 숫자와 안 겹침", not any(겹(r5['톱'],c['큰값']) for c in 칸))
+      # 홍겸 님 10-03 "5개 선택하니까 1줄에 3개씩뜨네" → 6칸도 가로 한 줄
+      if 넓: 봄(t+f"ua0b 6칸도 가로 한 줄 (줄 위 {위}) · 세로선 {[c['선'] for c in 칸]}", len(위)==1 and [c['선'] for c in 칸]==['0px']+['1px']*5)
+      else: 봄(t+f"ua0b 좁은 폰 6칸 = 3칸씩 두 줄 (줄 위 {위})", len(위)==2 and [c['선'] for c in 칸]==['0px','1px','1px']*2)
+      숫=await pg.evaluate("""[...document.querySelectorAll('.보고프로필 .큰수>div')].map(d=>{ const b=d.querySelector('.큰값 b'), z=getComputedStyle(d); return [b.getBoundingClientRect().width, d.clientWidth-parseFloat(z.paddingLeft)-parseFloat(z.paddingRight), getComputedStyle(b).fontSize]; })""")
+      봄(t+f"ua0b 6칸 숫자가 칸 안에 다 들어감 · 한 줄 같은 크기 · 목록 값 ({[(round(a),round(c),f) for a,c,f in 숫]})", all(a<=c+0.5 for a,c,_ in 숫) and len({f for *_,f in 숫})==1 and int(float(숫[0][2][:-2])) in 글자크기)
+      봄(t+"ua0b 6칸일 때도 톱니가 숫자와 안 겹침", not any(겹(r5['톱'],c['큰값']) for c in 칸))
       봄(t+f"5대 칸 글자 잘림 없음 · 세로 안 넘침 ({r5['넘']})", not r5['넘'] and not r5['세로넘침'] and not r5['가로넘침'])
       await (await pg.query_selector('#폰')).screenshot(path=R10+f'보고서5대_{폭}.png')
       # 5칸 (OHP 만) — 3칸 + 2칸
       await pg.evaluate("S.설정.큰운동추가=['오버헤드 프레스']; 그리기(); 1"); await pg.wait_for_timeout(200)
       다섯=await pg.evaluate("[...document.querySelectorAll('.보고프로필 .큰수>div')].map(x=>[Math.round(x.getBoundingClientRect().top), getComputedStyle(x).borderLeftWidth])")
-      if 넓: 봄(t+f"ua0b 5칸 = 3 + 2 ({다섯})", len(다섯)==5 and 다섯[0][0]==다섯[2][0]<다섯[3][0]==다섯[4][0] and [x[1] for x in 다섯]==['0px','1px','1px','0px','1px'])
-      else: 봄(t+f"ua0b 좁은 폰 5칸 = 2 + 2 + 1 ({다섯})", len(다섯)==5 and 다섯[0][0]==다섯[1][0]<다섯[2][0]==다섯[3][0]<다섯[4][0] and [x[1] for x in 다섯]==['0px','1px','0px','1px','0px'])
+      if 넓: 봄(t+f"ua0b 5칸도 가로 한 줄 ({다섯})", len(다섯)==5 and len({x[0] for x in 다섯})==1 and [x[1] for x in 다섯]==['0px']+['1px']*4)
+      else: 봄(t+f"ua0b 좁은 폰 5칸 = 3 + 2 ({다섯})", len(다섯)==5 and 다섯[0][0]==다섯[2][0]<다섯[3][0]==다섯[4][0] and [x[1] for x in 다섯]==['0px','1px','1px','0px','1px'])
+      await (await pg.query_selector('#폰')).screenshot(path=R10+f'보고서4대_{폭}.png')
       await pg.evaluate("S.설정.큰운동추가=[]; 그리기(); 1"); await pg.wait_for_timeout(200)
 
       # ── 프로필 끄기 → 톱니가 루틴 상자로 ──
