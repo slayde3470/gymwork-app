@@ -36,3 +36,8 @@ python3 patch_v17_B.py _17a.html _17b.html       # 운동 보고서 움직임 ·
 python3 patch_v17_C.py _17b.html _17c.html       # 프로필 · 업적 줄 정렬/끌기 · SNS 링크 · 인증샷 8장 · 탭줄 메모 · 검색
 python3 patch_v17_D.py _17c.html _17d.html       # 캘린더 구분선 · 년 고르기 · ‹ › · 기록 골라 지우기 · 띠/토스트
 python3 patch_v17_E.py _17d.html 7day-v17.html   # 큰 운동 칸 숫자 정수
+python3 patch_v18_A.py 7day-v17.html _18a.html   # 끝난 줄 띠 · 게이지 틈 · 마무리 문구 · 운동 끝내기 빨강
+python3 patch_v18_B.py _18a.html _18b.html       # 루틴 상세 · 루틴 끄기 없앰 · 끝 단추 두 줄 · 버림 빨강 · 상자 ×1.1
+python3 patch_v18_C.py _18b.html _18c.html       # 종목 띠 · 종목 상자 2열 · 사진 칸 · 기본 세팅 세트 줄 · 새 종목(초성 검색 · 사전 129 · 부위/역할)
+python3 patch_v18_D.py _18c.html _18d.html       # 루틴 접힘 · 넣기 2열 번호 · ✓×n · 꾹 빼기 · 넣기 높이 고정 · 새 종목 단추
+python3 patch_v18_E.py _18d.html 7day-v18.html   # 탭 순서 · 업적 줄 밀기 · 업적 프로필 체크 · 닉네임 맞춤 · SNS + · 돋보기 · 당겨서 새로고침
