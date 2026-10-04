@@ -45,3 +45,4 @@ python3 patch_v19_A.py 7day-v18.html _19a.html   # 루틴 · 플랜 · 설정 �
 python3 patch_v19_B.py _19a.html _19b.html       # 보고서 띠 카메라(이미지 저장) · 공유
 python3 patch_v19_C.py _19b.html _19c.html       # 넣기: 전체 기본 · 새 종목 단추 구석 · 누름=빼기/꾹=더 · 말풍선 · 칩 한 줄 ‹› · 루틴 플랜 줄
 python3 patch_v19_D.py _19c.html 7day-v19.html   # 새 종목 시트 20% 고정 · 같은 이름 번호 · 칸 필수 · 운동 목표 부위 그림 · 세트 줄
+python3 patch_v20.py 7day-v19.html 7day-v20.html   # 종목 이름 맞춤(12자) · 접힌 상자 간단 · 편집 · 주동/협응 둘 · 묶음 개수 지움
