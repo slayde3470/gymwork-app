@@ -41,3 +41,7 @@ python3 patch_v18_B.py _18a.html _18b.html       # 루틴 상세 · 루틴 끄�
 python3 patch_v18_C.py _18b.html _18c.html       # 종목 띠 · 종목 상자 2열 · 사진 칸 · 기본 세팅 세트 줄 · 새 종목(초성 검색 · 사전 129 · 부위/역할)
 python3 patch_v18_D.py _18c.html _18d.html       # 루틴 접힘 · 넣기 2열 번호 · ✓×n · 꾹 빼기 · 넣기 높이 고정 · 새 종목 단추
 python3 patch_v18_E.py _18d.html 7day-v18.html   # 탭 순서 · 업적 줄 밀기 · 업적 프로필 체크 · 닉네임 맞춤 · SNS + · 돋보기 · 당겨서 새로고침
+python3 patch_v19_A.py 7day-v18.html _19a.html   # 루틴 · 플랜 · 설정 띠 · 새로고침은 띠 아래 · 검색 위 줄 고정
+python3 patch_v19_B.py _19a.html _19b.html       # 보고서 띠 카메라(이미지 저장) · 공유
+python3 patch_v19_C.py _19b.html _19c.html       # 넣기: 전체 기본 · 새 종목 단추 구석 · 누름=빼기/꾹=더 · 말풍선 · 칩 한 줄 ‹› · 루틴 플랜 줄
+python3 patch_v19_D.py _19c.html 7day-v19.html   # 새 종목 시트 20% 고정 · 같은 이름 번호 · 칸 필수 · 운동 목표 부위 그림 · 세트 줄
