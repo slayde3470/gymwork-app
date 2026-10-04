@@ -31,3 +31,8 @@ python3 patch_v13.py 7day-v12.html 7day-v13.html    # 운동 중 종목 넣기 �
 python3 patch_v14.py 7day-v13.html 7day-v14.html    # 종목 칸 꾹 눌러 좌우 끌기 · [＋] 붙박이 · 보는 칸 맨 앞
 python3 patch_v15.py 7day-v14.html 7day-v15.html    # N대 상자 kg −25% · 너비 −15% · 사이 −50% · 프로필 업적 −25% · 인증샷 글 지움
 python3 patch_v16.py 7day-v15.html 7day-v16.html    # N대 상자 칸 줄 전체 − 좌우 15 · 사이 −35%
+python3 patch_v17_A.py 7day-v16.html _17a.html   # 운동 세트 게이지 · 마지막 세트 문구 · + 세트 자리 · 종목 기본 세팅
+python3 patch_v17_B.py _17a.html _17b.html       # 운동 보고서 움직임 · 띠 · 날짜 · ‹ › · 단추 한 줄 · 상세 시트 · 톱니
+python3 patch_v17_C.py _17b.html _17c.html       # 프로필 · 업적 줄 정렬/끌기 · SNS 링크 · 인증샷 8장 · 탭줄 메모 · 검색
+python3 patch_v17_D.py _17c.html _17d.html       # 캘린더 구분선 · 년 고르기 · ‹ › · 기록 골라 지우기 · 띠/토스트
+python3 patch_v17_E.py _17d.html 7day-v17.html   # 큰 운동 칸 숫자 정수
