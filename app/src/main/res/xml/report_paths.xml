@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 운동 보고서 이미지 공유 (10-05 · ReportScreen.kt 공유열기) — 앱 캐시의 report/ 폴더만 다른 앱에 잠깐 보여 준다 -->
+<paths>
+    <cache-path name="report" path="report/" />
+</paths>
