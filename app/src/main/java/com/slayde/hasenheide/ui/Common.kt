@@ -124,6 +124,9 @@ import com.slayde.hasenheide.ui.theme.모서리
 import com.slayde.hasenheide.ui.theme.크기
 import com.slayde.hasenheide.ui.theme.막대치수
 import com.slayde.hasenheide.ui.theme.선굵기
+import com.slayde.hasenheide.ui.theme.부품치수
+import androidx.compose.animation.core.animate
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 
 /**
  * 여러 화면이 같이 쓰는 부품.
@@ -276,9 +279,14 @@ fun 버튼(
 
 /** 칩 한 줄 — 넘치면 옆으로 밀어서 꺼낸다 (1-1). 넘칠 때만 오른쪽 끝이 흐려진다 (D2-8 · 10-02) */
 @Composable
-fun 칩줄(목록: List<String>, 선택: String?, onSelect: (String) -> Unit, modifier: Modifier = Modifier) {
+fun 칩줄(
+    목록: List<String>, 선택: String?, onSelect: (String) -> Unit, modifier: Modifier = Modifier,
+    /** 10-05: 밖에서 넘김을 쥘 때 (양끝 ‹ › 단추 — Parts.kt 화살칩줄). null 이면 전처럼 안에서 */
+    밖넘김: androidx.compose.foundation.ScrollState? = null,
+) {
     val c = Local색.current
-    val 넘김 = rememberScrollState()
+    val 안넘김 = rememberScrollState()
+    val 넘김 = 밖넘김 ?: 안넘김
     Row(
         modifier.fillMaxWidth().오른끝흐림(넘김).horizontalScroll(넘김),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -736,9 +744,14 @@ private fun 분초입력(키: String, 값글: String, 넣기: (String) -> Unit, 
 
 // ─────────────── 시트 · 띠 ───────────────
 
-/** 아래에서 올라오는 판 — '고르는 일'에만 쓴다 (1-1: 팝업은 고르기뿐) */
+/**
+ * 아래에서 올라오는 판 — '고르는 일'에만 쓴다 (1-1: 팝업은 고르기뿐)
+ *  · 10-05 (시안 v21 ⑥): 맨 위 가운데 손잡이 막대 36 × 4 (속선) — 모든 시트에 저절로 붙는다.
+ *    손잡이 · 제목 줄을 잡고 아래로 80 넘게 끌어 놓으면 닫힌다(✕ 와 같다), 덜 끌면 제자리로
+ *  · [위끝고정] = 시트 위끝을 화면 높이의 20% 지점에 고정 (시안 `넣기시트높이` — 종목 넣기 시트)
+ */
 @Composable
-fun 시트(제목: String, onClose: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
+fun 시트(제목: String, onClose: () -> Unit, 위끝고정: Boolean = false, content: @Composable ColumnScope.() -> Unit) {
     val c = Local색.current
     // 10-02: 나타날 때 아래에서 올라오고, ✕ · 바깥 · 뒤로가기로 닫으면 내려간 뒤에 닫힌다.
     //        (안에서 무언가를 골라 화면이 시트를 바로 치우는 경우는 내려가는 움직임 없이 사라진다)
@@ -748,6 +761,10 @@ fun 시트(제목: String, onClose: () -> Unit, content: @Composable ColumnScope
     fun 닫기() { if (!닫는중) { 닫는중 = true; 보임.targetState = false } }
     LaunchedEffect(보임.isIdle, 보임.currentState) { if (닫는중 && 보임.isIdle && !보임.currentState) 닫기최신() }
     BackHandler(onBack = { 닫기() })
+    // 끌어내린 만큼 (px) — 그릴 때만 읽는다
+    var 끌림 by remember { mutableStateOf(0f) }
+    val 범위 = rememberCoroutineScope()
+    val 닫을px = with(LocalDensity.current) { 부품치수.시트닫기.toPx() }
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
         AnimatedVisibility(visibleState = 보임, enter = fadeIn(tween(움직임.시트)), exit = fadeOut(tween(움직임.시트닫기)), label = "시트가림") {
             Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.35f)).눌림 { 닫기() })
@@ -761,19 +778,42 @@ fun 시트(제목: String, onClose: () -> Unit, content: @Composable ColumnScope
             Column(
                 Modifier
                     .fillMaxWidth()
-                    .heightIn(max = 620.dp)
+                    .then(if (위끝고정) Modifier.fillMaxHeight(1f - 부품치수.시트위끝) else Modifier.heightIn(max = 620.dp))
+                    .graphicsLayer { translationY = 끌림 }
                     .clip(RoundedCornerShape(topStart = 모서리.크게, topEnd = 모서리.크게))
                     .background(c.면)
                     .눌림 { }
                     .navigationBarsPadding()
                     .imePadding()
-                    .padding(horizontal = 간격.넓게, vertical = 16.dp),
+                    .padding(start = 간격.넓게, end = 간격.넓게, bottom = 16.dp),
             ) {
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    제목글(제목, Modifier.weight(1f), 크기값 = 크기.크게)
-                    아이콘버튼(아이콘.닫기, "닫기", { 닫기() }, 크기칸 = 높이.낮게)
+                // 머리 — 손잡이 막대 + 제목 줄. 여기를 잡고 끌어내린다 (시트 안 스크롤과 겹치지 않는다)
+                Column(
+                    Modifier.fillMaxWidth().pointerInput(Unit) {
+                        detectVerticalDragGestures(
+                            onVerticalDrag = { ch, dy -> ch.consume(); 끌림 = (끌림 + dy).coerceAtLeast(0f) },
+                            onDragEnd = {
+                                if (끌림 > 닫을px) 닫기()
+                                else 범위.launch { animate(끌림, 0f, animationSpec = tween(움직임.시트제자리)) { v, _ -> 끌림 = v } }
+                            },
+                            onDragCancel = { 범위.launch { animate(끌림, 0f, animationSpec = tween(움직임.시트제자리)) { v, _ -> 끌림 = v } } },
+                        )
+                    },
+                ) {
+                    // 손잡이 막대 36 × 4 — 위끝에서 4. 막대 아래 8 을 더해 제목 줄은 전과 같은 자리(위 16)
+                    Box(
+                        Modifier.padding(top = 부품치수.손잡이위, bottom = 간격.좁게).align(Alignment.CenterHorizontally)
+                            .size(부품치수.손잡이폭, 부품치수.손잡이두께).clip(RoundedCornerShape(부품치수.손잡이모서리)).background(c.속선),
+                    )
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        제목글(제목, Modifier.weight(1f), 크기값 = 크기.크게)
+                        아이콘버튼(아이콘.닫기, "닫기", { 닫기() }, 크기칸 = 높이.낮게)
+                    }
                 }
-                Column(Modifier.padding(top = 12.dp).verticalScroll(rememberScrollState()), content = content)
+                Column(
+                    Modifier.then(if (위끝고정) Modifier.weight(1f) else Modifier).padding(top = 12.dp).verticalScroll(rememberScrollState()),
+                    content = content,
+                )
             }
         }
     }
@@ -898,12 +938,12 @@ private val 번호색 = Color(0xFF1E6FD9)
  * (10-01 홍겸 님: "예상시간 뒤에 ... 으로 짜르지말고 차라리 글자크기를 줄여. 자간을 줄이든지")
  */
 @Composable
-fun 맞춤글(text: String, modifier: Modifier = Modifier, 최대: TextUnit = 크기.작게, 최소: TextUnit = 9.sp, 색: Color = Local색.current.글) {
+fun 맞춤글(text: String, modifier: Modifier = Modifier, 최대: TextUnit = 크기.작게, 최소: TextUnit = 9.sp, 색: Color = Local색.current.글, 굵기: FontWeight = FontWeight.Normal) {
     var 지금크기 by remember(text, 최대) { mutableStateOf(최대) }
     var 좁힘 by remember(text, 최대) { mutableStateOf(false) }
     Text(
         text, modifier,
-        style = 글꼴.보통(지금크기).copy(letterSpacing = if (좁힘) (-0.05).em else (-0.01).em),
+        style = 글꼴.보통(지금크기, 굵기).copy(letterSpacing = if (좁힘) (-0.05).em else (-0.01).em),
         color = 색, maxLines = 1, softWrap = false,
         onTextLayout = { r ->
             if (r.hasVisualOverflow) {

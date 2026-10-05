@@ -59,6 +59,19 @@ import com.slayde.hasenheide.data.체중기록시작
 import com.slayde.hasenheide.data.스탯표
 import com.slayde.hasenheide.ui.theme.Local색
 import com.slayde.hasenheide.ui.theme.크기
+import com.slayde.hasenheide.ui.theme.간격
+import com.slayde.hasenheide.ui.theme.글꼴
+import com.slayde.hasenheide.ui.theme.부품치수
+import com.slayde.hasenheide.ui.theme.선굵기
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import kotlinx.coroutines.delay
 import java.io.File
 import java.time.LocalDate
@@ -77,6 +90,12 @@ class 앱상태(private val 파일: File) {
         private set
 
     private val 일꾼 = Executors.newSingleThreadExecutor()
+
+    /**
+     * 토스트 · 알림 띠 (10-05 · Parts.kt [알림판]) — 앱 어디서나 `상태.알림.토스트("…")` ·
+     * `상태.알림.되돌림(묶음, { n -> 글 }) { 되돌리기 }`. App 맨 위 한 곳에서 그리므로 화면이 다시 그려져도 사라지지 않는다
+     */
+    val 알림 = 알림판()
 
     fun 바꿈(f: (앱데이터) -> 앱데이터) {
         val 전 = d
@@ -180,10 +199,19 @@ class 폰기능(
     val 진동미리: () -> Unit = {},
 )
 
-enum class 탭(val 이름: String, val 그림: ImageVector) {
-    // 09-28: '플랜' 을 루틴 다음에 넣었다 — 루틴과 가장 가까운 일이라서
-    캘린더("캘린더", 아이콘.달력), 루틴("루틴", 아이콘.루틴), 플랜("플랜", 아이콘.과녁), 종목("종목", 아이콘.바벨), 설정("설정", 아이콘.톱니)
+/**
+ * 아래 탭의 화면 (10-05 시안 v21 탭줄 9칸). 줄 차례는 [탭줄차례] — '메모' 는 화면이 아니라 보던 화면 위에 메모 시트를 띄운다.
+ * 스탯 · 업적은 탭이 아니다 — 캘린더 띠의 [스탯] 칩 · 업적 띠 [보기] 로 연다 (전과 같다)
+ */
+enum class 탭(val 이름: String, val 그림: ImageVector?) {
+    캘린더("캘린더", 아이콘.달력), 검색("검색", 아이콘.돋보기), 루틴("루틴", 아이콘.루틴), 종목("종목", 아이콘.바벨), 플랜("플랜", 아이콘.과녁),
+    소셜("소셜", 아이콘.사람), 설정("설정", 아이콘.톱니),
+    /** 글자 없이 동그란 사진 (설정.프로필사진 · 없으면 닉네임 첫 글자 · 사람 그림) */
+    프로필("프로필", null),
 }
+
+/** 탭줄 차례 — 시안 v21 `탭줄()`: 캘린더 · 검색 · 루틴 · 종목 · 플랜 · 메모 · 소셜 · 설정 · 프로필. null = 메모 */
+val 탭줄차례: List<탭?> = listOf(탭.캘린더, 탭.검색, 탭.루틴, 탭.종목, 탭.플랜, null, 탭.소셜, 탭.설정, 탭.프로필)
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -251,8 +279,13 @@ fun 앱(상태: 앱상태, 폰: 폰기능) {
         }
     }
 
+    // 탭줄 높이(px) — 알림 띠 · 아래띠가 탭 위에 뜨게 (10-05: 9칸 탭줄은 전(46)보다 조금 높다 → 잰 값으로)
+    var 탭줄높이 by remember { mutableIntStateOf(0) }
+    val 밀도 = LocalDensity.current
+    val 탭줄dp = with(밀도) { 탭줄높이.toDp() }
     // 빈 곳을 누르면 고치던 숫자칸을 취소한다 (09-22 메모). 버튼 · 칸이 받은 누름은 여기까지 오지 않는다
-    Box(Modifier.fillMaxSize().background(c.바탕).pointerInput(Unit) { detectTapGestures(onTap = { 입력중.취소?.invoke() }) }) {
+    // 10-05: 누른 자리를 알림판에 알린다 — 토스트 · 띠가 누른 단추 위에 뜬다 (누름은 가로채지 않는다)
+    Box(Modifier.fillMaxSize().background(c.바탕).누름기억(상태.알림).pointerInput(Unit) { detectTapGestures(onTap = { 입력중.취소?.invoke() }) }) {
         Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().imePadding()) {
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 // 10-02: 화면을 바꿀 때 0.2초 동안 흐려지며 넘어간다 (자리 · 배치는 그대로)
@@ -273,19 +306,26 @@ fun 앱(상태: 앱상태, 폰: 폰기능) {
                             탭.플랜 -> 플랜화면(상태, { 지금탭 = 탭.설정 }, { 지금탭 = 탭.종목 })
                             탭.종목 -> 종목화면(상태)
                             탭.설정 -> 설정화면(상태, 폰)
+                            탭.검색 -> 검색화면(상태)
+                            탭.소셜 -> 소셜화면(상태)
+                            탭.프로필 -> 프로필화면(상태)
                         }
                     }
                 }
             }
             if (세션 != null && !운동보기) 운동중띠(세션) { 운동보기 = true }
             if (!탭숨김) {
-                // 아래 탭 — 예전보다 25% 낮게 (09-21 메모). 맨 오른쪽은 '수정 메모'
+                // 아래 탭 — 10-05 시안 v21 탭줄 9칸 (위 테두리 1 선 · 칸 위 6 아래 8 · 그림 18 · 사이 2 · 글 11).
+                // 메모 = 보던 화면 위에 메모 시트 · 프로필 = 글자 없이 동그란 사진 28 (켜지면 둘레 2 강조)
                 Row(
-                    Modifier.fillMaxWidth().background(c.면).padding(top = 1.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    Modifier.fillMaxWidth().height(IntrinsicSize.Min).background(c.면)
+                        .drawBehind { drawRect(c.선, size = Size(size.width, 선굵기.보통.toPx())) }
+                        .onSizeChanged { 탭줄높이 = it.height },
                 ) {
-                    탭.entries.forEach { t ->
-                        탭단추(t.이름, t.그림, !운동화면중 && 지금탭 == t) {
+                    탭줄차례.forEach { t ->
+                        if (t == null) 탭단추("메모", 아이콘.연필, 메모열림) { 메모열림 = true } else {
+                        val 켬 = !운동화면중 && 지금탭 == t
+                        val 누름 = {
                             발자취.적기("${t.이름} 탭")
                             // 10-01: 운동을 다 끝내고(결과 화면) 다른 탭으로 나가면 그때 저장한다 —
                             //        저장 버튼을 안 눌렀다고 기록이 안 남던 것 ("운동 안 하고 넘어갔더라도 기록은 되어야")
@@ -295,8 +335,14 @@ fun 앱(상태: 앱상태, 폰: 폰기능) {
                             if (t == 탭.설정 && 지금탭 != 탭.설정) 상태.바꿈 { it.세기더함(세기이름.설정진입) }
                             지금탭 = t; 운동보기 = false
                         }
+                        val 그림 = t.그림
+                        if (그림 != null) 탭단추(t.이름, 그림, 켬, 누름)
+                        else Box(
+                            Modifier.weight(1f).fillMaxHeight().눌림(누름).semantics { contentDescription = t.이름 },
+                            contentAlignment = Alignment.Center,
+                        ) { 프로필동그라미(상태.d.설정, 부품치수.탭사진, 고리 = 켬) }
+                        }
                     }
-                    탭단추("메모", 아이콘.연필, 메모열림) { 메모열림 = true }
                 }
             }
         }
@@ -304,14 +350,16 @@ fun 앱(상태: 앱상태, 폰: 폰기능) {
         스탯열림?.let { (처음, 볼) -> key(처음, 볼) { 스탯화면(상태, 처음, 볼) { 스탯열림 = null } } }
         if (메모열림) 메모시트(상태, 화면이름, 폰, 메모초안값) { 메모열림 = false }
         // 되돌리기 띠는 맨 위에 — 메모 시트에서 지워도 보이게 (09-22 메모: 메모를 실수로 지웠는데 되돌릴 길이 안 보였다)
-        상태.되돌림?.let { (글자, _) -> 아래띠(글자, "되돌리기", { 상태.되돌리기() }, 바깥 = Modifier.navigationBarsPadding().padding(bottom = if (탭숨김 || 메모열림 || 스탯열림 != null) 0.dp else 46.dp)) }
+        상태.되돌림?.let { (글자, _) -> 아래띠(글자, "되돌리기", { 상태.되돌리기() }, 바깥 = Modifier.navigationBarsPadding().padding(bottom = if (탭숨김 || 메모열림 || 스탯열림 != null) 0.dp else 탭줄dp)) }
         // 10-02: 업적 달성 알림 — 팝업 대신 아래띠 (U5-3). '보기' 를 누르면 업적 화면
         if (상태.새업적.isNotEmpty() && 상태.되돌림 == null) {
             key(상태.새업적) {
                 아래띠(업적글.알림(상태.새업적), "보기", { val 첫 = 상태.새업적.firstOrNull(); 상태.새업적치움(); 스탯열림 = 스탯화면글.업적 to 첫 },
-                    바깥 = Modifier.navigationBarsPadding().padding(bottom = if (탭숨김 || 메모열림 || 스탯열림 != null) 0.dp else 46.dp))
+                    바깥 = Modifier.navigationBarsPadding().padding(bottom = if (탭숨김 || 메모열림 || 스탯열림 != null) 0.dp else 탭줄dp))
             }
         }
+        // 10-05: 토스트 · 알림 띠 — 맨 위. 띠 안 단추만 누름을 받는다
+        알림자리(상태.알림, 아래여백 = (if (탭숨김) 0.dp else 탭줄dp) + 간격.보통)
     }
 }
 
@@ -333,15 +381,19 @@ private fun 운동중띠(S: com.slayde.hasenheide.data.운동세션, 돌아가�
     }
 }
 
+/** 탭 한 칸 — 시안 `.탭줄 button`: 위 6 · 아래 8 · 그림 18 · 사이 2 · 글 11 (켜면 강조 · 굵게). 9칸이라 글은 자르지 않고 자간 −0.04em (시안 v17 C ④) */
 @Composable
 private fun androidx.compose.foundation.layout.RowScope.탭단추(이름: String, 그림: ImageVector, 켬: Boolean, onClick: () -> Unit) {
     val c = Local색.current
     Column(
-        Modifier.weight(1f).눌림(onClick).padding(top = 4.dp, bottom = 8.dp),
+        Modifier.weight(1f).눌림(onClick).padding(top = 부품치수.탭위, bottom = 부품치수.탭아래),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Icon(그림, 이름, Modifier.size(18.dp), tint = if (켬) c.강조 else c.흐림)
-        Box(Modifier.height(2.dp))
-        글(이름, 크기값 = 크기.아주작게, 색 = if (켬) c.강조 else c.흐림, 굵기 = if (켬) FontWeight.Bold else FontWeight.Medium)
+        Icon(그림, 이름, Modifier.size(부품치수.탭그림), tint = if (켬) c.강조 else c.흐림)
+        Box(Modifier.height(부품치수.탭사이))
+        androidx.compose.material3.Text(
+            이름, style = 글꼴.보통(크기.아주작게, if (켬) FontWeight.Bold else FontWeight.Medium).copy(letterSpacing = 부품치수.탭자간),
+            color = if (켬) c.강조 else c.흐림, maxLines = 1, softWrap = false,
+        )
     }
 }
