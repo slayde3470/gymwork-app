@@ -311,7 +311,8 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
     var 시트날 by remember { mutableStateOf(오늘) }
     var 록뺌 by remember { mutableStateOf<Set<String>>(emptySet()) }   // 기록이 여럿인 날 — 체크를 끈 기록 열쇠
     var 예펼침 by remember { mutableStateOf<String?>(null) }
-    var 보고 by remember { mutableStateOf<운동세션?>(null) }
+    // 10-05 합치기: 저장된 기록 보고서는 R 의 [기록보고서] 로 이 화면 위에 띄운다 (전: 저장 데이터 `결과` 에 세션을 넣어 App 이 그림)
+    var 보는기록 by remember { mutableStateOf<String?>(null) }
     // 맨 아래 단추 연타 막기 — 지운 뒤 체크가 풀려(록뺌 비움) 두 번째 누름이 남겨 둔 기록까지 지우던 것 · '한 번 더' 두 번
     var 막음까지 by remember { mutableLongStateOf(0L) }
     fun 한번(f: () -> Unit) {
@@ -365,12 +366,7 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
             발자취.적기("${캘날글(x.날)} 운동 기록 되돌림")
         }
     }
-    fun 보고서(k: String, rec: 날기록) {
-        val S = 상태.d.캘기록세션(rec, k)
-        // 결과 화면은 App 이 `결과` 로 그린다. 운동 중에는 App 이 운동 화면을 그리므로 이 화면 위에 직접 띄운다
-        상태.바꿈 { it.copy(결과 = S) }
-        if (상태.d.세션 != null) 보고 = S
-    }
+    fun 보고서(k: String, @Suppress("UNUSED_PARAMETER") rec: 날기록) { 보는기록 = k }
 
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
@@ -479,13 +475,9 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
             null -> {}
         }
 
-        // 운동 중에 연 운동 보고서 — App 은 운동 중엔 결과를 그리지 않으므로 여기서 덮어 그린다.
-        // 결과 화면의 [확인](결과 = null) · 뒤로가기 · 이 화면을 떠나면 닫힌다
-        val 보는보고 = 보고
-        if (보는보고 != null && 상태.d.결과 === 보는보고 && 상태.d.세션 != null) {
-            BackHandler { 보고 = null; 상태.바꿈 { it.copy(결과 = null) } }
-            DisposableEffect(보는보고) { onDispose { if (상태.d.결과 === 보는보고) 상태.바꿈 { it.copy(결과 = null) } } }
-            Box(Modifier.fillMaxSize().background(c.바탕).눌림 { }) { 결과화면(상태, 보는보고) }
+        보는기록?.let { k ->
+            BackHandler { 보는기록 = null }
+            기록보고서(상태, k) { 보는기록 = null }
         }
     }
 }

@@ -121,7 +121,7 @@ object 저장소 {
         .put("단위", p.단위.name).put("목표개수", p.목표개수).put("시작개수", p.시작개수)
         .put("보조모드", p.보조모드).put("보조무게", p.보조무게)
         .put("만든날", p.만든날).put("한회", p.한회).put("누적볼륨", p.누적볼륨)
-        .put("워밍업수", p.워밍업수).put("켬", p.켬)
+        .put("워밍업수", p.워밍업수).put("켬", p.켬).put("측정먼저", p.측정먼저)
         .put("측정들", JSONArray().also { a ->
             p.측정들.forEach { m -> a.put(JSONObject().put("회", m.회).put("날", m.날).put("무게", m.무게).put("횟수", m.횟수)) }
         })
@@ -347,6 +347,7 @@ object 저장소 {
             },
             워밍업수 = o.optInt("워밍업수", 0),
             켬 = o.optBoolean("켬", true),
+            측정먼저 = o.optBoolean("측정먼저", false),   // 10-05 PS: 입력하지 않음 → 1회차 측정
             재기준 = o.optJSONObject("재기준")?.let { r -> 재기준점(r.optInt("회"), r.optString("날"), r.optDouble("값", 0.0)) }?.takeIf { it.값 > 0 },
             // 홍겸 님 09-30 — 없으면 0 (강도 프리셋을 따른다)
             세트수 = o.optInt("세트수", 0),

@@ -233,7 +233,7 @@ fun 앱(상태: 앱상태, 폰: 폰기능) {
     // 10-02 감시관: 어느 종목에도 없는 사진 파일을 앱을 켤 때 치운다 (지운 종목 · 되돌리기를 기다리다 떠난 경우)
     val 앱맥락 = androidx.compose.ui.platform.LocalContext.current
     LaunchedEffect(Unit) {
-        val 쓰는 = 상태.d.종목표.flatMap { it.사진 }.toSet()
+        val 쓰는 = 상태.d.종목표.flatMap { it.사진 }.toSet() + listOfNotNull(상태.d.설정.프로필사진) + 상태.d.인증샷.map { it.파일 }   // 10-05: 프로필 사진 · 인증샷도 지키기
         // 기록 파일을 못 읽어 빈 데이터로 켜졌을 때는 치우지 않는다 (사진을 다 지우게 된다)
         if (상태.d.종목표.isNotEmpty()) kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { 사진함.정리(앱맥락, 쓰는) }
     }
@@ -301,7 +301,7 @@ fun 앱(상태: 앱상태, 폰: 폰기능) {
                         // 10-01: 저장된 운동의 결과를 한 번 보여 준다 (자동 종료 뒤 결과 화면이 안 나왔다)
                         else if (키 == "결과") { if (결과 != null) 결과화면(상태, 결과) }
                         else when (탭.valueOf(키)) {
-                            탭.캘린더 -> 캘린더화면(상태, { 지금탭 = 탭.루틴 }, { 운동보기 = true }, { 스탯열림 = 스탯화면글.스탯 to null })
+                            탭.캘린더 -> 캘린더화면(상태, { 지금탭 = 탭.루틴 }, { 운동보기 = true }, { 스탯열림 = 스탯화면글.스탯 to null }, { 스탯열림 = 스탯화면글.업적 to null })
                             탭.루틴 -> 루틴화면(상태, 폰)
                             탭.플랜 -> 플랜화면(상태, { 지금탭 = 탭.설정 }, { 지금탭 = 탭.종목 })
                             탭.종목 -> 종목화면(상태)
