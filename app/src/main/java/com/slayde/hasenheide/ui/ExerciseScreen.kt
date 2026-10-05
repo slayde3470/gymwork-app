@@ -1,48 +1,92 @@
 package com.slayde.hasenheide.ui
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Icon
-import com.slayde.hasenheide.data.카테고리지우기
-import com.slayde.hasenheide.data.이름추천
 import androidx.compose.foundation.border
-import com.slayde.hasenheide.ui.theme.높이
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.slayde.hasenheide.data.앱데이터
-import com.slayde.hasenheide.data.종목
-import com.slayde.hasenheide.data.종목지표
+import com.slayde.hasenheide.data.근육표
 import com.slayde.hasenheide.data.무게글
-import com.slayde.hasenheide.data.콤마
-import com.slayde.hasenheide.data.퍼센트
+import com.slayde.hasenheide.data.앱데이터
+import com.slayde.hasenheide.data.이름추천
+import com.slayde.hasenheide.data.종목
+import com.slayde.hasenheide.data.종목근육
+import com.slayde.hasenheide.data.종목기본세트
+import com.slayde.hasenheide.data.종목세트
+import com.slayde.hasenheide.data.종목세트최대
+import com.slayde.hasenheide.data.카테고리지우기
+import com.slayde.hasenheide.data.같은이름번호
+import com.slayde.hasenheide.data.칸
+import com.slayde.hasenheide.data.플랜
+import com.slayde.hasenheide.data.플랜줄정리
+import com.slayde.hasenheide.data.플랜표
+import com.slayde.hasenheide.data.속도출처글
+import com.slayde.hasenheide.data.처방글
+import com.slayde.hasenheide.data.회처방
+import com.slayde.hasenheide.data.회표
 import com.slayde.hasenheide.ui.theme.Local색
 import com.slayde.hasenheide.ui.theme.간격
+import com.slayde.hasenheide.ui.theme.글꼴
+import com.slayde.hasenheide.ui.theme.그림칸
+import com.slayde.hasenheide.ui.theme.높이
 import com.slayde.hasenheide.ui.theme.모서리
+import com.slayde.hasenheide.ui.theme.부품치수
+import com.slayde.hasenheide.ui.theme.선굵기
+import com.slayde.hasenheide.ui.theme.움직임
 import com.slayde.hasenheide.ui.theme.크기
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlin.math.max
+import kotlin.math.roundToInt
 
-/** 종목 이름을 바꾸면 루틴과 지난 기록의 이름도 함께 바꾼다 (기록이 끊기지 않게) */
+/** 종목 이름을 바꾸면 루틴과 지난 기록의 이름도 함께 바꾼다 (기록이 끊기지 않게) — 다른 파일이 부를 수 있어 그대로 둔다 */
 fun 앱데이터.종목이름바꿈(옛: String, 새: String): 앱데이터 {
     if (옛 == 새 || 새.isBlank() || 종목표.any { it.이름 == 새 }) return this
     return copy(
@@ -53,209 +97,342 @@ fun 앱데이터.종목이름바꿈(옛: String, 새: String): 앱데이터 {
     )
 }
 
+/** 이 화면만 쓰는 치수 — Theme 에 없는 값 (보고서 '공용 고칠 것' — 합칠 때 부품치수로 옮긴다) */
+internal object 종목치수 {
+    val 번호칸 = 16.dp   // 시안 .종세트 첫 칸 16 (세트 번호)
+    val 지움칸 = 28.dp   // 시안 .종지움 28
+    val 지움그림 = 16.dp // 시안 .종지움 svg 16 (U3-6 작게)
+    val 값그림 = 18.dp   // − ＋ (U3-6 기본 · Parts 값칸과 같다)
+    const val 열무게 = 83f   // 시안 grid 83fr · 70fr · 79fr
+    const val 열횟수 = 70f
+    const val 열휴식 = 79f
+}
+
+/**
+ * 종목 탭 (시안 v18 C ①② · v19 D ② · v20 ①②③ `종목탭` · `종목칸`).
+ *  · 맨 위 띠 '종목'(가운데) → [+ 새 종목 만들기] → 칩 필터([전체] + 카테고리 · 플랜만 남은 종목이 있으면 '기타')
+ *  · 카테고리마다 [작은 이름표](전체일 때만) + 상자 2열 격자. 펼친 상자는 줄 전체, 빈 칸은 뒤 상자가 채운다(dense)
+ *  · 접힌 상자 = 이름(+같은 이름 번호 · [플랜] 딱지) · ▾ 만. 펼치면 [사진 칸][이름 · 곁 · ▾ / 주동근 / 협응근][편집] →
+ *    플랜 카드(그 종목의 플랜마다) → 기본 세팅 세트 줄 → 넣은 사진 줄(있을 때만 · 두 번 눌러 지우기)
+ */
 @Composable
 fun 종목화면(상태: 앱상태) {
     val c = Local색.current
     val d = 상태.d
-    var 부위 by remember { mutableStateOf("전체") }
-    var 열린 by remember { mutableStateOf<String?>(null) }
+    var 고른칸 by remember { mutableStateOf("전체") }
+    var 펼친 by remember { mutableStateOf<String?>(null) }
     var 카테고리시트 by remember { mutableStateOf(false) }
-    var 추가중 by remember { mutableStateOf(false) }
+    // 새 종목 시트 — null 닫힘 · "" 새 종목 · 그 밖 = 편집할 종목 id
+    var 새시트 by remember { mutableStateOf<String?>(null) }
 
+    val 판 = d.종목탭판(고른칸)
     Box(Modifier.fillMaxSize()) {
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 간격.넓게)) {
-            제목글("종목", Modifier.번호("종1").padding(top = 16.dp, bottom = 12.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                칩줄(listOf("전체") + d.카테고리, 부위, { 부위 = it }, Modifier.weight(1f))
-                Box(Modifier.width(8.dp))
-                아이콘버튼(아이콘.설정, "카테고리 관리", { 카테고리시트 = true })
-            }
-            Box(Modifier.height(12.dp))
-            // 플랜 종목 — 맨 위에 생기지만 고정은 아니다 (09-29, 20 문서)
-            플랜종목칸(상태)
-            val 목록 = d.종목표.filter { 부위 == "전체" || it.부위 == 부위 }
-            카드(Modifier.번호("종2"), 안쪽 = 0.dp) {
-                if (목록.isEmpty()) 글(if (d.종목표.isEmpty()) "아직 종목이 없습니다 · 아래에서 만들어 주세요" else "이 부위에 종목이 없습니다",
-                    Modifier.padding(16.dp), 크기값 = 크기.조금작게, 색 = c.옅음)
-                목록.forEachIndexed { i, e ->
-                    if (i > 0) 구분선()
-                    종목한줄(상태, e, 열린 == e.이름) { 열린 = if (열린 == e.이름) null else e.이름 }
+        Column(Modifier.fillMaxSize()) {
+            머리띠("종목", Modifier.번호("종1"), 오른쪽 = {
+                // 앱에만 있는 카테고리 관리 — 시안 띠에는 없다 (보고서 '시안과 다르게 한 것')
+                아이콘버튼(아이콘.설정, "카테고리 관리", { 카테고리시트 = true }, 칠함 = false, 색 = c.강조글)
+            })
+            당겨새로고침({ }, Modifier.weight(1f)) {
+                Column(
+                    Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+                        .padding(start = 간격.보통, end = 간격.보통, top = 간격.보통, bottom = 간격.보통),
+                    verticalArrangement = Arrangement.spacedBy(간격.좁게),
+                ) {
+                    버튼("+ 새 종목 만들기", { if (새시트 == null) 새시트 = "" }, Modifier.fillMaxWidth(), 낮게 = true)
+                    칩줄(listOf("전체") + 판.칸들, 판.고름, { 고른칸 = it })
+                    if (판.묶음.isEmpty()) 글("없음", 크기값 = 크기.조금작게, 색 = c.옅음)
+                    판.묶음.forEach { (칸이름, l) ->
+                        key(칸이름) {
+                            Column(verticalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
+                                if (판.고름 == "전체") 이름표(칸이름, Modifier.padding(start = 간격.아주좁게, top = 간격.아주좁게))
+                                종목격자(상태, l, 펼친, { k -> 펼친 = if (펼친 == k) null else k }, { id -> if (새시트 == null) 새시트 = id })
+                            }
+                        }
+                    }
                 }
             }
-            Box(Modifier.height(12.dp))
-            if (추가중) 새종목칸(상태, if (부위 == "전체") d.카테고리.firstOrNull() ?: "" else 부위) { 추가중 = false }
-            else 버튼("종목 추가", { 추가중 = true }, Modifier.fillMaxWidth(), 그림 = 아이콘.더하기)
-            Box(Modifier.height(16.dp))   // 끝에 빈 공간을 두지 않는다 (09-21 메모)
         }
         if (카테고리시트) 카테고리관리(상태) { 카테고리시트 = false }
-        플랜고치기자리(상태)   // 10-01: 플랜 고치기 시트 — 화면 전체를 덮도록 여기서
+        새시트?.let { 열린 ->
+            val 편집 = if (열린.isEmpty()) null else d.종목표.firstOrNull { it.id == 열린 }
+            if (열린.isNotEmpty() && 편집 == null) { LaunchedEffect(열린) { 새시트 = null } }
+            else key(열린) {
+                새종목시트(상태, 닫기 = { 새시트 = null }, 저장 = { e ->
+                    if (편집 != null) 펼친 = e.id
+                    if (고른칸 != "전체" && 고른칸 != e.칸) 고른칸 = e.칸
+                }, 편집 = 편집)
+            }
+        }
+        플랜고치기자리(상태)   // 펼친 상자 플랜 카드의 [변경] — 시트는 화면 전체를 덮도록 여기서
     }
 }
 
+/** 2열 격자 — 접힌 상자는 한 칸, 펼친 상자는 줄 전체. 줄마다 접힌 이름이 두 줄이면 옆 상자도 같은 높이 */
 @Composable
-private fun 종목한줄(상태: 앱상태, e: 종목, 열림: Boolean, on열기: () -> Unit) {
+private fun 종목격자(상태: 앱상태, l: List<종목칸값>, 펼친: String?, 펼침: (String) -> Unit, 편집: (String) -> Unit) {
+    val 줄들 = 격자줄(l.map { it.열쇠 == 펼친 })
+    val 두줄높이 = with(LocalDensity.current) { (크기.본문 * 1.4f * 2).toDp() }
+    Column(verticalArrangement = Arrangement.spacedBy(간격.좁게)) {
+        줄들.forEach { 줄 ->
+            val 첫 = l[줄[0]]
+            key(첫.열쇠) {
+                if (줄.size == 1 && 첫.열쇠 == 펼친) 종목상자(상태, 첫, true, Modifier.fillMaxWidth(), 0.dp, 펼침, 편집)
+                else {
+                    val 높이맞춤 = if (줄.any { 이름줄수(l[it].이름) > 1 }) 두줄높이 else 0.dp
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
+                        줄.forEach { i -> key(l[i].열쇠) { 종목상자(상태, l[i], false, Modifier.weight(1f), 높이맞춤, 펼침, 편집) } }
+                        if (줄.size == 1) Box(Modifier.weight(1f))
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** 종목 상자 하나 (시안 `종목칸`) */
+@Composable
+private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modifier: Modifier, 이름높이: androidx.compose.ui.unit.Dp, 펼침: (String) -> Unit, 편집: (String) -> Unit) {
     val c = Local색.current
     val d = 상태.d
-    val 지표 = d.종목지표(e.이름, 상태.오늘)
-    val 볼pct = if (지표 != null && 지표.과거 != null) 퍼센트(지표.지금.볼륨, 지표.과거.볼륨) else null
-    Column(Modifier.fillMaxWidth()) {
-        Row(Modifier.fillMaxWidth().눌림(on열기).padding(start = 16.dp, end = 8.dp, top = 12.dp, bottom = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-            // 10-02 (08 4절): 줄 왼쪽에 작은 사진 — 없으면 빈 칸
-            작은사진(e)
-            Box(Modifier.width(8.dp))
-            Row(Modifier.weight(1f), verticalAlignment = Alignment.Bottom) {
-                글(e.이름, Modifier.weight(1f, fill = false), 굵기 = FontWeight.Medium)
-                Box(Modifier.width(8.dp))
-                글(listOf(e.부위, e.장비).filter { it.isNotBlank() }.joinToString("·"), 크기값 = 크기.작게, 색 = c.옅음)
-            }
-            if (볼pct != null) 글(
-                (if (볼pct > 0) "+" else "") + "$볼pct%", 크기값 = 크기.버튼, 굵기 = FontWeight.Bold,
-                색 = if (볼pct > 0) c.오름 else if (볼pct < 0) c.내림 else c.흐림,
-            )
-            펼침단추(열림, on열기)
-        }
-        if (열림) Column(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp)) {
-            // 10-02 (08 4절): 펼치면 맨 위에 사진 줄 (72 · 첫 칸 '사진 추가' · 넘치면 옆으로) + 근육 한 줄
-            종목사진줄(상태, e)
-            Box(Modifier.height(12.dp))
-            if (지표 == null) 글("아직 기록이 없습니다", 크기값 = 크기.조금작게, 색 = c.옅음)
-            else {
-                val 과 = 지표.과거
-                Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(모서리.작게)).background(c.면2).padding(12.dp)) {
-                    지표줄("지표", "지금", "이전", "늘어난 값", 머리 = true)
-                    지표줄("최대 1RM", "%.1f".format(지표.지금.rm), 과?.let { "%.1f".format(it.rm) } ?: "—", 증감(지표.지금.rm, 과?.rm))
-                    지표줄("단일세트 최고", "${무게글(지표.지금.최고.w)}×${지표.지금.최고.r}", 과?.let { "${무게글(it.최고.w)}×${it.최고.r}" } ?: "—",
-                        증감(지표.지금.최고.w * 지표.지금.최고.r, 과?.let { it.최고.w * it.최고.r }))
-                    지표줄("한 세션 볼륨", 콤마(지표.지금.볼륨), 과?.let { 콤마(it.볼륨) } ?: "—", 증감(지표.지금.볼륨, 과?.볼륨))
+    val t = x.종목
+    val 플 = d.상자플랜(x)
+    val 번 = if (t != null) 같은이름번호(d.종목표, t.id, t.이름) else 0
+    val 곁 = if (플.size > 1) "플랜 ${플.size}개" else if (플.isEmpty() && 플랜표.찾기(x.이름) != null) "플랜 가능" else ""
+    val 모양 = RoundedCornerShape(모서리.작게)
+    Column(
+        modifier.clip(모양).background(c.면).border(선굵기.보통, if (펼) c.속선 else c.선, 모양).padding(간격.좁게),
+    ) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(간격.좁게), verticalAlignment = Alignment.Top) {
+            if (펼 && t != null) 사진넣는칸(상태, t)
+            Column(Modifier.weight(1f).눌림 { 펼침(x.열쇠) }) {
+                Row(
+                    Modifier.fillMaxWidth().heightIn(min = maxOf(높이.아주낮게, 이름높이)),
+                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.아주좁게),
+                ) {
+                    Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+                        이름맞춤(x.이름, Modifier.weight(1f, fill = false), 바탕크기 = 크기.본문, 굵기 = FontWeight.Bold)
+                        if (번 > 0 || 플.isNotEmpty()) Row(Modifier.offset(x = 부품치수.딱지겹침), horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
+                            번호딱지(번)
+                            if (플.isNotEmpty()) 플랜딱지()
+                        }
+                    }
+                    if (펼 && 곁.isNotEmpty()) 글(곁, 크기값 = 크기.작게, 색 = c.옅음)
+                    val 돌림 by animateFloatAsState(if (펼) 180f else 0f, tween(움직임.펼침), label = "접힘표")
+                    글("▾", Modifier.graphicsLayer { rotationZ = 돌림 }, 크기값 = 크기.작게, 색 = c.옅음)
                 }
-                글(if (과 != null) "${과.날}과 견준 값" else "견줄 이전 기록이 없습니다", Modifier.padding(top = 8.dp), 크기값 = 크기.작게, 색 = c.옅음)
-            }
-            Box(Modifier.height(12.dp))
-            var 이름 by remember(e.이름) { mutableStateOf(e.이름) }
-            var 달력 by remember(e.이름) { mutableStateOf(e.달력이름 ?: "") }
-            var 장비 by remember(e.이름) { mutableStateOf(e.장비) }
-            이름표("종목 이름")
-            입력칸(이름, { 이름 = it }, Modifier.fillMaxWidth().padding(top = 4.dp), onDone = {
-                상태.바꿈 { it.종목이름바꿈(e.이름, 이름.trim()) }
-            })
-            Box(Modifier.height(12.dp))
-            이름표("달력 표시 이름")
-            입력칸(달력, { 달력 = it }, Modifier.fillMaxWidth().padding(top = 4.dp), 안내 = "비워두면 종목 이름을 따라갑니다", onDone = {
-                상태.바꿈 { d -> d.copy(종목표 = d.종목표.map { if (it.이름 == e.이름) it.copy(달력이름 = 달력.trim().ifEmpty { null }) else it }) }
-            })
-            글("달력 칸에만 쓰는 짧은 이름", Modifier.padding(top = 2.dp), 크기값 = 크기.작게, 색 = c.옅음)
-            Box(Modifier.height(12.dp))
-            목표칸(상태, e.이름)
-            Box(Modifier.height(12.dp))
-            이름표("부위")
-            칩줄(d.카테고리, e.부위, { p -> 상태.바꿈 { d -> d.copy(종목표 = d.종목표.map { if (it.이름 == e.이름) it.copy(부위 = p) else it }) } }, Modifier.padding(top = 4.dp))
-            Box(Modifier.height(12.dp))
-            이름표("장비")
-            Box(Modifier.height(4.dp))
-            장비고르기(상태, e.장비, { v -> 장비 = v; 상태.바꿈 { d -> d.copy(종목표 = d.종목표.map { if (it.이름 == e.이름) it.copy(장비 = v.trim()) else it }) } })
-            글("이름은 고친 뒤 자판의 '완료'를 누르면 저장됩니다", Modifier.padding(top = 8.dp), 크기값 = 크기.작게, 색 = c.옅음)
-            Box(Modifier.height(12.dp))
-            버튼("이 종목 지우기", {
-                val 쓰는곳 = d.루틴들.filter { r -> r.종목.any { it.이름 == e.이름 } }.map { it.이름 }
-                상태.지우고알림(if (쓰는곳.isEmpty()) "${e.이름}을(를) 지웠습니다" else "${e.이름} · ${쓰는곳.joinToString("·")}에서도 뺐습니다") { dd ->
-                    dd.copy(
-                        종목표 = dd.종목표.filter { it.이름 != e.이름 },
-                        루틴들 = dd.루틴들.map { r -> r.copy(종목 = r.종목.filter { it.이름 != e.이름 }) },
-                    )
+                if (펼) {
+                    val (주, 협) = 근육두줄(d.종목근육(t?.id, x.이름))
+                    맞춤글("주동근 : $주", 최대 = 크기.작게, 색 = c.흐림)
+                    맞춤글("협응근 : $협", 최대 = 크기.작게, 색 = c.흐림)
                 }
-            }, Modifier.fillMaxWidth(), 작게 = true, 글색 = c.나쁨)
+            }
+            if (펼 && t != null) 버튼("편집", { 편집(t.id) }, 낮게 = true)
         }
+        if (펼) Column(Modifier.padding(top = 간격.좁게), verticalArrangement = Arrangement.spacedBy(간격.좁게)) {
+            플.forEach { p -> key(p.id) { 플랜카드(상태, p) } }
+            종목세팅(상태, t?.id ?: x.이름, 플.isNotEmpty())
+            if (t != null && t.사진.isNotEmpty()) 넣은사진줄(상태, t)
+        }
+    }
+}
+
+/** 펼친 상자 머리의 사진 칸 28 — 첫 사진 · 없으면 점선 ＋. 누르면 사진 넣기 (시안 `.사진넣칸`) */
+@Composable
+private fun 사진넣는칸(상태: 앱상태, t: 종목) {
+    val c = Local색.current
+    val ctx = LocalContext.current
+    val 일꾼 = rememberCoroutineScope()
+    var 넣는중 by remember { mutableStateOf(false) }
+    val 고르기 = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(근육표.사진최대)) { 고른것 ->
+        if (고른것.isEmpty()) return@rememberLauncherForActivityResult
+        val 남은 = (근육표.사진최대 - (상태.d.종목표.firstOrNull { it.id == t.id }?.사진?.size ?: 0)).coerceAtLeast(0)
+        if (남은 == 0) { 상태.알림.토스트("사진은 ${근육표.사진최대}장까지"); return@rememberLauncherForActivityResult }
+        넣는중 = true
+        일꾼.launch {
+            val 이름들 = withContext(Dispatchers.IO) { 사진함.넣기(ctx, 고른것.take(남은)) }
+            발자취.적기("${t.이름} 사진 ${이름들.size}장 넣음")
+            상태.바꿈 { it.종목사진더함(t.id, 이름들) }
+            넣는중 = false
+        }
+    }
+    val 모양 = RoundedCornerShape(그림칸.모서리)
+    val 첫 = t.사진.firstOrNull()
+    Box(
+        Modifier.size(그림칸.작은사진).clip(모양)
+            .then(if (첫 == null) Modifier.background(c.면2).border(선굵기.보통, c.속선, 모양) else Modifier)
+            .눌림 {
+                if (넣는중) return@눌림
+                if (t.사진.size >= 근육표.사진최대) 상태.알림.토스트("사진은 ${근육표.사진최대}장까지")
+                else 고르기.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+            },
+        contentAlignment = Alignment.Center,
+    ) {
+        if (첫 != null) 사진그림(첫, 그림칸.작은사진 * 2, Modifier.fillMaxSize(), "${t.이름} 사진 넣기")
+        else 글("＋", 크기값 = 크기.조금작게, 색 = c.옅음)
+    }
+}
+
+/** 넣은 사진 줄 72 — 누르면 '지우기' 표시 · 한 번 더 누르면 지운다(되돌리기 띠) (시안 `.사진줄` · '사진지움') */
+@Composable
+private fun 넣은사진줄(상태: 앱상태, t: 종목) {
+    val c = Local색.current
+    var 지울것 by remember(t.id) { mutableStateOf<String?>(null) }
+    val 모양 = RoundedCornerShape(그림칸.모서리)
+    val 넘김 = rememberScrollState()
+    Row(Modifier.fillMaxWidth().오른끝흐림(넘김).horizontalScroll(넘김), horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
+        t.사진.forEachIndexed { j, 이름 ->
+            key(이름) {
+                Box(
+                    Modifier.size(그림칸.사진).clip(모양).눌림 {
+                        if (지울것 == 이름) {
+                            지울것 = null
+                            발자취.적기("${t.이름} 사진 지움")
+                            상태.지우고알림("${t.이름} 사진을 지웠습니다") { it.종목사진뺌(t.id, 이름) }
+                        } else 지울것 = 이름
+                    },
+                ) {
+                    사진그림(이름, 그림칸.사진 * 2, Modifier.fillMaxSize(), "사진 ${j + 1} 지우기")
+                    val 보임 by animateFloatAsState(if (지울것 == 이름) 1f else 0f, tween(움직임.색), label = "지우기표")
+                    if (보임 > 0f) Box(
+                        Modifier.fillMaxSize().graphicsLayer { alpha = 보임 }.background(c.나쁨),
+                        contentAlignment = Alignment.Center,
+                    ) { 글("지우기", 크기값 = 크기.조금작게, 색 = c.면, 굵기 = FontWeight.Bold) }
+                }
+            }
+        }
+    }
+}
+
+/** 펼친 상자의 플랜 카드 (시안 `플랜카드`) — 이름 · n/끝회 · 게이지 · 시작/지금/목표 · 다음 회 처방 · 다음 측정 · 속도 · [변경][지우기] */
+@Composable
+private fun 플랜카드(상태: 앱상태, p: 플랜) {
+    val c = Local색.current
+    val d = 상태.d
+    val 표 = if (d.몸.찼나) p.회표(d.몸, d.향상기록들) else emptyList()
+    val 끝 = 표.lastOrNull()?.회 ?: p.한회
+    val 다 = 표.firstOrNull { it.회 > p.한회 }
+    val 측 = 표.firstOrNull { it.회 > p.한회 && it.측정일 }
+    val 시 = p.시작진행값
+    val 목 = p.목표진행값
+    val 현 = if (p.한회 <= p.기준회) p.지금진행값 else 표.firstOrNull { it.회 == p.한회 }?.목표값 ?: p.지금진행값
+    val fr = ((현 - 시) / (if (목 - 시 != 0.0) 목 - 시 else 1.0)).coerceIn(0.0, 1.0)
+    fun 값글(v: Double) = if (p.횟수진행) "${v.roundToInt()}${p.단위.단위}" else "${무게글((v * 2).roundToInt() / 2.0)}kg"
+    카드 {
+        Column(verticalArrangement = Arrangement.spacedBy(간격.좁게)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                글(p.이름, Modifier.weight(1f), 굵기 = FontWeight.Bold)
+                글("${p.한회}/${끝}회", 크기값 = 크기.작게, 색 = c.옅음)
+            }
+            진행막대(fr.toFloat(), Modifier.fillMaxWidth())
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                글("시작 ${값글(시)}", 크기값 = 크기.작게, 색 = c.흐림)
+                글("지금 ${값글(현)}", Modifier.weight(1f), 크기값 = 크기.작게, 색 = c.흐림, 가운데 = true)
+                글("목표 ${값글(목)}", 크기값 = 크기.작게, 색 = c.흐림)
+            }
+            val 처방줄 = when {
+                !d.몸.찼나 -> "신체 정보가 비어 있어 기간을 셀 수 없습니다 (설정 → 신체 정보)"
+                다 == null -> "목표 달성"
+                else -> "${if (다.측정일) "측정 · " else ""}${다.회}회차 " +
+                    처방글(회처방(p, 다.목표값, d.설정.무게폭, d.몸, 다.측정일, 다.주))
+            }
+            맞춤글(처방줄, 최대 = 크기.조금작게, 색 = c.글)
+            맞춤글((if (측 != null) "다음 측정 ${측.회}회차 · " else "") + "속도 ${속도출처글(d.향상기록들, p.종목)}", 최대 = 크기.작게, 색 = c.옅음)
+            Row(horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
+                버튼("변경", { 플랜고침.value = p.id }, Modifier.weight(1f), 낮게 = true)
+                버튼("지우기", {
+                    상태.지우고알림("${p.이름} 플랜을 지웠습니다") { dd -> dd.copy(플랜들 = dd.플랜들.filter { it.id != p.id }).플랜줄정리() }
+                }, 낮게 = true, 글색 = c.나쁨)
+            }
+        }
+    }
+}
+
+/** 기본 세팅 (시안 `종목세팅`) — 세트 줄 목록. 값은 종목설정[열쇠] (없으면 설정 기본값) */
+@Composable
+private fun 종목세팅(상태: 앱상태, 열쇠: String, 플랜있음: Boolean) {
+    val c = Local색.current
+    Column(verticalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
+            글("기본 세팅", 크기값 = 크기.조금작게, 굵기 = FontWeight.Bold)
+            if (플랜있음) 맞춤글("플랜으로 넣으면 플랜 처방대로", Modifier.weight(1f), 최대 = 크기.작게, 색 = c.옅음)
+        }
+        세트줄표(
+            상태.d.종목기본세트(열쇠), 상태.d.설정.무게폭,
+            { f -> 상태.바꿈 { it.종목세트고침(열쇠, f) } },
+            { 상태.알림.토스트(세트최대글) },
+        )
     }
 }
 
 /**
- * 1RM 목표 적기 (09-27) — 종목 탭 · 루틴의 종목 설정 두 곳에서 같은 칸. 종목표에 저장한다.
- * 비우면 목표 없음. 캘린더 판에 지금 속도 · 도달 예상이 보인다
+ * 세트 줄 목록 [번호][무게 kg][횟수][휴식][휴지통] + [+ 세트] — 종목 탭 기본 세팅 · 새 종목 시트가 같이 쓴다 (시안 `.종세트`).
+ * 무게 ± = 설정의 무게 조절 폭 · 횟수 1 이상 · 휴식 15초씩 0:15~5:00(휴식값칸) · 마지막 한 줄은 안 지운다 · + 세트 = 앞 줄 값 복사(10줄까지).
+ * [바꿈] 은 '지금 목록 → 새 목록' 함수를 받는다 (빠르게 연달아 눌러도 가장 새 값에서 계산되게)
  */
 @Composable
-fun 목표칸(상태: 앱상태, 종목이름: String) {
-    val 것 = 상태.d.종목표.firstOrNull { it.이름 == 종목이름 }
-    var 값 by remember(종목이름, 것?.목표1RM) { mutableStateOf(것?.목표1RM?.let { 무게글(it) } ?: "") }
-    fun 저장() {
-        val v = 값.replace(',', '.').toDoubleOrNull()?.takeIf { it > 0 }
-        상태.바꿈 { d ->
-            val 있나 = d.종목표.any { it.이름 == 종목이름 }
-            d.copy(종목표 = if (있나) d.종목표.map { if (it.이름 == 종목이름) it.copy(목표1RM = v) else it }
-                         else d.종목표 + 종목(종목이름, d.카테고리.firstOrNull() ?: "", 목표1RM = v))
-        }
-    }
-    이름표("1RM 목표")
-    Row(Modifier.fillMaxWidth().padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-        입력칸(값, { 값 = it }, Modifier.weight(1f), 안내 = "비워두면 목표 없음", 숫자 = true, onDone = { 저장() })
-        글("kg", Modifier.padding(horizontal = 8.dp), 크기값 = 크기.버튼, 색 = Local색.current.옅음)
-        버튼("저장", { 저장() }, 작게 = true)
-    }
-}
-
-private data class 증감글(val pct: Int?, val 차: Double)
-private fun 증감(지금: Double, 과거: Double?): 증감글? = 과거?.let { 증감글(퍼센트(지금, it), 지금 - it) }
-
-@Composable
-private fun 지표줄(이름: String, 지금: String, 이전: String, 증: Any?, 머리: Boolean = false) {
+internal fun 세트줄표(세트: List<종목세트>, 무게폭: Double, 바꿈: ((List<종목세트>) -> List<종목세트>) -> Unit, 최대알림: () -> Unit) {
     val c = Local색.current
-    val 작은 = if (머리) 크기.아주작게 else 크기.버튼
-    Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-        글(이름, Modifier.weight(1.3f), 크기값 = if (머리) 크기.아주작게 else 크기.조금작게, 색 = if (머리) c.옅음 else c.흐림, 굵기 = FontWeight.Bold)
-        글(지금, Modifier.weight(1f), 크기값 = 작은, 색 = if (머리) c.옅음 else c.글, 굵기 = FontWeight.Bold)
-        글(이전, Modifier.weight(1f), 크기값 = if (머리) 크기.아주작게 else 크기.조금작게, 색 = c.옅음)
-        when (증) {
-            is String -> 글(증, Modifier.weight(0.9f), 크기값 = 크기.아주작게, 색 = c.옅음)
-            is 증감글 -> {
-                val p = 증.pct
-                val 색 = if ((p ?: 0) > 0) c.오름 else if ((p ?: 0) < 0) c.내림 else c.흐림
-                글(if (p == null) "—" else (if (p > 0) "+" else "") + "$p%", Modifier.weight(0.9f), 크기값 = 크기.버튼, 색 = 색, 굵기 = FontWeight.Bold)
-            }
-            else -> 글("—", Modifier.weight(0.9f), 크기값 = 크기.버튼, 색 = c.옅음)
+    Column(verticalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
+            글("세트", Modifier.width(종목치수.번호칸), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)
+            글("무게 kg", Modifier.weight(종목치수.열무게), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)
+            글("횟수", Modifier.weight(종목치수.열횟수), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)
+            글("휴식", Modifier.weight(종목치수.열휴식), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)
+            Box(Modifier.width(종목치수.지움칸))
         }
+        val 하나 = 세트.size <= 1
+        세트.forEachIndexed { k, x ->
+            key(k) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
+                    글("${k + 1}", Modifier.width(종목치수.번호칸), 크기값 = 크기.조금작게, 굵기 = FontWeight.Bold, 가운데 = true)
+                    세트값칸(무게글(x.w), Modifier.weight(종목치수.열무게), "${k + 1}세트 무게", x.w > 0,
+                        { 바꿈 { l -> 세트값바꿈(l, k, 'w', -1, 무게폭) } }, { 바꿈 { l -> 세트값바꿈(l, k, 'w', 1, 무게폭) } },
+                        { g -> 바꿈 { l -> 세트글넣음(l, k, 'w', g) } })
+                    세트값칸("${x.r}", Modifier.weight(종목치수.열횟수), "${k + 1}세트 횟수", x.r > 1,
+                        { 바꿈 { l -> 세트값바꿈(l, k, 'r', -1, 무게폭) } }, { 바꿈 { l -> 세트값바꿈(l, k, 'r', 1, 무게폭) } },
+                        { g -> 바꿈 { l -> 세트글넣음(l, k, 'r', g) } }, 정수 = true)
+                    휴식값칸(x.휴, { 새 -> 바꿈 { l -> 세트휴식(l, k, 새) } }, Modifier.weight(종목치수.열휴식), 칸높이 = 높이.아주낮게)
+                    Box(
+                        Modifier.size(종목치수.지움칸).clip(RoundedCornerShape(모서리.작게))
+                            .then(if (하나) Modifier else Modifier.눌림 { 바꿈 { l -> 세트지움(l, k) } }),
+                        contentAlignment = Alignment.Center,
+                    ) { Icon(아이콘.지우기, "${k + 1}세트 지우기", Modifier.size(종목치수.지움그림), tint = if (하나) c.선 else c.옅음) }
+                }
+            }
+        }
+        버튼("+ 세트", { if (세트.size >= 종목세트최대) 최대알림() else 바꿈 { l -> 세트더함(l) } }, Modifier.fillMaxWidth(), 낮게 = true)
     }
 }
 
-/** 새 종목 — 이름 · 부위 · 장비 */
+/** − 값 ＋ (가운데 = 쳐서 넣는 칸) — 높이 28. 치는 동안은 친 글 그대로, 손을 떼면 저장된 값으로 (시안 `.종세트 .값칸`) */
 @Composable
-fun 새종목칸(상태: 앱상태, 처음부위: String, 닫기: () -> Unit) {
-    val d = 상태.d
-    var 이름 by remember { mutableStateOf("") }
-    var 부위 by remember { mutableStateOf(처음부위) }
-    var 장비 by remember { mutableStateOf("") }
-    var 부위손댐 by remember { mutableStateOf(false) }
-    var 장비손댐 by remember { mutableStateOf(false) }
-    val 짐작 = 이름추천.추측하기(이름)
-    카드 {
-        이름표("새 종목")
-        Box(Modifier.height(8.dp))
-        // 이름을 치면 부위 · 장비를 짐작해 채운다. 직접 고른 뒤에는 건드리지 않는다 (08 시안 2절)
-        종목이름칸(상태, 이름, { t ->
-            이름 = t
-            val g = 이름추천.추측하기(t)
-            if (!부위손댐 && g.부위 != null && g.부위 in d.카테고리) 부위 = g.부위
-            if (!장비손댐) 장비 = g.장비 ?: ""
-        }, 있는것도 = false) { n, 부, 장 ->
-            이름 = n
-            if (부 in d.카테고리) 부위 = 부
-            if (장.isNotBlank()) 장비 = 장
+private fun 세트값칸(
+    값글: String, modifier: Modifier, 이름: String, 뺄수있음: Boolean,
+    빼기: () -> Unit, 더하기: () -> Unit, 넣기: (String) -> Unit, 정수: Boolean = false,
+) {
+    val c = Local색.current
+    val 모양 = RoundedCornerShape(모서리.작게)
+    var 초점 by remember { mutableStateOf(false) }
+    var 친글 by remember { mutableStateOf(값글) }
+    LaunchedEffect(값글, 초점) { if (!초점) 친글 = 값글 }
+    val 자판 = LocalFocusManager.current
+    Row(modifier.height(높이.아주낮게).clip(모양).border(선굵기.보통, c.속선, 모양), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.width(부품치수.값칸단추).fillMaxHeight().then(if (뺄수있음) Modifier.눌림(빼기) else Modifier), contentAlignment = Alignment.Center) {
+            Icon(아이콘.빼기, "$이름 빼기", Modifier.size(종목치수.값그림), tint = if (뺄수있음) c.강조 else c.옅음)
         }
-        Box(Modifier.height(8.dp))
-        부위고르기(상태, 부위, { 부위 = it; 부위손댐 = true })
-        Box(Modifier.height(8.dp))
-        장비고르기(상태, 장비, { 장비 = it; 장비손댐 = true }, 짐작.장비후보)
-        Box(Modifier.height(12.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            버튼("취소", 닫기, Modifier.weight(1f), 작게 = true)
-            버튼("만들기", {
-                val n = 이름.trim()
-                if (n.isNotEmpty() && d.종목표.none { it.이름 == n }) {
-                    상태.바꿈 { it.copy(종목표 = it.종목표 + 종목(n, 부위, 장비.trim())) }
-                    닫기()
-                }
-            }, Modifier.weight(1f), 작게 = true, 주요 = true)
+        BasicTextField(
+            value = if (초점) 친글 else 값글,
+            onValueChange = { t -> 친글 = t; 넣기(t) },
+            singleLine = true,
+            textStyle = 글꼴.보통(크기.버튼, FontWeight.Bold).copy(color = c.글, textAlign = TextAlign.Center, fontFeatureSettings = "tnum"),
+            cursorBrush = SolidColor(c.강조),
+            keyboardOptions = KeyboardOptions(keyboardType = if (정수) KeyboardType.Number else KeyboardType.Decimal, imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = { 자판.clearFocus() }),
+            modifier = Modifier.weight(1f).onFocusChanged { 초점 = it.isFocused },
+        )
+        Box(Modifier.width(부품치수.값칸단추).fillMaxHeight().눌림(더하기), contentAlignment = Alignment.Center) {
+            Icon(아이콘.더하기, "$이름 더하기", Modifier.size(종목치수.값그림), tint = c.강조)
         }
-        if (이름.trim().isNotEmpty() && d.종목표.any { it.이름 == 이름.trim() })
-            글("같은 이름의 종목이 이미 있습니다", Modifier.padding(top = 8.dp), 크기값 = 크기.작게, 색 = Local색.current.나쁨)
     }
 }
 
@@ -286,6 +463,32 @@ private fun 카테고리관리(상태: 앱상태, 닫기: () -> Unit) {
                 새 = ""
             }, 주요 = true)
         }
+    }
+}
+
+// ═════════════════════ 다른 파일이 부르는 옛 부품 — 이름 · 매개변수 그대로 (합칠 때 정리) ═════════════════════
+
+/**
+ * 1RM 목표 적기 (09-27) — 루틴의 종목 설정이 부른다. 종목표에 저장한다.
+ * 비우면 목표 없음. 캘린더 판에 지금 속도 · 도달 예상이 보인다
+ */
+@Composable
+fun 목표칸(상태: 앱상태, 종목이름: String) {
+    val 것 = 상태.d.종목표.firstOrNull { it.이름 == 종목이름 }
+    var 값 by remember(종목이름, 것?.목표1RM) { mutableStateOf(것?.목표1RM?.let { 무게글(it) } ?: "") }
+    fun 저장() {
+        val v = 값.replace(',', '.').toDoubleOrNull()?.takeIf { it > 0 }
+        상태.바꿈 { d ->
+            val 있나 = d.종목표.any { it.이름 == 종목이름 }
+            d.copy(종목표 = if (있나) d.종목표.map { if (it.이름 == 종목이름) it.copy(목표1RM = v) else it }
+                         else d.종목표 + 종목(종목이름, d.카테고리.firstOrNull() ?: "", 목표1RM = v))
+        }
+    }
+    이름표("1RM 목표")
+    Row(Modifier.fillMaxWidth().padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+        입력칸(값, { 값 = it }, Modifier.weight(1f), 안내 = "비워두면 목표 없음", 숫자 = true, onDone = { 저장() })
+        글("kg", Modifier.padding(horizontal = 8.dp), 크기값 = 크기.버튼, 색 = Local색.current.옅음)
+        버튼("저장", { 저장() }, 작게 = true)
     }
 }
 
@@ -408,3 +611,100 @@ fun 장비고르기(상태: 앱상태, 선택: String, on선택: (String) -> Uni
         }
     }
 }
+
+// ═════════════════════ 순수 계산 (시험: test/…/ui/ExerciseTest.kt) ═════════════════════
+
+/** 상자 하나 — [종목] null = 종목표에 없고 플랜만 남은 종목('기타' 칸) */
+internal data class 종목칸값(val 이름: String, val 칸: String, val 종목: 종목?) {
+    /** 펼침 열쇠 — 종목 id, 플랜만 남은 것은 "기타:" + 이름 */
+    val 열쇠: String get() = 종목?.id ?: "기타:$이름"
+}
+
+/** 종목 탭 판 — [칸들] 칩(전체 빼고) · [고름] 실제로 고른 칩 · [묶음] 카테고리마다 상자 (빈 카테고리는 뺀다) */
+internal data class 종목판(val 칸들: List<String>, val 고름: String, val 묶음: List<Pair<String, List<종목칸값>>>)
+
+/** 시안 `종목탭` — 플랜만 남은 종목은 '기타' (카테고리에 '기타' 가 있으면 거기에 더한다) */
+internal fun 앱데이터.종목탭판(고른칸: String): 종목판 {
+    val 남은 = 플랜들.map { it.종목 }.distinct().filter { n -> 종목표.none { it.이름 == n } }.map { 종목칸값(it, "기타", null) }
+    val 칸들 = if (남은.isNotEmpty() && "기타" !in 카테고리) 카테고리 + "기타" else 카테고리
+    val 고 = if (고른칸 in 칸들) 고른칸 else "전체"
+    val 묶 = (if (고 == "전체") 칸들 else listOf(고)).map { c ->
+        c to (종목표.filter { it.칸 == c }.map { 종목칸값(it.이름, it.칸, it) } + (if (c == "기타") 남은 else emptyList()))
+    }.filter { it.second.isNotEmpty() }
+    return 종목판(칸들, 고, 묶)
+}
+
+/** 상자의 플랜 — 그 이름의 첫 종목(또는 플랜만 남은 것)에만 붙는다 (시안 `첫`) */
+internal fun 앱데이터.상자플랜(x: 종목칸값): List<플랜> {
+    val t = x.종목
+    val 첫 = t == null || 종목표.firstOrNull { it.이름 == t.이름 }?.id == t.id
+    return if (첫) 플랜들.filter { it.종목 == x.이름 } else emptyList()
+}
+
+/**
+ * 2열 격자 줄 나누기 — CSS grid 2열 · row dense 와 같다. 펼친 것(true)은 줄 전체를 차지하고,
+ * 그 앞에 생긴 빈 칸은 뒤의 접힌 상자가 채운다. 결과 = 줄마다 상자 번호 (1개 또는 2개)
+ */
+internal fun 격자줄(펼침: List<Boolean>): List<List<Int>> {
+    val 줄: MutableList<MutableList<Int?>> = mutableListOf()
+    펼침.forEachIndexed { i, 넓 ->
+        if (넓) {
+            val r = 줄.indexOfFirst { it[0] == null && it[1] == null }
+            if (r >= 0) { 줄[r][0] = i; 줄[r][1] = -1 } else 줄.add(mutableListOf(i, -1))
+        } else {
+            var 놓음 = false
+            for (r in 줄) {
+                if (r[0] == null) { r[0] = i; 놓음 = true; break }
+                if (r[1] == null) { r[1] = i; 놓음 = true; break }
+            }
+            if (!놓음) 줄.add(mutableListOf(i, null))
+        }
+    }
+    return 줄.map { r -> r.filterNotNull().filter { it >= 0 } }.filter { it.isNotEmpty() }
+}
+
+/** − ＋ 한 번 — 무게는 무게폭씩(0 아래로 안 감 · 0.1 단위로 맞춤), 횟수는 1씩(1 아래로 안 감) */
+internal fun 세트값바꿈(l: List<종목세트>, k: Int, 칸: Char, 방향: Int, 무게폭: Double): List<종목세트> {
+    val x = l.getOrNull(k) ?: return l
+    val 새 = when (칸) {
+        'w' -> x.copy(w = max(0.0, ((x.w + 방향 * 무게폭) * 10).roundToInt() / 10.0))
+        'r' -> x.copy(r = max(1, x.r + 방향))
+        else -> x
+    }
+    return l.mapIndexed { i, y -> if (i == k) 새 else y }
+}
+
+/** 쳐서 넣은 글 — 숫자가 아니면(빈 칸 · '.') 그대로. 무게 0 이상 · 횟수 1 이상 (시안 data-in="종세트") */
+internal fun 세트글넣음(l: List<종목세트>, k: Int, 칸: Char, 글: String): List<종목세트> {
+    val x = l.getOrNull(k) ?: return l
+    val v = 글.replace(',', '.').trim().toDoubleOrNull() ?: return l
+    if (v.isNaN() || v.isInfinite()) return l
+    val 새 = when (칸) {
+        'w' -> x.copy(w = max(0.0, (v * 100).roundToInt() / 100.0))
+        'r' -> x.copy(r = max(1, v.roundToInt()))
+        else -> x
+    }
+    return l.mapIndexed { i, y -> if (i == k) 새 else y }
+}
+
+internal fun 세트휴식(l: List<종목세트>, k: Int, 초: Int): List<종목세트> = l.mapIndexed { i, y -> if (i == k) y.copy(휴 = 초) else y }
+
+/** 세트 줄 지우기 — 마지막 한 줄은 남긴다 */
+internal fun 세트지움(l: List<종목세트>, k: Int): List<종목세트> = if (l.size <= 1 || k !in l.indices) l else l.filterIndexed { i, _ -> i != k }
+
+/** + 세트 — 앞 줄 값 복사, 10줄까지 (넘으면 그대로) */
+internal fun 세트더함(l: List<종목세트>): List<종목세트> = if (l.isEmpty() || l.size >= 종목세트최대) l else l + l.last()
+
+/** 종목 기본 세팅 고치기 — 지금 값(없으면 설정 기본값)에 [f] 를 적용해 종목설정[열쇠] 에 넣는다 */
+internal fun 앱데이터.종목세트고침(열쇠: String, f: (List<종목세트>) -> List<종목세트>): 앱데이터 {
+    val 새 = f(종목기본세트(열쇠))
+    if (새.isEmpty()) return this
+    return copy(종목설정 = 종목설정 + (열쇠 to 새))
+}
+
+/** 사진 넣기 · 빼기 — 그 종목 하나만 (id 로 · 같은 이름 종목은 건드리지 않는다) */
+internal fun 앱데이터.종목사진더함(id: String, 이름들: List<String>): 앱데이터 =
+    copy(종목표 = 종목표.map { if (it.id == id) it.copy(사진 = (it.사진 + 이름들).distinct().take(근육표.사진최대)) else it })
+
+internal fun 앱데이터.종목사진뺌(id: String, 이름: String): 앱데이터 =
+    copy(종목표 = 종목표.map { if (it.id == id) it.copy(사진 = it.사진 - 이름) else it })
