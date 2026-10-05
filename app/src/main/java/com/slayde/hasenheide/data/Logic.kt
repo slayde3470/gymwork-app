@@ -537,7 +537,7 @@ fun 운동시작(r: 루틴, 지금: Long): 운동세션? {
         val 첫 = it.목표(0)
         세션종목(it.이름, it.세트, it.세트, 첫.w, 첫.r, it.휴식,
             예정값 = if (it.세트값.isEmpty()) emptyList() else List(it.세트) { k -> it.목표(k) },
-            휴식들 = List(it.세트) { k -> it.휴식(k) }, 슈퍼 = it.슈퍼, 플랜id = it.플랜id)
+            휴식들 = List(it.세트) { k -> it.휴식(k) }, 슈퍼 = it.슈퍼, 플랜id = it.플랜id, 종id = it.종id)
     }
     return 운동세션(r.id, r.이름, 지금, 0, 0, 들[0].무게, 들[0].횟수, 들)
 }
@@ -782,7 +782,7 @@ fun 앱데이터.운동저장(오늘: String, 지금: Long): 앱데이터 {
     val S = 세션 ?: return this
     val 들 = S.종목들.mapNotNull { e ->
         val 찬 = e.찬것()
-        if (찬.isEmpty()) null else 종목기록(e.이름, 찬, e.임시, S.묶음이름(e), 플랜id = e.플랜id)
+        if (찬.isEmpty()) null else 종목기록(e.이름, 찬, e.임시, S.묶음이름(e), 플랜id = e.플랜id, 종id = e.종id)
     }
     val 끝 = S.끝시각 ?: 지금
     val 걸린 = S.흐른초(지금)
@@ -813,7 +813,7 @@ fun 앱데이터.운동저장(오늘: String, 지금: Long): 앱데이터 {
  */
 fun 앱데이터.운동저장하기(오늘: String, 지금: Long): 앱데이터 {
     val S = 세션 ?: return this
-    val 들 = S.종목들.mapNotNull { e -> e.찬것().takeIf { it.isNotEmpty() }?.let { 종목기록(e.이름, it, e.임시, 플랜id = e.플랜id) } }
+    val 들 = S.종목들.mapNotNull { e -> e.찬것().takeIf { it.isNotEmpty() }?.let { 종목기록(e.이름, it, e.임시, 플랜id = e.플랜id, 종id = e.종id) } }
     return 플랜반영(운동저장(오늘, 지금), 들, 오늘, S.조절됨)
 }
 
@@ -873,11 +873,13 @@ fun 루틴.볼륨올리기(s: 설정값): 루틴 {
 fun 루틴.오늘반영(S: 운동세션): 루틴 {
     // 10-01: 플랜 줄은 빼고 짝짓는다 — 플랜 줄의 값은 플랜이 정한다 (운동 중 바꾼 값은 플랜 계산에 들어간다)
     val 정식 = S.종목들.filter { !it.임시 && it.플랜id == null }
+    // 10-05 (스키마 15): 열쇠(종id, 없으면 이름)로 짝짓는다 — 같은 이름의 다른 종목이 섞이지 않게. 옛 줄은 둘 다 이름이라 전과 같다
     val 쓴 = mutableMapOf<String, Int>()
     return copy(종목 = 종목.map { re ->
         if (re.플랜id != null) return@map re
-        val n = 쓴.getOrDefault(re.이름, 0); 쓴[re.이름] = n + 1
-        val e = 정식.filter { it.이름 == re.이름 }.getOrNull(n) ?: return@map re
+        val 열 = 종목열쇠(re.종id, re.이름)
+        val n = 쓴.getOrDefault(열, 0); 쓴[열] = n + 1
+        val e = 정식.filter { 종목열쇠(it.종id, it.이름) == 열 }.getOrNull(n) ?: return@map re
         var 바뀜 = false
         val 목 = (0 until re.세트).map { k -> e.기록.칸(k)?.also { if (it != re.목표(k)) 바뀜 = true } ?: re.목표(k) }
         val 휴 = (0 until re.세트).map { k -> if (e.기록.칸(k) != null) e.세트휴식(k).also { if (it != re.휴식(k)) 바뀜 = true } else re.휴식(k) }
@@ -1002,4 +1004,333 @@ fun 루틴.슈퍼풀기(g: String): 루틴 = copy(종목 = 종목.map { if (it.�
 fun 루틴.묶음정리(): 루틴 {
     val 수 = 종목.groupingBy { it.슈퍼 }.eachCount()
     return copy(종목 = 종목.map { if (it.슈퍼 != null && (수[it.슈퍼] ?: 0) < 2) it.copy(슈퍼 = null) else it })
+}
+
+// ═══════════════ 스키마 15 (10-05 · 앱 옮기기 1단계) — 종목 id · 종목설정 · 프로필 · 운동 중 순서 ═══════════════
+
+// ─────────────── 종목 id · 같은 이름 (시안 v19 D ②) ───────────────
+
+/** 줄(루틴종목 · 세션종목 · 종목기록)의 열쇠 — 종id 가 있으면 그것, 없으면 이름 (시안 `줄키`) */
+fun 종목열쇠(종id: String?, 이름: String): String = 종id ?: 이름
+
+val 루틴종목.열쇠: String get() = 종목열쇠(종id, 이름)
+val 세션종목.열쇠: String get() = 종목열쇠(종id, 이름)
+val 종목기록.열쇠: String get() = 종목열쇠(종id, 이름)
+
+/**
+ * 줄이 가리키는 종목 — **종id 로 먼저**, 없거나 못 찾으면 **이름으로** (같은 이름이면 먼저 만든 것 = 종목표에서 앞의 것).
+ * 종id 가 null 인 옛 줄은 이름으로만 찾는다 (이름을 바꾼 옛 종목의 id(= 옛 이름)에 잘못 붙지 않게)
+ */
+fun 앱데이터.종목찾기(종id: String?, 이름: String): 종목? =
+    (if (종id != null) 종목표.firstOrNull { it.id == 종id } else null) ?: 종목표.firstOrNull { it.이름 == 이름 }
+
+/** 열쇠 하나로 (종목설정 열쇠 · 넣기 시트 칸) — id 로 먼저, 없으면 이름으로 (시안 `종목표찾기`) */
+fun 앱데이터.종목찾기(열쇠: String): 종목? = 종목찾기(열쇠, 열쇠)
+
+/**
+ * 새 종목 id — "종" + 시각(36진수). 이미 있는 id(옛 종목은 이름이 id)와 겹치면 뒤에 -2, -3 … 을 붙인다.
+ * 시안은 끝에 난수 4자를 더 붙이지만, 여기서는 겹침을 직접 살펴서 늘 다르다
+ */
+fun 앱데이터.새종목id(지금: Long = System.currentTimeMillis()): String {
+    val 있는 = 종목표.map { it.id }.toHashSet()
+    val 바탕 = "종" + 지금.toString(36)
+    if (바탕 !in 있는) return 바탕
+    var n = 2
+    while ("$바탕-$n" in 있는) n++
+    return "$바탕-$n"
+}
+
+/**
+ * 종목 더하기 — **같은 이름도 더한다** (시안 v19 D ② "같은 이름도 저장한다(고유 id)").
+ * id 가 이미 쓰이고 있으면(같은 이름의 기본 id 등) 새 id 를 준다. [세트] 를 주면 종목설정도 같이 넣는다
+ */
+fun 앱데이터.종목더하기(e: 종목, 세트: List<종목세트>? = null, 지금: Long = System.currentTimeMillis()): 앱데이터 {
+    val t = if (종목표.any { it.id == e.id }) e.copy(id = 새종목id(지금)) else e
+    return copy(종목표 = 종목표 + t, 종목설정 = if (세트.isNullOrEmpty()) 종목설정 else 종목설정 + (t.id to 세트))
+}
+
+/** 같은 이름 종목의 표시 번호 — 둘 이상이면 종목표 순서(= 만든 순서)로 1, 2 …, 하나뿐이거나 못 찾으면 0 = 딱지 없음 (시안 `같은이름번호`) */
+fun 같은이름번호(종목표: List<종목>, 열쇠: String, 이름: String): Int {
+    val l = 종목표.filter { it.이름 == 이름 }
+    if (l.size < 2) return 0
+    val i = l.indexOfFirst { it.id == 열쇠 }
+    return if (i < 0) 0 else i + 1
+}
+
+/** 줄의 표시 번호 — 종id 가 없는 옛 줄은 이름으로 찾은 종목(먼저 만든 것)의 번호 */
+fun 앱데이터.같은이름번호(종id: String?, 이름: String): Int =
+    같은이름번호(종목표, 종목찾기(종id, 이름)?.id ?: 종목열쇠(종id, 이름), 이름)
+
+// ─────────────── 종목설정 — 종목 기본 세팅 (시안 v18 C ④ `종목기본세트`) ───────────────
+
+/** 기본 세팅 세트 줄 최대 (시안 `종목세트최대`) */
+const val 종목세트최대 = 10
+
+/** n 줄짜리 같은 세트 (시안 `세트들(n,w,r,휴)`) */
+fun 같은세트들(n: Int, w: Double, r: Int, 휴: Int): List<종목세트> = List(max(0, n)) { 종목세트(w, r, 휴) }
+
+/** 시안 v17 옛 꼴 {세트:n, w, r, 휴} → n 줄 (n 은 1~10). 빈 값은 20kg · 10회 · 기본 휴식 */
+fun 옛종목설정(n: Int, w: Double?, r: Int?, 휴: Int?, 기본휴식: Int): List<종목세트> =
+    같은세트들(n.coerceIn(1, 종목세트최대), w ?: 20.0, r ?: 10, 휴 ?: 기본휴식)
+
+/**
+ * 종목 기본 세팅 — 종목설정[열쇠] 가 있으면 그것(무게 0 이상 · 횟수 1 이상 · 휴식 0 이면 기본 휴식),
+ * 없으면 설정의 기본 세트 수 × 20kg · 10회 · 기본 휴식. 루틴 · 운동에 종목을 넣을 때 이 목록을 그대로 쓴다 (플랜 넣기는 플랜 처방)
+ */
+fun 앱데이터.종목기본세트(열쇠: String): List<종목세트> {
+    val b = 종목설정[열쇠]
+    if (!b.isNullOrEmpty()) return b.map { 종목세트(max(0.0, it.w), max(1, it.r), if (it.휴 > 0) it.휴 else 설정.기본휴식) }
+    return 같은세트들(설정.기본세트, 20.0, 10, 설정.기본휴식)
+}
+
+/** 종목 기본 세팅 → 루틴 줄 (세트값 · 휴식값을 줄마다) */
+fun 앱데이터.루틴줄(열쇠: String): 루틴종목 {
+    val t = 종목찾기(열쇠)
+    val l = 종목기본세트(t?.id ?: 열쇠)
+    return 루틴종목(t?.이름 ?: 열쇠, l.size, l[0].w, l[0].r, l[0].휴,
+        세트값 = l.map { 세트(it.w, it.r) }, 휴식값 = l.map { it.휴 }, 종id = t?.id)
+}
+
+/** 종목 기본 세팅 → 운동 중 줄 (시안 `운세트로` · 운동 중 [＋] 넣기). 임시 = 오늘만 끼운 종목(루틴에 되돌려 적지 않는다) */
+fun 앱데이터.세션줄(열쇠: String, 임시: Boolean = true): 세션종목 {
+    val t = 종목찾기(열쇠)
+    val l = 종목기본세트(t?.id ?: 열쇠)
+    return 세션종목(t?.이름 ?: 열쇠, l.size, if (임시) 0 else l.size, l[0].w, l[0].r, l[0].휴,
+        예정값 = l.map { 세트(it.w, it.r) }, 휴식들 = l.map { it.휴 }, 임시 = 임시, 종id = t?.id)
+}
+
+// ─────────────── 프로필 · 보고서 (시안 v10 ~ v18) ───────────────
+
+/** 닉네임 최대 글자 (시안 maxlength 12) */
+const val 닉네임최대 = 12
+/** 인증샷 최대 · 그중 고정 최대 (시안 v17 ⑥) */
+const val 인증최대 = 8
+const val 인증고정최대 = 3
+/** 업적 정렬 칩 (시안 `업적정렬`) — '직접' 은 칩이 아니라 끌어 옮겼을 때 */
+val 업적정렬목록 = listOf("최신순", "오래된순", "가나다순", "직접")
+
+/** SNS 주소 다듬기 — 앞에 아무것도 없으면 https:// 를 붙이고, http(s) 가 아닌 꼴(javascript: 등)은 "" (시안 `링크주소`) */
+fun 링크주소(v0: String?): String {
+    val v = (v0 ?: "").trim()
+    return when {
+        v.isEmpty() -> ""
+        Regex("^https?://", RegexOption.IGNORE_CASE).containsMatchIn(v) -> v
+        Regex("^[a-z][a-z0-9+.-]*:", RegexOption.IGNORE_CASE).containsMatchIn(v) -> ""
+        else -> "https://$v"
+    }
+}
+
+/** 인증샷 차례 — 고정한 것(고정한 순서)이 맨 앞, 나머지는 새것부터 (시안 `인증순`) */
+fun 인증순(l: List<인증사진>): List<인증사진> =
+    l.filter { it.고정 > 0 }.sortedBy { it.고정 } + l.filter { it.고정 <= 0 }.sortedByDescending { it.때 }
+
+/** 인증샷 넣기 — 8장이 넘으면 null (화면이 "인증샷은 8장까지" 토스트) */
+fun 앱데이터.인증넣기(파일: String, 때: Long): 앱데이터? =
+    if (인증샷.size >= 인증최대) null else copy(인증샷 = 인증샷 + 인증사진(파일, 때))
+
+/** 인증샷 고정 바꾸기 — 고정은 3장까지(넘으면 null → "고정은 3장까지") */
+fun 앱데이터.인증고정(파일: String, 지금: Long): 앱데이터? {
+    val x = 인증샷.firstOrNull { it.파일 == 파일 } ?: return this
+    if (x.고정 <= 0 && 인증샷.count { it.고정 > 0 } >= 인증고정최대) return null
+    return copy(인증샷 = 인증샷.map { if (it.파일 == 파일) it.copy(고정 = if (it.고정 > 0) 0L else 지금) else it })
+}
+
+/**
+ * 보고서 큰 운동 표 (시안 `큰운동표`) — 키 · 짧은 글 · 같은 종목으로 보는 이름들.
+ * 앞 셋(스쿼트 · 벤치 · 데드)은 늘 보이고, 4번째부터는 [설정값.큰운동추가] 로 2개까지 더한다
+ */
+data class 큰운동(val 키: String, val 짧은: String, val 이름들: List<String>)
+val 큰운동표: List<큰운동> = listOf(
+    큰운동("스쿼트", "스쿼트", listOf("백 스쿼트", "스쿼트", "바벨 스쿼트", "바벨 백 스쿼트")),
+    큰운동("벤치", "벤치", listOf("벤치프레스", "벤치 프레스", "바벨 벤치프레스")),
+    큰운동("데드", "데드", listOf("데드리프트", "컨벤셔널 데드리프트", "바벨 데드리프트")),
+    큰운동("오버헤드 프레스", "OHP", listOf("오버헤드 프레스", "바벨 오버헤드 프레스", "밀리터리 프레스", "OHP")),
+    큰운동("바벨 로우", "로우", listOf("바벨 로우", "바벨로우", "펜들레이 로우", "벤트오버 로우", "벤트오버 바벨 로우", "바벨 벤트오버 로우")),
+    큰운동("스내치", "스내치", listOf("스내치", "파워 스내치", "바벨 스내치")),
+    큰운동("클린 앤 저크", "C&J", listOf("클린 앤 저크", "클린앤저크", "클린 앤드 저크")),
+)
+
+/** 큰 운동 추가 다듬기 — 표 4번째부터의 키만 · 표 순서 · 2개까지 (시안 `보고설정`) */
+fun 큰운동추가정리(l: List<String>): List<String> = 큰운동표.drop(3).map { it.키 }.filter { it in l }.take(2)
+
+/** 이 업적을 프로필에 보일까 — 숨긴 것만 안 보인다 (시안 `업적보임`) */
+fun 앱데이터.업적보임(번호: String): Boolean = 번호 !in 업적숨김
+
+/** 업적 보이기 · 숨기기 바꾸기 — 얻은 업적만 (시안 "업적보임") */
+fun 앱데이터.업적보임바꿈(번호: String): 앱데이터 =
+    if (번호 !in 업적) this else copy(업적숨김 = if (번호 in 업적숨김) 업적숨김 - 번호 else 업적숨김 + 번호)
+
+/**
+ * 얻은 업적의 차례 (시안 `업적목록`) — 설정.업적정렬 대로. 숨긴 것도 들어 있다 (프로필 줄은 [업적보임] 으로 거른다).
+ *  · 최신순(기본) — 얻은 시각이 늦은 것부터 (같으면 번호 뒤의 것부터)
+ *  · 오래된순 — 그 반대 · 가나다순 — 칭호 가나다
+ *  · 직접 — 업적순서 차례. 순서에 없는 새 업적은 맨 앞(새것이 더 앞)
+ */
+fun 앱데이터.업적차례(칭호: (String) -> String? = { 업적표.찾기(it)?.칭호 }): List<String> {
+    val 키들 = 업적.keys.filter { 칭호(it) != null }
+    val 새먼저 = compareByDescending<String> { 업적[it] ?: 0L }.thenByDescending { it }
+    return when (설정.업적정렬) {
+        "오래된순" -> 키들.sortedWith(새먼저).reversed()
+        "가나다순" -> { val c = java.text.Collator.getInstance(java.util.Locale.KOREAN); 키들.sortedWith { a, b -> c.compare(칭호(a) ?: "", 칭호(b) ?: "") } }
+        "직접" -> { val 순 = 업적순서.filter { it in 업적 && 칭호(it) != null }.distinct(); 키들.filter { it !in 순 }.sortedWith(새먼저) + 순 }
+        else -> 키들.sortedWith(새먼저)
+    }
+}
+
+/**
+ * 프로필 업적 줄 끌어 옮기기 — [원] · [대상] 은 **보이는 줄**의 번호. 놓은 칸의 뒤쪽 반이면 [뒤에] (시안 끌끝 "업적").
+ * 숨긴 업적은 제자리에 둔 채 보이는 것만 옮기고, 정렬을 '직접' 으로 바꾼다
+ */
+fun 앱데이터.업적옮기기(원: Int, 대상: Int, 뒤에: Boolean, 칭호: (String) -> String? = { 업적표.찾기(it)?.칭호 }): 앱데이터 {
+    val 전 = 업적차례(칭호)
+    val 목 = 전.filter { 업적보임(it) }.toMutableList()
+    if (!목옮김(목, 원, 대상, 뒤에)) return this
+    var j = 0
+    return copy(업적순서 = 전.map { if (업적보임(it)) 목[j++] else it }, 설정 = 설정.copy(업적정렬 = "직접"))
+}
+
+/** 목록 안에서 하나 옮기기 — 대상 칸의 앞(뒤에=false) · 뒤(true)로. 바뀌었으면 true (시안 끌끝의 `옮김`) */
+fun <T> 목옮김(l: MutableList<T>, 원: Int, 대상: Int, 뒤에: Boolean): Boolean {
+    if (원 !in l.indices || 대상 !in l.indices) return false
+    var 새 = 대상 + (if (뒤에) 1 else 0)
+    if (원 < 새) 새--
+    if (새 == 원) return false
+    val v = l.removeAt(원)
+    l.add(새, v)
+    return true
+}
+
+// ─────────────── 운동 중 종목 순서 바꾸기 · 빼기 · 되돌리기 · 넣기 (시안 v21 ① · v14 끌기) ───────────────
+//
+// 운동 중 '번호' 는 넷이다 — 지금 종목(i · s), 쉬는 종목(휴식.종목 · 다음i), 화면에서 보는 칸(본 — 화면 상태).
+// 줄이 움직이면 넷 모두 **같은 종목**을 가리키게 다시 맞춘다. 화면만의 칸 상태(접기 등)는 [운동자리.자리표] 로 옮긴다.
+
+/**
+ * 순서 함수의 결과.
+ *  · [본] — 화면에서 보는 칸 번호 (화면이 들고 있는 값을 넣고, 이것으로 바꾼다)
+ *  · [자리표] — 옛 번호 → 새 번호 (빠진 칸은 null). 접힘 같은 화면 상태를 옮길 때
+ */
+data class 운동자리(val 세션: 운동세션, val 본: Int?, val 자리표: List<Int?>)
+
+/** 운동 중 뺀 종목 — 되돌리기에 쓴다 (시안 `U.운지움` 종류 "종목"). 화면이 5초 동안 들고 있는다 */
+data class 뺀종목(
+    /** 뺀 자리 */
+    val i: Int,
+    val e: 세션종목,
+    /** 뺄 때의 지금 자리 · 입력 중이던 값 */
+    val 지금i: Int,
+    val 지금s: Int,
+    val 무게: Double,
+    val 횟수: Int,
+    /** 뺄 때의 휴식 (종목 번호는 실제 번호로 맞춘 것) */
+    val 휴식: 휴식중?,
+    /** 이 운동의 시작 시각 — 다른 운동에 되돌리지 않게 */
+    val 세션시작: Long,
+)
+
+/** 휴식의 종목 번호 — 옛 기록(-1)은 지금 종목 */
+private fun 운동세션.휴식종목(h: 휴식중): Int = if (h.종목 >= 0) h.종목 else i
+
+/** 입력 칸 값 — 그 세트에 적힌 것 · 따로 고친 것 · 종목 기본값 (자리로 와 같지만 끝화면은 건드리지 않는다) */
+private fun 운동세션.자리값(ni: Int, ns: Int): 운동세션 {
+    val e = 종목들.getOrNull(ni) ?: return copy(i = ni, s = ns)
+    val v = e.기록.칸(ns) ?: e.예정값.칸(ns) ?: 세트(e.무게, e.횟수)
+    return copy(i = ni, s = ns, 무게 = v.w, 횟수 = v.r)
+}
+
+/** 아직 남은 세트가 있는 종목 (시안 `남` — 앱은 '여기까지'(마감)한 종목도 끝난 것으로 본다) */
+private fun 세션종목.남음(): Boolean = !마감 && 덜한가()
+
+/** 번호를 새 순서로 — 휴식 · 다음i 도 함께. 휴식의 종목이 빠졌으면 휴식을 치우고, 다음i 가 빠졌으면 다음i · 다음s 를 비운다 */
+private fun 운동세션.번호맞춤(새종목들: List<세션종목>, 표: List<Int?>, 새i: Int): 운동세션 {
+    val h = 휴식?.let { h0 ->
+        val 새h = 표.getOrNull(휴식종목(h0)) ?: return@let null
+        val 다음 = h0.다음i?.let { 표.getOrNull(it) }
+        h0.copy(종목 = 새h, 다음i = 다음, 다음s = if (다음 == null) null else h0.다음s)
+    }
+    return copy(종목들 = 새종목들, i = 새i, 휴식 = h)
+}
+
+/**
+ * 운동 중 종목 빼기 — 지금 보는 칸 ✕ (시안 v21 `운종목빼기`). 묻지 않고 빼고, 화면이 [뺀종목] 을 들고 5초 [되돌리기].
+ *  · 하나 남았으면 못 뺀다 (null) · 체크한 세트가 있어도 뺀다 (종목째 보관)
+ *  · 지금 종목을 뺐으면 → 뒤쪽(그 자리부터)의 남은 종목 → 앞쪽 → 없으면 그 자리(끝이면 앞) 0세트
+ *  · 지금보다 앞을 뺐으면 지금 번호가 하나 준다 · 쉬던 종목을 뺐으면 휴식을 치운다
+ *  · 보는 칸 — 보던 종목이 남아 있으면 그 종목, 아니면 뺀 자리에 온 종목(끝이었으면 그 앞)
+ */
+fun 운동세션.종목빼기(j: Int, 본: Int?): Pair<운동자리, 뺀종목>? {
+    if (j !in 종목들.indices || 종목들.size <= 1) return null
+    val 쉼 = 휴식?.let { it.copy(종목 = 휴식종목(it)) }
+    val z = 뺀종목(j, 종목들[j], i, s, 무게, 횟수, 쉼, 시작시각)
+    val 새들 = 종목들.filterIndexed { k, _ -> k != j }
+    val 표 = 종목들.indices.map { k -> if (k == j) null else if (k > j) k - 1 else k }
+    var S = 번호맞춤(새들, 표, if (i == j) 0 else 표[i] ?: 0)
+    if (i == j) {
+        val 뒤 = 새들.withIndex().indexOfFirst { (k, x) -> k >= j && x.남음() }
+        val 앞 = 새들.indexOfFirst { it.남음() }
+        val n = if (뒤 >= 0) 뒤 else 앞
+        S = if (n >= 0) S.자리값(n, 다음빈칸(새들[n], -1)) else S.자리값(min(j, 새들.size - 1), 0)
+    }
+    val 새본 = 본?.let { b -> 표.getOrNull(b) } ?: min(j, 새들.size - 1)
+    return 운동자리(S, 새본, 표) to z
+}
+
+/**
+ * 뺀 종목 되돌리기 (시안 v21 `운종목되돌리기`) — 뺀 자리(지금 줄 수보다 크면 맨 끝)에 그대로 다시 끼운다.
+ *  · 뺀 종목이 지금 종목이었으면 지금 자리 · 입력 값도 그때로
+ *  · 뺀 종목에서 쉬던 중이었고 그 휴식이 아직 안 끝났고 지금 쉬는 중이 아니면 휴식도 되살린다
+ *  · 보는 칸 = 되돌린 종목. 빼기 → 바로 되돌리기 = 처음 상태 그대로
+ *  · 다른 운동(시작 시각이 다름)이면 아무것도 하지 않는다
+ */
+fun 운동세션.종목되돌리기(z: 뺀종목, 본: Int?, 지금: Long): 운동자리 {
+    if (z.세션시작 != 시작시각) return 운동자리(this, 본, 종목들.indices.toList())
+    val at = min(max(0, z.i), 종목들.size)
+    val 새들 = 종목들.toMutableList().also { it.add(at, z.e) }
+    val 표 = 종목들.indices.map { k -> if (k >= at) k + 1 else k }
+    var S = 번호맞춤(새들, 표, 표.getOrNull(i) ?: 0)
+    if (z.지금i == z.i) S = S.copy(i = at, s = z.지금s, 무게 = z.무게, 횟수 = z.횟수)
+    val h = z.휴식
+    // 빼면서 비운 다음i(슈퍼세트가 돌아갈 자리 = 뺀 종목)를 같은 휴식이 그대로 이어지는 중이면 되살린다
+    val 지금h = S.휴식
+    if (h != null && 지금h != null && h.다음i == z.i && 지금h.다음i == null && 지금h.k == h.k && 지금h.끝시각 == h.끝시각 && 지금h.총초 == h.총초)
+        S = S.copy(휴식 = 지금h.copy(다음i = at, 다음s = h.다음s))
+    if (h != null && h.종목 == z.i && h.끝시각 > 지금 && 휴식 == null) {
+        // 그때의 다음i 는 빼기 전 번호 — 빼기(뒤로 하나 당김) → 되돌리기(at 뒤로 하나 밂) 를 그대로 따라간다
+        val 다음 = h.다음i?.let { o -> if (o == z.i) at else (if (o > z.i) o - 1 else o).let { p -> if (p >= at) p + 1 else p } }
+        S = S.copy(휴식 = h.copy(종목 = at, 다음i = 다음, 다음s = if (다음 == null) null else h.다음s))
+    }
+    return 운동자리(S, at, 표)
+}
+
+/**
+ * 운동 중 칸 줄 끌어 순서 바꾸기 (시안 v14 끌기 "운칸") — [원] 을 [대상] 칸의 앞 · 뒤([뒤에])로.
+ * 지금 · 휴식 · 보는 칸은 **같은 종목**을 그대로 가리킨다. 안 바뀌었으면 그대로(자리표 = 제자리).
+ * 슈퍼세트도 한 칸씩 옮긴다 (시안에는 슈퍼세트가 없다)
+ */
+fun 운동세션.종목옮기기(원: Int, 대상: Int, 뒤에: Boolean, 본: Int?): 운동자리 {
+    val 번호들 = 종목들.indices.toMutableList()
+    if (!목옮김(번호들, 원, 대상, 뒤에)) return 운동자리(this, 본, 종목들.indices.toList())
+    val 표 = MutableList<Int?>(종목들.size) { null }
+    번호들.forEachIndexed { 새, 옛 -> 표[옛] = 새 }
+    val S = 번호맞춤(번호들.map { 종목들[it] }, 표, 표[i] ?: i)
+    return 운동자리(S, 본?.let { 표.getOrNull(it) }, 표)
+}
+
+/** 운동 중 [＋] 넣기 — 맨 끝에 붙인다 (시안 "종목넣기" → r.종목.push). 다른 번호는 그대로 */
+fun 운동세션.종목넣기(e: 세션종목, 본: Int?): 운동자리 =
+    운동자리(copy(종목들 = 종목들 + e), 본, 종목들.indices.toList())
+
+/**
+ * 넣기 시트에서 누름 = 하나 빼기 (시안 v18 D ③ `넣은것뺌`) — [맞음] 인 줄 중 **맨 뒤**부터,
+ * 세트를 하나라도 끝낸 것 · 지금 하는 것 · 쉬는 중인 것은 건너뛴다. 뺄 것이 없으면 null (화면: "이미 시작한 종목은 뺄 수 없습니다")
+ */
+fun 운동세션.넣은것빼기(본: Int?, 맞음: (세션종목) -> Boolean): 운동자리? {
+    val k = 종목들.indices.reversed().firstOrNull { j ->
+        val e = 종목들[j]
+        맞음(e) && e.찬것().isEmpty() && j != i && (휴식?.let { 휴식종목(it) } != j)
+    } ?: return null
+    val 새들 = 종목들.filterIndexed { j, _ -> j != k }
+    val 표 = 종목들.indices.map { j -> if (j == k) null else if (j > k) j - 1 else j }
+    val S = 번호맞춤(새들, 표, 표[i] ?: i)
+    return 운동자리(S, 본?.let { b -> 표.getOrNull(b) ?: min(k, 새들.size - 1) }, 표)
 }

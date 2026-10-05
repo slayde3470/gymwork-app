@@ -3,6 +3,7 @@ package com.slayde.hasenheide.data
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
+import kotlin.math.max
 
 /**
  * 저장 — 앱데이터 전체를 JSON 파일 하나로 폰 안에 둔다.
@@ -64,6 +65,11 @@ object 저장소 {
         o.put("건너뜀", JSONObject().also { m -> d.건너뜀.forEach { (k, v) -> m.put(k, v) } })
         o.put("체중기록", JSONArray().also { a -> d.체중기록.forEach { w -> a.put(JSONArray().put(w.시각).put(w.kg)) } })
         o.put("스탯기록", JSONObject().also { m -> d.스탯기록.forEach { (날, 값) -> m.put(날, JSONObject().also { x -> 값.forEach { (k, v) -> x.put(k, v) } }) } })
+        // 스키마 15 (10-05) — 종목설정 (열쇠 → [[w, r, 휴], …]) · 업적 순서 · 숨김 · 인증샷 ([파일, 때, 고정])
+        o.put("종목설정", JSONObject().also { m -> d.종목설정.forEach { (k, l) -> m.put(k, JSONArray().also { a -> l.forEach { x -> a.put(JSONArray().put(x.w).put(x.r).put(x.휴)) } }) } })
+        o.put("업적순서", JSONArray().also { a -> d.업적순서.forEach { a.put(it) } })
+        o.put("업적숨김", JSONArray().also { a -> d.업적숨김.sorted().forEach { a.put(it) } })
+        o.put("인증샷", JSONArray().also { a -> d.인증샷.forEach { x -> a.put(JSONArray().put(x.파일).put(x.때).put(x.고정)) } })
         return o.toString(1)
     }
 
@@ -74,12 +80,16 @@ object 저장소 {
         .also { if (e.목표1RM != null) it.put("목표1RM", e.목표1RM) }
         // 10-02 (스키마 13): 종목 사진 — 파일 **이름만** 적는다. 사진 파일은 백업에 들어가지 않는다 (filesDir/photos 에 그대로)
         .also { if (e.사진.isNotEmpty()) it.put("사진", JSONArray().also { a -> e.사진.forEach { a.put(it) } }) }
+        // 스키마 15 (10-05): 종목 id · 근육 역할 (P · Y)
+        .put("id", e.id)
+        .also { if (e.근육.isNotEmpty()) it.put("근육", JSONObject().also { m -> e.근육.forEach { (k, v) -> m.put(k, v) } }) }
 
     private fun 루틴종목to(e: 루틴종목) = JSONObject().put("이름", e.이름).put("세트", e.세트).put("무게", e.무게)
         .put("횟수", e.횟수).put("휴식", e.휴식).also { if (e.슈퍼 != null) it.put("슈퍼", e.슈퍼) }
         .also { if (e.세트값.isNotEmpty()) it.put("세트값", 세트들to(e.세트값)) }
         .also { if (e.휴식값.isNotEmpty()) it.put("휴식값", JSONArray().also { h -> e.휴식값.forEach { h.put(it) } }) }
         .also { if (e.플랜id != null) it.put("플랜id", e.플랜id) }
+        .also { if (e.종id != null) it.put("종id", e.종id) }
 
     private fun 루틴to(r: 루틴) = JSONObject().put("id", r.id).put("이름", r.이름).put("휴식일", r.휴식일).put("자동생성", r.자동생성)
         .put("종목", JSONArray().also { a -> r.종목.forEach { a.put(루틴종목to(it)) } })
@@ -96,7 +106,8 @@ object 저장소 {
             r.종목들.forEach { e ->
                 a.put(JSONObject().put("이름", e.이름).put("세트들", 세트들to(e.세트들)).put("임시", e.임시)
                     .also { if (e.묶음 != null) it.put("묶음", e.묶음) }
-                    .also { if (e.플랜id != null) it.put("플랜id", e.플랜id) })
+                    .also { if (e.플랜id != null) it.put("플랜id", e.플랜id) }
+                    .also { if (e.종id != null) it.put("종id", e.종id) })
             }
         })
 
@@ -136,6 +147,12 @@ object 저장소 {
         .put("볼륨언제", s.볼륨언제).put("볼륨배분", s.볼륨배분).put("횟수상한", s.횟수상한)
         .put("진동세기", s.진동세기).put("진동시간", s.진동시간).put("번호보기", s.번호보기)
         .put("배너", s.배너).put("회복시간", s.회복시간).put("색표", s.색표)   // 10-02 (스키마 13) 운동 중 그림
+        // 10-05 (스키마 15) 프로필 · 보고서 — 시안 S.설정 의 이름 그대로
+        .put("닉네임", s.닉네임).also { o -> s.프로필사진?.let { o.put("프로필사진", it) } }
+        .put("링크", JSONArray().also { a -> s.링크.forEach { a.put(it) } })
+        .put("보고서보임", JSONObject().put("프로필", s.보고서보임.프로필).put("루틴", s.보고서보임.루틴))
+        .put("큰운동추가", JSONArray().also { a -> s.큰운동추가.forEach { a.put(it) } })
+        .put("업적정렬", s.업적정렬)
 
     private fun 세션to(S: 운동세션) = JSONObject().put("루틴id", S.루틴id).put("루틴이름", S.루틴이름)
         .put("시작시각", S.시작시각).put("i", S.i).put("s", S.s).put("무게", S.무게).put("횟수", S.횟수)
@@ -148,7 +165,8 @@ object 저장소 {
                     .put("기록", 세트들to(e.기록)).put("예정값", 세트들to(e.예정값))
                     .put("휴식들", JSONArray().also { h -> e.휴식들.forEach { h.put(it ?: JSONObject.NULL) } })
                     .put("임시", e.임시).put("마감", e.마감).also { if (e.슈퍼 != null) it.put("슈퍼", e.슈퍼) }
-                    .also { if (e.플랜id != null) it.put("플랜id", e.플랜id) })
+                    .also { if (e.플랜id != null) it.put("플랜id", e.플랜id) }
+                    .also { if (e.종id != null) it.put("종id", e.종id) })
             }
         })
         .also { o ->
@@ -168,8 +186,11 @@ object 저장소 {
             종목표 = 목록(o.optJSONArray("종목표")) { a, i ->
                 a.getJSONObject(i).let { 종목(it.getString("이름"), it.optString("부위"), it.optString("장비"), 글또는널(it, "참고글"), 글또는널(it, "참고url"), 글또는널(it, "달력이름"),
                     if (it.has("목표1RM") && !it.isNull("목표1RM")) it.getDouble("목표1RM") else null)
-                    .copy(사진 = 목록(it.optJSONArray("사진")) { x, j -> x.getString(j) }) }   // 스키마 13 (10-02) — 옛 파일은 빈 목록
-            },
+                    .copy(사진 = 목록(it.optJSONArray("사진")) { x, j -> x.getString(j) },   // 스키마 13 (10-02) — 옛 파일은 빈 목록
+                        // 스키마 15 (10-05) — 옛 파일은 id = 이름 · 역할 없음. 옛 "S"(보조) 는 "Y"(협응) 로, 모르는 값은 버린다
+                        id = 글또는널(it, "id")?.takeIf { x -> x.isNotBlank() } ?: it.getString("이름"),
+                        근육 = 역할읽기(it.optJSONObject("근육"))) }
+            }.id겹침풀기(),
             카테고리 = if (o.has("카테고리")) 목록(o.optJSONArray("카테고리")) { a, i -> a.getString(i) } else 앱데이터.기본카테고리,
             루틴들 = 목록(o.optJSONArray("루틴들")) { a, i -> 루틴from(a.getJSONObject(i)) },
             기록 = 사전(o.optJSONObject("기록")) { m, k -> 날기록from(m.getJSONObject(k)) },
@@ -204,6 +225,13 @@ object 저장소 {
             건너뜀 = 사전(o.optJSONObject("건너뜀")) { m, k -> m.getString(k) },
             체중기록 = 목록(o.optJSONArray("체중기록")) { a, i -> a.getJSONArray(i).let { w -> 체중값(w.optLong(0, 0L), w.optDouble(1, 0.0)) } }.filter { it.kg > 0 },
             스탯기록 = 사전(o.optJSONObject("스탯기록")) { m, k -> 사전(m.getJSONObject(k)) { x, s -> x.optDouble(s, 0.0) } },
+            // 스키마 15 (10-05) — 옛 파일에는 없다 → 빈 값 (종목설정이 없으면 설정의 기본 세트로)
+            종목설정 = 사전(o.optJSONObject("종목설정")) { m, k -> 종목설정읽기(m.opt(k), 설정값0(o, 판).기본휴식) }.filterValues { it.isNotEmpty() },
+            업적순서 = 목록(o.optJSONArray("업적순서")) { a, i -> a.optString(i, "") }.filter { it.isNotBlank() },
+            업적숨김 = 목록(o.optJSONArray("업적숨김")) { a, i -> a.optString(i, "") }.filter { it.isNotBlank() }.toSet()
+                + 사전(o.optJSONObject("업적숨김")) { m, k -> m.optBoolean(k, false) }.filterValues { it }.keys,   // 시안 꼴 {번호: true} 도
+            인증샷 = 목록(o.optJSONArray("인증샷")) { a, i -> a.optJSONArray(i)?.let { x -> 인증사진(x.optString(0, ""), x.optLong(1, 0L), x.optLong(2, 0L).coerceAtLeast(0L)) } }
+                .filterNotNull().filter { it.파일.isNotBlank() }.let { 인증순(it).take(인증최대) },
         ).플랜줄정리()   // 10-01: 지운 플랜의 줄 · 슈퍼세트로 묶인 플랜 줄을 풀어 둔다
     }
 
@@ -218,6 +246,54 @@ object 저장소 {
         return 결과
     }
 
+    /** 근육 역할 맵 — P 는 P, S(옛 보조) · Y 는 Y, 그 밖의 값 · 빈 열쇠는 버린다 (스키마 15) */
+    private fun 역할읽기(m: JSONObject?): Map<String, String> =
+        사전(m) { x, k -> x.optString(k, "") }.filter { it.key.isNotBlank() }
+            .mapNotNull { (k, v) -> when (v) { "P" -> k to "P"; "S", "Y" -> k to "Y"; else -> null } }.toMap()
+
+    /**
+     * 종목설정 한 칸 — 새 꼴 [[w, r, 휴], …] · 시안 꼴 {세트: [{w, r, 휴}…]} · 시안 v17 옛 꼴 {세트: n, w, r, 휴} (n 줄로)
+     * 무게는 0 이상 · 횟수 1 이상 · 휴식 0 이하는 기본 휴식. 10줄까지
+     */
+    private fun 종목설정읽기(v: Any?, 기본휴식: Int): List<종목세트> {
+        fun 줄(w: Double, r: Int, 휴: Int) = 종목세트(if (w.isNaN() || w < 0) 0.0 else w, max(1, r), if (휴 > 0) 휴 else 기본휴식)
+        val l: List<종목세트> = when (v) {
+            is JSONArray -> 목록(v) { a, i ->
+                when (val x = a.opt(i)) {
+                    is JSONArray -> 줄(x.optDouble(0, 0.0), x.optInt(1, 1), x.optInt(2, 0))
+                    is JSONObject -> 줄(x.optDouble("w", 0.0), x.optInt("r", 1), x.optInt("휴", 0))
+                    else -> null
+                }
+            }.filterNotNull()
+            is JSONObject -> when (val 세 = v.opt("세트")) {
+                is JSONArray -> 종목설정읽기(세, 기본휴식)
+                is Number -> 옛종목설정(세.toInt(), if (v.has("w")) v.optDouble("w", 20.0) else null,
+                    if (v.has("r")) v.optInt("r", 10) else null, if (v.has("휴")) v.optInt("휴", 기본휴식) else null, 기본휴식)
+                    .map { 줄(it.w, it.r, it.휴) }
+                else -> emptyList()
+            }
+            else -> emptyList()
+        }
+        return l.take(종목세트최대)
+    }
+
+    /** 종목설정을 읽을 때 기본 휴식이 필요해서 — 설정만 먼저 읽는다 */
+    private fun 설정값0(o: JSONObject, 판: Int): 설정값 = o.optJSONObject("설정")?.let { 설정from(it, 판) } ?: 설정값()
+
+    /** 같은 id 가 둘 이상이면 뒤의 것에 "-2" … 를 붙인다 — 옛 파일의 같은 이름 종목(id = 이름)이 서로 다른 종목으로 남게 */
+    private fun List<종목>.id겹침풀기(): List<종목> {
+        val 쓴 = HashSet<String>()
+        val 모두 = map { it.id }.toHashSet()
+        return map { e ->
+            if (쓴.add(e.id)) e
+            else {
+                var n = 2
+                while ("${e.id}-$n" in 모두 || "${e.id}-$n" in 쓴) n++
+                val id = "${e.id}-$n"; 쓴.add(id); e.copy(id = id)
+            }
+        }
+    }
+
     private fun 글또는널(o: JSONObject, k: String): String? = if (o.has(k) && !o.isNull(k)) o.getString(k) else null
     private fun 수또는널(o: JSONObject, k: String): Int? = if (o.has(k) && !o.isNull(k)) o.getInt(k) else null
 
@@ -229,7 +305,7 @@ object 저장소 {
                     it.optInt("휴식", 90), 글또는널(it, "슈퍼"),
                     세트들from(it.optJSONArray("세트값")).filterNotNull(),
                     목록(it.optJSONArray("휴식값")) { h, j -> h.getInt(j) },
-                    글또는널(it, "플랜id"))
+                    글또는널(it, "플랜id"), 종id = 글또는널(it, "종id"))
             }
         },
         // 스키마 5 까지는 모든 루틴이 캘린더에 깔렸다 → 옛 루틴은 켜진 채로 옮긴다 (달력이 갑자기 비지 않게)
@@ -295,7 +371,7 @@ object 저장소 {
         목록(o.optJSONArray("종목들")) { a, i ->
             a.getJSONObject(i).let { e ->
                 종목기록(e.getString("이름"), 세트들from(e.optJSONArray("세트들")).filterNotNull(), e.optBoolean("임시"), 글또는널(e, "묶음"),
-                    플랜id = 글또는널(e, "플랜id"))
+                    플랜id = 글또는널(e, "플랜id"), 종id = 글또는널(e, "종id"))
             }
         },
         o.optInt("걸린초"),
@@ -326,6 +402,15 @@ object 저장소 {
             배너 = o.optString("배너", "근육 2장").let { if (it in 근육표.배너목록) it else "근육 2장" },
             회복시간 = o.optInt("회복시간", 24).let { if (it in 근육표.회복시간목록) it else 24 },
             색표 = o.optString("색표", "heat").let { v -> if (근육표.색표목록.any { it.first == v }) v else "heat" },
+            // 10-05 (스키마 15) — 시안 S.설정 이름 · 기본값 그대로. 옛 꼴(보고서프로필끔 · 큰운동 4/5)도 옮긴다 (시안 보고설정)
+            닉네임 = o.optString("닉네임", "").take(닉네임최대),
+            프로필사진 = 글또는널(o, "프로필사진")?.takeIf { it.isNotBlank() },
+            링크 = 목록(o.optJSONArray("링크")) { a, i -> 링크주소(a.optString(i, "")) }.filter { it.isNotEmpty() },
+            보고서보임 = 보고서보임값(o.optJSONObject("보고서보임")?.optBoolean("프로필", true) ?: !o.optBoolean("보고서프로필끔", false), 루틴 = true),
+            큰운동추가 = 큰운동추가정리(
+                if (o.has("큰운동추가")) 목록(o.optJSONArray("큰운동추가")) { a, i -> a.optString(i, "") }
+                else when (o.optInt("큰운동", 0)) { 5 -> listOf("오버헤드 프레스", "바벨 로우"); 4 -> listOf("오버헤드 프레스"); else -> emptyList() }),
+            업적정렬 = o.optString("업적정렬", "최신순").let { if (it in 업적정렬목록) it else "최신순" },
         )
     }
 
@@ -339,7 +424,7 @@ object 저장소 {
                     e.optInt("휴식", 90), 세트들from(e.optJSONArray("기록")), 세트들from(e.optJSONArray("예정값")),
                     목록(e.optJSONArray("휴식들")) { h, j -> if (h.isNull(j)) null else h.getInt(j) },
                     e.optBoolean("임시"), e.optBoolean("마감"), 글또는널(e, "슈퍼"),
-                    플랜id = 글또는널(e, "플랜id"),
+                    플랜id = 글또는널(e, "플랜id"), 종id = 글또는널(e, "종id"),
                 )
             }
         },

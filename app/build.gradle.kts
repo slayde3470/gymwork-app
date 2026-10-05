@@ -57,4 +57,6 @@ dependencies {
     // 계산 시험 (09-30) — `gradle test` 로 돈다. Plan.kt 는 안드로이드를 안 쓰므로 폰 없이 확인된다
     testImplementation(kotlin("test"))
     testImplementation("junit:junit:4.13.2")
+    // Storage(org.json) 시험 (10-05 · PortTest) — 안드로이드 단위시험의 org.json 은 빈 껍데기라 진짜를 넣는다
+    testImplementation("org.json:json:20240303")
 }

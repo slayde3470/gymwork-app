@@ -24,7 +24,13 @@ data class 몸조각(val 뒤: Boolean, val 종류: Char, val 근육: String, val
 data class 피로상태(val lv0: Double, val 시작: Long, val 끝: Long)
 
 /** 근육 계산에 넣는 종목 한 줄 — 끝낸 세트 · 계획한 세트 전부(처음 하는 근육의 기준). 워밍업은 넣지 않는다 */
-data class 근육입력(val 이름: String, val 한것: List<세트>, val 계획: List<세트> = 한것)
+data class 근육입력(
+    val 이름: String, val 한것: List<세트>, val 계획: List<세트> = 한것,
+    /** 종목 id (10-05 · 스키마 15) — 사용자 근육 역할을 찾을 때 */
+    val 종id: String? = null,
+    /** 사용자가 고른 근육 → 역할 (P · Y). null 이면 내장 규칙 (시안 `종목근육` — 종목표의 근육이 먼저) */
+    val 근육: Map<String, String>? = null,
+)
 
 /** 설정 칩 값 · 문구 — 한곳에 (설정 '운동 중 그림' 카드) */
 object 근육표 {
@@ -80,7 +86,7 @@ object 근육계산 {
         for (e in 들) {
             val 합 = (if (다) e.계획 else e.한것).sumOf { 유효무게(it.w, 체중) * it.r }
             if (합 <= 0.0) continue
-            for ((id, 역) in 종목근육(e.이름, 부위(e.이름))) {
+            for ((id, 역) in (e.근육?.takeIf { it.isNotEmpty() } ?: 종목근육(e.이름, 부위(e.이름)))) {
                 val 비 = 근육자료.역할[역] ?: 0.0
                 for (l in 잎(id)) v[l] = (v[l] ?: 0.0) + 합 * 비
             }
@@ -224,26 +230,38 @@ object 근육계산 {
 /** 종목의 부위 (종목표에 없으면 null) */
 fun 앱데이터.종목부위(이름: String): String? = 종목표.firstOrNull { it.이름 == 이름 }?.부위
 
+/** 사용자가 고른 근육 역할을 채운다 (10-05 · 시안 `종목근육` — 종목표의 근육이 있으면 그것). 이미 있으면 그대로 */
+fun 앱데이터.근육채움(들: List<근육입력>): List<근육입력> = 들.map { e ->
+    if (e.근육 != null) e else e.copy(근육 = 종목찾기(e.종id, e.이름)?.근육?.takeIf { it.isNotEmpty() })
+}
+
+/** 종목의 근육 → 역할 — 사용자가 고른 것이 먼저, 없으면 내장 규칙 (이름 · 부위) */
+fun 앱데이터.종목근육(종id: String?, 이름: String): Map<String, String> {
+    val t = 종목찾기(종id, 이름)
+    return t?.근육?.takeIf { it.isNotEmpty() } ?: 근육계산.종목근육(t?.이름 ?: 이름, t?.부위 ?: 종목부위(이름))
+}
+
 /** 운동 중 종목들 → 근육 계산에 넣을 줄. 워밍업(종류 1)은 뺀다. 계획 = 칸마다 보이는 값(기록 · 고친 값 · 기본값) */
 fun 운동세션.근육입력들(): List<근육입력> = 종목들.map { e ->
     근육입력(
         e.이름,
         e.찬것().filter { it.종류 != 세트종류.워밍업 },
         (0 until e.총칸()).map { k -> 세트값(e, k, 지금이면 = false) }.filter { it.종류 != 세트종류.워밍업 },
+        종id = e.종id,
     )
 }
 
 /** 지금 그림에 칠할 단계 — 남은 피로 + (운동 중이면) 오늘 지금까지 오른 단계 */
 fun 앱데이터.근육단계(들: List<근육입력>?, t: Long): Map<String, Double> {
-    val 오늘 = if (들 == null) emptyMap() else 근육계산.오늘단계(들, { 종목부위(it) }, 몸.체중, 최대볼륨)
+    val 오늘 = if (들 == null) emptyMap() else 근육계산.오늘단계(근육채움(들), { 종목부위(it) }, 몸.체중, 최대볼륨)
     return 근육계산.지금단계(피로, 오늘, t)
 }
 
 /** 운동을 저장할 때 피로를 쌓는다 — 운동을 끝낸 시각 [t] 에서 시작 */
 fun 앱데이터.피로쌓기(들: List<근육입력>, t: Long): 앱데이터 {
-    val (f, m) = 근육계산.피로저장(근육계산.회복끝치움(피로, t), 최대볼륨, 들, { 종목부위(it) }, 몸.체중, 설정.회복시간, t)
+    val (f, m) = 근육계산.피로저장(근육계산.회복끝치움(피로, t), 최대볼륨, 근육채움(들), { 종목부위(it) }, 몸.체중, 설정.회복시간, t)
     return copy(피로 = f, 최대볼륨 = m)
 }
 
 /** 종목 한 줄의 근육 글 (종목 탭에서 펼쳤을 때) */
-fun 앱데이터.종목근육글(이름: String): String = 근육계산.근육글(근육계산.종목근육(이름, 종목부위(이름)))
+fun 앱데이터.종목근육글(이름: String): String = 근육계산.근육글(종목근육(null, 이름))
