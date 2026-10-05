@@ -1,10 +1,12 @@
-name: 컴파일 확인 (check/ 가지 — APK 를 내보내지 않는다)
+name: 컴파일 검사 (port 가지)
 
-# main 에 올리기 전에 화면 코드까지 컴파일되는지 본다 (10-02).
-# 클라우드 작업 환경에는 Android SDK 가 없어서 UI 파일은 여기서만 컴파일된다.
+# 2026-10-04 앱 옮기기 — port/** 가지에 올리면 시험 + 빌드만 돌린다(릴리스 없음).
+# 로그는 로그인해야 보이므로, 실패한 줄을 '주석(annotation)'으로 남겨 로그인 없이 API 로 읽게 한다:
+#   curl -s https://api.github.com/repos/slayde3470/gymwork-app/check-runs/<job id>/annotations
 on:
   push:
-    branches: [ 'check/**' ]
+    branches: [ 'port/**', 'check/**' ]
+  workflow_dispatch:
 
 jobs:
   check:
@@ -18,7 +20,15 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.11.1'
-      - name: 계산 시험
-        run: gradle testDebugUnitTest --no-daemon --stacktrace
-      - name: APK 만들기 (컴파일 확인만)
-        run: gradle assembleDebug --no-daemon --stacktrace
+      - name: 시험 + 빌드
+        run: |
+          set -o pipefail
+          gradle testDebugUnitTest assembleDebug --no-daemon --continue 2>&1 | tee build.log
+      - name: 실패한 줄을 주석으로
+        if: failure()
+        run: |
+          grep -E "^e: |^w: .*error|FAILED|AssertionError|Exception|expected:|Unresolved|Type mismatch" build.log | head -45 | while IFS= read -r l; do
+            l="${l//'%'/'%25'}"; echo "::error::${l:0:900}"; done
+          for f in app/build/test-results/testDebugUnitTest/*.xml; do
+            [ -f "$f" ] && grep -o 'message="[^"]*"' "$f" | head -10 | while IFS= read -r m; do echo "::error::$(basename $f): ${m:0:600}"; done
+          done; true
