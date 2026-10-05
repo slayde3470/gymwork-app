@@ -41,5 +41,16 @@
 
         <!-- 휴식 끝 알람을 받는 곳 — 앱이 꺼져 있어도 폰이 깨워 부른다 -->
         <receiver android:name=".RestAlarmReceiver" android:exported="false" />
+
+        <!-- 운동 보고서 이미지 공유 (10-05) — 공유 창에 넘길 png 를 앱 캐시 report/ 에서 꺼내 준다. 권한은 받는 앱이 읽는 동안만 -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.files"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/report_paths" />
+        </provider>
     </application>
 </manifest>
