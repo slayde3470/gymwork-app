@@ -54,7 +54,7 @@ fun 메모시트(상태: 앱상태, 화면: String, 폰: 폰기능, 초안: 메�
             초안.새글 = ""
         }
     }
-    시트("수정 메모 · $화면", onClose) {
+    시트("메모", onClose) {   // 10-05 (시안 v17 메모 탭 · 시트 머리 '메모') — 어느 화면에서 적었는지는 줄마다 보인다
         Row(verticalAlignment = Alignment.CenterVertically) {
             입력칸(초안.새글, { 초안.새글 = it }, Modifier.weight(1f), 안내 = "고칠 점을 적어 두세요", onDone = 넣기)
             Box(Modifier.padding(start = 8.dp)) { 버튼("넣기", 넣기, 주요 = true) }

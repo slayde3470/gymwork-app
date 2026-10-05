@@ -35,11 +35,13 @@ fun 설정화면(상태: 앱상태, 폰: 폰기능) {
     val s = 상태.d.설정
     fun 고침(f: (설정값) -> 설정값) = 상태.바꿈 { it.copy(설정 = f(it.설정)) }
 
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 간격.넓게)) {
-        제목글("설정", Modifier.padding(top = 16.dp, bottom = 12.dp))
-
+    // 10-05 (시안 v19 A ①): 맨 위 = 회색 띠 '설정' (바탕 선 색 · 글 색). 당겨서 새로고침은 띠 아래만 (v19 A ②)
+    Column(Modifier.fillMaxSize()) {
+    머리띠("설정", 회색 = true)
+    당겨새로고침({ }, Modifier.weight(1f).fillMaxWidth()) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 간격.보통)) {
         // ── 신체 정보 — 플랜이 이 값으로 수준을 판정한다 (09-29, 20 문서) ──
-        이름표("신체 정보", Modifier.padding(bottom = 8.dp))
+        이름표("신체 정보", Modifier.padding(top = 간격.보통, bottom = 8.dp))
         카드(Modifier.번호("설0"), 안쪽 = 14.dp) {
             val 몸 = 상태.d.몸
             Row(horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
@@ -63,8 +65,6 @@ fun 설정화면(상태: 앱상태, 폰: 폰기능) {
                     상태.바꿈 { d -> d.copy(몸 = d.몸.copy(남 = 고른 == "남")) }
                 })
             }
-            글("플랜이 수준을 판정하고 기간을 계산할 때 씁니다. 비어 있으면 플랜을 만들 수 없습니다.",
-                크기값 = 크기.아주작게, 색 = c.옅음)
         }
 
         Box(Modifier.height(간격.보통))
@@ -173,6 +173,8 @@ fun 설정화면(상태: 앱상태, 폰: 폰기능) {
 
         글("하젠하이데 ${BuildConfig.VERSION_NAME} · 시험판", Modifier.fillMaxWidth().padding(top = 18.dp), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)
         Box(Modifier.height(16.dp))   // 끝에 빈 공간을 두지 않는다 (09-21 메모)
+    }
+    }
     }
 }
 
