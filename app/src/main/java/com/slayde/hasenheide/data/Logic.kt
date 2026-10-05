@@ -453,7 +453,7 @@ fun 운동세션.식구(j: Int): List<Int> {
 fun 운동세션.휴식보임(j: Int): Boolean = 식구(j).last() == j
 
 /** 운동한 시간(초) — 마무리 화면에 들어오면 멈춘다 */
-fun 운동세션.흐른초(지금: Long): Long = ((끝시각 ?: 지금) - 시작시각) / 1000
+fun 운동세션.흐른초(지금: Long): Long = max(0L, (끝시각 ?: 지금) - 시작시각 - 멈춘) / 1000
 
 // ─────────────── 루틴 목표 — 세트마다 따로 (4-2 · 5-5) ───────────────
 
@@ -558,7 +558,7 @@ fun 운동세션.끝냄(지금: Long): 운동세션 = copy(휴식 = null, 끝화
 /** 마무리 화면에서 운동으로 돌아가기 — 마무리 화면에 머문 시간은 빼고 이어서 잰다 */
 fun 운동세션.재개(지금: Long): 운동세션 {
     val 멈춘 = 끝시각?.let { max(0L, 지금 - it) } ?: 0L
-    return copy(끝화면 = false, 끝시각 = null, 시작시각 = 시작시각 + 멈춘)
+    return copy(끝화면 = false, 끝시각 = null, 멈춘 = this.멈춘 + 멈춘)   // 10-05: 시작시각은 그대로 (운동을 가르는 값)
 }
 
 /** 이 휴식이 (j, k) 세트 줄의 것인가 */
@@ -814,7 +814,7 @@ fun 앱데이터.운동저장(오늘: String, 지금: Long): 앱데이터 {
 fun 앱데이터.운동저장하기(오늘: String, 지금: Long): 앱데이터 {
     val S = 세션 ?: return this
     // 10-05 검수: 체크한 세트가 하나도 없으면 저장하지 않고 버린다 — 탭 · 뒤로가기로 나가도 빈 기록이 남지 않게 (22 버그 #4 · 시안 운동저장하기)
-    if (S.찬세트수() == 0) return copy(세션 = null)
+    if (S.종목들.none { it.찬것().isNotEmpty() }) return copy(세션 = null)   // 운동 중 ＋로 넣은 줄만 체크해도 남긴다 (10-05 감시관)
     val 들 = S.종목들.mapNotNull { e -> e.찬것().takeIf { it.isNotEmpty() }?.let { 종목기록(e.이름, it, e.임시, 플랜id = e.플랜id, 종id = e.종id) } }
     return 플랜반영(운동저장(오늘, 지금), 들, 오늘, S.조절됨)
 }
@@ -830,7 +830,7 @@ fun 앱데이터.오래된운동정리(지금: Long, 한계: Long = 3 * 60 * 60 
     val S = 세션 ?: return this
     val 마지막 = if (S.마지막 > 0) S.마지막 else S.시작시각
     if (지금 - 마지막 < 한계) return this
-    if (S.찬세트수() == 0) return copy(세션 = null)   // 워밍업만 체크했어도 남긴다 (손으로 끝낼 때와 같게 · 10-02 감시관)
+    if (S.종목들.none { it.찬것().isNotEmpty() }) return copy(세션 = null)   // 넣은 줄 · 워밍업만 체크했어도 남긴다 (손으로 끝낼 때와 같게 · 10-02 감시관)
     val 날 = java.time.Instant.ofEpochMilli(S.시작시각).atZone(java.time.ZoneId.systemDefault()).toLocalDate().toString()
     // 10-01: 저장하고 결과 화면을 **한 번 보여 준다** (전에는 조용히 저장만 해서 결과 화면이 안 나왔다)
     return 운동저장하기(날, S.끝시각 ?: 마지막).copy(결과 = S.끝냄(S.끝시각 ?: 마지막))   // 그 날 기록이 있으면 '한 번 더' 로 남는다

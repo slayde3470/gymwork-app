@@ -344,7 +344,7 @@ private fun 운머리(상태: 앱상태, S: 운동세션, 본: Int, e: 세션종
                         .padding(horizontal = 간격.좁게, vertical = 간격.아주좁게),
                 ) { Text("그림", style = 글꼴.보통(크기.버튼, FontWeight.Bold), color = c.강조, maxLines = 1) }
                 Text(
-                    분초(((S.끝시각 ?: 지금) - S.시작시각).coerceAtLeast(0L).div(1000).toInt()),
+                    분초(((S.끝시각 ?: 지금) - S.시작시각 - S.멈춘).coerceAtLeast(0L).div(1000).toInt()),
                     Modifier.padding(end = 운치수.시계오른),
                     style = 글꼴.보통(크기.크게, FontWeight.Bold).copy(fontFeatureSettings = "tnum"), color = c.강조글, maxLines = 1,
                 )

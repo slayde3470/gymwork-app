@@ -26,7 +26,7 @@ object 저장소 {
 
     /** 백업 가져오기용 — '스키마' 열쇠가 없는 JSON(다른 앱의 파일 등)은 받지 않는다 (10-05 검수: 통째로 지워지던 길) */
     fun 백업글에서(글: String): 앱데이터? =
-        try { if (JSONObject(글).has("스키마")) 글에서(글) else null } catch (e: Exception) { null }
+        try { JSONObject(글).let { o -> if (o.has("스키마") && (o.has("종목표") || o.has("기록") || o.has("루틴들"))) 글에서(글) else null } } catch (e: Exception) { null }   // 10-05 감시관: 스키마만 있는 빈 파일도 거절
 
     fun 쓰기(파일: File, d: 앱데이터) {
         val 임시 = File(파일.parentFile, 파일.name + ".tmp")
@@ -164,7 +164,7 @@ object 저장소 {
 
     private fun 세션to(S: 운동세션) = JSONObject().put("루틴id", S.루틴id).put("루틴이름", S.루틴이름)
         .put("시작시각", S.시작시각).put("i", S.i).put("s", S.s).put("무게", S.무게).put("횟수", S.횟수)
-        .put("끝화면", S.끝화면).put("마지막", S.마지막).put("조절됨", S.조절됨)
+        .put("끝화면", S.끝화면).put("마지막", S.마지막).put("조절됨", S.조절됨).put("멈춘", S.멈춘)
         .also { o -> if (S.끝시각 != null) o.put("끝시각", S.끝시각) }
         .put("종목들", JSONArray().also { a ->
             S.종목들.forEach { e ->
@@ -442,5 +442,6 @@ object 저장소 {
         if (o.has("끝시각") && !o.isNull("끝시각")) o.getLong("끝시각") else null,
         o.optLong("마지막", 0L),
         o.optBoolean("조절됨", false),
+        멈춘 = o.optLong("멈춘", 0L).coerceAtLeast(0L),   // 10-05
     )
 }

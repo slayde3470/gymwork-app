@@ -554,10 +554,10 @@ internal fun 앱데이터.종목고침(v: 새종목값, 지금: Long = System.cu
         세션 = if (!바뀜) 세션 else 세션?.let { S ->
             S.copy(종목들 = S.종목들.map { if (맞음(it.종id, it.이름, it.플랜id)) it.copy(이름 = n, 종id = 새id) else it })
         },
-        기록 = if (n == 옛) 기록 else 기록.mapValues { (_, rec) ->
+        기록 = if (!바뀜) 기록 else 기록.mapValues { (_, rec) ->
             rec.copy(종목들 = rec.종목들.map {
                 if (맞음(it.종id, it.이름, it.플랜id)) it.copy(
-                    이름 = n, 종id = if (it.종id != null) 새id else null,
+                    이름 = n, 종id = 새id,   // 10-05 감시관: 옛 줄에도 새 id — 이름만 바꾸면 같은 이름 다른 종목 기록과 섞이고, 지난 기록을 열쇠로 못 찾았다
                     묶음 = it.묶음?.split("+")?.map { x -> if (x == 옛) n else x }?.sorted()?.joinToString("+"),
                 ) else it
             })
