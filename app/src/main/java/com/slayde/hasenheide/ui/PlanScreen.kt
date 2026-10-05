@@ -440,9 +440,10 @@ internal fun 플랜지움(상태: 앱상태, id: String) {
  * (동작방식 D3-9 · 11 지침 U5-5 — 끄는 것 0.35 · 놓을 자리 3dp 선). EX 가 종목 칸 안으로 옮기면 [플랜카드] 를 바로 부른다
  */
 @Composable
-fun 플랜종목칸(상태: 앱상태) {
+fun 플랜종목칸(상태: 앱상태, 걸러: (플랜) -> Boolean = { true }, 아래여백: Boolean = true) {   // 10-05 검수: 종목 칸 안에서는 그 종목 플랜만 (꾹 끌기 되살림)
     val d = 상태.d
-    if (d.플랜들.isEmpty()) return
+    val 보임 = d.플랜들.filter(걸러)
+    if (보임.isEmpty()) return
     val c = Local색.current
     var 끄는 by remember { mutableStateOf<String?>(null) }
     var 거리 by remember { mutableStateOf(0f) }
@@ -451,9 +452,9 @@ fun 플랜종목칸(상태: 앱상태) {
     val 진동 = LocalHapticFeedback.current
 
     Column(Modifier.번호("종3"), verticalArrangement = Arrangement.spacedBy(간격.좁게)) {
-        d.플랜들.forEachIndexed { i, p ->
+        보임.forEachIndexed { i, p ->
             key(p.id) {
-                val 원 = d.플랜들.indexOfFirst { it.id == 끄는 }
+                val 원 = 보임.indexOfFirst { it.id == 끄는 }
                 val 선 = if (끄는 != null && 놓을 == i && 놓을 != 원) (if (놓을 < 원) 0 else 2) else -1
                 val 선색 = c.강조
                 Box(
@@ -471,13 +472,13 @@ fun 플랜종목칸(상태: 앱상태) {
                             onDragStart = {
                                 진동.performHapticFeedback(HapticFeedbackType.LongPress)
                                 끄는 = p.id; 거리 = 0f
-                                놓을 = 상태.d.플랜들.indexOfFirst { it.id == p.id }
+                                놓을 = 상태.d.플랜들.filter(걸러).indexOfFirst { it.id == p.id }
                             },
                             onDrag = { ch, 양 ->
                                 ch.consume()
                                 거리 += 양.y
                                 // 손가락이 지나간 카드 수만큼 놓일 자리를 옮긴다 (카드마다 높이가 다르다)
-                                val 목 = 상태.d.플랜들
+                                val 목 = 상태.d.플랜들.filter(걸러)
                                 val idx = 목.indexOfFirst { it.id == p.id }.coerceAtLeast(0)
                                 var 남 = 거리; var k = idx
                                 while (남 > 0 && k < 목.lastIndex) { val h = (높이들[목[k + 1].id] ?: 1).toFloat(); if (남 < h / 2) break; 남 -= h; k++ }
@@ -485,8 +486,14 @@ fun 플랜종목칸(상태: 앱상태) {
                                 놓을 = k
                             },
                             onDragEnd = {
-                                val idx = 상태.d.플랜들.indexOfFirst { it.id == p.id }
-                                if (idx >= 0 && 놓을 >= 0 && 놓을 != idx) 상태.바꿈 { it.copy(플랜들 = 자리옮김(it.플랜들, idx, 놓을)) }
+                                val 목 = 상태.d.플랜들.filter(걸러)
+                                val idx = 목.indexOfFirst { it.id == p.id }
+                                val 대상 = 목.getOrNull(놓을)?.id
+                                if (idx >= 0 && 대상 != null && 놓을 != idx) 상태.바꿈 {
+                                    val 원자리 = it.플랜들.indexOfFirst { x -> x.id == p.id }
+                                    val 새자리 = it.플랜들.indexOfFirst { x -> x.id == 대상 }
+                                    if (원자리 < 0 || 새자리 < 0) it else it.copy(플랜들 = 자리옮김(it.플랜들, 원자리, 새자리))
+                                }
                                 끄는 = null; 거리 = 0f; 놓을 = -1
                             },
                             onDragCancel = { 끄는 = null; 거리 = 0f; 놓을 = -1 },
@@ -496,7 +503,7 @@ fun 플랜종목칸(상태: 앱상태) {
             }
         }
     }
-    Box(Modifier.height(간격.보통))
+    if (아래여백) Box(Modifier.height(간격.보통))
 }
 
 // ═══════════════════ 플랜 고치기 시트 ═══════════════════

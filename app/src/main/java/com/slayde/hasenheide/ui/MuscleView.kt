@@ -455,7 +455,7 @@ fun 종목사진줄(상태: 앱상태, e: 종목) {
                     if (보임 > 0f) Box(
                         Modifier.fillMaxSize().graphicsLayer { alpha = 보임 }.background(c.나쁨),
                         contentAlignment = Alignment.Center,
-                    ) { 글("지우기", 크기값 = 크기.작게, 색 = c.면, 굵기 = FontWeight.Bold) }
+                    ) { 글("지우기", 크기값 = 크기.작게, 색 = c.나쁨글, 굵기 = FontWeight.Bold) }
                 }
             }
         }

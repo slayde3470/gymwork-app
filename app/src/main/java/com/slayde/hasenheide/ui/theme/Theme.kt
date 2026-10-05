@@ -64,6 +64,8 @@ data class 색표(
     val 지금깜빡: Color = Color(0xFFEEF3F7),   // 지금 줄 · 칸 점멸의 옅은 쪽 (강조옅음 ↔ 이 색 · 시안 --지금깜빡)
     val 노랑: Color = Color(0xFFE8A400),       // 누를 수 있다는 노란 점 (시안 --노랑)
     val 노랑테: Color = Color.Transparent,      // 노란 점 둘레 1 — 어두운 화면의 강조 단추 위에서만 (시안 --노랑테)
+    // 10-05 검수: 나쁨(빨강) 바탕 위 글 — 밝음 · 어두움 모두 흰색 (목록 '어두운 화면의 빨간 버림 확인 글은 흰색' · 11_UI지침에 올릴 값)
+    val 나쁨글: Color = Color(0xFFFFFFFF),
 )
 
 /**

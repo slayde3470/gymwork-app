@@ -182,7 +182,7 @@ class 앱상태(private val 파일: File) {
     //  · 10-02: 종목 사진은 **파일 이름만** 들어간다 (사진 파일은 filesDir/photos 에 남고 백업에는 없다 → 다른 폰에선 빈 칸)
     fun 백업글(): String = 저장소.글로(d.copy(메모 = emptyList()))
     fun 백업넣기(글: String): Boolean = try {
-        val 새 = 저장소.글에서(글)
+        val 새 = 저장소.백업글에서(글) ?: throw IllegalArgumentException("백업 아님")   // 10-05: 백업이 아닌 JSON 은 받지 않는다 (아래 catch → false)
         바꿈 { 옛 -> if (새.메모.isEmpty()) 새.copy(메모 = 옛.메모) else 새 }; true
     } catch (_: Exception) { false }
 }

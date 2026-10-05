@@ -541,7 +541,7 @@ internal fun 앱데이터.종목고침(v: 새종목값, 지금: Long = System.cu
         플랜id == null && (종id == t.id || (종id == null && 첫 && 이름 == 옛))
     val 새t = t.copy(
         id = 새id, 이름 = n, 부위 = v.칸 ?: t.부위, 근육 = LinkedHashMap(v.근육),
-        목표1RM = v.목표글.replace(',', '.').trim().toDoubleOrNull()?.takeIf { it > 0 },
+        목표1RM = v.목표글.replace(',', '.').trim().toDoubleOrNull()?.takeIf { it > 0 && it.isFinite() },
         달력이름 = v.달력글.trim().ifEmpty { null },
     )
     val 바뀜 = n != 옛 || 새id != t.id

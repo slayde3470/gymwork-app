@@ -201,8 +201,8 @@ fun 프로필화면(상태: 앱상태) {
  * 안 쓰게 된 파일(바꾼 옛 프로필 · 지운 인증샷)은 시각을 지금으로 돌려 다음 정리 때 치워지게 한다 — 보고서 '공용 고칠 것'
  */
 internal object 프로필파일지킴 {
-    private const val 먼뒤 = 100L * 365 * 24 * 3600 * 1000
-    fun 지킴(ctx: android.content.Context, 이름: String) { try { 사진함.파일(ctx, 이름).setLastModified(System.currentTimeMillis() + 먼뒤) } catch (_: Exception) { } }
+    // 10-05 합치기: App.kt 정리가 프로필 사진 · 인증샷을 '쓰는 것' 으로 지키게 됐다 → 시각을 먼 뒤로 미루지 않는다(영영 안 치워지던 길). 부르는 곳은 그대로 둔다
+    @Suppress("UNUSED_PARAMETER") fun 지킴(ctx: android.content.Context, 이름: String) { }
     fun 놓음(ctx: android.content.Context, 이름: String) { try { 사진함.파일(ctx, 이름).setLastModified(System.currentTimeMillis()) } catch (_: Exception) { } }
 }
 

@@ -229,7 +229,9 @@ private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modif
             if (펼 && t != null) 버튼("편집", { 편집(t.id) }, 낮게 = true)
         }
         if (펼) Column(Modifier.padding(top = 간격.좁게), verticalArrangement = Arrangement.spacedBy(간격.좁게)) {
-            플.forEach { p -> key(p.id) { 플랜카드(상태, p) } }
+            // 10-05 검수: PlanScreen 의 끌 수 있는 카드 목록을 그 종목 플랜만으로 (전: 끌기 없는 따로 만든 카드)
+            val 플id = 플.map { it.id }.toSet()
+            플랜종목칸(상태, { it.id in 플id }, 아래여백 = false)
             종목세팅(상태, t?.id ?: x.이름, 플.isNotEmpty())
             if (t != null && t.사진.isNotEmpty()) 넣은사진줄(상태, t)
         }
@@ -296,56 +298,13 @@ private fun 넣은사진줄(상태: 앱상태, t: 종목) {
                     if (보임 > 0f) Box(
                         Modifier.fillMaxSize().graphicsLayer { alpha = 보임 }.background(c.나쁨),
                         contentAlignment = Alignment.Center,
-                    ) { 글("지우기", 크기값 = 크기.조금작게, 색 = c.면, 굵기 = FontWeight.Bold) }
+                    ) { 글("지우기", 크기값 = 크기.조금작게, 색 = c.나쁨글, 굵기 = FontWeight.Bold) }
                 }
             }
         }
     }
 }
 
-/** 펼친 상자의 플랜 카드 (시안 `플랜카드`) — 이름 · n/끝회 · 게이지 · 시작/지금/목표 · 다음 회 처방 · 다음 측정 · 속도 · [변경][지우기] */
-@Composable
-private fun 플랜카드(상태: 앱상태, p: 플랜) {
-    val c = Local색.current
-    val d = 상태.d
-    val 표 = if (d.몸.찼나) p.회표(d.몸, d.향상기록들) else emptyList()
-    val 끝 = 표.lastOrNull()?.회 ?: p.한회
-    val 다 = 표.firstOrNull { it.회 > p.한회 }
-    val 측 = 표.firstOrNull { it.회 > p.한회 && it.측정일 }
-    val 시 = p.시작진행값
-    val 목 = p.목표진행값
-    val 현 = if (p.한회 <= p.기준회) p.지금진행값 else 표.firstOrNull { it.회 == p.한회 }?.목표값 ?: p.지금진행값
-    val fr = ((현 - 시) / (if (목 - 시 != 0.0) 목 - 시 else 1.0)).coerceIn(0.0, 1.0)
-    fun 값글(v: Double) = if (p.횟수진행) "${v.roundToInt()}${p.단위.단위}" else "${무게글((v * 2).roundToInt() / 2.0)}kg"
-    카드 {
-        Column(verticalArrangement = Arrangement.spacedBy(간격.좁게)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                글(p.이름, Modifier.weight(1f), 굵기 = FontWeight.Bold)
-                글("${p.한회}/${끝}회", 크기값 = 크기.작게, 색 = c.옅음)
-            }
-            진행막대(fr.toFloat(), Modifier.fillMaxWidth())
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                글("시작 ${값글(시)}", 크기값 = 크기.작게, 색 = c.흐림)
-                글("지금 ${값글(현)}", Modifier.weight(1f), 크기값 = 크기.작게, 색 = c.흐림, 가운데 = true)
-                글("목표 ${값글(목)}", 크기값 = 크기.작게, 색 = c.흐림)
-            }
-            val 처방줄 = when {
-                !d.몸.찼나 -> "신체 정보가 비어 있어 기간을 셀 수 없습니다 (설정 → 신체 정보)"
-                다 == null -> "목표 달성"
-                else -> "${if (다.측정일) "측정 · " else ""}${다.회}회차 " +
-                    처방글(회처방(p, 다.목표값, d.설정.무게폭, d.몸, 다.측정일, 다.주))
-            }
-            맞춤글(처방줄, 최대 = 크기.조금작게, 색 = c.글)
-            맞춤글((if (측 != null) "다음 측정 ${측.회}회차 · " else "") + "속도 ${속도출처글(d.향상기록들, p.종목)}", 최대 = 크기.작게, 색 = c.옅음)
-            Row(horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
-                버튼("변경", { 플랜고침.value = p.id }, Modifier.weight(1f), 낮게 = true)
-                버튼("지우기", {
-                    상태.지우고알림("${p.이름} 플랜을 지웠습니다") { dd -> dd.copy(플랜들 = dd.플랜들.filter { it.id != p.id }).플랜줄정리() }
-                }, 낮게 = true, 글색 = c.나쁨)
-            }
-        }
-    }
-}
 
 /** 기본 세팅 (시안 `종목세팅`) — 세트 줄 목록. 값은 종목설정[열쇠] (없으면 설정 기본값) */
 @Composable
@@ -477,7 +436,7 @@ fun 목표칸(상태: 앱상태, 종목이름: String) {
     val 것 = 상태.d.종목표.firstOrNull { it.이름 == 종목이름 }
     var 값 by remember(종목이름, 것?.목표1RM) { mutableStateOf(것?.목표1RM?.let { 무게글(it) } ?: "") }
     fun 저장() {
-        val v = 값.replace(',', '.').toDoubleOrNull()?.takeIf { it > 0 }
+        val v = 값.replace(',', '.').toDoubleOrNull()?.takeIf { it > 0 && it.isFinite() }
         상태.바꿈 { d ->
             val 있나 = d.종목표.any { it.이름 == 종목이름 }
             d.copy(종목표 = if (있나) d.종목표.map { if (it.이름 == 종목이름) it.copy(목표1RM = v) else it }

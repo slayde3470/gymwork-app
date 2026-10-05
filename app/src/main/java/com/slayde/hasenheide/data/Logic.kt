@@ -813,6 +813,8 @@ fun 앱데이터.운동저장(오늘: String, 지금: Long): 앱데이터 {
  */
 fun 앱데이터.운동저장하기(오늘: String, 지금: Long): 앱데이터 {
     val S = 세션 ?: return this
+    // 10-05 검수: 체크한 세트가 하나도 없으면 저장하지 않고 버린다 — 탭 · 뒤로가기로 나가도 빈 기록이 남지 않게 (22 버그 #4 · 시안 운동저장하기)
+    if (S.찬세트수() == 0) return copy(세션 = null)
     val 들 = S.종목들.mapNotNull { e -> e.찬것().takeIf { it.isNotEmpty() }?.let { 종목기록(e.이름, it, e.임시, 플랜id = e.플랜id, 종id = e.종id) } }
     return 플랜반영(운동저장(오늘, 지금), 들, 오늘, S.조절됨)
 }

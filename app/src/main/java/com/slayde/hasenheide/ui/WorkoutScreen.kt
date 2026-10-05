@@ -262,6 +262,22 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
                 if (뺌) 발자취.적기("운동 중 넣은 것 빼기 $열쇠") else 상태.알림.토스트("이미 시작한 종목은 뺄 수 없습니다")
             },
             닫기 = { 넣기열림 = false },
+            // 10-05 검수: 운동 중에도 플랜 칸 (시안 넣기목록 '플랜넣기' · v13) — 루틴과 같은 처방 줄을 오늘만 넣는다
+            플랜개수 = { pid -> 상태.d.세션?.종목들?.count { it.플랜id == pid } ?: 0 },
+            플랜넣기 = { pid ->
+                val p = 상태.d.플랜들.firstOrNull { it.id == pid }
+                val 줄 = p?.let { 플랜줄(상태.d, it) }
+                val e = 줄?.let { com.slayde.hasenheide.data.운동시작(com.slayde.hasenheide.data.루틴("넣기", "넣기", 종목 = listOf(it)), System.currentTimeMillis())?.종목들?.firstOrNull() }
+                if (e != null) {
+                    발자취.적기("운동 중 플랜 넣기 ${e.이름}")
+                    함 { s -> s.종목넣기(e.copy(임시 = true, 계획세트 = 0), 운보기.본).let { r -> 운결과(r.세션, r.본 ?: 운보기.본) } }
+                }
+            },
+            플랜빼기 = { pid ->
+                var 뺌 = false
+                함 { s -> s.넣은것빼기(운보기.본) { it.플랜id == pid }?.let { 뺌 = true; 운결과(it.세션, it.본 ?: 운보기.본) } }
+                if (!뺌) 상태.알림.토스트("이미 시작한 종목은 뺄 수 없습니다")
+            },
         )
     }
 }

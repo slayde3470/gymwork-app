@@ -489,4 +489,43 @@ class PortTest {
         assertEquals(1, 찾.count { it.이름 == "나만의 운동" })
         assertEquals("팔", 찾.first { it.이름 == "나만의 운동" }.칸)
     }
+
+    // ─────────────── (f) 합치기 검수에서 나온 것 (10-05) ───────────────
+
+    /** 체크한 세트가 하나도 없으면 탭 · 뒤로가기로 나가도 빈 기록을 남기지 않는다 (22 버그 #4) */
+    @Test fun 빈운동_저장안함() {
+        val r = 루틴("r1", "가슴날", 종목 = listOf(루틴종목("벤치프레스", 세트 = 2)))
+        val S = assertNotNull(운동시작(r, 1_000L))
+        val d = 앱데이터(루틴들 = listOf(r), 세션 = S).운동저장하기("2026-10-05", 2_000L)
+        assertNull(d.세션)
+        assertTrue(d.기록.isEmpty())
+    }
+
+    /** 플랜 '입력하지 않음'(측정먼저)이 저장 왕복에서 살아남는다 · 옛 꼴(열쇠 없음)은 false */
+    @Test fun 플랜_측정먼저_왕복() {
+        val d = 앱데이터(플랜들 = listOf(플랜("p", "벤치", "벤치프레스", 0.0, 측정먼저 = true)))
+        val e = 저장소.글에서(저장소.글로(d))
+        assertTrue(e.플랜들[0].측정먼저)
+        val 옛 = 저장소.글로(d).replace("\"측정먼저\": true", "\"측정먼저\": false")
+        assertFalse(저장소.글에서(옛).플랜들[0].측정먼저)
+    }
+
+    /** 백업 가져오기는 '스키마' 열쇠가 없는 JSON 을 받지 않는다 (전: 아무 JSON 이나 빈 데이터로 받아 통째로 지움) */
+    @Test fun 백업아닌_JSON_거절() {
+        assertNull(저장소.백업글에서("""{"name":"x"}"""))
+        assertNull(저장소.백업글에서("이건 JSON 아님"))
+        assertNotNull(저장소.백업글에서(저장소.글로(앱데이터())))
+    }
+
+    /** 못 읽는 기록 파일은 빈 데이터로 덮어쓰이기 전에 한 벌 남긴다 */
+    @Test fun 깨진파일_한벌남김() {
+        val 폴더 = kotlin.io.path.createTempDirectory("hz").toFile()
+        val 파일 = java.io.File(폴더, "data.json").apply { writeText("{ 깨진 글") }
+        val d = 저장소.읽기(파일)
+        assertTrue(d.기록.isEmpty())
+        val 남은 = 폴더.listFiles()!!.filter { it.name.startsWith("data.broken-") }
+        assertEquals(1, 남은.size)
+        assertEquals("{ 깨진 글", 남은[0].readText())
+        폴더.deleteRecursively()
+    }
 }

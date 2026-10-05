@@ -18,7 +18,15 @@ import kotlin.math.max
 object 저장소 {
 
     fun 읽기(파일: File): 앱데이터 =
-        try { if (파일.exists()) 글에서(파일.readText()) else 앱데이터() } catch (e: Exception) { 앱데이터() }
+        try { if (파일.exists()) 글에서(파일.readText()) else 앱데이터() } catch (e: Exception) {
+            // 10-05 검수: 못 읽은 파일은 빈 데이터로 덮어쓰이기 전에 한 벌 남긴다 (스키마를 올리는 판이라 특히)
+            try { 파일.copyTo(File(파일.parentFile, 파일.nameWithoutExtension + ".broken-" + System.currentTimeMillis() + ".json")) } catch (_: Exception) { }
+            앱데이터()
+        }
+
+    /** 백업 가져오기용 — '스키마' 열쇠가 없는 JSON(다른 앱의 파일 등)은 받지 않는다 (10-05 검수: 통째로 지워지던 길) */
+    fun 백업글에서(글: String): 앱데이터? =
+        try { if (JSONObject(글).has("스키마")) 글에서(글) else null } catch (e: Exception) { null }
 
     fun 쓰기(파일: File, d: 앱데이터) {
         val 임시 = File(파일.parentFile, 파일.name + ".tmp")

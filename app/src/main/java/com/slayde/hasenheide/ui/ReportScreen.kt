@@ -926,7 +926,7 @@ private fun 끝단추줄(상태: 앱상태, S: 운동세션) {
             if (버림) {
                 Text(
                     "다시 누르면\n저장하지 않습니다.", Modifier.padding(horizontal = 간격.아주좁게), style = 글꼴.보통(크기.작게, FontWeight.Bold),
-                    color = c.강조글, textAlign = TextAlign.Center, maxLines = 3,
+                    color = c.나쁨글, textAlign = TextAlign.Center, maxLines = 3,
                 )
             } else {
                 Text("기록없이\n종료하기", style = 글꼴.보통(크기.조금작게, FontWeight.Bold), color = c.나쁨, textAlign = TextAlign.Center, maxLines = 2)
