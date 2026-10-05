@@ -1,5 +1,6 @@
 package com.slayde.hasenheide.ui
 
+import android.os.SystemClock
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
@@ -38,6 +39,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -273,6 +275,8 @@ private val 칸글옆 = 2.dp
 /** 미실시 이름표 칸 폭 (시안 `.판줄 .이름` 54) */
 private val 판이름폭 = 54.dp
 private const val 해칸수 = 12
+/** 맨 아래 단추를 한 번 누른 뒤 이만큼은 다시 받지 않는다 (ms · 화면이 다시 그려질 틈) [새 값] */
+private const val 연타막음ms = 500L
 /** 집어 둔 날 (시안 `.칸날.집음 opacity .55`) · 꺼진 삭제 단추 (시안 `.판단추 .버튼:disabled opacity .35`) */
 private const val 집음투명 = 0.55f
 private const val 꺼짐투명 = 0.35f
@@ -308,6 +312,14 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
     var 록뺌 by remember { mutableStateOf<Set<String>>(emptySet()) }   // 기록이 여럿인 날 — 체크를 끈 기록 열쇠
     var 예펼침 by remember { mutableStateOf<String?>(null) }
     var 보고 by remember { mutableStateOf<운동세션?>(null) }
+    // 맨 아래 단추 연타 막기 — 지운 뒤 체크가 풀려(록뺌 비움) 두 번째 누름이 남겨 둔 기록까지 지우던 것 · '한 번 더' 두 번
+    var 막음까지 by remember { mutableLongStateOf(0L) }
+    fun 한번(f: () -> Unit) {
+        val 지금 = SystemClock.uptimeMillis()
+        if (지금 < 막음까지) return
+        막음까지 = 지금 + 연타막음ms
+        f()
+    }
 
     fun 날고름(k: String) { if (k != 고른날) 록뺌 = emptySet(); 고른날 = k }
     fun 달넘김(n: Int) { 보는달 = 보는달.plusMonths(n.toLong()) }
@@ -398,7 +410,7 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
                     on펼침 = { 키 -> 예펼침 = if (예펼침 == 키) null else 키 },
                 )
             }
-            판단추(상태, 고른날, 록뺌, 시작 = { 시작(it) }, 지움 = { 기록지움(it) }, 보고서 = { kk, rr -> 보고서(kk, rr) })
+            판단추(상태, 고른날, 록뺌, 시작 = { S -> 한번 { 시작(S) } }, 지움 = { kk -> 한번 { 기록지움(kk) } }, 보고서 = { kk, rr -> 한번 { 보고서(kk, rr) } })
         }
 
         // 집어 둔 예정 — 날을 누르면 옮겨진다. 다른 달도 ‹ › 로 넘겨 누른다 (시안 `아래띠`). 뒤로가기 = 취소
@@ -493,11 +505,11 @@ private fun 년월띠(달: YearMonth, 이전: () -> Unit, 다음: () -> Unit, �
     ) {
         흰칩("스탯", 스탯, Modifier.align(Alignment.CenterStart).번호("캘칩"))
         Row(Modifier.align(Alignment.Center), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
-            아이콘버튼(아이콘.왼쪽, "이전 달", 이전, 칠함 = false, 색 = c.강조글, 크기칸 = 높이.낮게)
-            Box(Modifier.heightIn(min = 높이.낮게).clip(RoundedCornerShape(모서리.작게)).눌림(달고르기).padding(horizontal = 간격.아주좁게), contentAlignment = Alignment.Center) {
+            아이콘버튼(아이콘.왼쪽, "이전 달", 이전, 칠함 = false, 색 = c.강조글, 크기칸 = 높이.아주낮게)
+            Box(Modifier.heightIn(min = 높이.아주낮게).clip(RoundedCornerShape(모서리.작게)).눌림(달고르기).padding(horizontal = 간격.아주좁게), contentAlignment = Alignment.Center) {
                 띠글("${달.year}년 ${달.monthValue}월")
             }
-            아이콘버튼(아이콘.오른쪽, "다음 달", 다음, 칠함 = false, 색 = c.강조글, 크기칸 = 높이.낮게)
+            아이콘버튼(아이콘.오른쪽, "다음 달", 다음, 칠함 = false, 색 = c.강조글, 크기칸 = 높이.아주낮게)
         }
         흰칩("업적", 업적, Modifier.align(Alignment.CenterEnd))
     }
@@ -876,15 +888,17 @@ private fun 종목목록(줄들: List<Pair<String, String>>, 펼침: Boolean, on
     val c = Local색.current
     val 배 = 캘판배치(줄들.size, 펼침)
     val 칸수 = 배.보일 + if (배.접기칸) 1 else 0
-    @Composable fun 칸(i: Int) {
-        if (i < 배.보일) 목록칸(i, 줄들[i].first, 줄들[i].second) else 접기칸(펼침, 줄들.size - (캘판칸 - 1), on펼침)
-    }
     Row(
         Modifier.fillMaxWidth().drawBehind { drawLine(c.선, Offset(0f, 0f), Offset(size.width, 0f), 선굵기.보통.toPx()) },
         horizontalArrangement = Arrangement.spacedBy(간격.보통),
     ) {
-        Column(Modifier.weight(1f)) { for (i in 0 until 배.행) 칸(i) }
-        Column(Modifier.weight(1f)) { for (i in 배.행 until 칸수) 칸(i) }
+        for (열 in 0..1) Column(Modifier.weight(1f)) {
+            val 처음 = if (열 == 0) 0 else 배.행
+            val 끝 = if (열 == 0) 배.행 else 칸수
+            for (i in 처음 until 끝) {
+                if (i < 배.보일) 목록칸(i, 줄들[i].first, 줄들[i].second) else 접기칸(펼침, 줄들.size - (캘판칸 - 1), on펼침)
+            }
+        }
     }
 }
 
