@@ -107,6 +107,7 @@ import com.slayde.hasenheide.data.종목기록
 import com.slayde.hasenheide.data.콤마
 import com.slayde.hasenheide.data.판정됨
 import com.slayde.hasenheide.ui.theme.Local색
+import com.slayde.hasenheide.ui.theme.보고떠값
 import com.slayde.hasenheide.ui.theme.간격
 import com.slayde.hasenheide.ui.theme.글꼴
 import com.slayde.hasenheide.ui.theme.높이
@@ -136,27 +137,31 @@ import kotlin.math.roundToInt
  * false(지금 App.kt 의 덮개) 면 아래 줄 오른쪽에 ✕ 를 둔다. 뒤로가기는 어느 쪽이든 닫는다
  */
 @Composable
-fun 스탯화면(상태: 앱상태, 처음: String = 스탯화면글.스탯, 볼업적: String? = null, 탭줄위: Boolean = false, 닫기: () -> Unit) {
+fun 스탯화면(
+    상태: 앱상태, 처음: String = 스탯화면글.스탯, 볼업적: String? = null, 탭줄위: Boolean = false,
+    /** 10-07 홍겸 님: 운동 보고서 › 로 들어왔을 때 — 스테이터스 ‹(보고서로) ›(도전 과제) · 도전 과제 ‹(스테이터스로) */
+    보고길: Boolean = false,
+    닫기: () -> Unit,
+) {
     val c = Local색.current
     var 쪽 by remember { mutableStateOf(처음) }
     BackHandler { 닫기() }
 
+    // 10-07 홍겸 님: 아래 [스탯][업적] 줄 없앰 · 위에 다른 화면처럼 띠 ('스테이터스' · '도전 과제' — 업적판은 자기 띠) · 아래 탭줄은 App 이 보인다
     Box(Modifier.fillMaxSize().background(c.바탕).눌림 { }) {
         Column(Modifier.fillMaxSize().then(if (탭줄위) Modifier else Modifier.statusBarsPadding().navigationBarsPadding())) {
+            if (쪽 == 스탯화면글.스탯) 머리띠(스탯화면글.스테이터스)
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 if (쪽 == 스탯화면글.스탯) 스탯판(상태)
                 else 업적판(상태, 볼업적)
             }
-            // 시안 `.스탯아래` — 위 테 1 선 · 바탕 면 · 여백 8/12
-            Row(
-                Modifier.fillMaxWidth().background(c.면).drawBehind { drawRect(c.선, size = Size(size.width, 선굵기.보통.toPx())) }
-                    .padding(horizontal = 간격.보통, vertical = 간격.좁게),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(간격.아주좁게),
-            ) {
-                반칩(스탯화면글.스탯, 쪽 == 스탯화면글.스탯) { 쪽 = 스탯화면글.스탯 }
-                반칩(스탯화면글.업적, 쪽 == 스탯화면글.업적) { 쪽 = 스탯화면글.업적 }
-                if (!탭줄위) 아이콘버튼(아이콘.닫기, 스탯화면글.닫기, 닫기, 칠함 = false)
+        }
+        if (보고길) {
+            if (쪽 == 스탯화면글.스탯) {
+                보고떠동그라미(true, 스탯화면글.보고서로, Modifier.align(Alignment.BottomStart).padding(start = 보고떠값.옆, bottom = 보고떠값.옆), 닫기)
+                보고떠동그라미(false, 스탯화면글.도전과제, Modifier.align(Alignment.BottomEnd).padding(end = 보고떠값.옆, bottom = 보고떠값.옆)) { 쪽 = 스탯화면글.업적 }
+            } else {
+                보고떠동그라미(true, 스탯화면글.스테이터스, Modifier.align(Alignment.BottomStart).padding(start = 보고떠값.옆, bottom = 보고떠값.옆)) { 쪽 = 스탯화면글.스탯 }
             }
         }
     }
@@ -167,6 +172,9 @@ object 스탯화면글 {
     const val 스탯 = "스탯"
     const val 업적 = "업적"
     const val 닫기 = "닫기"
+    const val 스테이터스 = "스테이터스"   // 10-07 홍겸 님: 스탯 화면 띠
+    const val 도전과제 = "도전 과제"     // 10-07 홍겸 님: 업적 화면 띠
+    const val 보고서로 = "운동 보고서로"
     const val 체력이유 = "힘 쪽만 · 심폐 · 코어 · 폭발력은 나중"
     const val 없음 = "현재 측정값 없음"
     const val 새로 = "새로"
@@ -235,17 +243,6 @@ private object 스탯치수2 {
     const val 자람늦춤 = 200
 }
 
-/** 반씩 나눈 칩 (시안 `.스탯아래 .칩{flex:1}`) — 칩줄과 같은 모양 · 칸을 반씩. 합칠 때 칩줄에 '꽉 채움' 인자로 옮길 후보 */
-@Composable
-private fun RowScope.반칩(글자: String, 켬: Boolean, onClick: () -> Unit) {
-    val c = Local색.current
-    val 바탕 = 색움직(if (켬) c.강조 else c.면, "반칩")
-    val 테 = 색움직(if (켬) c.강조 else c.속선, "반칩테")
-    Box(
-        Modifier.weight(1f).height(높이.낮게).clip(CircleShape).background(바탕).border(선굵기.보통, 테, CircleShape)
-            .눌림(onClick).semantics { role = Role.Tab; stateDescription = if (켬) "선택됨" else "" },
-        contentAlignment = Alignment.Center,
-    ) { 글(글자, 크기값 = 크기.버튼, 색 = 색움직(if (켬) c.강조글 else c.흐림, "반칩글"), 굵기 = FontWeight.Medium) }
 }
 
 // ═══════════════════════════ 스탯 ═══════════════════════════
@@ -663,10 +660,8 @@ private fun 업적판(상태: 앱상태, 볼업적: String?) {
 
     Column(Modifier.fillMaxSize()) {
         // 시안 `.띠` (가운데띠 아님) — 왼쪽 '업적' · 오른쪽 n/m
-        띠 {
-            띠글(스탯화면글.업적, Modifier.weight(1f))
-            띠글("${업적풀린수(d)}/${업적분모(d)}")
-        }
+        // 10-07 홍겸 님: 다른 화면처럼 가운데 띠 '도전 과제' · 오른쪽 n/m
+        머리띠(스탯화면글.도전과제, 오른쪽 = { 띠글("${업적풀린수(d)}/${업적분모(d)}") })
         // 시안 `.업적위` — 바탕 면 · 아래 테 1 선 · 여백 8/12 · 사이 8
         Column(
             Modifier.fillMaxWidth().background(c.면).drawBehind { drawRect(c.선, Offset(0f, size.height - 선굵기.보통.toPx()), Size(size.width, 선굵기.보통.toPx())) }

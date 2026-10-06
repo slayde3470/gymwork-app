@@ -163,7 +163,7 @@ fun 새종목시트(
         닫기()
     }
 
-    시트(if (편집 != null) "${편집.이름} 편집" else "새 종목", 닫기, 위끝고정 = true) {
+    시트(if (편집 != null) "${편집.이름} 편집" else "새 종목", 닫기, 위끝고정 = true, 위끝 = 새시트치수.위끝) {
         // ── 이름 칸 + 돋보기/확인 (시안 .새찾기줄 40) ──
         val 모양 = RoundedCornerShape(모서리.작게)
         var 칸초점 by remember { mutableStateOf(false) }

@@ -51,6 +51,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.slayde.hasenheide.data.근육표
 import com.slayde.hasenheide.data.무게글
 import com.slayde.hasenheide.data.앱데이터
@@ -99,6 +100,9 @@ fun 앱데이터.종목이름바꿈(옛: String, 새: String): 앱데이터 {
 
 /** 이 화면만 쓰는 치수 — Theme 에 없는 값 (보고서 '공용 고칠 것' — 합칠 때 부품치수로 옮긴다) */
 internal object 종목치수 {
+    val 이름글 = 14.sp   // 10-07 홍겸 님: 종목명 1 작게 · 굵게 빼기 (U2-1 단계 밖 — 지침에 올릴 값)
+    val 펼침그림 = 18.dp // 10-07 홍겸 님: 접기·펼치기 그림을 다른 곳(펼침단추 · U3-6 기본 18)과 같게
+    val 뜸자리 = 64.dp   // 오른쪽 아래 떠 있는 [새 종목 만들기] 에 마지막 줄이 가리지 않게 (단추 40 + 아래 12 + 12)
     val 번호칸 = 16.dp   // 시안 .종세트 첫 칸 16 (세트 번호)
     val 지움칸 = 28.dp   // 시안 .종지움 28
     val 지움그림 = 16.dp // 시안 .종지움 svg 16 (U3-6 작게)
@@ -135,10 +139,9 @@ fun 종목화면(상태: 앱상태) {
             당겨새로고침({ }, Modifier.weight(1f)) {
                 Column(
                     Modifier.fillMaxSize().verticalScroll(rememberScrollState())
-                        .padding(start = 간격.보통, end = 간격.보통, top = 간격.보통, bottom = 간격.보통),
+                        .padding(start = 간격.보통, end = 간격.보통, top = 간격.보통, bottom = 종목치수.뜸자리),
                     verticalArrangement = Arrangement.spacedBy(간격.좁게),
                 ) {
-                    버튼("+ 새 종목 만들기", { if (새시트 == null) 새시트 = "" }, Modifier.fillMaxWidth(), 낮게 = true)
                     칩줄(listOf("전체") + 판.칸들, 판.고름, { 고른칸 = it })
                     if (판.묶음.isEmpty()) 글("없음", 크기값 = 크기.조금작게, 색 = c.옅음)
                     판.묶음.forEach { (칸이름, l) ->
@@ -152,6 +155,8 @@ fun 종목화면(상태: 앱상태) {
                 }
             }
         }
+        // 10-07 홍겸 님: [+ 새 종목 만들기] 오른쪽 아래 고정 · 파란 상자 흰 글 (루틴 화면 떠 있는 단추와 같은 모양)
+        버튼("+ 새 종목 만들기", { if (새시트 == null) 새시트 = "" }, Modifier.align(Alignment.BottomEnd).padding(간격.보통), 주요 = true)
         if (카테고리시트) 카테고리관리(상태) { 카테고리시트 = false }
         새시트?.let { 열린 ->
             val 편집 = if (열린.isEmpty()) null else d.종목표.firstOrNull { it.id == 열린 }
@@ -210,7 +215,7 @@ private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modif
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.아주좁게),
                 ) {
                     Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
-                        이름맞춤(x.이름, Modifier.weight(1f, fill = false), 바탕크기 = 크기.본문, 굵기 = FontWeight.Bold)
+                        이름맞춤(x.이름, Modifier.weight(1f, fill = false), 바탕크기 = 종목치수.이름글, 굵기 = FontWeight.Medium)
                         if (번 > 0 || 플.isNotEmpty()) Row(Modifier.offset(x = 부품치수.딱지겹침), horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
                             번호딱지(번)
                             if (플.isNotEmpty()) 플랜딱지()
@@ -218,7 +223,7 @@ private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modif
                     }
                     if (펼 && 곁.isNotEmpty()) 글(곁, 크기값 = 크기.작게, 색 = c.옅음)
                     val 돌림 by animateFloatAsState(if (펼) 180f else 0f, tween(움직임.펼침), label = "접힘표")
-                    글("▾", Modifier.graphicsLayer { rotationZ = 돌림 }, 크기값 = 크기.작게, 색 = c.옅음)
+                    Icon(아이콘.아래, if (펼) "접기" else "펼치기", Modifier.size(종목치수.펼침그림).graphicsLayer { rotationZ = 돌림 }, tint = c.옅음)
                 }
                 if (펼) {
                     val (주, 협) = 근육두줄(d.종목근육(t?.id, x.이름))
@@ -373,10 +378,12 @@ private fun 세트값칸(
     val 모양 = RoundedCornerShape(모서리.작게)
     var 초점 by remember { mutableStateOf(false) }
     var 친글 by remember { mutableStateOf(값글) }
-    LaunchedEffect(값글, 초점) { if (!초점) 친글 = 값글 }
+    // 10-07 홍겸 님: 자판으로 치는 중에 − ＋ 를 누르면 화면 숫자도 바로 바뀌게 (전: 화면은 35 그대로, 값만 38)
+    var 버튼값 by remember { mutableStateOf(false) }
+    LaunchedEffect(값글, 초점) { if (!초점 || 버튼값) { 친글 = 값글; 버튼값 = false } }
     val 자판 = LocalFocusManager.current
     Row(modifier.height(높이.아주낮게).clip(모양).border(선굵기.보통, c.속선, 모양), verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.width(부품치수.값칸단추).fillMaxHeight().then(if (뺄수있음) Modifier.눌림(빼기) else Modifier), contentAlignment = Alignment.Center) {
+        Box(Modifier.width(부품치수.값칸단추).fillMaxHeight().then(if (뺄수있음) Modifier.눌림 { 버튼값 = true; 빼기() } else Modifier), contentAlignment = Alignment.Center) {
             Icon(아이콘.빼기, "$이름 빼기", Modifier.size(종목치수.값그림), tint = if (뺄수있음) c.강조 else c.옅음)
         }
         BasicTextField(
@@ -389,7 +396,7 @@ private fun 세트값칸(
             keyboardActions = KeyboardActions(onDone = { 자판.clearFocus() }),
             modifier = Modifier.weight(1f).onFocusChanged { 초점 = it.isFocused },
         )
-        Box(Modifier.width(부품치수.값칸단추).fillMaxHeight().눌림(더하기), contentAlignment = Alignment.Center) {
+        Box(Modifier.width(부품치수.값칸단추).fillMaxHeight().눌림 { 버튼값 = true; 더하기() }, contentAlignment = Alignment.Center) {
             Icon(아이콘.더하기, "$이름 더하기", Modifier.size(종목치수.값그림), tint = c.강조)
         }
     }

@@ -756,6 +756,8 @@ fun 시트(
     제목: String, onClose: () -> Unit, 위끝고정: Boolean = false,
     /** 10-06 v22 RT: 띠 머리 오른쪽을 ✕ 대신 이 글 단추로 (종목 넣기 = "확인" · 동작은 닫기 그대로). null = ✕ */
     닫기글: String? = null,
+    /** 10-07: 위끝 고정 시트의 위끝 비율 (새 종목 시트 = 5%) */
+    위끝: Float = 부품치수.시트위끝,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val c = Local색.current
@@ -784,7 +786,7 @@ fun 시트(
             Column(
                 Modifier
                     .fillMaxWidth()
-                    .then(if (위끝고정) Modifier.fillMaxHeight(1f - 부품치수.시트위끝) else Modifier.heightIn(max = 620.dp))
+                    .then(if (위끝고정) Modifier.fillMaxHeight(1f - 위끝) else Modifier.heightIn(max = 620.dp))
                     .graphicsLayer { translationY = 끌림 }
                     .clip(RoundedCornerShape(topStart = 모서리.크게, topEnd = 모서리.크게))
                     .background(c.면)

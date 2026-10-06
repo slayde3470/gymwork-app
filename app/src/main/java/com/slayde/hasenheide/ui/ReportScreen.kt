@@ -926,7 +926,7 @@ private fun 확인단추(onClick: () -> Unit) {
 /**
  * 10-06 v22 D 13-3 · v23 ③ — 끝내기 전 보고서의 떠 있는 동그라미. 화면 기준이라 목록을 넘겨도 제자리 (이미지에는 안 나온다 — 찍는 복제본 밖).
  *  · 왼쪽 아래 ‹ = 운동으로 돌아가기 (저장은 그대로 — 다시 끝내면 같은 기록에 덮어쓴다)
- *  · 오른쪽 아래 › = 스탯 화면 (이미 저장됨 → 세션만 닫고 캘린더 띠 [스탯] 과 같은 화면)
+ *  · 오른쪽 아래 › = 스테이터스 화면 (보고서 위에 · ‹ 로 돌아온다 · 10-07)
  * 세션이 이미 바뀌었으면(두 번 빨리 누름 · 다른 곳에서 끝남) 아무것도 하지 않는다
  */
 @Composable
@@ -935,13 +935,17 @@ private fun BoxScope.보고떠단추(상태: 앱상태, S: 운동세션) {
     떠동그라미(보고화살왼, "운동으로 돌아가기", Modifier.align(Alignment.BottomStart).padding(start = 보고떠값.옆, bottom = 보고떠값.옆)) {
         지금이면 { 상태.바꿈 { dd -> dd.copy(세션 = dd.세션?.재개(System.currentTimeMillis())) } }
     }
-    떠동그라미(보고화살오른, "스탯 보기", Modifier.align(Alignment.BottomEnd).padding(end = 보고떠값.옆, bottom = 보고떠값.옆)) {
-        지금이면 {
-            상태.바꿈 { it.보고끝(상태.오늘, System.currentTimeMillis()).copy(결과 = null) }
-            상태.스탯열기?.invoke()
-        }
+    // 10-07 홍겸 님: › = 스테이터스 화면을 보고서 위에 띄운다 (세션은 닫지 않는다 — 스테이터스의 ‹ 로 이 보고서에 돌아온다.
+    //        이미 저장돼 있고, 탭을 누르면 App 이 전처럼 세션을 닫는다)
+    떠동그라미(보고화살오른, "스테이터스 보기", Modifier.align(Alignment.BottomEnd).padding(end = 보고떠값.옆, bottom = 보고떠값.옆)) {
+        지금이면 { 상태.스탯열기?.invoke() }
     }
 }
+
+/** 10-07: 스테이터스 · 도전 과제 화면(보고서에서 들어왔을 때)도 보고서와 같은 떠 있는 ‹ › 를 쓴다. [왼] = ‹ */
+@Composable
+internal fun 보고떠동그라미(왼: Boolean, 설명: String, modifier: Modifier, onClick: () -> Unit) =
+    떠동그라미(if (왼) 보고화살왼 else 보고화살오른, 설명, modifier, onClick)
 
 /** 지름 30 · 면 바탕 · 속선 테 1 · 화살표 13.5 굵게(선 3) — 시안 `.화면>.보고떠` */
 @Composable

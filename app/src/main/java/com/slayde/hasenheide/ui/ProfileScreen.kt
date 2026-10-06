@@ -131,6 +131,7 @@ fun 프로필화면(상태: 앱상태) {
     val 일꾼 = rememberCoroutineScope()
     var 시트 by remember { mutableStateOf<프로필시트?>(null) }
     var 업적열림 by remember { mutableStateOf(false) }
+    var 스탯열림 by remember { mutableStateOf(false) }   // 10-07: 왼쪽 아래 [스탯]
     var 사진넣는중 by remember { mutableStateOf(false) }
     var 인증넣는중 by remember { mutableStateOf(false) }
 
@@ -170,7 +171,7 @@ fun 프로필화면(상태: 앱상태) {
         당겨새로고침({ 상태.날짜확인() }, Modifier.fillMaxSize()) {
             Column(
                 Modifier.fillMaxSize().verticalScroll(rememberScrollState())
-                    .padding(start = 간격.보통, end = 간격.보통, top = 간격.좁게, bottom = 간격.보통),
+                    .padding(start = 간격.보통, end = 간격.보통, top = 간격.좁게, bottom = 프로필치수.뜸자리),
                 verticalArrangement = Arrangement.spacedBy(간격.좁게),
             ) {
                 프로필들어옴 {
@@ -191,6 +192,10 @@ fun 프로필화면(상태: 앱상태) {
         }
         시트?.let { s -> 프로필시트그림(상태, s, { 시트 = it }) { 시트 = null } }
         // 시안 `스탯열기` 업적 — 탭줄 위 칸을 덮는다. 다른 탭을 누르면 이 화면과 함께 닫힌다
+        // 10-07 홍겸 님: 왼쪽 아래 [스탯] · 오른쪽 아래 [업적] (캘린더 띠에서 옮김)
+        버튼(스탯화면글.스탯, { 스탯열림 = true }, Modifier.align(Alignment.BottomStart).padding(간격.보통), 작게 = true)
+        버튼(스탯화면글.업적, { 업적열림 = true }, Modifier.align(Alignment.BottomEnd).padding(간격.보통), 작게 = true)
+        if (스탯열림) 스탯화면(상태, 스탯화면글.스탯, null, 탭줄위 = true) { 스탯열림 = false }
         if (업적열림) 스탯화면(상태, 스탯화면글.업적, null, 탭줄위 = true) { 업적열림 = false }
     }
 }
@@ -246,7 +251,9 @@ private object 프로필치수 {
     val 사진그림 = 28.dp           // 사람 그림 svg 28
     val 머리사이 = 간격.넓게        // .인머리 gap 16
     val 닉줄 = 높이.아주낮게        // 28
-    val 닉내림 = 7.dp              // .인닉줄 top:7px (닉네임 줄 맞춤 · v18 E ④)
+    val 닉내림 = 5.dp              // .인닉줄 top:7px (닉네임 줄 맞춤 · v18 E ④) → 10-07 홍겸 님 2 위로
+    val 뜸자리 = 64.dp             // 10-07: 아래 떠 있는 [스탯][업적] 에 마지막 줄이 가리지 않게
+    val 닉링크틈 = 5.dp            // 10-07 홍겸 님: 링크 단추는 닉네임 끝에서 띄어쓰기 한 칸 (18 굵게의 빈칸 ≈ 0.25em)
     val 닉최소 = 72.dp             // min-width 4em (18 × 4)
     val 링크칸 = 높이.아주낮게      // 28
     val 링크작은그림 = 15.dp        // .인링크보기 svg 15 · 흐리게 0.5
@@ -454,9 +461,10 @@ private fun 프로필닉줄(설정: 설정값, 왼: Dp, 닉바꿈: (String) -> U
     val 링 = 설정.링크.isNotEmpty()
     Row(
         Modifier.fillMaxWidth().height(프로필치수.닉줄).offset(y = 프로필치수.닉내림).padding(start = 왼, end = 프로필치수.톱니),
-        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.아주좁게),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(프로필치수.닉링크틈),
     ) {
-        Box(Modifier.weight(1f, fill = 쓰는중).widthIn(min = 프로필치수.닉최소), contentAlignment = Alignment.CenterStart) {
+        // 10-07 홍겸 님: 쓰는 동안에도 칸은 글 길이만큼 — 링크 단추가 닉네임 바로 뒤(빈칸 한 칸)에 붙는다
+        Box(Modifier.weight(1f, fill = false).widthIn(min = 프로필치수.닉최소), contentAlignment = Alignment.CenterStart) {
             if (닉.isEmpty()) Text(프로필글.닉네임, style = 글꼴.보통(크기.크게, FontWeight.Bold), color = c.옅음, maxLines = 1)
             BasicTextField(
                 value = 닉,
@@ -466,7 +474,7 @@ private fun 프로필닉줄(설정: 설정값, 왼: Dp, 닉바꿈: (String) -> U
                 cursorBrush = SolidColor(c.강조),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(onDone = { 초점.clearFocus() }),
-                modifier = Modifier.widthIn(min = 프로필치수.닉최소).then(if (쓰는중) Modifier.fillMaxWidth() else Modifier).onFocusChanged { 쓰는중 = it.isFocused }
+                modifier = Modifier.widthIn(min = 프로필치수.닉최소).onFocusChanged { 쓰는중 = it.isFocused }
                     .drawBehind { if (쓰는중) drawRect(c.강조, Offset(0f, size.height - 선굵기.보통.toPx()), Size(size.width, 선굵기.보통.toPx())) }
                     .semantics { contentDescription = 프로필글.닉네임 },
             )
