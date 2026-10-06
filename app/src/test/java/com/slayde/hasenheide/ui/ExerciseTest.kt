@@ -123,7 +123,7 @@ class ExerciseTest {
         val 크런치 = d.새초기().사전고름(d, "크런치")
         assertNull(크런치.칸)
         assertEquals("반드시 카테고리를 지정해야 합니다", d.저장검사(크런치))
-        assertNull(d.저장검사(크런치.칸고름("복근")))
+        assertNull(d.저장검사(크런치.칸고름("복근")))   // 크런치는 사전 근육(복근 주동)이 있다
     }
 
     @Test fun 새_손으로고른칸은사전이비우지않음() {
@@ -136,11 +136,14 @@ class ExerciseTest {
         val d = 바탕()
         assertEquals("이름을 넣어 주세요", d.새초기().copy(이름 = "   ").확인(d).second)
         assertEquals("이름을 넣어 주세요", d.저장검사(새종목값(이름 = " ", 칸 = "가슴", 근육 = mapOf("abs" to "P"))))
-        // 10-06 ⑪: 주동근이 없어도 저장한다 — 저장 뒤 안내 토스트
-        assertNull(d.저장검사(새종목값(이름 = "무엇", 칸 = "가슴", 근육 = mapOf("abs" to "Y"))))
-        assertTrue(새종목값(근육 = mapOf("abs" to "Y")).근육안내필요())
-        assertFalse(새종목값(근육 = mapOf("abs" to "P")).근육안내필요())
+        // 10-06 v22 ⑩: 주동근이 없으면 저장을 막는다 (협응근만 · 비었음) — 이름 · 칸 다음 차례
         assertEquals("근육 사진을 눌러서 목표 근육을 설정하세요", 근육설정안내)
+        assertEquals(근육설정안내, d.저장검사(새종목값(이름 = "무엇", 칸 = "가슴", 근육 = mapOf("abs" to "Y"))))
+        assertEquals(근육설정안내, d.저장검사(새종목값(이름 = "무엇", 칸 = "가슴")))
+        assertEquals("반드시 카테고리를 지정해야 합니다", d.저장검사(새종목값(이름 = "무엇")))
+        assertNull(d.저장검사(새종목값(이름 = "무엇", 칸 = "가슴", 근육 = mapOf("abs" to "P"))))
+        // 편집도 같다
+        assertEquals(근육설정안내, d.저장검사(d.편집초기(d.종목표[0]).copy(근육 = emptyMap())))
     }
 
     @Test fun 새_사전에없는이름은직접종목() {
@@ -169,28 +172,107 @@ class ExerciseTest {
         assertEquals(d3.종목표.map { it.id }.distinct().size, d3.종목표.size)
     }
 
-    @Test fun 새_근육탭_주동_협응_뺌() {
-        var v = 새종목값()
-        v = v.근육탭(listOf("chest_mid"))
-        assertEquals("P", v.근육["chest_mid"])
-        v = v.근육탭(listOf("chest_mid"))
-        assertEquals("Y", v.근육["chest_mid"])                 // 두 번째 = 협응근
-        v = v.근육탭(listOf("chest_mid"))
-        assertNull(v.근육["chest_mid"])                        // 세 번째 = 뺀다
-        v = v.근육탭(listOf("lats"))
-        assertEquals("등", v.묶음)                              // 그 부위의 묶음으로
-        assertEquals(v, v.근육탭(emptyList()))                  // 근육 아닌 곳 = 그대로
+    // ─────────────── v22 ⑧ 근육 그림 팝업 ───────────────
+
+    @Test fun 팝_누르면칠하지않고열림_묶음으로() {
+        val v = 새종목값(근육 = mapOf("chest_mid" to "P"))
+        val 열린 = v.팝열기(listOf("lats"))
+        assertEquals("lats", 열린.팝)
+        assertEquals("등", 열린.묶음)
+        assertEquals(v.근육, 열린.근육)                          // 칠하지 않는다
+        // 대신 그리는 조각(가슴 아랫부분 = chest_lower + chest_mid) — 첫째(조각의 근육)가 누른 줄
+        assertEquals("chest_lower", v.팝열기(listOf("chest_lower", "chest_mid")).팝)
+        assertEquals(v, v.팝열기(emptyList()))                    // 근육 아닌 곳 = 그대로
+        assertEquals(v, v.팝열기(listOf("없는부위")))
+        assertNull(열린.팝닫기().팝)
     }
 
-    @Test fun 새_근육탭_대신그리는조각() {
-        // 가슴 아랫부분 조각은 chest_mid 도 그린다 — 사전 값(chest_mid P)을 눌러도 열쇠를 바꾸지 않고 다음 단계로
-        val v = 새종목값(근육 = mapOf("chest_mid" to "P")).근육탭(listOf("chest_lower", "chest_mid"))
-        assertEquals(mapOf("chest_mid" to "Y"), v.근육)
-        val w = v.근육탭(listOf("chest_lower", "chest_mid"))
-        assertTrue(w.근육.isEmpty())
-        // 둘 다 칠해져 있으면 센 쪽 다음 단계 하나만 남는다 (보이는 색 = 저장값)
-        val x = 새종목값(근육 = mapOf("chest_lower" to "Y", "chest_mid" to "P")).근육탭(listOf("chest_lower", "chest_mid"))
-        assertEquals(mapOf("chest_mid" to "Y"), x.근육)
+    @Test fun 팝_역할고르기_주동근은협응근막힘() {
+        var v = 새종목값().팝열기(listOf("chest_mid"))
+        v = v.팝역할("chest_mid", "P")
+        assertEquals(mapOf("chest_mid" to "P"), v.근육)
+        assertEquals("chest_mid", v.팝)                          // 고른 뒤에도 팝업은 그대로
+        // 같은 묶음의 다른 줄도 바로
+        v = v.팝역할("chest_upper", "Y")
+        assertEquals("Y", v.근육["chest_upper"])
+        // 이미 주동근인 부위의 [협응근] = 막힘 · 값 그대로
+        assertTrue(팝막힘(v.근육, "chest_mid", "Y"))
+        assertFalse(팝막힘(v.근육, "chest_upper", "Y"))
+        assertFalse(팝막힘(v.근육, "chest_mid", "P"))
+        assertEquals(v, v.팝역할("chest_mid", "Y"))
+        // 협응근 → 주동근은 된다 · [빼기] = 지움
+        assertEquals("P", v.팝역할("chest_upper", "P").근육["chest_upper"])
+        v = v.팝역할("chest_mid", 팝빼기)
+        assertNull(v.근육["chest_mid"])
+        assertEquals(v, v.팝역할("없는부위", "P"))                 // 세부 부위가 아니면 그대로
+        assertEquals(listOf("P", "Y", 팝빼기), 팝역할들.map { it.first })
+        assertEquals("이미 주동근으로 선택되어있습니다.", 주동근막힘글)
+    }
+
+    // ─────────────── v22 ⑨ 이름이 바뀌면 근육을 비운다 · 정할 때 사전 → 저장 종목 → 빈 채로 ───────────────
+
+    @Test fun 이름_한글자라도바뀌면비움_편집은그대로() {
+        val d = 바탕()
+        val 정함 = d.새초기().copy(이름 = "벤치프레스", 찾는중 = true).확인(d).first.팝열기(listOf("chest_mid"))
+        assertTrue("P" in 정함.근육.values)
+        val 고침 = 정함.칸고름("가슴").이름바꿈("벤치프레")
+        assertTrue(고침.근육.isEmpty())
+        assertNull(고침.사전); assertNull(고침.정한); assertNull(고침.팝)
+        assertEquals("가슴", 고침.칸)                               // 카테고리는 그대로
+        assertTrue(고침.고름)                                       // 칸 · 그림은 그대로 보인다(비어서)
+        // 같은 글(찾기만 켬)이면 비우지 않는다
+        assertEquals(정함.근육, 정함.이름바꿈("벤치프레스").근육)
+        // 편집은 이름만 바뀐다
+        val 편 = d.편집초기(d.종목표[0])
+        assertEquals(편.근육, 편.이름바꿈("벤치").근육)
+    }
+
+    @Test fun 이름_정할때_사전_저장종목_빈채로() {
+        val 내것 = 종목("나만의 운동", "등", 근육 = mapOf("lats" to "P"))
+        val d = 바탕().copy(종목표 = 바탕().종목표 + 내것)
+        fun 정함(v: 새종목값, n: String) = v.이름바꿈(n).확인(d).first
+        // 사전 이름(별칭 포함) → 사전 값
+        var v = 정함(d.새초기(), "벤치프레스")
+        assertEquals("벤치프레스", v.사전); assertEquals("벤치프레스", v.정한)
+        assertTrue("P" in v.근육.values)
+        // 한 번 정한 뒤 다른 이름으로 → 다시 규칙대로 (전: if(!고름) 때문에 앞 종목 근육이 남았다)
+        v = 정함(v, "레그프레스")                                     // 사전에 없음 · 저장 종목 없음
+        assertTrue(v.근육.isEmpty())
+        assertNull(v.사전)
+        v = 정함(v, "푸시업")                                        // 별칭 → 팔굽혀펴기
+        assertEquals("팔굽혀펴기", v.이름)
+        assertEquals("가슴", v.칸)                                   // v22 ⑪
+        assertEquals("P", v.근육["chest_mid"])
+        v = 정함(v, "나만의 운동")                                   // 저장된 같은 이름 종목 → 그 근육
+        assertEquals(mapOf("lats" to "P"), v.근육)
+        assertEquals("등", v.칸)
+        v = 정함(v, "다리를들어요")                                    // 낱말 짐작 안 함
+        assertTrue(v.근육.isEmpty())
+        // 이름 그대로 [확인] (칸을 눌러 찾기만 켰다) → 고친 근육 그대로
+        val 고친 = 정함(d.새초기(), "벤치프레스").팝역할("lats", "P")
+        val 다시 = 고친.copy(찾는중 = true).확인(d).first
+        assertEquals(고친.근육, 다시.근육)
+        // 찾은 줄을 눌러도 같은 규칙
+        assertEquals(mapOf("lats" to "P"), 고친.이름바꿈("나만").사전고름(d, "나만의 운동").근육)
+    }
+
+    @Test fun 이름_새시트는빈값() {
+        val d = 바탕()
+        val v = d.새초기()
+        assertTrue(v.근육.isEmpty()); assertNull(v.팝); assertNull(v.정한); assertFalse(v.고름)
+        // 넣기 시트에서 찾던 글로 열어도 [확인] 전엔 빈 채
+        assertTrue(d.새초기("벤치").근육.isEmpty())
+    }
+
+    // ─────────────── v22 ⑪ 팔굽혀펴기 = 가슴 ───────────────
+
+    @Test fun 팔굽혀펴기는가슴() {
+        val d = 바탕()
+        assertEquals("가슴", 종목사전.이름으로("팔굽혀펴기")?.칸)
+        assertEquals("가슴", d.새초기().사전고름(d, "팔굽혀펴기").칸)
+        assertEquals("가슴", d.새초기().copy(이름 = "푸쉬업", 찾는중 = true).확인(d).first.칸)
+        assertEquals("맨몸", 종목사전.이름으로("맨몸 스쿼트")?.칸)      // 다른 맨몸 종목은 그대로
+        assertNull(d.새초기().사전고름(d, "맨몸 스쿼트").칸)
     }
 
     @Test fun 새_근육두줄() {

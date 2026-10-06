@@ -129,7 +129,7 @@ object 종목사전 {
         사전종목("덤벨 킥백", "팔", listOf("트라이셉스 킥백")),
         사전종목("클로즈그립 벤치프레스", "팔", listOf("클로즈 그립 벤치프레스", "내로우 그립 벤치"), mapOf("triceps" to "P", "chest_mid" to "S", "delt_front" to "S")),
         사전종목("벤치 딥스", "맨몸", listOf("체어 딥스"), mapOf("triceps" to "P", "delt_front" to "S", "chest_lower" to "Y")),
-        사전종목("팔굽혀펴기", "맨몸", listOf("푸시업", "푸쉬업")),
+        사전종목("팔굽혀펴기", "가슴", listOf("푸시업", "푸쉬업")),   // 10-06 v22 ⑪ 카테고리 = 가슴 (시안 종목사전 칸 · 전에는 맨몸 → 칸이 비었다)
         사전종목("인클라인 푸시업", "맨몸", emptyList(), mapOf("chest_lower" to "P", "chest_mid" to "S", "triceps" to "S", "delt_front" to "Y")),
         사전종목("디클라인 푸시업", "맨몸", emptyList(), mapOf("chest_upper" to "P", "chest_mid" to "S", "delt_front" to "S", "triceps" to "S")),
         사전종목("다이아몬드 푸시업", "맨몸", listOf("클로즈 푸시업"), mapOf("triceps" to "P", "chest_mid" to "P", "delt_front" to "S")),
