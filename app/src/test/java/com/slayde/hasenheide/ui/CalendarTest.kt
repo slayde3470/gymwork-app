@@ -11,6 +11,7 @@ import com.slayde.hasenheide.data.오늘볼륨
 import com.slayde.hasenheide.data.종목기록
 import com.slayde.hasenheide.data.한세트수
 import com.slayde.hasenheide.data.흐른초
+import java.time.YearMonth
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -54,7 +55,9 @@ class CalendarTest {
         assertTrue(d.캘기록있음("2026-10-07"))
     }
 
-    @Test fun 하나뿐이면_체크와_상관없이_지운다() {
+    // 10-06 홍겸 님 ④: 고른 기록만 지운다 (기본 = 아무것도 안 고름 · 하나뿐인 날도 골라야 지운다)
+    @Test fun 하나뿐이어도_골라야_지운다() {
+        assertNull(d0.캘기록지우기("2026-10-03", emptySet()))
         val (d, x) = d0.캘기록지우기("2026-10-03", setOf("2026-10-03"))!!
         assertFalse(d.캘기록있음("2026-10-03"))
         assertEquals(1, x.개수)
@@ -62,8 +65,8 @@ class CalendarTest {
     }
 
     @Test fun 여럿_골라_지우기_되돌리기() {
-        // 가슴(~2)만 체크를 끈다 → 하체 · 등을 지운다 → 가슴이 첫 기록(날짜 열쇠)으로
-        val (d, x) = d0.캘기록지우기("2026-10-04", setOf("2026-10-04~2"))!!
+        // 하체(날짜 열쇠) · 등(~3)을 고른다 → 가슴이 첫 기록(날짜 열쇠)으로
+        val (d, x) = d0.캘기록지우기("2026-10-04", setOf("2026-10-04", "2026-10-04~3"))!!
         assertEquals(2, x.개수)
         assertEquals(listOf("2026-10-04" to 가슴), d.캘기록목록("2026-10-04"))
         assertFalse(d.기록.containsKey("2026-10-04~2"))
@@ -73,25 +76,34 @@ class CalendarTest {
         assertEquals(d0.기록, d.캘기록되살림(x).기록)
     }
 
-    @Test fun 체크를_다_끄면_안_지운다() {
-        assertNull(d0.캘기록지우기("2026-10-04", setOf("2026-10-04", "2026-10-04~2", "2026-10-04~3")))
-        assertNull(d0.캘기록지우기("2026-10-09", emptySet()))
+    @Test fun 고른_것이_없으면_안_지운다() {
+        assertNull(d0.캘기록지우기("2026-10-04", emptySet()))
+        // 그 날 기록에 없는 열쇠만 골랐어도 지우지 않는다
+        assertNull(d0.캘기록지우기("2026-10-04", setOf("2026-10-05", "2026-10-04~9")))
+        assertNull(d0.캘기록지우기("2026-10-09", setOf("2026-10-09")))
+    }
+
+    @Test fun 하나만_골라_지우면_나머지는_그대로() {
+        val (d, x) = d0.캘기록지우기("2026-10-04", setOf("2026-10-04~2"))!!   // 가슴만
+        assertEquals(1, x.개수)
+        assertEquals(listOf("하체", "등"), d.캘기록목록("2026-10-04").map { it.second.루틴이름 })
+        assertEquals(listOf("2026-10-04", "2026-10-04~2"), d.캘기록목록("2026-10-04").map { it.first })
     }
 
     @Test fun 여러_번_지우고_새것부터_되돌리기() {
-        // ① 등만 지움(하체 · 가슴 끔) ② 남은 둘 중 하체 지움 ③ 마지막 가슴 지움 — 띠 하나로 합쳐져 새것부터 되돌린다
-        val (d1, x1) = d0.캘기록지우기("2026-10-04", setOf("2026-10-04", "2026-10-04~2"))!!
+        // ① 등만 지움 ② 남은 둘 중 하체 지움 ③ 마지막 가슴 지움 — 띠 하나로 합쳐져 새것부터 되돌린다
+        val (d1, x1) = d0.캘기록지우기("2026-10-04", setOf("2026-10-04~3"))!!
         assertEquals(listOf("하체", "가슴"), d1.캘기록목록("2026-10-04").map { it.second.루틴이름 })
-        val (d2, x2) = d1.캘기록지우기("2026-10-04", setOf("2026-10-04~2"))!!
+        val (d2, x2) = d1.캘기록지우기("2026-10-04", setOf("2026-10-04"))!!
         assertEquals(listOf("2026-10-04" to 가슴), d2.캘기록목록("2026-10-04"))
-        val (d3, x3) = d2.캘기록지우기("2026-10-04", emptySet())!!
+        val (d3, x3) = d2.캘기록지우기("2026-10-04", setOf("2026-10-04"))!!
         assertFalse(d3.캘기록있음("2026-10-04"))
         val 되 = d3.캘기록되살림(x3).캘기록되살림(x2).캘기록되살림(x1)
         assertEquals(d0.기록, 되.기록)
     }
 
     @Test fun 되돌리기_사이에_새_기록이_생겨도() {
-        val (d, x) = d0.캘기록지우기("2026-10-04", setOf("2026-10-04~2", "2026-10-04~3"))!!   // 하체만 지움
+        val (d, x) = d0.캘기록지우기("2026-10-04", setOf("2026-10-04"))!!   // 하체만 지움
         // 그 사이 '한 번 더' 로 새 기록이 ~3 에 생겼다
         val 새 = 기록("새것")
         val 사이 = d.copy(기록 = d.기록 + ("2026-10-04~3" to 새))
@@ -100,6 +112,18 @@ class CalendarTest {
         assertEquals(listOf("2026-10-04", "2026-10-04~2", "2026-10-04~3", "2026-10-04~4"), 되.캘기록목록("2026-10-04").map { it.first })
         // 같은 것을 두 번 되돌려도 둘이 되지 않는다
         assertEquals(되.기록, 되.캘기록되살림(x).기록)
+    }
+
+    // 10-06 홍겸 님 ③: 달을 넘기면 고른 날도 같은 '일' (없으면 그 달 마지막 날)
+    @Test fun 달넘김_고른날() {
+        assertEquals("2026-11-06", 캘달옮긴날("2026-10-06", YearMonth.of(2026, 11)))
+        assertEquals("2026-09-06", 캘달옮긴날("2026-10-06", YearMonth.of(2026, 9)))
+        assertEquals("2026-11-30", 캘달옮긴날("2026-10-31", YearMonth.of(2026, 11)))
+        assertEquals("2026-02-28", 캘달옮긴날("2026-01-31", YearMonth.of(2026, 2)))
+        assertEquals("2028-02-29", 캘달옮긴날("2028-01-31", YearMonth.of(2028, 2)))   // 윤년
+        assertEquals("2026-12-31", 캘달옮긴날("2026-10-31", YearMonth.of(2026, 12)))
+        assertEquals("2027-01-15", 캘달옮긴날("2026-12-15", YearMonth.of(2027, 1)))   // 해를 넘어도
+        assertEquals("2026-11-04", 캘달옮긴날("2026-10-04~2", YearMonth.of(2026, 11)))
     }
 
     @Test fun 칸내용() {

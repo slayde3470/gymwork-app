@@ -13,6 +13,9 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
@@ -58,6 +61,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
@@ -90,6 +95,7 @@ import com.slayde.hasenheide.ui.theme.근육팝치수
 import com.slayde.hasenheide.ui.theme.글꼴
 import com.slayde.hasenheide.ui.theme.높이
 import com.slayde.hasenheide.ui.theme.모서리
+import com.slayde.hasenheide.ui.theme.부품치수
 import com.slayde.hasenheide.ui.theme.선굵기
 import com.slayde.hasenheide.ui.theme.움직임
 import com.slayde.hasenheide.ui.theme.크기
@@ -221,9 +227,8 @@ fun 새종목시트(
         }
         if (v.고름) {
             새부위고르기(상태, v) { f -> v = f(v) }
-            // ── 기본 세팅 (종목 탭과 같은 세트 줄 · 저장하면 종목설정[id]) ──
-            이름표("기본 세팅", Modifier.padding(top = 간격.보통, start = 간격.아주좁게))
-            Box(Modifier.height(간격.아주좁게))
+            // ── 세트 줄 (저장하면 종목설정[id]) — 10-06 홍겸 님: '기본 세팅' 글씨는 뺐다 ──
+            Box(Modifier.height(간격.좁게))
             // 10-06 ⑩: 세트를 더해 [+ 세트] 가 스크롤 칸 밑으로 내려가면 그 단추(표의 맨 아래)가 보이게 한 번 올린다.
             //          그린 뒤(두 프레임 기다려 자리가 정해진 다음) 재고 한 번만 움직인다
             val 세트끝 = remember { BringIntoViewRequester() }
@@ -240,59 +245,64 @@ fun 새종목시트(
                 }
             }
             Box(Modifier.fillMaxWidth().onSizeChanged { 표크기 = it }.bringIntoViewRequester(세트끝)) {
-                세트줄표(v.세트, 상태.d.설정.무게폭, { f -> v = v.copy(세트 = f(v.세트)) }, { 상태.알림.토스트(세트최대글) })
+                새세트줄표(v.세트, 상태.d.설정.무게폭, { f -> v = v.copy(세트 = f(v.세트)) }, { 상태.알림.토스트(세트최대글) })
             }
-            if (편집 != null) 편집그밖(상태, 편집, v, { v = it }) { 저장됨 = true; 닫기() }
             Box(Modifier.height(간격.보통))
             버튼("저장", { 저장하기() }, Modifier.fillMaxWidth(), 주요 = true)
-            // 10-06 v22 ⑧ 그림에서 누른 부위 → 세부 부위 팝업 (고르면 바로 그림에 · [확인] · 바깥 · 뒤로가기로 닫힘)
-            if (v.팝 != null) 근육팝(v, { f -> v = f(v) }, { 상태.알림.토스트(it) })
+            // 10-06 홍겸 님: 그림 어디를 눌러도 같은 팝업 — 위 카테고리(지금 값 선택) · 아래 근육 목록 (고르면 바로 그림에 · [확인] · 바깥 · 뒤로가기로 닫힘)
+            if (v.팝 != null) 근육팝(v, { f -> v = f(v) }, { 상태.알림.토스트(it) }, d.카테고리)
         }
     }
 }
 
 /**
- * 근육 그림을 누르면 뜨는 작은 팝업 (시안 v22 B ⑧ `새팝`) — 누른 부위가 속한 묶음(세부부위 그룹)의 세부 부위가 줄줄이,
- * 줄마다 [주동근][협응근][빼기] 중 하나(지금 값이 눌림). 누른 부위 줄 = 강조옅음 바탕 · 강조 굵은 글.
+ * 근육 그림을 누르면 뜨는 팝업 (시안 v22 B ⑧ `새팝` · 10-06 홍겸 님 고침) — **그림 어디를 눌러도** 같은 팝업이 **화면 가운데**에 뜬다.
+ * 위 = 카테고리 칩(그 종목의 지금 칸이 선택됨 · 새 종목이라 칸이 없으면 아무것도 선택 안 됨 · 고르면 그림이 그 칸으로 확대)
+ * 아래 = 고를 수 있는 근육 목록 — 줄마다 [주동근][협응근][빼기] 중 하나(지금 값이 눌림). 누른 부위 줄 = 강조옅음 바탕 · 강조 굵은 글(빈 곳을 눌렀으면 없음).
  * 고르면 바로 그림에 반영되고 팝업은 그대로 — [확인] · 바깥 누름 · 뒤로가기로 닫힌다.
  * 이미 주동근인 부위의 [협응근]은 막힘(흐림 · 누르면 토스트).
- * 화면 전체를 덮는 투명한 막(바깥 = 닫힘, 시트까지 닫지 않는다) 위에 · 몸 그림을 가리지 않게 **아래쪽에 붙인다** (시안 `.새팝가림` flex-end)
+ * 화면 전체를 덮는 투명한 막(바깥 = 닫힘, 시트까지 닫지 않는다) 위, 가운데에 상자를 둔다
  * 생김새: 큰 상자 = [카드](2 강조 테두리 · 모서리 16 · 안 여백 14) · 줄 32 · 칩 28 · [확인] 40 (카드 안 버튼 · U4-5)
  */
 @Composable
-private fun 근육팝(v: 새종목값, 고침: ((새종목값) -> 새종목값) -> Unit, 토스트: (String) -> Unit) {
+private fun 근육팝(v: 새종목값, 고침: ((새종목값) -> 새종목값) -> Unit, 토스트: (String) -> Unit, 카테고리: List<String>) {
     val c = Local색.current
     val k = v.팝 ?: return
-    val 묶 = 종목사전.세부부위.firstOrNull { k in it.second } ?: return
+    // 목록 = 지금 묶음(누른 부위의 묶음 · 카테고리를 고르면 그 칸의 묶음) — 없으면 누른 부위의 묶음 · 첫 묶음
+    val 묶 = 종목사전.세부부위.firstOrNull { it.first == v.묶음 }
+        ?: 종목사전.세부부위.firstOrNull { k in it.second }
+        ?: 종목사전.세부부위.firstOrNull() ?: return
     val 닫기 = { 고침 { it.팝닫기() } }
     val 보임 = remember { MutableTransitionState(false).apply { targetState = true } }
     Popup(popupPositionProvider = 전체자리, onDismissRequest = 닫기, properties = PopupProperties(focusable = true)) {
         AnimatedVisibility(visibleState = 보임, enter = fadeIn(tween(움직임.물음)), label = "근육팝") {
             Box(
                 Modifier.fillMaxSize().눌림(닫기).padding(간격.보통),   // 팝업 창 = 보이는 화면(시스템 띠 빼고)
-                contentAlignment = Alignment.BottomCenter,
+                contentAlignment = Alignment.Center,
             ) {
                 카드(Modifier.눌림 { }) {   // 팝업 안 빈 곳 — 바깥 막으로 번지지 않게
-                    글(묶.first, Modifier.padding(start = 간격.아주좁게, end = 간격.아주좁게, bottom = 간격.아주좁게), 굵기 = FontWeight.Bold)
-                    묶.second.forEach { p ->
-                        key(p) {
-                            val 누른 = p == k
-                            val 지금 = v.근육[p] ?: 팝빼기
-                            Row(
-                                Modifier.padding(top = 간격.아주좁게).fillMaxWidth().heightIn(min = 높이.낮게)
-                                    .clip(RoundedCornerShape(모서리.작게))
-                                    .then(if (누른) Modifier.background(c.강조옅음) else Modifier)
-                                    .padding(start = 간격.좁게, end = 간격.아주좁게),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(간격.아주좁게),
-                            ) {
-                                글(근이름(p), Modifier.weight(1f), 색 = if (누른) c.강조 else c.글,
-                                    굵기 = if (누른) FontWeight.Bold else FontWeight.Medium)
-                                팝역할들.forEach { (r, 이름) ->
-                                    val 막힘 = 팝막힘(v.근육, p, r)
-                                    팝칩(이름, 지금 == r, 막힘) {
-                                        if (막힘) 토스트(주동근막힘글)
-                                        else 고침 { it.팝역할(p, r) }
+                    칩줄(카테고리, v.칸, { p -> 고침 { it.칸고름(p) } })
+                    Column(Modifier.padding(top = 간격.좁게).heightIn(max = 새시트치수.팝목록최대).verticalScroll(rememberScrollState())) {
+                        묶.second.forEach { p ->
+                            key(p) {
+                                val 누른 = p == k
+                                val 지금 = v.근육[p] ?: 팝빼기
+                                Row(
+                                    Modifier.padding(top = 간격.아주좁게).fillMaxWidth().heightIn(min = 높이.낮게)
+                                        .clip(RoundedCornerShape(모서리.작게))
+                                        .then(if (누른) Modifier.background(c.강조옅음) else Modifier)
+                                        .padding(start = 간격.좁게, end = 간격.아주좁게),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(간격.아주좁게),
+                                ) {
+                                    글(근이름(p), Modifier.weight(1f), 색 = if (누른) c.강조 else c.글,
+                                        굵기 = if (누른) FontWeight.Bold else FontWeight.Medium)
+                                    팝역할들.forEach { (r, 이름) ->
+                                        val 막힘 = 팝막힘(v.근육, p, r)
+                                        팝칩(이름, 지금 == r, 막힘) {
+                                            if (막힘) 토스트(주동근막힘글)
+                                            else 고침 { it.팝역할(p, r) }
+                                        }
                                     }
                                 }
                             }
@@ -328,6 +338,94 @@ private object 전체자리 : PopupPositionProvider {
 internal object 새시트치수 {
     val 찾기단추 = 44.dp       // 시안 .새찾기단추 44 × 40
     val 돋보기 = 18.dp          // U3-6 기본 아이콘 (시안 22 — 지침에 없는 값이라 18)
+    /** 10-06 홍겸 님: 시트 위끝 = 화면 높이의 5% (공용 [시트] 에 매개변수가 생기면 이 값을 넘긴다) */
+    const val 위끝 = 0.05f
+    val 팝목록최대 = 320.dp     // 팝업 근육 목록이 이보다 길면 안에서 넘긴다
+    val 번호칸 = 28.dp          // 세트 번호 칸 — 머리 글 '세트' 가 …로 잘리지 않을 폭 (공용 16 → 28)
+    /** 무게 칸을 좌우 15% 줄인다 (홍겸 님): 무게 · 횟수 · 휴식 = 83 : 70 : 79 에서 무게 몫이 15% 줄도록 몫을 다시 구한 값 */
+    const val 무게줄임 = 0.85f
+    val 열무게: Float = 무게줄임 * 종목치수.열무게 * (종목치수.열횟수 + 종목치수.열휴식) /
+        (종목치수.열무게 + 종목치수.열횟수 + 종목치수.열휴식 - 무게줄임 * 종목치수.열무게)
+}
+
+/**
+ * 새 종목 시트의 세트 줄 목록 — 종목 탭의 [세트줄표](ExerciseScreen.kt)와 같은 동작에 10-06 홍겸 님 고침 둘:
+ *  · 머리 '세트' 가 …로 잘리지 않게 번호 칸을 넓히고, 무게 칸을 좌우 15% 줄인다([새시트치수])
+ *  · 쳐 넣는 중(칸에 초점)에도 − ＋ 를 누르면 화면 숫자가 바로 바뀐다([새세트값칸] · 전에는 친 글이 남아 숫자가 안 바뀌었다)
+ * 합칠 때 공용 [세트줄표] 로 되돌린다 (원인 · 고칠 곳은 [새세트값칸] 설명)
+ */
+@Composable
+private fun 새세트줄표(세트: List<종목세트>, 무게폭: Double, 바꿈: ((List<종목세트>) -> List<종목세트>) -> Unit, 최대알림: () -> Unit) {
+    val c = Local색.current
+    Column(verticalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
+            글("세트", Modifier.width(새시트치수.번호칸), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)
+            글("무게 kg", Modifier.weight(새시트치수.열무게), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)
+            글("횟수", Modifier.weight(종목치수.열횟수), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)
+            글("휴식", Modifier.weight(종목치수.열휴식), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)
+            Box(Modifier.width(종목치수.지움칸))
+        }
+        val 하나 = 세트.size <= 1
+        세트.forEachIndexed { k, x ->
+            key(k) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
+                    글("${k + 1}", Modifier.width(새시트치수.번호칸), 크기값 = 크기.조금작게, 굵기 = FontWeight.Bold, 가운데 = true)
+                    새세트값칸(무게글(x.w), Modifier.weight(새시트치수.열무게), "${k + 1}세트 무게", x.w > 0,
+                        { 바꿈 { l -> 세트값바꿈(l, k, 'w', -1, 무게폭) } }, { 바꿈 { l -> 세트값바꿈(l, k, 'w', 1, 무게폭) } },
+                        { g -> 바꿈 { l -> 세트글넣음(l, k, 'w', g) } })
+                    새세트값칸("${x.r}", Modifier.weight(종목치수.열횟수), "${k + 1}세트 횟수", x.r > 1,
+                        { 바꿈 { l -> 세트값바꿈(l, k, 'r', -1, 무게폭) } }, { 바꿈 { l -> 세트값바꿈(l, k, 'r', 1, 무게폭) } },
+                        { g -> 바꿈 { l -> 세트글넣음(l, k, 'r', g) } }, 정수 = true)
+                    휴식값칸(x.휴, { 새 -> 바꿈 { l -> 세트휴식(l, k, 새) } }, Modifier.weight(종목치수.열휴식), 칸높이 = 높이.아주낮게)
+                    Box(
+                        Modifier.size(종목치수.지움칸).clip(RoundedCornerShape(모서리.작게))
+                            .then(if (하나) Modifier else Modifier.눌림 { 바꿈 { l -> 세트지움(l, k) } }),
+                        contentAlignment = Alignment.Center,
+                    ) { Icon(아이콘.지우기, "${k + 1}세트 지우기", Modifier.size(종목치수.지움그림), tint = if (하나) c.선 else c.옅음) }
+                }
+            }
+        }
+        버튼("+ 세트", { if (세트.size >= 종목세트최대) 최대알림() else 바꿈 { l -> 세트더함(l) } }, Modifier.fillMaxWidth(), 낮게 = true)
+    }
+}
+
+/**
+ * − 값 ＋ (가운데 = 쳐서 넣는 칸) — 높이 28. 10-06 홍겸 님 버그: 쳐 넣는 칸(초점)이 켜져 있으면 − ＋ 를 눌러도 화면 숫자가 그대로였다
+ * (35kg 에서 ＋ 3번 → 화면은 35 · 세트를 더하면 38 으로 복사됨).
+ * 원인: ExerciseScreen.kt [세트값칸] 이 초점 동안 `value = 친글`(친 글 그대로)만 그리고, − ＋ 가 바꾼 저장값(값글)은 친글에 안 들어갔다
+ *      (저장값은 바뀌어서 세트 복사에는 새 값이 쓰였다). Common.kt 숫자입력과는 무관.
+ * 고침: − ＋ 를 누르면 [버튼값] 을 켜서 저장값을 보이고, 다시 치기 시작하면([onValueChange]) 끄고 친 글을 보인다. 초점이 나가면 끈다.
+ */
+@Composable
+private fun 새세트값칸(
+    값글: String, modifier: Modifier, 이름: String, 뺄수있음: Boolean,
+    빼기: () -> Unit, 더하기: () -> Unit, 넣기: (String) -> Unit, 정수: Boolean = false,
+) {
+    val c = Local색.current
+    val 모양 = RoundedCornerShape(모서리.작게)
+    var 초점 by remember { mutableStateOf(false) }
+    var 친글 by remember { mutableStateOf(값글) }
+    var 버튼값 by remember { mutableStateOf(false) }   // − ＋ 로 바뀐 뒤 — 칸에 저장값을 보인다
+    LaunchedEffect(값글, 초점) { if (!초점) 친글 = 값글 }
+    val 자판 = LocalFocusManager.current
+    Row(modifier.height(높이.아주낮게).clip(모양).border(선굵기.보통, c.속선, 모양), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.width(부품치수.값칸단추).fillMaxHeight().then(if (뺄수있음) Modifier.눌림 { 버튼값 = true; 빼기() } else Modifier), contentAlignment = Alignment.Center) {
+            Icon(아이콘.빼기, "$이름 빼기", Modifier.size(종목치수.값그림), tint = if (뺄수있음) c.강조 else c.옅음)
+        }
+        BasicTextField(
+            value = if (초점 && !버튼값) 친글 else 값글,
+            onValueChange = { t -> 버튼값 = false; 친글 = t; 넣기(t) },
+            singleLine = true,
+            textStyle = 글꼴.보통(크기.버튼, FontWeight.Bold).copy(color = c.글, textAlign = TextAlign.Center, fontFeatureSettings = "tnum"),
+            cursorBrush = SolidColor(c.강조),
+            keyboardOptions = KeyboardOptions(keyboardType = if (정수) KeyboardType.Number else KeyboardType.Decimal, imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = { 자판.clearFocus() }),
+            modifier = Modifier.weight(1f).onFocusChanged { 초점 = it.isFocused; if (!it.isFocused) 버튼값 = false },
+        )
+        Box(Modifier.width(부품치수.값칸단추).fillMaxHeight().눌림 { 버튼값 = true; 더하기() }, contentAlignment = Alignment.Center) {
+            Icon(아이콘.더하기, "$이름 더하기", Modifier.size(종목치수.값그림), tint = c.강조)
+        }
+    }
 }
 
 /**
@@ -339,11 +437,9 @@ internal object 새시트치수 {
 private fun 새부위고르기(상태: 앱상태, v: 새종목값, 고침: ((새종목값) -> 새종목값) -> Unit) {
     val d = 상태.d
     // 빠르게 연달아 눌러도 가장 새 값에서 (고침 = 지금 값 → 새 값). 10-06 v22 ⑧ 바로 칠하지 않고 팝업을 연다
-    val 누름 = { 키들: List<String> -> 고침 { cur -> cur.팝열기(키들) } }
-    이름표("카테고리", Modifier.padding(top = 간격.좁게, start = 간격.아주좁게))
-    Box(Modifier.height(간격.아주좁게))
-    칩줄(d.카테고리, v.칸, { k -> 고침 { it.칸고름(k) } })
-    이름표("운동 목표 부위", Modifier.padding(top = 간격.보통, start = 간격.아주좁게))
+    //  10-06 홍겸 님: 그림 어디를 눌러도 팝업 — 근육 조각이면 그 부위 줄 강조, 빈 곳이면 강조 없이 (카테고리 칩은 팝업 위로 옮겼다 · '카테고리' 글씨도 뺐다)
+    val 누름 = { 키들: List<String> -> 고침 { cur -> if (키들.isEmpty()) cur.팝빈열기() else cur.팝열기(키들) } }
+    이름표("운동 목표 부위", Modifier.padding(top = 간격.좁게, start = 간격.아주좁게))
     Box(Modifier.height(간격.아주좁게))
     val 단계 = remember(v.근육) { 새몸단계(v.근육) }
     val (앞상자, 뒤상자) = 근육계산.부위상자(v.칸)
@@ -367,8 +463,7 @@ private fun 새몸칸(단계: Map<String, Double>, 색표: String, 자르기: Fl
         Box(
             Modifier.fillMaxSize().padding(간격.아주좁게).pointerInput(뒤) {
                 detectTapGestures { o ->
-                    val k = 그림누른부위(o.x, o.y, size.width.toFloat(), size.height.toFloat(), 자르기최신, 뒤)
-                    if (k != null) 누름최신(k)
+                    누름최신(그림누른부위(o.x, o.y, size.width.toFloat(), size.height.toFloat(), 자르기최신, 뒤) ?: emptyList())
                 }
             },
         ) { 몸그림(단계, 색표, 자르기, Modifier.fillMaxSize()) }
@@ -396,31 +491,6 @@ private fun 그림누른부위(x: Float, y: Float, w: Float, h: Float, 자르기
     return 누름영역.lastOrNull { it.first == 뒤 && it.third.contains(ix, iy) }?.second
 }
 
-/**
- * 편집에서만 — 앱에만 있던 칸(1RM 목표 · 달력 표시 이름) + [이 종목 지우기].
- * 시안 v20 종목 상자에는 없어서(이름 · 장비 칸 · 지표 표도 없어졌다) 잃지 않게 편집 시트 아래에 둔다 (보고서 '시안과 다르게 한 것')
- */
-@Composable
-private fun 편집그밖(상태: 앱상태, 편집: 종목, v: 새종목값, 바꿈: (새종목값) -> Unit, 지운뒤: () -> Unit) {
-    val c = Local색.current
-    이름표("1RM 목표", Modifier.padding(top = 간격.보통, start = 간격.아주좁게))
-    Row(Modifier.fillMaxWidth().padding(top = 간격.아주좁게), verticalAlignment = Alignment.CenterVertically) {
-        입력칸(v.목표글, { 바꿈(v.copy(목표글 = it)) }, Modifier.weight(1f), 안내 = "비워두면 목표 없음", 숫자 = true)
-        글("kg", Modifier.padding(horizontal = 간격.좁게), 크기값 = 크기.버튼, 색 = c.옅음)
-    }
-    이름표("달력 표시 이름", Modifier.padding(top = 간격.보통, start = 간격.아주좁게))
-    입력칸(v.달력글, { 바꿈(v.copy(달력글 = it)) }, Modifier.fillMaxWidth().padding(top = 간격.아주좁게), 안내 = "비워두면 종목 이름을 따라갑니다")
-    Box(Modifier.height(간격.보통))
-    버튼("이 종목 지우기", {
-        val t = 상태.d.종목표.firstOrNull { it.id == 편집.id }
-        if (t != null) {
-            val 쓰는곳 = 상태.d.종목쓰는루틴(t.id)
-            상태.지우고알림(if (쓰는곳.isEmpty()) "${t.이름}을(를) 지웠습니다" else "${t.이름} · ${쓰는곳.joinToString("·")}에서도 뺐습니다") { it.종목지우기(t.id) }
-        }
-        지운뒤()
-    }, Modifier.fillMaxWidth(), 작게 = true, 글색 = c.나쁨)
-}
-
 // ═════════════════════ 순수 계산 (시험: test/…/ui/ExerciseTest.kt) ═════════════════════
 
 private val 역순 = mapOf("P" to 3, "S" to 2, "Y" to 1)
@@ -431,6 +501,8 @@ internal val 세트최대글 = "${종목세트최대}세트까지"
 internal const val 근육설정안내 = "근육 사진을 눌러서 목표 근육을 설정하세요"
 /** 이미 주동근인 부위에 [협응근] (시안 v20 ⑤ 문구 그대로) */
 internal const val 주동근막힘글 = "이미 주동근으로 선택되어있습니다."
+/** 팝업이 떠 있지만 누른 근육 부위는 없다 (그림의 빈 곳을 눌렀다) — [새종목값.팝] 의 값 */
+internal const val 팝없음 = ""
 /** 팝업의 [빼기] 값 (근육 맵에 없음) */
 internal const val 팝빼기 = "-"
 /** 팝업 줄의 칩 — 값 · 글 (시안 `팝역할`) */
@@ -565,6 +637,9 @@ internal fun 새종목값.팝열기(키들: List<String>): 새종목값 {
     val g = 종목사전.세부부위.firstOrNull { k in it.second }?.first ?: return this
     return copy(팝 = k, 묶음 = g)
 }
+
+/** 그림의 근육이 아닌 곳을 눌렀다 (10-06) — 그래도 팝업은 뜬다. 누른 부위 강조 없이([팝없음]) 지금 묶음의 목록 */
+internal fun 새종목값.팝빈열기(): 새종목값 = copy(팝 = 팝없음)
 
 internal fun 새종목값.팝닫기(): 새종목값 = copy(팝 = null)
 

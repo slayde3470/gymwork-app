@@ -187,6 +187,16 @@ class ExerciseTest {
         assertNull(열린.팝닫기().팝)
     }
 
+    @Test fun 팝_빈곳을눌러도열림_강조없이_묶음은그대로() {
+        val v = 새종목값(칸 = "가슴", 묶음 = "가슴")
+        val 열린 = v.팝빈열기()
+        assertEquals(팝없음, 열린.팝)                  // 팝업은 뜨지만 누른 부위 강조는 없다
+        assertEquals("가슴", 열린.묶음)                // 목록은 지금 묶음 그대로
+        assertEquals("가슴", 열린.칸)                  // 카테고리도 그대로 (지금 칸이 선택된 채)
+        assertNull(열린.팝닫기().팝)
+        assertNull(새종목값().팝빈열기().칸)             // 새 종목 = 카테고리 선택 없음
+    }
+
     @Test fun 팝_역할고르기_주동근은협응근막힘() {
         var v = 새종목값().팝열기(listOf("chest_mid"))
         v = v.팝역할("chest_mid", "P")

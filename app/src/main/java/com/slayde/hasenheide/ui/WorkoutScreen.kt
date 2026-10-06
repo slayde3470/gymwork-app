@@ -319,6 +319,7 @@ private object 운치수 {
     const val 게이지문구줄 = 1.3f    // 게이지 문구 줄 높이(em) — 11 × 1.3 = 14.3. 1.1 이면 한글 아래가 잘렸다 (10-06 홍겸 님 '건너뛰기 아래 잘림'). 합 30.8 ≤ 32
     const val 칸이름줄 = 1.25f       // 아래 칸 이름 11 두 줄이 28 안에 (시안 `.운칸 .ㅇ line-height 1.25`)
     val 단추비 = listOf(0.125f, 0.475f, 0.275f, 0.125f)   // v21 ④
+    const val 세트줄간격비 = 0.75f   // 세트 줄 사이 간격 25% 줄임 (10-06 홍겸 님 ⑤) — 줄 위아래 안쪽 여백 · 줄 사이 틈 둘 다 이 비율로
     val 줄최소 = listOf(44f, 72f, 56f, 86f)                  // 세트 줄 칸 — 번호 · kg · 회 · 휴식 (시안 v10 grid minmax)
     val 줄비 = listOf(66f, 80f, 102f, 104f)
 }
@@ -529,7 +530,7 @@ private fun 세트목록(
         Column(
             Modifier.fillMaxSize().onSizeChanged { 자.보임 = it.height }.verticalScroll(목)
                 .padding(horizontal = 간격.보통, vertical = 간격.좁게),
-            verticalArrangement = Arrangement.spacedBy(간격.아주좁게),
+            verticalArrangement = Arrangement.spacedBy(간격.아주좁게 * 운치수.세트줄간격비),
         ) {
             // 머리 — 세트 · kg · 회 · 휴식 (11 옅음)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
@@ -616,7 +617,7 @@ private fun 운세트줄(
             .clip(모양).점멸바탕(지금줄, 모양)
             // 10-02: 워밍업 세트 줄은 왼쪽에 연두 띠 — 볼륨 · 1RM · 플랜 반영에서 빠지는 줄
             .then(if (v.종류 == 세트종류.워밍업) Modifier.왼띠(c.워밍업) else Modifier)
-            .padding(vertical = 간격.아주좁게),
+            .padding(vertical = 간격.아주좁게 * 운치수.세트줄간격비),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.아주좁게),
     ) {
         Box(Modifier.width(폭[0]), contentAlignment = Alignment.Center) {
@@ -1005,11 +1006,17 @@ private fun 단추줄(S: 운동세션, 본: Int, 이전: () -> Unit, 다음: () 
             .padding(horizontal = 간격.보통, vertical = 간격.좁게),
     ) {
         val 폭 = 단추폭(maxWidth.value, 간격.좁게.value, 운치수.단추비).map { it.dp }
-        Row(horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
+        val 상 = 운주상태(S, 본)
+        if (상 == 운주.마무리) {
+            // 10-06 홍겸 님 ⑥: 마지막 운동의 마지막 세트까지 끝나면 ‹ › · [오늘 운동 끝내기] 는 사라지고 [운동 마무리] 가 그 자리까지 넓어진다
+            운단추(Modifier.fillMaxWidth(), 주요 = true, 설명 = 상.글, onClick = 주) {
+                노란점()
+                운주글(상.글, Modifier.weight(1f, fill = false))
+            }
+        } else Row(horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
             운단추(Modifier.width(폭[0]), 쓸수있음 = 본 > 0, 설명 = "이전 종목", onClick = 이전) {
                 Icon(아이콘.칩왼쪽, null, Modifier.size(운치수.단추그림), tint = c.글)
             }
-            val 상 = 운주상태(S, 본)
             운단추(Modifier.width(폭[1]), 주요 = true, 설명 = 상.글, onClick = 주) {
                 노란점()
                 운주글(상.글, Modifier.weight(1f, fill = false))
