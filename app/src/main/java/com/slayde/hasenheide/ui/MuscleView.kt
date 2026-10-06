@@ -74,6 +74,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.slayde.hasenheide.data.근육계산
 import com.slayde.hasenheide.data.근육단계
+import com.slayde.hasenheide.data.저장전
 import com.slayde.hasenheide.data.근육입력들
 import com.slayde.hasenheide.data.근육자료
 import com.slayde.hasenheide.data.근육표
@@ -285,7 +286,8 @@ private data class 판(val 종류: String, val 종목: String = "", val 사진: 
 @Composable
 fun 운동그림칸(상태: 앱상태, S: 운동세션, 지금: Long, on숨김: () -> Unit) {
     val c = Local색.current
-    val d = 상태.d
+    // 10-06 v22 검수: 보고서에서 ‹ 로 돌아왔으면 저장 전 피로로 (오늘 운동을 두 번 더하지 않게)
+    val d = 상태.d.let { x -> remember(x) { x.저장전 } }
     val 모 = d.설정.배너
     val e = S.지금종목
     val 끝낸 = S.종목들.sumOf { it.찬것().size }

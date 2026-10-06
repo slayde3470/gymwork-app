@@ -788,7 +788,7 @@ private fun 종목상자(
                                 입력 = null)
                         },
                         {
-                            // 세트 휴지통 — 묻지 않고 지우고 [되돌리기]. 하나뿐이면 꺼 둔다(종목째 빼기는 ✕)
+                            // 세트 휴지통 — 묻지 않고 지우고 [되돌리기]. 하나뿐이면 꺼 둔다(종목째 빼기는 휴지통)
                             Box(
                                 Modifier.size(높이.아주낮게).clip(RoundedCornerShape(모서리.작게))
                                     .then(if (하나) Modifier else Modifier.눌림 { on세트지움(k) }),

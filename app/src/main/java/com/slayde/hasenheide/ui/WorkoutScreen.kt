@@ -107,6 +107,7 @@ import com.slayde.hasenheide.data.날더하기
 import com.slayde.hasenheide.data.날짜만
 import com.slayde.hasenheide.data.다음으로
 import com.slayde.hasenheide.data.다음회
+import com.slayde.hasenheide.data.저장전
 import com.slayde.hasenheide.data.덜한가
 import com.slayde.hasenheide.data.무게글
 import com.slayde.hasenheide.data.볼륨
@@ -268,8 +269,9 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
             // 10-05 검수: 운동 중에도 플랜 칸 (시안 넣기목록 '플랜넣기' · v13) — 루틴과 같은 처방 줄을 오늘만 넣는다
             플랜개수 = { pid -> 상태.d.세션?.종목들?.count { it.플랜id == pid } ?: 0 },
             플랜넣기 = { pid ->
-                val p = 상태.d.플랜들.firstOrNull { it.id == pid }
-                val 줄 = p?.let { 플랜줄(상태.d, it) }
+                val 전 = 상태.d.저장전   // 10-06 v22 검수: 보고서 ‹ 뒤에도 이번 회차 처방으로
+                val p = 전.플랜들.firstOrNull { it.id == pid }
+                val 줄 = p?.let { 플랜줄(전, it) }
                 val e = 줄?.let { com.slayde.hasenheide.data.운동시작(com.slayde.hasenheide.data.루틴("넣기", "넣기", 종목 = listOf(it)), System.currentTimeMillis())?.종목들?.firstOrNull() }
                 if (e != null) {
                     발자취.적기("운동 중 플랜 넣기 ${e.이름}")
@@ -327,7 +329,8 @@ private object 운치수 {
 @Composable
 private fun 운머리(상태: 앱상태, S: 운동세션, 본: Int, e: 세션종목, 지금: Long, 그림보기: (() -> Unit)?, 나가기: () -> Unit) {
     val c = Local색.current
-    val d = 상태.d
+    // 10-06 v22 검수: 보고서에서 ‹ 로 돌아왔으면 저장 전 플랜 회차 · 기록으로 (다음 회차 · 측정일로 보이지 않게)
+    val d = 상태.d.let { x -> remember(x) { x.저장전 } }
     Column(
         Modifier.fillMaxWidth().background(c.강조).번호("운0")
             .padding(horizontal = 간격.보통, vertical = 부품치수.띠세로여백),
