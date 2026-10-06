@@ -170,13 +170,76 @@ class RoutineTest {
 
     // ─────────────── 끝 [+ 종목 추가] ───────────────
 
-    @Test fun 끝단추_위단추가_밖으로_나갈때만() {
-        // 위 단추 아래끝 60. 넘길 수 있는 양이 60 이하면 맨 아래에서도 위 단추가 보인다
-        assertFalse(끝단추판정(50, 40, false, 60))
-        assertTrue(끝단추판정(200, 40, false, 60))
-        // 끝 단추가 이미 보이면 그 몫(40)을 빼고 본다 — 깜빡거리지 않는다
-        assertFalse(끝단추판정(90, 40, true, 60))
-        assertTrue(끝단추판정(101, 40, true, 60))
+    // ─────────────── 10-06 v22 ④ 2열 격자 · 끌기 앞/뒤 ───────────────
+
+    @Test fun 격자_모두_접힘이면_둘씩() {
+        assertEquals(listOf(listOf(0, 1), listOf(2, 3), listOf(4)), 루격자줄(List(5) { false }))
+        assertTrue(루격자줄(emptyList()).isEmpty())
+    }
+
+    @Test fun 격자_왼쪽을_펼치면_오른쪽_짝은_아래줄로() {
+        // 0 펼침 → [0] 한 줄 전체 · 1 · 2 가 다음 줄
+        assertEquals(listOf(listOf(0), listOf(1, 2), listOf(3)), 루격자줄(listOf(true, false, false, false)))
+    }
+
+    @Test fun 격자_오른쪽을_펼치면_다음줄_전체_앞줄_오른쪽은_빈칸() {
+        // 1 펼침 → [0, 빈칸] · [1] · [2, 3] — 순서 그대로(뒤의 상자가 빈칸을 채우지 않는다)
+        assertEquals(listOf(listOf(0), listOf(1), listOf(2, 3)), 루격자줄(listOf(false, true, false, false)))
+    }
+
+    @Test fun 격자_펼침이_이어지면_한줄씩() {
+        assertEquals(listOf(listOf(0), listOf(1), listOf(2)), 루격자줄(listOf(true, true, false)))
+        // 순서가 늘 그대로 — 줄을 이어 붙이면 0..n-1
+        val 넓 = listOf(false, true, false, true, true, false, false, false, true)
+        assertEquals(넓.indices.toList(), 루격자줄(넓).flatten())
+        assertTrue(루격자줄(넓).all { it.size in 1..2 })
+    }
+
+    // 2열: 0 = (0..100, 0..50) 1 = (108..208, 0..50) / 2 = 펼친 상자 (0..208, 58..158)
+    private val 칸들 = listOf(
+        끌칸(0, 0f, 0f, 100f, 50f), 끌칸(1, 108f, 0f, 208f, 50f), 끌칸(2, 0f, 58f, 208f, 158f),
+    )
+    private val 반폭 = setOf(0, 1)
+
+    @Test fun 끌기_반폭은_좌우로_앞뒤() {
+        assertEquals(1 to false, 끌대상(칸들, 120f, 45f, 0f, 반폭))   // 1 의 왼쪽 반 = 앞 (아래쪽이어도)
+        assertEquals(1 to true, 끌대상(칸들, 200f, 5f, 0f, 반폭))     // 1 의 오른쪽 반 = 뒤 (위쪽이어도)
+        assertEquals(0 to true, 끌대상(칸들, 60f, 10f, 0f, 반폭))
+    }
+
+    @Test fun 끌기_펼친상자는_위아래로_앞뒤() {
+        assertEquals(2 to false, 끌대상(칸들, 190f, 70f, 0f, 반폭))
+        assertEquals(2 to true, 끌대상(칸들, 10f, 150f, 0f, 반폭))
+    }
+
+    @Test fun 끌기_틈이나_밖이면_없음_넘긴만큼_옮김() {
+        assertNull(끌대상(칸들, 104f, 20f, 0f, 반폭))   // 두 상자 사이 틈
+        assertNull(끌대상(칸들, 50f, 300f, 0f, 반폭))
+        // 30 넘겼으면 칸이 30 위로 — y 40 은 펼친 상자(58-30=28 ~ 128) 위 반
+        assertEquals(2 to false, 끌대상(칸들, 50f, 40f, 30f, 반폭))
+    }
+
+    @Test fun 끌기_세로목록은_x를_안본다() {
+        val 세로 = listOf(끌칸(0, 0f, 0f, 100f, 50f), 끌칸(1, 0f, 58f, 100f, 108f))
+        assertEquals(1 to true, 끌대상(세로, null, 100f, 0f, emptySet()))
+        assertEquals(0 to false, 끌대상(세로, null, 10f, 0f, emptySet()))
+    }
+
+    // ─────────────── 10-06 v22 ⑦ 넣기 이름 · 연필 ───────────────
+
+    @Test fun 넣기이름_낱말가운데서_끊기면_넘침() {
+        assertFalse(넣기이름넘침("루마니안 데드리프트", false, listOf(5, 10)))   // '루마니안 |데드리프트' 띄어쓰기에서
+        assertTrue(넣기이름넘침("루마니안 데드리프트", false, listOf(8, 10)))    // '데드리프/트' 가운데
+        assertTrue(넣기이름넘침("스쿼트", true, listOf(3)))                       // 잘림
+        assertFalse(넣기이름넘침("스쿼트", false, listOf(3)))
+    }
+
+    @Test fun 넣기칸_연필은_종목표_종목만() {
+        val 플랜들 = listOf(플("p1", "스쿼트 12주", "스쿼트"), 플("p9", "턱걸이 플랜", "턱걸이"))
+        val l = 넣기칸들(표, 플랜들, 넣기전체, true)
+        assertEquals("종b2", l.first { it.키 == "종b2" }.편집키)
+        assertEquals(표[0].id, l.first { it.플랜id == "p1" }.편집키)   // 플랜 칸 — 그 종목을 고친다
+        assertNull(l.first { it.플랜id == "p9" }.편집키)               // 종목표에 없는 종목의 플랜 — 연필 없음
     }
 
     // ─────────────── 쳐 넣는 값 ───────────────

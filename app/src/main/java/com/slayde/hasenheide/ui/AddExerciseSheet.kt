@@ -15,11 +15,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -49,6 +51,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import com.slayde.hasenheide.data.같은이름번호
 import com.slayde.hasenheide.data.칸
 import com.slayde.hasenheide.data.종목
@@ -60,6 +63,7 @@ import com.slayde.hasenheide.ui.theme.높이
 import com.slayde.hasenheide.ui.theme.모서리
 import com.slayde.hasenheide.ui.theme.선굵기
 import com.slayde.hasenheide.ui.theme.움직임
+import com.slayde.hasenheide.ui.theme.이름맞춤값
 import com.slayde.hasenheide.ui.theme.크기
 import kotlinx.coroutines.delay
 import java.text.Collator
@@ -81,6 +85,9 @@ import kotlin.math.roundToInt
  *  · 누름: 안 들어간 칸 = 하나 넣기(+ 말풍선) · 들어간 칸 = 하나 빼기 / 꾹 = 하나 더 넣기
  *  · 플랜이 있는 종목은 그 칸이 플랜 칸이 된다(플랜마다 한 칸) — [플랜개수] · [플랜넣기] · [플랜빼기] 를 넘긴 곳에서만
  *  · 오른쪽 아래 구석에 떠 있는 [+ 새 종목 만들기] → [새종목시트]. 저장하고 돌아오면 그 종목을 바로 [넣기] 로 넣고 칩 = [전체] (10-06 홍겸 님 ① — 여기서 만든 종목은 넣으려고 만든 것)
+ *  · 10-06 v22 ⑥ 띠 오른쪽 위 = [확인] 글 단추 (동작은 닫기 그대로)
+ *  · 10-06 v22 ⑦ 칸마다 연필 = 종목 탭 [편집]과 같은 편집 시트([새종목시트] 편집). 저장 · 닫기 · 끌어 닫기 → 이 시트로 돌아온다.
+ *    연필은 넣기를 바꾸지 않는다. 고친 종목이 다른 칸으로 옮겨 갔으면 그 칸 칩을 골라 둔다(지금 칩이 [전체]가 아니면)
  *
  * @param 개수 종목 열쇠(`종목.id`) → 지금 들어 있는 개수 (✓×n). **누르는 순간에도 부른다** — 늘 지금 값을 돌려준다
  * @param 넣기 열쇠 하나를 넣는다 (꾹 = 한 번 더 부른다)
@@ -102,9 +109,21 @@ fun 종목넣기시트(
     플랜빼기: ((플랜id: String) -> Unit)? = null,
 ) {
     var 새로 by remember { mutableStateOf(false) }
+    // 10-06 v22 ⑦ 연필로 연 편집 시트의 종목 id (null = 안 열림)
+    var 편집id by remember { mutableStateOf<String?>(null) }
     // 시안 v19 C ① 열 때마다 [전체] — 시트를 새로 열면 처음 값 (새 종목 시트를 다녀와도 이 값은 남는다)
     var 칸고름 by remember { mutableStateOf(넣기전체) }
-    if (새로) {
+    val 편집중 = 편집id?.let { id -> 상태.d.종목표.firstOrNull { it.id == id } }
+    if (편집id != null && 편집중 == null) LaunchedEffect(편집id) { 편집id = null }   // 그사이 종목이 없어졌으면 넣기 시트로
+    if (편집중 != null) {
+        // 종목 탭 [편집] 과 같은 길 (ExerciseScreen `새시트` — 새종목시트(편집 = 종목)). 닫기 · 끌어 닫기 · 저장 → 넣기 시트
+        key(편집중.id) {
+            새종목시트(상태, 닫기 = { 편집id = null }, 저장 = { e ->
+                발자취.적기("넣기 · 종목 편집 저장 · ${e.이름}")
+                if (칸고름 != 넣기전체 && 칸고름 != e.칸) 칸고름 = e.칸
+            }, 편집 = 편집중)
+        }
+    } else if (새로) {
         // 시안 v18 C ⑤ 새 종목 시트는 넣기 시트를 '돌아감' 으로 — 닫거나 저장하면 넣기 시트로.
         // 10-06 ①: 저장했으면 그 종목을 바로 넣고(이 시트를 부른 쪽의 넣기) 칩 = [전체]
         새종목시트(상태, 닫기 = { 새로 = false }, 저장 = { e ->
@@ -115,8 +134,11 @@ fun 종목넣기시트(
         })
     } else {
         val 플랜길 = if (플랜개수 != null && 플랜넣기 != null && 플랜빼기 != null) 플랜손(플랜개수, 플랜넣기, 플랜빼기) else null
-        시트(제목, 닫기, 위끝고정 = true) {
-            넣기속(상태, 칸고름, { 칸고름 = it }, 개수, 넣기, 빼기, 새종목만들기, { 새로 = true }, 플랜길)
+        시트(제목, 닫기, 위끝고정 = true, 닫기글 = "확인") {
+            넣기속(상태, 칸고름, { 칸고름 = it }, 개수, 넣기, 빼기, 새종목만들기, { 새로 = true }, 플랜길) { id ->
+                발자취.적기("넣기 · 종목 편집 열기")
+                편집id = id
+            }
         }
     }
 }
@@ -142,6 +164,7 @@ private fun 넣기속(
     새종목만들기: Boolean,
     새로열기: () -> Unit,
     플랜길: 플랜손?,
+    편집열기: (종목id: String) -> Unit,
 ) {
     val c = Local색.current
     val d = 상태.d
@@ -212,6 +235,7 @@ private fun 넣기속(
                                     넣기칸그림(
                                         z, ri * 2 + ci + 1, 수(),
                                         Modifier.weight(1f).fillMaxHeight().onGloballyPositioned { 칸자리[z.열쇠] = it.boundsInRoot() },
+                                        on편집 = z.편집키?.let { k -> { 편집열기(k) } },
                                         on누름 = {
                                             if (수() > 0) { 발자취.적기("넣기 빼기 · ${z.이름}"); 뺌() }
                                             else { 발자취.적기("넣기 · ${z.이름}"); 더(); 말 = z.열쇠 to ++말번호 }
@@ -262,9 +286,28 @@ private fun 넣기속(
     }
 }
 
-/** 넣기 칸 하나 (시안 `.넣기칸`) — [번호 11 흐림][이름 13 굵게 두 줄까지 + 딱지][체크 상자] · 높이 44 이상 */
+/**
+ * 넣기 칸 하나 (시안 `.넣기칸` · v22 ⑦ `.넣기묶음`) — [번호 11 흐림][이름 13 굵게 두 줄까지 + 딱지][체크 상자][연필] · 높이 44 이상.
+ * 연필(누르는 칸 24 × 28 · 그림 16 · 옅음)은 칸 오른쪽 끝 안쪽 4 에 겹친다 — 넣기 누름과 따로(연필은 넣기를 바꾸지 않는다).
+ * 칸 오른쪽 여백 = 4 + 24 (연필이 없는 칸도 같게 — 체크 줄이 가지런). [on편집] null = 연필 없음(종목표에 없는 종목의 플랜)
+ */
 @Composable
-private fun 넣기칸그림(z: 넣기칸, 번호: Int, 수: Int, modifier: Modifier, on누름: () -> Unit, on꾹: () -> Unit) {
+private fun 넣기칸그림(z: 넣기칸, 번호: Int, 수: Int, modifier: Modifier, on편집: (() -> Unit)?, on누름: () -> Unit, on꾹: () -> Unit) {
+    val c = Local색.current
+    Box(modifier) {
+        넣기칸단추(z, 번호, 수, Modifier.fillMaxWidth().fillMaxHeight(), on누름, on꾹)
+        if (on편집 != null) Box(
+            Modifier.align(Alignment.CenterEnd).padding(end = 간격.아주좁게)
+                .size(넣기값.연필폭, 높이.아주낮게).clip(RoundedCornerShape(모서리.작게))
+                .semantics { contentDescription = "${z.종목이름} 편집" }
+                .눌림(on편집),
+            contentAlignment = Alignment.Center,
+        ) { Icon(아이콘.연필, null, Modifier.size(넣기값.연필그림), tint = c.옅음) }
+    }
+}
+
+@Composable
+private fun 넣기칸단추(z: 넣기칸, 번호: Int, 수: Int, modifier: Modifier, on누름: () -> Unit, on꾹: () -> Unit) {
     val c = Local색.current
     val 들어감 = 수 > 0
     val 모양 = RoundedCornerShape(모서리.작게)
@@ -279,7 +322,7 @@ private fun 넣기칸그림(z: 넣기칸, 번호: Int, 수: Int, modifier: Modif
                     "${if (들어감) "누르면 하나 빼기" else "누르면 넣기"}, 꾹 누르면 하나 더"
             }
             .눌림길게(on누름, on꾹)
-            .padding(horizontal = 간격.좁게, vertical = 간격.아주좁게),
+            .padding(start = 간격.좁게, end = 간격.아주좁게 + 넣기값.연필폭, top = 간격.아주좁게, bottom = 간격.아주좁게),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(간격.아주좁게),
     ) {
@@ -287,12 +330,10 @@ private fun 넣기칸그림(z: 넣기칸, 번호: Int, 수: Int, modifier: Modif
             "$번호", Modifier.widthIn(min = 넣기값.번호폭).padding(end = 간격.아주좁게),
             style = 글꼴.보통(크기.작게).copy(fontFeatureSettings = "tnum"), color = c.흐림, maxLines = 1, textAlign = TextAlign.End,
         )
-        // 이름은 두 줄까지 — 딱지는 이름 오른쪽 위에 겹친다 (시안 `.이름플랜` · 위 4 띄움)
+        // 이름은 두 줄까지 — 딱지는 이름 오른쪽 위에 겹친다 (시안 `.이름플랜` · 위 4 띄움).
+        // v22 ⑦ 연필 자리만큼 좁아진 이름 — 두 줄까지 13, 안 들어가면 11 → 자간 좁힘 · … 로 자르지 않는다
         Row(Modifier.weight(1f).padding(top = 간격.아주좁게), verticalAlignment = Alignment.Top) {
-            Text(
-                z.이름, Modifier.weight(1f, fill = false), style = 글꼴.보통(크기.버튼, FontWeight.Bold), color = c.글,
-                maxLines = 2, overflow = TextOverflow.Ellipsis,
-            )
+            넣기이름(z.이름, Modifier.weight(1f, fill = false))
             if (z.번호 > 0 || z.플랜id != null) Row(Modifier.offset(x = 넣기값.딱지겹침), horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
                 번호딱지(z.번호)
                 if (z.플랜id != null) 플랜딱지()
@@ -309,6 +350,25 @@ private fun 넣기칸그림(z: 넣기칸, 번호: Int, 수: Int, modifier: Modif
             if (들어감) Text(체크글(수), style = 글꼴.보통(크기.작게, FontWeight.Bold), color = c.강조글, maxLines = 1, softWrap = false)
         }
     }
+}
+
+/**
+ * 넣기 칸 이름 (시안 v22 ⑦ `.넣기칸 b.이름맞춤` data-줄=2) — 두 줄까지 13 그대로. 넘치거나 낱말 가운데서 줄이 바뀌면
+ * 11 → 자간 좁힘(이름맞춤값). 가장 작게도 안 되면 그대로 둔다(낱말 안에서 끊김 — 잘려 안 보이는 것보다 낫다).
+ * 공용 [이름맞춤] 은 BoxWithConstraints 라 넣기 줄(IntrinsicSize.Min)에 못 넣어 여기서 글 재기로 한다
+ */
+@Composable
+private fun 넣기이름(이름: String, modifier: Modifier) {
+    val c = Local색.current
+    // 단계 0 = 13 · 1 = 11 · 2.. = 11 + 자간 −0.01em × (단계 − 1)
+    var 단계 by remember(이름) { mutableIntStateOf(0) }
+    val 끝단계 = 1 + (-이름맞춤값.자간끝 / 이름맞춤값.자간폭).roundToInt()
+    val 꼴 = if (단계 == 0) 글꼴.보통(크기.버튼, FontWeight.Bold)
+        else 글꼴.보통(크기.작게, FontWeight.Bold).let { if (단계 >= 2) it.copy(letterSpacing = (-(단계 - 1) * 이름맞춤값.자간폭).em) else it }
+    Text(
+        이름, modifier, style = 꼴, color = c.글, maxLines = 2, overflow = TextOverflow.Clip,
+        onTextLayout = { r -> if (단계 < 끝단계 && 넣기이름넘침(이름, r.hasVisualOverflow, (0 until r.lineCount).map { r.getLineEnd(it) })) 단계++ },
+    )
 }
 
 /** 빈 칸 안내 (시안 `.빈칸` — 속선 테 · 가운데 13 옅음) — 루틴 화면도 쓴다 */
@@ -331,6 +391,8 @@ internal object 넣기값 {
     val 최소높이 = 120.dp       // 잰 목록 높이가 이보다 작거나
     val 최대높이 = 2000.dp      // 크면 잘못 잰 것 — 시트가 넘기는 대로 둔다
     const val 말진하기 = 0.85f  // .넣기말 opacity
+    val 연필폭 = 24.dp          // v22 ⑦ .넣기편집 누르는 칸 24 × 28
+    val 연필그림 = 16.dp        // .넣기편집 svg 16
 }
 
 // ═════════════════════ 순수 계산 (시험: ui/RoutineTest.kt) ═════════════════════
@@ -339,7 +401,11 @@ internal object 넣기값 {
  * 넣기 목록 한 칸. [키] = 종목 id(종목 칸) · [플랜id] = 플랜 칸. [번호] = 같은 이름 번호 딱지(0 = 없음).
  * [열쇠] = 화면에서 칸을 가르는 값 (말풍선 · 자리)
  */
-internal data class 넣기칸(val 이름: String, val 키: String?, val 플랜id: String?, val 종목이름: String, val 번호: Int) {
+internal data class 넣기칸(
+    val 이름: String, val 키: String?, val 플랜id: String?, val 종목이름: String, val 번호: Int,
+    /** v22 ⑦ 연필로 고칠 종목 id — 종목표에 없는 종목의 플랜은 null(연필 없음) */
+    val 편집키: String? = null,
+) {
     val 열쇠: String get() = if (플랜id != null) "p:$플랜id" else "e:$키"
 }
 
@@ -358,14 +424,21 @@ internal fun 넣기칸들(종목표: List<종목>, 플랜들: List<플랜>, 칸:
         val 첫 = 종목표.first { it.이름 == x.이름 } === x
         val 플 = if (첫) 켠.filter { it.종목 == x.이름 } else emptyList()
         if (플.isNotEmpty()) 플.forEach { p ->
-            줄 += 넣기칸(p.이름, null, p.id, x.이름, if (p.이름 == x.이름) 같은이름번호(종목표, x.id, x.이름) else 0)
+            줄 += 넣기칸(p.이름, null, p.id, x.이름, if (p.이름 == x.이름) 같은이름번호(종목표, x.id, x.이름) else 0, 편집키 = x.id)
         }
-        else 줄 += 넣기칸(x.이름, x.id, null, x.이름, 같은이름번호(종목표, x.id, x.이름))
+        else 줄 += 넣기칸(x.이름, x.id, null, x.이름, 같은이름번호(종목표, x.id, x.이름), 편집키 = x.id)
     }
     if (칸 == 넣기전체) 켠.filter { p -> 종목표.none { it.이름 == p.종목 } }.forEach { p -> 줄 += 넣기칸(p.이름, null, p.id, p.종목, 0) }
     val 가나다 = Collator.getInstance(Locale.KOREAN)
     return 줄.sortedWith { a, b -> 가나다.compare(a.이름, b.이름) }
 }
+
+/**
+ * 넣기 이름이 넘쳤나 — 잘렸거나, 줄이 낱말 가운데서 바뀌었다(앞 글자 · 뒤 글자가 모두 띄어쓰기가 아님).
+ * [줄끝] = 줄마다 끝 자리(다음 줄 첫 글자 번호)
+ */
+internal fun 넣기이름넘침(이름: String, 잘림: Boolean, 줄끝: List<Int>): Boolean =
+    잘림 || 줄끝.dropLast(1).any { e -> e in 1 until 이름.length && !이름[e - 1].isWhitespace() && !이름[e].isWhitespace() }
 
 /** 체크 상자 글 — 1~3 = ✓ 그 수만큼, 넷부터 ✓×n, 0 = "" (시안 v18 D ③) */
 internal fun 체크글(n: Int): String = if (n <= 0) "" else if (n > 3) "✓×${n}" else "✓".repeat(n)

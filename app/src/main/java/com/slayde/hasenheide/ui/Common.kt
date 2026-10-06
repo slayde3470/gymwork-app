@@ -752,7 +752,12 @@ private fun 분초입력(키: String, 값글: String, 넣기: (String) -> Unit, 
  *    + 머리 = 띠 ([머리띠] — 강조 바탕 · 강조글 · 오른쪽 [닫기] · U4-8 · 10-06 ⑨)
  */
 @Composable
-fun 시트(제목: String, onClose: () -> Unit, 위끝고정: Boolean = false, content: @Composable ColumnScope.() -> Unit) {
+fun 시트(
+    제목: String, onClose: () -> Unit, 위끝고정: Boolean = false,
+    /** 10-06 v22 RT: 띠 머리 오른쪽을 ✕ 대신 이 글 단추로 (종목 넣기 = "확인" · 동작은 닫기 그대로). null = ✕ */
+    닫기글: String? = null,
+    content: @Composable ColumnScope.() -> Unit,
+) {
     val c = Local색.current
     // 10-02: 나타날 때 아래에서 올라오고, ✕ · 바깥 · 뒤로가기로 닫으면 내려간 뒤에 닫힌다.
     //        (안에서 무언가를 골라 화면이 시트를 바로 치우는 경우는 내려가는 움직임 없이 사라진다)
@@ -807,7 +812,10 @@ fun 시트(제목: String, onClose: () -> Unit, 위끝고정: Boolean = false, c
                         // 10-06 ⑨ (U4-8): 머리 = 띠 — 캘린더 년월 띠와 같은 값(강조 · 강조글 · 40 · 18 굵게) · 오른쪽 [닫기].
                         //  손잡이 막대는 띠 안 맨 위(위끝에서 4)에 얹는다 (시안 `.시트 .머리>.시트손잡이`). 띠는 속 위에 붙어 있다
                         Box(Modifier.fillMaxWidth()) {
-                            머리띠(제목, 오른쪽 = { 아이콘버튼(아이콘.닫기, "닫기", { 닫기() }, 칠함 = false, 색 = c.강조글, 크기칸 = 높이.낮게) })
+                            머리띠(제목, 오른쪽 = {
+                                if (닫기글 != null) 띠칩(닫기글, { 닫기() })   // U4-8 띠 위 단추 = 캘린더 스탯 칩 모양
+                                else 아이콘버튼(아이콘.닫기, "닫기", { 닫기() }, 칠함 = false, 색 = c.강조글, 크기칸 = 높이.낮게)
+                            })
                             Box(
                                 Modifier.align(Alignment.TopCenter).padding(top = 부품치수.손잡이위)
                                     .size(부품치수.손잡이폭, 부품치수.손잡이두께).clip(RoundedCornerShape(부품치수.손잡이모서리)).background(c.속선),
