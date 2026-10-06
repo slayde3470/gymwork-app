@@ -748,7 +748,8 @@ private fun 분초입력(키: String, 값글: String, 넣기: (String) -> Unit, 
  * 아래에서 올라오는 판 — '고르는 일'에만 쓴다 (1-1: 팝업은 고르기뿐)
  *  · 10-05 (시안 v21 ⑥): 맨 위 가운데 손잡이 막대 36 × 4 (속선) — 모든 시트에 저절로 붙는다.
  *    손잡이 · 제목 줄을 잡고 아래로 80 넘게 끌어 놓으면 닫힌다(✕ 와 같다), 덜 끌면 제자리로
- *  · [위끝고정] = 시트 위끝을 화면 높이의 20% 지점에 고정 (시안 `넣기시트높이` — 종목 넣기 시트)
+ *  · [위끝고정] = 시트 위끝을 화면 높이의 10% 지점에 고정 (부품치수.시트위끝 · 종목 넣기 · 새 종목 시트)
+ *    + 머리 = 띠 ([머리띠] — 강조 바탕 · 강조글 · 오른쪽 [닫기] · U4-8 · 10-06 ⑨)
  */
 @Composable
 fun 시트(제목: String, onClose: () -> Unit, 위끝고정: Boolean = false, content: @Composable ColumnScope.() -> Unit) {
@@ -785,7 +786,9 @@ fun 시트(제목: String, onClose: () -> Unit, 위끝고정: Boolean = false, c
                     .눌림 { }
                     .navigationBarsPadding()
                     .imePadding()
-                    .padding(start = 간격.넓게, end = 간격.넓게, bottom = 16.dp),
+                    // 띠 머리(위끝고정)는 판 양끝까지 닿는다 — 옆 여백은 속에만
+                    .then(if (위끝고정) Modifier else Modifier.padding(horizontal = 간격.넓게))
+                    .padding(bottom = 16.dp),
             ) {
                 // 머리 — 손잡이 막대 + 제목 줄. 여기를 잡고 끌어내린다 (시트 안 스크롤과 겹치지 않는다)
                 Column(
@@ -800,18 +803,30 @@ fun 시트(제목: String, onClose: () -> Unit, 위끝고정: Boolean = false, c
                         )
                     },
                 ) {
-                    // 손잡이 막대 36 × 4 — 위끝에서 4. 막대 아래 8 을 더해 제목 줄은 전과 같은 자리(위 16)
-                    Box(
-                        Modifier.padding(top = 부품치수.손잡이위, bottom = 간격.좁게).align(Alignment.CenterHorizontally)
-                            .size(부품치수.손잡이폭, 부품치수.손잡이두께).clip(RoundedCornerShape(부품치수.손잡이모서리)).background(c.속선),
-                    )
-                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        제목글(제목, Modifier.weight(1f), 크기값 = 크기.크게)
-                        아이콘버튼(아이콘.닫기, "닫기", { 닫기() }, 크기칸 = 높이.낮게)
+                    if (위끝고정) {
+                        // 10-06 ⑨ (U4-8): 머리 = 띠 — 캘린더 년월 띠와 같은 값(강조 · 강조글 · 40 · 18 굵게) · 오른쪽 [닫기].
+                        //  손잡이 막대는 띠 안 맨 위(위끝에서 4)에 얹는다 (시안 `.시트 .머리>.시트손잡이`). 띠는 속 위에 붙어 있다
+                        Box(Modifier.fillMaxWidth()) {
+                            머리띠(제목, 오른쪽 = { 아이콘버튼(아이콘.닫기, "닫기", { 닫기() }, 칠함 = false, 색 = c.강조글, 크기칸 = 높이.낮게) })
+                            Box(
+                                Modifier.align(Alignment.TopCenter).padding(top = 부품치수.손잡이위)
+                                    .size(부품치수.손잡이폭, 부품치수.손잡이두께).clip(RoundedCornerShape(부품치수.손잡이모서리)).background(c.속선),
+                            )
+                        }
+                    } else {
+                        // 손잡이 막대 36 × 4 — 위끝에서 4. 막대 아래 8 을 더해 제목 줄은 전과 같은 자리(위 16)
+                        Box(
+                            Modifier.padding(top = 부품치수.손잡이위, bottom = 간격.좁게).align(Alignment.CenterHorizontally)
+                                .size(부품치수.손잡이폭, 부품치수.손잡이두께).clip(RoundedCornerShape(부품치수.손잡이모서리)).background(c.속선),
+                        )
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            제목글(제목, Modifier.weight(1f), 크기값 = 크기.크게)
+                            아이콘버튼(아이콘.닫기, "닫기", { 닫기() }, 크기칸 = 높이.낮게)
+                        }
                     }
                 }
                 Column(
-                    Modifier.then(if (위끝고정) Modifier.weight(1f) else Modifier).padding(top = 12.dp).verticalScroll(rememberScrollState()),
+                    Modifier.then(if (위끝고정) Modifier.weight(1f).padding(horizontal = 간격.넓게) else Modifier).padding(top = 12.dp).verticalScroll(rememberScrollState()),
                     content = content,
                 )
             }

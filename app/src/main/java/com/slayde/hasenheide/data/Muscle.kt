@@ -54,6 +54,18 @@ object 근육표 {
     const val 뒤옮김 = 240f
     val 역할이름 = listOf("P" to "주동근", "S" to "보조근", "Y" to "협응근")
 
+    // 새 종목 시트 근육 그림 (10-06 ⑧) — 카테고리를 고르기 전엔 전신, 고르면 상체 · 하체 확대
+    /** 카테고리 → 상체 / 하체. 둘 다 아니면(직접 만든 카테고리) 전신 */
+    val 상체칸 = setOf("가슴", "등", "어깨", "팔", "복근")
+    val 하체칸 = setOf("하체")
+    /** 확대 상자 [x, y, 폭, 높이] (그림 좌표 · 뒷모습은 + 뒤옮김) */
+    val 앞전신 = floatArrayOf(26f, 4f, 148f, 442f)
+    val 뒤전신 = floatArrayOf(266f, 4f, 148f, 442f)
+    val 앞위 = floatArrayOf(28f, 44f, 144f, 172f)     // 목 ~ 배꼽 아래 (팔 포함)
+    val 뒤위 = floatArrayOf(268f, 44f, 144f, 172f)
+    val 앞아래 = floatArrayOf(44f, 198f, 112f, 246f)  // 엉덩이 ~ 발
+    val 뒤아래 = floatArrayOf(284f, 198f, 112f, 246f)
+
     fun 회복시간글(h: Int): String = if (h < 48) "${h}시간" else "${h / 24}일"
 }
 
@@ -69,6 +81,25 @@ object 근육계산 {
     /** 잎 — 이 근육 아래 가장 잘게 나눈 근육들 (자식이 없으면 자기 자신). 값은 여기로 내려간다 (07 2절 ①) */
     fun 잎(id: String): List<String> = synchronized(잎캐시) {
         잎캐시[id] ?: (자식[id]?.takeIf { it.isNotEmpty() }?.flatMap { 잎(it) } ?: listOf(id)).also { 잎캐시[id] = it }
+    }
+
+    /** 새 종목 시트 그림 두 장 (앞, 뒤) — 카테고리가 상체면 위 · 하체면 아래 · 그 밖(고르기 전 포함)은 전신 */
+    fun 부위상자(칸: String?): Pair<FloatArray, FloatArray> = when {
+        칸 != null && 칸 in 근육표.상체칸 -> 근육표.앞위 to 근육표.뒤위
+        칸 != null && 칸 in 근육표.하체칸 -> 근육표.앞아래 to 근육표.뒤아래
+        else -> 근육표.앞전신 to 근육표.뒤전신
+    }
+
+    /**
+     * 칸 안 누른 자리(px) → 그림 좌표 — [몸그림] 과 같은 맞춤(가운데 · 비율 유지).
+     * [자르기] = [x, y, 폭, 높이]. 칸 크기가 0 이면 null (새 종목 시트 근육 누르기)
+     */
+    fun 그림좌표(x: Float, y: Float, w: Float, h: Float, 자르기: FloatArray): Pair<Float, Float>? {
+        val s = min(w / 자르기[2], h / 자르기[3])
+        if (s <= 0f) return null
+        val tx = (w - 자르기[2] * s) / 2f - 자르기[0] * s
+        val ty = (h - 자르기[3] * s) / 2f - 자르기[1] * s
+        return (x - tx) / s to (y - ty) / s
     }
 
     /** 종목 → 근육과 역할 — 이름 속 낱말로 먼저 찾고, 없으면 종목의 부위로 */

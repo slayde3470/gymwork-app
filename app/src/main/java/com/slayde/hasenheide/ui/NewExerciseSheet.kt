@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+
 package com.slayde.hasenheide.ui
 
 import android.graphics.Matrix
@@ -7,9 +9,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,15 +18,19 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -35,24 +38,20 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.asAndroidPath
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.PathParser
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.slayde.hasenheide.data.같은세트들
 import com.slayde.hasenheide.data.근육계산
@@ -72,13 +71,13 @@ import com.slayde.hasenheide.data.종목세트
 import com.slayde.hasenheide.data.종목세트최대
 import com.slayde.hasenheide.data.칸
 import com.slayde.hasenheide.ui.theme.Local색
+import com.slayde.hasenheide.ui.theme.그림칸
 import com.slayde.hasenheide.ui.theme.간격
 import com.slayde.hasenheide.ui.theme.글꼴
 import com.slayde.hasenheide.ui.theme.높이
 import com.slayde.hasenheide.ui.theme.모서리
 import com.slayde.hasenheide.ui.theme.선굵기
 import com.slayde.hasenheide.ui.theme.크기
-import kotlin.math.min
 
 /**
  * 새 종목 / 종목 편집 시트 (시안 v18 C ⑤ · v19 D · v20 ③⑤ `새종목시트`) — 종목 화면 · 종목 넣기 시트(루틴 · 운동 중)가 **같이** 쓴다.
@@ -86,10 +85,10 @@ import kotlin.math.min
  * ── 2단계 소유: EX(종목). 매개변수(이름 · 꼴)는 바꾸지 않는다 — RT · W 는 부르기만 한다 ──
  *
  * 시안 순서: [이름 칸 ··· 돋보기] → 찾은 줄(초성 검색 `종목사전.찾기`) → (이름이 정해지면) 카테고리 칩 →
- * 운동 목표 부위(근육 그림 앞 · 뒤 + 주동근/협응근 요약 · 묶음 칩 · 역할 칩 · 부위 칩) → 기본 세팅 세트 줄 → [저장].
+ * 운동 목표 부위(근육 그림 앞 · 뒤 — 누를 때마다 주동근 → 협응근 → 뺌 · 10-06 ⑪) → 기본 세팅 세트 줄 → [저장].
  *  · 돋보기 = 찾기 켜기(칸에 손가락이 가도 켜진다) · 켜지면 그 자리가 [확인] — 친 이름으로 정한다 (자판 '완료' 도 같다)
  *  · 사전에서 고르면 칸 · 근육이 채워진다. 사전 칸이 카테고리에 없으면(예: '맨몸') 칸은 비운다 → 저장 전에 골라야 한다
- *  · 같은 이름도 저장한다(새 id). 칸 필수 · 주동근 하나 이상
+ *  · 같은 이름도 저장한다(새 id). 칸 필수. 주동근이 없으면 저장하고 '근육 사진을 눌러서…' 토스트 (10-06 ⑪)
  *  · 편집([편집]): 값이 채워진 채 · 이름 검색은 이름만 바꾼다 · [저장] = 그 종목을 고친다. 플랜이 걸린 종목은 이름을 못 바꾼다
  *
  * @param 편집 null = 새 종목, 아니면 그 종목을 고친다
@@ -129,14 +128,14 @@ fun 새종목시트(
             val t = r.종목
             if (nd != null && t != null) {
                 상태.바꿈 { nd }
-                상태.알림.토스트("저장했습니다 · ${t.이름}")
+                상태.알림.토스트(if (v.근육안내필요()) 근육설정안내 else "저장했습니다 · ${t.이름}")
                 저장(t)
             }
         } else {
             저장됨 = true
             val (nd, t) = 상태.d.새종목저장(v)
             상태.바꿈 { nd }
-            상태.알림.토스트("만들었습니다 · ${t.이름}")
+            상태.알림.토스트(if (v.근육안내필요()) 근육설정안내 else "만들었습니다 · ${t.이름}")
             저장(t)
         }
         닫기()
@@ -209,7 +208,24 @@ fun 새종목시트(
             // ── 기본 세팅 (종목 탭과 같은 세트 줄 · 저장하면 종목설정[id]) ──
             이름표("기본 세팅", Modifier.padding(top = 간격.보통, start = 간격.아주좁게))
             Box(Modifier.height(간격.아주좁게))
-            세트줄표(v.세트, 상태.d.설정.무게폭, { f -> v = v.copy(세트 = f(v.세트)) }, { 상태.알림.토스트(세트최대글) })
+            // 10-06 ⑩: 세트를 더해 [+ 세트] 가 스크롤 칸 밑으로 내려가면 그 단추(표의 맨 아래)가 보이게 한 번 올린다.
+            //          그린 뒤(두 프레임 기다려 자리가 정해진 다음) 재고 한 번만 움직인다
+            val 세트끝 = remember { BringIntoViewRequester() }
+            var 표크기 by remember { mutableStateOf(IntSize.Zero) }
+            var 전세트수 by remember { mutableIntStateOf(v.세트.size) }
+            val 단추px = with(LocalDensity.current) { 높이.낮게.toPx() }
+            LaunchedEffect(v.세트.size) {
+                val 늘었 = v.세트.size > 전세트수
+                전세트수 = v.세트.size
+                if (늘었) {
+                    withFrameNanos { }; withFrameNanos { }
+                    val h = 표크기.height.toFloat()
+                    if (h > 0f) 세트끝.bringIntoView(Rect(0f, (h - 단추px).coerceAtLeast(0f), 표크기.width.toFloat(), h))
+                }
+            }
+            Box(Modifier.fillMaxWidth().onSizeChanged { 표크기 = it }.bringIntoViewRequester(세트끝)) {
+                세트줄표(v.세트, 상태.d.설정.무게폭, { f -> v = v.copy(세트 = f(v.세트)) }, { 상태.알림.토스트(세트최대글) })
+            }
             if (편집 != null) 편집그밖(상태, 편집, v, { v = it }) { 저장됨 = true; 닫기() }
             Box(Modifier.height(간격.보통))
             버튼("저장", { 저장하기() }, Modifier.fillMaxWidth(), 주요 = true)
@@ -221,129 +237,72 @@ fun 새종목시트(
 internal object 새시트치수 {
     val 찾기단추 = 44.dp       // 시안 .새찾기단추 44 × 40
     val 돋보기 = 18.dp          // U3-6 기본 아이콘 (시안 22 — 지침에 없는 값이라 18)
-    val 몸폭 = 64.dp           // 시안 .새몸칸 64 × 192
-    val 몸높이 = 192.dp
-    val 점선 = 4.dp             // 협응근 칩 점선 마디
-    const val 막힘투명 = 0.35f  // 시안 .근칩.막힘 opacity .35
 }
 
-/** 카테고리 칩 → 운동 목표 부위 (그림 앞 · 뒤 + 요약 · 묶음 칩 · 역할 칩 · 부위 칩) — 시안 `새부위고르기` */
-@OptIn(ExperimentalLayoutApi::class)
+/**
+ * 카테고리 칩 → 운동 목표 부위 (그림 앞 · 뒤) — 시안 `새부위고르기`.
+ * 10-06 ⑧⑪ 홍겸 님: 그림은 운동 화면 그림 칸과 같은 규격(높이 124 · 둥근 판). 카테고리를 고르기 전엔 전신, 고르면 상체 · 하체 확대.
+ * 주동근 칩 · 역할 칩 · 요약 상자는 뺐다 — 그림의 근육을 누를 때마다 주동근 → 협응근 → 뺌
+ */
 @Composable
 private fun 새부위고르기(상태: 앱상태, v: 새종목값, 고침: ((새종목값) -> 새종목값) -> Unit) {
-    val c = Local색.current
     val d = 상태.d
     // 빠르게 연달아 눌러도 가장 새 값에서 (고침 = 지금 값 → 새 값)
-    val 누름 = { k: String -> 고침 { cur -> val (n, 말) = cur.근육누름(k); if (말 != null) 상태.알림.토스트(말); n } }
+    val 누름 = { 키들: List<String> -> 고침 { cur -> cur.근육탭(키들) } }
     이름표("카테고리", Modifier.padding(top = 간격.좁게, start = 간격.아주좁게))
     Box(Modifier.height(간격.아주좁게))
     칩줄(d.카테고리, v.칸, { k -> 고침 { it.칸고름(k) } })
     이름표("운동 목표 부위", Modifier.padding(top = 간격.보통, start = 간격.아주좁게))
     Box(Modifier.height(간격.아주좁게))
     val 단계 = remember(v.근육) { 새몸단계(v.근육) }
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
-        새몸칸(단계, d.설정.색표, false, 누름)
-        새몸칸(단계, d.설정.색표, true, 누름)
-        val (주, 협) = 근육두줄(v.근육)
-        Column(
-            Modifier.weight(1f).clip(RoundedCornerShape(모서리.작게)).background(c.면2).padding(간격.좁게),
-            verticalArrangement = Arrangement.spacedBy(간격.아주좁게),
-        ) {
-            글("주동근 : $주", 크기값 = 크기.작게, 색 = c.흐림, 줄 = 6)
-            글("협응근 : $협", 크기값 = 크기.작게, 색 = c.흐림, 줄 = 6)
-        }
-    }
-    Box(Modifier.height(간격.좁게))
-    칩줄(종목사전.세부부위.map { it.first }, v.묶음, { g -> 고침 { it.copy(묶음 = g) } })
-    Box(Modifier.height(간격.좁게))
-    칩줄(역할칩.map { it.second }, 역할칩.firstOrNull { it.first == v.역할 }?.second, { g -> 고침 { it.copy(역할 = 역할칩.first { r -> r.second == g }.first) } })
-    Box(Modifier.height(간격.좁게))
-    val 묶 = 종목사전.세부부위.firstOrNull { it.first == v.묶음 } ?: 종목사전.세부부위[0]
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(간격.아주좁게), verticalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
-        묶.second.forEach { k ->
-            key(k) {
-                val r = v.근육[k]
-                val 막 = v.역할 == "Y" && r == "P"
-                val 모양 = CircleShape
-                Row(
-                    Modifier.height(높이.아주낮게)
-                        .graphicsLayer { alpha = if (막) 새시트치수.막힘투명 else 1f }
-                        .clip(모양)
-                        .background(if (r == "P") c.강조 else c.면)
-                        .then(
-                            when (r) {
-                                "P" -> Modifier.border(선굵기.보통, c.강조, 모양)
-                                "Y" -> Modifier.점선테(c.강조)
-                                else -> Modifier.border(선굵기.보통, c.속선, 모양)
-                            },
-                        )
-                        .눌림 { 누름(k) }
-                        .padding(horizontal = 간격.보통),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    val 색 = when (r) { "P" -> c.강조글; "Y" -> c.강조; else -> c.흐림 }
-                    글(근이름(k), 크기값 = 크기.버튼, 색 = 색, 굵기 = if (r != null) FontWeight.Bold else FontWeight.Medium)
-                    if (r != null) {
-                        Box(Modifier.width(간격.아주좁게))
-                        글(역할짧은[r] ?: "", 크기값 = 크기.작게, 색 = 색, 굵기 = FontWeight.Bold)
-                    }
-                }
-            }
-        }
+    val (앞상자, 뒤상자) = 근육계산.부위상자(v.칸)
+    Row(Modifier.fillMaxWidth().height(그림칸.높이), horizontalArrangement = Arrangement.spacedBy(그림칸.사이)) {
+        새몸칸(단계, d.설정.색표, 앞상자, false, 누름, Modifier.weight(1f))
+        새몸칸(단계, d.설정.색표, 뒤상자, true, 누름, Modifier.weight(1f))
     }
 }
 
-/** 협응근 칩 — 점선 테두리 (시안 .근칩.역Y border-style:dashed) */
-private fun Modifier.점선테(색: Color): Modifier = this.drawBehind {
-    val 굵 = 선굵기.보통.toPx()
-    val 마디 = 새시트치수.점선.toPx()
-    drawRoundRect(
-        색, topLeft = Offset(굵 / 2, 굵 / 2), size = Size(size.width - 굵, size.height - 굵),
-        cornerRadius = CornerRadius(size.height / 2, size.height / 2),
-        style = Stroke(width = 굵, pathEffect = PathEffect.dashPathEffect(floatArrayOf(마디, 마디))),
-    )
-}
-
-/** 근육 그림 한 장 (앞 또는 뒤) — 몸그림(MuscleView) 그대로 + 세부 부위 조각을 누르면 그 부위를 [누름] (시안 `새몸그림`) */
+/**
+ * 근육 그림 한 장 (앞 또는 뒤) — 운동 화면 `그림판` 과 같은 둥근 판 + 몸그림(MuscleView) 그대로.
+ * 근육 조각을 누르면 그 부위를 [누름]. 누른 자리 판정은 그림과 같은 칸(안쪽 여백 뒤)에서 한다
+ */
 @Composable
-private fun 새몸칸(단계: Map<String, Double>, 색표: String, 뒤: Boolean, 누름: (String) -> Unit) {
-    val 자르기 = if (뒤) 뒤자르기 else 앞자르기
+private fun 새몸칸(단계: Map<String, Double>, 색표: String, 자르기: FloatArray, 뒤: Boolean, 누름: (List<String>) -> Unit, modifier: Modifier) {
+    val c = Local색.current
     val 누름최신 by rememberUpdatedState(누름)
-    Box(
-        Modifier.size(새시트치수.몸폭, 새시트치수.몸높이).pointerInput(뒤) {
-            detectTapGestures { o ->
-                val k = 그림누른부위(o.x, o.y, size.width.toFloat(), size.height.toFloat(), 자르기, 뒤)
-                if (k != null) 누름최신(k)
-            }
-        },
-    ) { 몸그림(단계, 색표, 자르기, Modifier.fillMaxSize()) }
+    val 자르기최신 by rememberUpdatedState(자르기)
+    val 모양 = RoundedCornerShape(그림칸.모서리)
+    Box(modifier.fillMaxHeight().clip(모양).background(c.면).border(선굵기.보통, c.선, 모양)) {
+        Box(
+            Modifier.fillMaxSize().padding(간격.아주좁게).pointerInput(뒤) {
+                detectTapGestures { o ->
+                    val k = 그림누른부위(o.x, o.y, size.width.toFloat(), size.height.toFloat(), 자르기최신, 뒤)
+                    if (k != null) 누름최신(k)
+                }
+            },
+        ) { 몸그림(단계, 색표, 자르기, Modifier.fillMaxSize()) }
+    }
 }
 
-private val 앞자르기 = floatArrayOf(26f, 4f, 148f, 442f)   // 시안 viewBox "26 4 148 442"
-private val 뒤자르기 = floatArrayOf(266f, 4f, 148f, 442f)  // 시안 viewBox "266 4 148 442"
-
-/** 세부 부위 조각의 누르는 영역 — 그림 좌표 × 10 (Region 은 정수) */
-private val 누름영역: List<Triple<Boolean, String, Region>> by lazy {
+/** 세부 부위 조각의 누르는 영역 — 그림 좌표 × 10 (Region 은 정수). 부위 = 조각의 근육 + 그 조각이 대신 그리는 세부 부위 */
+private val 누름영역: List<Triple<Boolean, List<String>, Region>> by lazy {
     val 판 = Region(-1000, -1000, 10000, 10000)
     근육자료.조각.mapNotNull { p ->
         if (p.종류 != 'm' || p.근육 !in 종목사전.세부키) return@mapNotNull null
         try {
             val 길 = PathParser().parsePathString(p.d).toPath().asAndroidPath()
             길.transform(Matrix().apply { if (p.뒤) postTranslate(근육표.뒤옮김, 0f); postScale(10f, 10f) })
-            Triple(p.뒤, p.근육, Region().apply { setPath(길, 판) })
+            Triple(p.뒤, (listOf(p.근육) + p.대신).filter { it in 종목사전.세부키 }.distinct(), Region().apply { setPath(길, 판) })
         } catch (_: Exception) { null }
     }
 }
 
-/** 누른 자리(칸 px) → 세부 부위 id. 몸그림과 같은 맞춤(가운데 · 비율 유지) */
-private fun 그림누른부위(x: Float, y: Float, w: Float, h: Float, 자르기: FloatArray, 뒤: Boolean): String? {
-    val s = min(w / 자르기[2], h / 자르기[3])
-    if (s <= 0f) return null
-    val tx = (w - 자르기[2] * s) / 2f - 자르기[0] * s
-    val ty = (h - 자르기[3] * s) / 2f - 자르기[1] * s
-    val gx = ((x - tx) / s * 10f).toInt()
-    val gy = ((y - ty) / s * 10f).toInt()
-    return 누름영역.lastOrNull { it.first == 뒤 && it.third.contains(gx, gy) }?.second
+/** 누른 자리(칸 px) → 그 조각의 세부 부위들(첫째 = 조각의 근육). 몸그림과 같은 맞춤(가운데 · 비율 유지 · `근육계산.그림좌표`) */
+private fun 그림누른부위(x: Float, y: Float, w: Float, h: Float, 자르기: FloatArray, 뒤: Boolean): List<String>? {
+    val (gx, gy) = 근육계산.그림좌표(x, y, w, h, 자르기) ?: return null
+    val ix = (gx * 10f).toInt()
+    val iy = (gy * 10f).toInt()
+    return 누름영역.lastOrNull { it.first == 뒤 && it.third.contains(ix, iy) }?.second
 }
 
 /**
@@ -373,13 +332,12 @@ private fun 편집그밖(상태: 앱상태, 편집: 종목, v: 새종목값, 바
 
 // ═════════════════════ 순수 계산 (시험: test/…/ui/ExerciseTest.kt) ═════════════════════
 
-/** 역할 칩 — 주동근 P · 협응근 Y 둘 (v20 ⑤) */
-internal val 역할칩 = listOf("P" to "주동근", "Y" to "협응근")
-internal val 역할짧은 = mapOf("P" to "주동", "S" to "보조", "Y" to "협응")
 private val 역순 = mapOf("P" to 3, "S" to 2, "Y" to 1)
 /** 그림 색 — 역할마다 한 단계 (주동 20 · 협응 5 · 시안 `새몸단계`) */
 internal val 새몸단계값 = mapOf("P" to 20.0, "Y" to 5.0)
 internal val 세트최대글 = "${종목세트최대}세트까지"
+/** 주동근 없이 저장했을 때 토스트 (10-06 ⑪ 홍겸 님 문구 그대로) */
+internal const val 근육설정안내 = "근육 사진을 눌러서 목표 근육을 설정하세요"
 
 /** 시트의 값 — 화면 상태를 한 덩어리로 (copy 로만 바꾼다) */
 internal data class 새종목값(
@@ -465,7 +423,8 @@ internal fun 새종목값.확인(d: 앱데이터): Pair<새종목값, String?> {
         val 있 = d.종목표.firstOrNull { it.이름 == n }
         if (!칸직접) v = v.copy(칸 = 있?.칸?.takeIf { it in d.카테고리 })
         if (!고름) {
-            val m = if (있 != null) 종목사전.세부로(d.종목근육(있.id, 있.이름)) else 종목사전.세부로(종목사전.낱말근육(n) ?: emptyMap())
+            // 10-06 ⑪: 앱에 없는 새 이름은 아무 근육도 칠하지 않는다 (낱말 짐작 안 함) · 이미 있는 종목은 그 근육
+            val m = if (있 != null) 종목사전.세부로(d.종목근육(있.id, 있.이름)) else emptyMap()
             v = v.copy(근육 = 종목사전.둘역할(m))
             v = v.copy(묶음 = v.기본묶음())
         }
@@ -487,24 +446,33 @@ internal fun 새종목값.칸고름(k: String): 새종목값 =
     copy(칸 = k, 칸직접 = true, 묶음 = if (종목사전.세부부위.any { it.first == k }) k else 묶음)
 
 /**
- * 부위를 눌렀다 (칩 · 그림) — 지금 역할로 넣고, 같은 역할이면 뺀다. 그 부위의 묶음으로 옮긴다.
- * 협응근 역할에서 이미 주동근인 부위는 그대로 + 글 (시안 v20 ⑤). 주동근 역할에서 협응근 부위는 주동으로 옮긴다
+ * 그림의 근육 조각을 눌렀다 (10-06 ⑪) — 누를 때마다 없음 → 주동근(P) → 협응근(Y) → 없음.
+ * [키들] = 그 조각의 세부 부위들(첫째 = 조각의 근육, 나머지 = 그 조각이 대신 그리는 부위 · 예: 가슴 아랫부분 조각 = chest_lower + chest_mid).
+ * 지금 상태 = 키들 중 가장 센 역할. 새 역할은 한 열쇠에만 넣고 나머지는 뺀다 (보이는 색과 저장값이 같게). 그 부위의 묶음으로 옮긴다
  */
-internal fun 새종목값.근육누름(k: String): Pair<새종목값, String?> {
-    if (역할 == "Y" && 근육[k] == "P") return this to "이미 주동근으로 선택되어있습니다."
+internal fun 새종목값.근육탭(키들: List<String>): 새종목값 {
+    if (키들.isEmpty()) return this
+    // 역할을 담을 열쇠 — 이미 칠해진 것(센 쪽)이 있으면 그것 (사전 값 chest_mid 를 chest_lower 로 바꾸지 않게) · 없으면 조각의 근육
+    val k = 키들.firstOrNull { 근육[it] == "P" } ?: 키들.firstOrNull { 근육[it] != null } ?: 키들[0]
+    val 있는 = 키들.mapNotNull { 근육[it] }
+    val 지금 = if ("P" in 있는) "P" else if (있는.isNotEmpty()) "Y" else null
+    val 다음 = when (지금) { null -> "P"; "P" -> "Y"; else -> null }
     val m = LinkedHashMap(근육)
-    if (m[k] == 역할) m.remove(k) else m[k] = 역할
+    키들.forEach { m.remove(it) }
+    if (다음 != null) m[k] = 다음
     val g = 종목사전.세부부위.firstOrNull { k in it.second }?.first ?: 묶음
-    return copy(근육 = m, 묶음 = g) to null
+    return copy(근육 = m, 묶음 = g)
 }
 
-/** [저장] 전에 — 이름 · 칸(필수) · 주동근 (시안 `새저장`) */
+/** [저장] 전에 — 이름 · 칸(필수) (시안 `새저장`). 주동근이 없어도 저장한다 — 저장 뒤 [근육설정안내] 토스트 (10-06 ⑪) */
 internal fun 앱데이터.저장검사(v: 새종목값): String? = when {
     v.이름.trim().isEmpty() -> "이름을 넣어 주세요"
     v.칸 == null || v.칸 !in 카테고리 -> "반드시 카테고리를 지정해야 합니다"
-    "P" !in v.근육.values -> "주동근을 하나 이상 골라 주세요"
     else -> null
 }
+
+/** 저장 뒤 근육 안내를 띄울까 — 주동근을 하나도 안 골랐다 (10-06 ⑪) */
+internal fun 새종목값.근육안내필요(): Boolean = "P" !in 근육.values
 
 /** 새 종목 저장 — 같은 이름도 새 id (`종목더하기`). 장비는 이름으로 짐작해 채운다(앱 원래 동작 · 시안에는 장비 칸이 없다) */
 internal fun 앱데이터.새종목저장(v: 새종목값, 지금: Long = System.currentTimeMillis()): Pair<앱데이터, 종목> {

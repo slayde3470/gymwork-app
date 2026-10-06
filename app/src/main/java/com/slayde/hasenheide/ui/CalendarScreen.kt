@@ -373,7 +373,8 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
             년월띠(보는달, { 달넘김(-1) }, { 달넘김(1) }, { 시트날 = 오늘; 열린 = 캘시트.달 }, 스탯으로, 업적으로)
-            Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())) {
+            // 10-06 홍겸 님 ④: 달력은 움직이지 않는다 — 넘김은 날짜 판의 목록 칸 안에서만 (전에는 이 칸 전체가 verticalScroll 이었다)
+            Column(Modifier.weight(1f).fillMaxWidth()) {
                 // 달을 넘기면 다음 달은 오른쪽에서, 이전 달은 왼쪽에서 살짝 밀려 들어온다 (10-02).
                 // 달력 조각은 하나로 둔다 — 꾹 눌러 끄는 중에 달이 넘어가도 끌기가 끊기지 않게
                 val 밀기 = remember { Animatable(0f) }
@@ -406,6 +407,7 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
                     on루틴넣기 = { 시트날 = it; 열린 = 캘시트.루틴 },
                     on록고름 = { rk -> 록뺌 = if (rk in 록뺌) 록뺌 - rk else 록뺌 + rk },
                     on펼침 = { 키 -> 예펼침 = if (예펼침 == 키) null else 키 },
+                    modifier = Modifier.weight(1f),
                 )
             }
             판단추(상태, 고른날, 록뺌, 시작 = { S -> 한번 { 시작(S) } }, 지움 = { kk -> 한번 { 기록지움(kk) } }, 보고서 = { kk, rr -> 한번 { 보고서(kk, rr) } })
@@ -727,6 +729,7 @@ private fun Modifier.윗선(켬: Boolean, 색: Color): Modifier =
 private fun 날판(
     상태: 앱상태, k: String, 다른달: Boolean, 록뺌: Set<String>, 예펼침: String?,
     on오늘: () -> Unit, on변경: (String) -> Unit, on루틴넣기: (String) -> Unit, on록고름: (String) -> Unit, on펼침: (String) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val c = Local색.current
     val d = 상태.d
@@ -734,7 +737,10 @@ private fun 날판(
     val 록 = d.캘기록목록(k)
     val 예 = k >= 오늘 && !(k == 오늘 && 록.isNotEmpty())
     val r = d.예정루틴(k)
-    Column(Modifier.fillMaxWidth().번호("캘1")) {
+    // 띠 아래만 넘긴다 (④). 다른 날을 고르면 맨 위부터
+    val 넘김 = rememberScrollState()
+    LaunchedEffect(k) { 넘김.scrollTo(0) }
+    Column(modifier.fillMaxWidth().번호("캘1")) {
         // ── 띠 — 오른쪽 끝: 예정이 있으면 [변경] · 없으면 [루틴 넣기] · 기록만 있는 날은 비움. 다른 달을 볼 때 [오늘] ──
         Row(
             Modifier.fillMaxWidth().heightIn(min = 높이.보통).background(c.강조).padding(horizontal = 간격.보통, vertical = 부품치수.띠세로여백),
@@ -744,12 +750,12 @@ private fun 날판(
             if (다른달) 흰칩("오늘", on오늘)
             if (예) { if (r != null) 흰칩("변경", { on변경(k) }) else 흰칩("루틴 넣기", { on루틴넣기(k) }) }
         }
-        Column(Modifier.fillMaxWidth().padding(horizontal = 간격.보통, vertical = 간격.좁게), verticalArrangement = Arrangement.spacedBy(간격.좁게)) {
+        Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(넘김).padding(horizontal = 간격.보통, vertical = 간격.좁게), verticalArrangement = Arrangement.spacedBy(간격.좁게)) {
             var 앞것 = false
             록.forEach { (rk, rec) ->
                 기록머리(d, rec, 여럿 = 록.size > 1, 켬 = rk !in 록뺌, 선위 = 앞것) { on록고름(rk) }
                 val 키 = "록$rk"
-                종목목록(기록줄들(d, rec), 예펼침 == 키) { on펼침(키) }
+                종목목록(기록줄들(rec), 예펼침 == 키) { on펼침(키) }
                 앞것 = true
             }
             if (록.isEmpty()) d.미실시[k]?.let { 이름 ->
@@ -765,7 +771,7 @@ private fun 날판(
                     예머리(d, 실, 선위 = 앞것)
                     if (!실.휴식일) {
                         val 키 = "예$k"
-                        종목목록(실.종목.map { e -> e.이름 to 곁글(listOf("${e.세트}세트", 캘세트글((0 until e.세트).map { e.목표(it) }))) }, 예펼침 == 키) { on펼침(키) }
+                        종목목록(실.종목.map { e -> e.이름 to 캘세트글((0 until e.세트).map { e.목표(it) }) }, 예펼침 == 키) { on펼침(키) }
                     }
                 } else Row(Modifier.fillMaxWidth().윗선(앞것, c.선)) { 글("예정 없음", 크기값 = 크기.조금작게, 색 = c.흐림) }
             }
@@ -776,19 +782,9 @@ private fun 날판(
 /** 날짜 판에 보이는 그 날 루틴 — 플랜 줄은 지금 회차 처방으로, 그 날만 조절이 있으면 적용 (운동 시작 `조절해시작` 과 같은 차례) */
 private fun 앱데이터.보일루틴(k: String, r: 루틴): 루틴 = 플랜줄채움(r).조절적용(조절[k], 설정.무게폭)
 
-/** 칸 곁 글 — 조각 안에서는 줄을 바꾸지 않고 '·' 에서만 바꾼다 (시안 `.숫>span{white-space:nowrap}`) */
-private fun 곁글(조각: List<String>): String = 조각.filter { it.isNotBlank() }.joinToString(" · ") { it.replace(' ', ' ') }
-
-/** 기록의 종목 줄 — '4/5세트 · 60kg × 9회'. 워밍업은 세지 않는다. 계획을 모르면(루틴이 바뀌었거나 넣은 종목) '4세트' */
-private fun 기록줄들(d: 앱데이터, rec: 날기록): List<Pair<String, String>> {
-    val 짝 = d.루틴들.firstOrNull { it.id == rec.루틴id }
-    return rec.종목들.map { e ->
-        val 세 = e.세트들.filter { it.종류 != 세트종류.워밍업 }
-        val 계획 = if (e.임시) null else 짝?.종목?.firstOrNull { 캘같은종목(it.종id, it.이름, e.종id, e.이름) }?.세트
-        val 수 = if (계획 != null) "${세.size}/${max(계획, 세.size)}세트" else "${세.size}세트"
-        e.이름 to 곁글(listOf(수, 캘세트글(세)))
-    }
-}
+/** 기록의 종목 줄 — '60kg × 9회'. 워밍업은 넣지 않는다. 세트 수는 보이지 않는다 (10-06 홍겸 님 ⑤ — 기록머리 칩에 합계가 있다) */
+private fun 기록줄들(rec: 날기록): List<Pair<String, String>> =
+    rec.종목들.map { e -> e.이름 to 캘세트글(e.세트들.filter { it.종류 != 세트종류.워밍업 }) }
 
 /** 시안 `.예칩 span` — 높이 28 · 속선 · 11 흐림 */
 @Composable
@@ -904,12 +900,14 @@ private fun Modifier.아랫선(색: Color): Modifier = drawBehind {
 @Composable
 private fun 목록칸(i: Int, 이름: String, 곁: String) {
     val c = Local색.current
-    Row(Modifier.fillMaxWidth().아랫선(c.선).padding(vertical = 간격.아주좁게), horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
+    // 한 줄 (10-06 ⑤) — [번호][이름 13 · 넘치면 …][무게×횟수 11 · 넘치면 맞춤글로 줄임]. 이름과 곁 글은 남은 폭을 반씩까지
+    Row(
+        Modifier.fillMaxWidth().아랫선(c.선).padding(vertical = 간격.아주좁게),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.아주좁게),
+    ) {
         Text("${i + 1}", Modifier.width(간격.넓게), style = 글꼴.보통(크기.작게, FontWeight.Bold), color = c.옅음, textAlign = TextAlign.Center, maxLines = 1)
-        Column(Modifier.weight(1f)) {
-            Text(이름, style = 글꼴.보통(크기.조금작게), color = c.글, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            if (곁.isNotEmpty()) Text(곁, style = 글꼴.보통(크기.작게).copy(fontFeatureSettings = "tnum"), color = c.흐림, maxLines = 2)
-        }
+        Text(이름, Modifier.weight(1f, fill = false), style = 글꼴.보통(크기.조금작게), color = c.글, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        if (곁.isNotEmpty()) 맞춤글(곁, Modifier.weight(1f, fill = false), 최대 = 크기.작게, 색 = c.흐림)
     }
 }
 

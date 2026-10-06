@@ -42,6 +42,7 @@ object 근육시험 {
         이전최대()
         색()
         확대와글()
+        새종목그림()
         저장잇기()
         if (틀림.isNotEmpty()) throw AssertionError("근육 시험 $센 개 중 ${틀림.size} 개 실패:\n" + 틀림.joinToString("\n") { " · $it" })
         return 센
@@ -228,6 +229,35 @@ object 근육시험 {
         참("모르는 종목은 확대 없음", 근육계산.확대상자("머신 X", null) == null)
         참("근육 글 — 협응근은 한 줄을 넘겨 뺀다", 근육계산.근육글(mapOf("biceps" to "P", "brachialis" to "S", "forearm_flexors" to "Y")) == "주동근 이두 · 보조근 상완근")
         참("근육 정보 없음", 근육계산.근육글(emptyMap()) == "근육 정보 없음")
+    }
+
+    // ── 9-1. 새 종목 시트 그림 (10-06 ⑧) — 카테고리 → 상체 · 하체 확대 · 누른 자리 → 그림 좌표 ──
+    private fun 새종목그림() {
+        참("고르기 전은 전신", 근육계산.부위상자(null) == (근육표.앞전신 to 근육표.뒤전신))
+        참("모르는 카테고리는 전신", 근육계산.부위상자("맨몸").first === 근육표.앞전신)
+        for (k in listOf("가슴", "등", "어깨", "팔", "복근")) 참("$k = 상체", 근육계산.부위상자(k) == (근육표.앞위 to 근육표.뒤위))
+        참("하체 = 아래", 근육계산.부위상자("하체") == (근육표.앞아래 to 근육표.뒤아래))
+        참("기본 카테고리는 전부 상체 · 하체 중 하나", 앱데이터.기본카테고리.all { it in 근육표.상체칸 || it in 근육표.하체칸 })
+        참("상체 · 하체가 겹치지 않음", (근육표.상체칸 intersect 근육표.하체칸).isEmpty())
+        // 상자 안에 그 부위 근육 조각이 다 들어간다
+        fun 안(상자: FloatArray, 근육: Set<String>, 뒤: Boolean): Boolean = 근육자료.조각.indices.filter {
+            val p = 근육자료.조각[it]; p.종류 == 'm' && p.뒤 == 뒤 && p.근육 in 근육
+        }.all { i ->
+            val q = 근육계산.조각상자[i]
+            q[0] >= 상자[0] && q[1] >= 상자[1] && q[2] <= 상자[0] + 상자[2] && q[3] <= 상자[1] + 상자[3]
+        }
+        val 위근육 = setOf("chest_upper", "chest_lower", "delt_front", "delt_side", "delt_rear", "biceps", "triceps", "abs", "serratus", "lats", "rhomboids", "traps", "lower_back", "forearm")
+        val 아래근육 = setOf("quads", "adductors", "shin", "calves", "glutes", "hamstrings")
+        참("앞 위 상자에 상체 근육", 안(근육표.앞위, 위근육, false))
+        참("뒤 위 상자에 상체 근육", 안(근육표.뒤위, 위근육, true))
+        참("앞 아래 상자에 하체 근육", 안(근육표.앞아래, 아래근육, false))
+        참("뒤 아래 상자에 하체 근육", 안(근육표.뒤아래, 아래근육, true))
+        // 그림 좌표 — 칸 가운데는 상자 가운데 · 칸이 0 이면 null
+        val b = 근육표.앞위
+        val g = 근육계산.그림좌표(100f, 50f, 200f, 100f, b)
+        참("칸 가운데 = 상자 가운데", g != null && abs(g.first - (b[0] + b[2] / 2)) < 1e-3 && abs(g.second - (b[1] + b[3] / 2)) < 1e-3)
+        참("칸 왼위 모서리 (세로가 꽉 참) → 상자 위끝", g != null && 근육계산.그림좌표(100f, 0f, 200f, 100f, b)?.second?.let { abs(it - b[1]) < 1e-3 } == true)
+        참("빈 칸은 null", 근육계산.그림좌표(1f, 1f, 0f, 0f, b) == null)
     }
 
     // ── 10. 운동 저장과 잇기 — 워밍업은 빼고 끝낸 시각에서 시작 ──

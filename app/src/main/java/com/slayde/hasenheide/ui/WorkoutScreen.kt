@@ -91,6 +91,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
@@ -310,7 +311,8 @@ private object 운치수 {
     const val 흐린단추 = 0.35f       // 못 누르는 ‹ › · 휴지통
     const val 끝칸흐림 = 0.55f       // 다 끝낸 칸 (보는 칸이 아닐 때)
     const val 게이지틱 = 260         // 쉼 게이지가 남은 시간을 따라가는 시간(ms) — 시계 0.25초마다
-    const val 게이지줄 = 1.1f        // 게이지 두 줄의 줄 높이(em) — 32 높이에 시간 15 + 문구 11 이 들어가게 (시안 line-height 1.1)
+    const val 게이지줄 = 1.1f        // 게이지 시간 줄 높이(em) — 15 × 1.1 = 16.5
+    const val 게이지문구줄 = 1.3f    // 게이지 문구 줄 높이(em) — 11 × 1.3 = 14.3. 1.1 이면 한글 아래가 잘렸다 (10-06 홍겸 님 '건너뛰기 아래 잘림'). 합 30.8 ≤ 32
     const val 칸이름줄 = 1.25f       // 아래 칸 이름 11 두 줄이 28 안에 (시안 `.운칸 .ㅇ line-height 1.25`)
     val 단추비 = listOf(0.125f, 0.475f, 0.275f, 0.125f)   // v21 ④
     val 줄최소 = listOf(44f, 72f, 56f, 86f)                  // 세트 줄 칸 — 번호 · kg · 회 · 휴식 (시안 v10 grid minmax)
@@ -762,7 +764,7 @@ private fun 쉼게이지(남은비율: Float, 시간: String, 문구: String, mo
             Spacer(Modifier.width(간격.좁게))
             Column(Modifier.weight(1f, fill = false), horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(시간, style = 글꼴.보통(크기.본문, FontWeight.Bold).copy(fontFeatureSettings = "tnum", lineHeight = 운치수.게이지줄.em), color = 색, maxLines = 1)
-                자간맞춤글(문구, 글꼴.보통(크기.작게, FontWeight.Bold).copy(lineHeight = 운치수.게이지줄.em), 색)
+                자간맞춤글(문구, 글꼴.보통(크기.작게, FontWeight.Bold).copy(lineHeight = 운치수.게이지문구줄.em, lineHeightStyle = LineHeightStyle(LineHeightStyle.Alignment.Center, LineHeightStyle.Trim.None)), 색)
             }
         }
     }

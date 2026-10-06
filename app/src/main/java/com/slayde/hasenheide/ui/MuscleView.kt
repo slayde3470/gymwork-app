@@ -14,7 +14,6 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.EnterExitState
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -279,7 +278,7 @@ private data class 판(val 종류: String, val 종목: String = "", val 사진: 
 
 /**
  * 운동 중 위쪽 그림 칸 — 근육 2장 · 근육 + 사진 · 사진 1장 · 사진 2장 (설정에서 고른다).
- *  · 쉬는 동안 칸이 커진다 (124 → 168)
+ *  · 높이는 늘 124 (10-06 쉬는 동안 커지던 것 뺌)
  *  · 근육: '지금 몸'(앞 · 뒤 전신 = 남은 피로 + 오늘) · 지금 종목 확대. 세트를 끝낼 때마다 빨개지고, 쉬면 원래 색으로 돌아간다
  *  · 사진: 세트를 끝낼 때마다 무작위로 바뀐다. 오른쪽에 접힌 더미(남은 사진 수, 최대 9)
  */
@@ -290,7 +289,7 @@ fun 운동그림칸(상태: 앱상태, S: 운동세션, 지금: Long, on숨김: 
     val 모 = d.설정.배너
     val e = S.지금종목
     val 끝낸 = S.종목들.sumOf { it.찬것().size }
-    val 높 by animateDpAsState(if (S.휴식 != null) 그림칸.쉬는높이 else 그림칸.높이, tween(움직임.배너높이, easing = 움직임.부드럽게), label = "그림칸높이")
+    val 높 = 그림칸.높이   // 10-06 홍겸 님: 쉬는 동안 커지던 것 뺌
     // 근육 단계 — 1분마다 다시 잰다 (회복은 시간 단위로 느리게 내려간다)
     val 분 = 지금 / 60_000L
     val 단계 = remember(S.종목들, d.피로, d.최대볼륨, d.몸.체중, d.종목표, 분) { d.근육단계(S.근육입력들(), 지금) }
@@ -366,7 +365,7 @@ private fun 그림판(p: 판, 단계: Map<String, Double>, 색표이름: String,
         when (p.종류) {
             "전신" -> 몸그림(단계, 색표이름, null, Modifier.fillMaxSize().padding(간격.아주좁게))
             "확대" -> 몸그림(단계, 색표이름, remember(p.종목, 부위) { 근육계산.확대상자(p.종목, 부위) }, Modifier.fillMaxSize().padding(간격.아주좁게))
-            "사진" -> 사진그림(p.사진 ?: "", 그림칸.쉬는높이 * 2, Modifier.fillMaxSize(), "${p.종목} 사진")
+            "사진" -> 사진그림(p.사진 ?: "", 그림칸.높이 * 2, Modifier.fillMaxSize(), "${p.종목} 사진")
             else -> 글("사진 없음", Modifier.align(Alignment.Center), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)   // 설명 글은 한 줄
         }
         // 이름 — 지금 종목 이름은 잘리면 안 된다 (U5-8): 말줄임 없이 글자를 줄인다 (10-01 홍겸 님 "짜르지말고 차라리 글자크기를 줄여")
