@@ -32,6 +32,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
@@ -46,7 +47,8 @@ import com.slayde.hasenheide.data.앱데이터
 import com.slayde.hasenheide.data.예정맞추기
 import com.slayde.hasenheide.data.남은초
 import com.slayde.hasenheide.data.오래된운동정리
-import com.slayde.hasenheide.data.운동저장하기
+import com.slayde.hasenheide.data.보고끝
+import com.slayde.hasenheide.data.업적판정법
 import com.slayde.hasenheide.data.저장소
 import com.slayde.hasenheide.data.세기이름
 import com.slayde.hasenheide.data.세기더함
@@ -96,6 +98,9 @@ class 앱상태(private val 파일: File) {
      * `상태.알림.되돌림(묶음, { n -> 글 }) { 되돌리기 }`. App 맨 위 한 곳에서 그리므로 화면이 다시 그려져도 사라지지 않는다
      */
     val 알림 = 알림판()
+
+    /** 스탯 화면 열기 (10-06 v22 D 13-3 — 보고서 › · 캘린더 띠 [스탯] 과 같은 화면). 앱() 이 채운다 */
+    var 스탯열기: (() -> Unit)? = null
 
     fun 바꿈(f: (앱데이터) -> 앱데이터) {
         val 전 = d
@@ -164,12 +169,14 @@ class 앱상태(private val 파일: File) {
     private fun 업적살핌(전: 앱데이터, 새0: 앱데이터): 앱데이터 {
         var 새 = 새0
         if (!새.업적.keys.containsAll(전.업적.keys)) 새 = 새.copy(업적 = 전.업적 + 새.업적)
-        val 저장함 = 전.기록.keys != 새.기록.keys
+        // 10-06 v22 D: 보고서가 열릴 때 저장하면 세션이 남고(저장 표시가 새로 붙는다), 다시 끝내면 같은 열쇠에 덮어쓴다 — 둘 다 '저장'
+        val 보고저장함 = 새.세션?.저장 != null && 새.세션?.저장 != 전.세션?.저장
+        val 저장함 = 전.기록.keys != 새.기록.keys || 보고저장함
         return try {
             if (저장함) 새 = 새.스탯기록남김(오늘)
-            val 볼 = 업적살필것(전, 새) ?: return 새
+            val 볼 = (if (보고저장함) 업적판정법.keys else 업적살필것(전, 새)) ?: return 새
             // 방금 저장한 운동 — 세션으로만 보는 업적(2-33)
-            val 방금 = if (저장함 && 전.세션 != null && 새.세션 == null) 전.세션 else null
+            val 방금 = if (보고저장함) 새.세션 else if (저장함 && 전.세션 != null && 새.세션 == null) 전.세션 else null
             val (x, 번호들) = 새.업적갱신(오늘, System.currentTimeMillis(), 볼, 방금)
             if (번호들.isNotEmpty()) 새업적 = 새업적 + 번호들
             x
@@ -227,6 +234,8 @@ fun 앱(상태: 앱상태, 폰: 폰기능) {
     var 스탯열림 by remember { mutableStateOf<Pair<String, String?>?>(null) }   // (처음 쪽, 보여 줄 업적 번호)
     val 세션 = 상태.d.세션
     LaunchedEffect(세션?.시작시각) { if (세션 != null) 운동보기 = true }
+    // 10-06 v22 D 13-3 — 보고서 › : 캘린더 탭 위에 스탯 화면
+    SideEffect { 상태.스탯열기 = { 지금탭 = 탭.캘린더; 운동보기 = false; 스탯열림 = 스탯화면글.스탯 to null } }
 
     // 앱을 켤 때 한 번, 그 뒤로 1분마다 날짜가 바뀌었는지 본다
     LaunchedEffect(Unit) { while (true) { 상태.날짜확인(); delay(60_000) } }
@@ -272,7 +281,7 @@ fun 앱(상태: 앱상태, 폰: 폰기능) {
             세션 != null && !운동보기 && 지금탭 != 탭.캘린더 -> 운동보기 = true
             운동화면중 -> {
                 // 10-01 감시관: 결과 화면에서 뒤로가기로 나가면 저장되지 않았다 (탭을 누를 때와 다르게)
-                if (세션?.끝화면 == true) 상태.바꿈 { it.운동저장하기(상태.오늘, System.currentTimeMillis()) }
+                if (세션?.끝화면 == true) 상태.바꿈 { it.보고끝(상태.오늘, System.currentTimeMillis()) }   // 10-06 v22 D 이미 저장됨 → 세션만 닫음
                 운동보기 = false; 지금탭 = 탭.캘린더
             }
             else -> 지금탭 = 탭.캘린더
@@ -329,7 +338,7 @@ fun 앱(상태: 앱상태, 폰: 폰기능) {
                             발자취.적기("${t.이름} 탭")
                             // 10-01: 운동을 다 끝내고(결과 화면) 다른 탭으로 나가면 그때 저장한다 —
                             //        저장 버튼을 안 눌렀다고 기록이 안 남던 것 ("운동 안 하고 넘어갔더라도 기록은 되어야")
-                            if (상태.d.세션?.끝화면 == true) 상태.바꿈 { it.운동저장하기(상태.오늘, System.currentTimeMillis()) }
+                            if (상태.d.세션?.끝화면 == true) 상태.바꿈 { it.보고끝(상태.오늘, System.currentTimeMillis()) }   // 10-06 v22 D 이미 저장됨 → 세션만 닫음
                             if (상태.d.결과 != null) 상태.바꿈 { it.copy(결과 = null) }
                             // 10-02: 설정 탭을 연 수 (업적 2-46)
                             if (t == 탭.설정 && 지금탭 != 탭.설정) 상태.바꿈 { it.세기더함(세기이름.설정진입) }

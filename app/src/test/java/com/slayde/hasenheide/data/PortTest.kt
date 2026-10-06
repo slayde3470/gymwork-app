@@ -558,4 +558,162 @@ class PortTest {
         val S = 운동세션("r", "R", 1_000L, 0, 0, 20.0, 10, listOf(줄("A")), 멈춘 = 12_345L)
         assertEquals(12_345L, 저장소.글에서(저장소.글로(앱데이터(세션 = S))).세션?.멈춘)
     }
+
+    // ─────────────── (g) 보고서가 열릴 때 저장 · 덮어쓰기 · 되감기 (10-06 시안 v22 D 13-1) ───────────────
+
+    /** 벤치 플랜(측정먼저 — 1회차 = 측정일 → 측정 · 향상기록 한 줄) + 보통 줄(볼륨 자동 올리기) 루틴 */
+    private fun 보고판(): 앱데이터 {
+        val p = 플랜("p", "벤치", "벤치프레스", 시작1RM = 60.0, 목표방식 = 목표형식.RM, 목표무게 = 80.0, 만든날 = "2026-10-01", 측정먼저 = true)
+        val r0 = 루틴("r1", "가슴날", 자동생성 = true, 종목 = listOf(
+            루틴종목("벤치프레스", 세트 = 1, 무게 = 60.0, 횟수 = 5, 플랜id = "p"),
+            루틴종목("덤벨컬", 세트 = 2, 무게 = 10.0, 횟수 = 10),
+        ))
+        val d = 앱데이터(
+            종목표 = listOf(종목("벤치프레스", "가슴"), 종목("덤벨컬", "팔")), 플랜들 = listOf(p),
+            설정 = 설정값(볼륨켬 = true, 볼륨언제 = "항상", 볼륨배분 = "무게", 볼륨방식 = "kg", 볼륨값 = 1.0),
+            몸 = 몸조건(35, true, 80.0),
+        )
+        return d.copy(루틴들 = listOf(d.플랜줄채움(r0)))
+    }
+    /** 루틴대로 시작 → 첫 줄 1세트 · 둘째 줄 [n]세트 체크 → 끝냄 */
+    private fun 앱데이터.한운동(시작: Long, n: Int = 1): 앱데이터 {
+        var S = assertNotNull(운동시작(루틴들[0], 시작))
+        S = S.체크(0, 0, 시작 + 1)
+        repeat(n) { S = S.체크(1, it, 시작 + 2 + it) }
+        return copy(세션 = S.끝냄(시작 + 100))
+    }
+
+    @Test fun 보고저장_처음_기록하나_세션남음() {
+        val d0 = 보고판()
+        val (d, 결과) = d0.한운동(1_000L).보고저장("2026-10-06", 1_200L)
+        assertEquals(보고저장결과.저장함, 결과)
+        assertEquals(setOf("2026-10-06"), d.기록.keys)
+        val S = assertNotNull(d.세션, "보고서가 열려 있는 동안 세션은 남는다(‹ 로 돌아갈 수 있게)")
+        assertEquals("2026-10-06", S.저장?.열쇠)
+        assertEquals(1, d.플랜들[0].한회)
+        assertEquals(11.0, d.루틴들[0].종목[1].무게)   // 볼륨 자동 올리기 1kg
+        assertEquals(1, d.향상기록들.size)            // 측정일 → 한 줄
+        assertTrue(d.피로.isNotEmpty())
+        // 다시 그려도 (같은 끝내기) 두 번 저장하지 않는다
+        val (e, 다시) = d.보고저장("2026-10-06", 1_300L)
+        assertEquals(보고저장결과.이미, 다시)
+        assertTrue(e === d)
+    }
+
+    @Test fun 보고저장_돌아가_다시끝내면_같은열쇠에_덮어씀() {
+        val d0 = 보고판()
+        val (d1, _) = d0.한운동(1_000L).보고저장("2026-10-06", 1_200L)
+        // ‹ 운동으로 → 덤벨컬 한 세트 더 → 다시 끝내기
+        val S = assertNotNull(d1.세션).재개(1_300L).체크(1, 1, 1_400L).끝냄(1_500L)
+        val (d2, 결과) = d1.copy(세션 = S).보고저장("2026-10-06", 1_500L)
+        assertEquals(보고저장결과.덮어씀, 결과)
+        assertEquals(setOf("2026-10-06"), d2.기록.keys, "기록이 둘이 되면 안 된다")
+        assertEquals(2, d2.기록.getValue("2026-10-06").종목들.first { it.이름 == "덤벨컬" }.세트들.size, "새 내용으로 덮어써야 한다")
+        assertEquals(1, d2.플랜들[0].한회, "플랜 회차는 +1 에서 멈춘다")
+        assertEquals(1, d2.플랜들[0].측정들.size)
+        assertEquals(11.0, d2.루틴들[0].종목[1].무게, "볼륨 자동 올리기는 한 번만")
+        assertEquals(1, d2.향상기록들.size, "향상기록이 두 줄이 되면 안 된다")
+        // 처음 저장한 것과 같은 상태에서 덮어쓴 것과 같다 — 되감기가 플랜 · 루틴 · 피로를 정확히 되돌렸다
+        val 바로 = d0.copy(세션 = S.copy(저장 = null)).보고저장("2026-10-06", 1_500L).first
+        assertEquals(바로.플랜들, d2.플랜들); assertEquals(바로.루틴들, d2.루틴들); assertEquals(바로.피로, d2.피로)
+        assertEquals(바로.최대볼륨, d2.최대볼륨); assertEquals(바로.예정, d2.예정); assertEquals(바로.기록, d2.기록)
+    }
+
+    @Test fun 보고저장_같은날_앞기록있으면_둘째열쇠를_계속씀() {
+        val d0 = 보고판()
+        val 앞 = d0.copy(기록 = mapOf("2026-10-06" to 날기록("r1", "가슴날", true, emptyList(), 60)))
+        val (d1, _) = 앞.한운동(1_000L).보고저장("2026-10-06", 1_200L)
+        assertEquals("2026-10-06~2", d1.세션?.저장?.열쇠)
+        val S = assertNotNull(d1.세션).재개(1_300L).체크(1, 1, 1_400L).끝냄(1_500L)
+        val d2 = d1.copy(세션 = S).보고저장("2026-10-06", 1_500L).first
+        assertEquals(setOf("2026-10-06", "2026-10-06~2"), d2.기록.keys, "~3 이 생기면 안 된다")
+        // 자정을 넘겨 다시 끝내도 처음 저장한 날 그대로
+        val S3 = assertNotNull(d2.세션).재개(1_600L).끝냄(1_700L)
+        val d3 = d2.copy(세션 = S3).보고저장("2026-10-07", 1_700L).first
+        assertEquals(setOf("2026-10-06", "2026-10-06~2"), d3.기록.keys)
+    }
+
+    @Test fun 보고저장_체크다풀고_다시끝내면_되감김() {
+        val d0 = 보고판()
+        val (d1, _) = d0.한운동(1_000L).보고저장("2026-10-06", 1_200L)
+        var S = assertNotNull(d1.세션).재개(1_300L)
+        S = S.체크(0, 0, 1_310L).체크(1, 0, 1_320L).끝냄(1_400L)   // 체크 풀기
+        assertTrue(S.종목들.none { it.찬것().isNotEmpty() })
+        val (d2, 결과) = d1.copy(세션 = S).보고저장("2026-10-06", 1_400L)
+        assertEquals(보고저장결과.체크없음, 결과)
+        assertTrue(d2.기록.isEmpty(), "앞 저장 기록도 지워진다")
+        assertEquals(d0.플랜들, d2.플랜들); assertEquals(d0.루틴들, d2.루틴들)
+        assertEquals(d0.피로, d2.피로); assertEquals(d0.향상기록들, d2.향상기록들); assertEquals(d0.예정, d2.예정)
+        assertNull(d2.세션?.저장)
+        // 그대로 탭으로 나가면 세션만 닫고 아무것도 안 남긴다
+        val d3 = d2.보고끝("2026-10-06", 1_500L)
+        assertNull(d3.세션); assertTrue(d3.기록.isEmpty())
+    }
+
+    @Test fun 보고끝_이미저장했으면_세션만닫음() {
+        val (d1, _) = 보고판().한운동(1_000L).보고저장("2026-10-06", 1_200L)
+        val d2 = d1.보고끝("2026-10-06", 2_000L)
+        assertNull(d2.세션)
+        assertEquals(d1.기록, d2.기록); assertEquals(d1.플랜들, d2.플랜들); assertEquals(d1.루틴들, d2.루틴들)
+    }
+
+    @Test fun 보고끝_저장전에_나가면_저장하고닫음() {
+        val d = 보고판().한운동(1_000L).보고끝("2026-10-06", 1_200L)
+        assertNull(d.세션); assertEquals(1, d.기록.size); assertEquals(1, d.플랜들[0].한회)
+    }
+
+    @Test fun 보고저장_세션정리_같은열쇠() {
+        val (d1, _) = 보고판().한운동(1_000L).보고저장("2026-10-06", 1_200L)
+        // ‹ 로 돌아가 한 세트 더 하고 3시간 손대지 않음 → 저절로 끝낼 때도 같은 열쇠 · 회차 한 번
+        val S = assertNotNull(d1.세션).재개(1_300L).체크(1, 1, 1_400L).copy(마지막 = 1_400L)
+        val d2 = d1.copy(세션 = S).오래된운동정리(1_400L + 4 * 3_600_000L)
+        assertNull(d2.세션)
+        assertEquals(1, d2.기록.size, "세션 정리가 기록을 하나 더 만들면 안 된다")
+        assertEquals(2, d2.기록.values.single().종목들.first { it.이름 == "덤벨컬" }.세트들.size)
+        assertEquals(1, d2.플랜들[0].한회); assertEquals(1, d2.향상기록들.size); assertEquals(11.0, d2.루틴들[0].종목[1].무게)
+        assertNull(d2.결과?.저장)
+        // 체크를 다 풀어 둔 채 3시간 → 되감기만
+        var T = assertNotNull(d1.세션).재개(1_300L)
+        T = T.체크(0, 0, 1_310L).체크(1, 0, 1_320L).copy(마지막 = 1_320L)
+        val d3 = d1.copy(세션 = T).오래된운동정리(1_320L + 4 * 3_600_000L)
+        assertNull(d3.세션); assertTrue(d3.기록.isEmpty()); assertEquals(0, d3.플랜들[0].한회)
+    }
+
+    @Test fun 보고저장_왕복_껐다켜도_덮어씀() {
+        val (d1, _) = 보고판().한운동(1_000L).보고저장("2026-10-06", 1_200L)
+        val e = 저장소.글에서(저장소.글로(d1))
+        assertEquals(d1.세션?.저장, e.세션?.저장, "되감기 자료가 저장 왕복에서 살아남는다")
+        // 앱을 다시 켜도 보고서를 다시 그릴 때 두 번 저장하지 않는다
+        assertEquals(보고저장결과.이미, e.보고저장("2026-10-06", 2_000L).second)
+        // 껐다 켠 뒤 ‹ → 더 하고 → 다시 끝내도 기록 하나 · 회차 한 번
+        val S = assertNotNull(e.세션).재개(2_100L).체크(1, 1, 2_200L).끝냄(2_300L)
+        val (e2, 결과) = e.copy(세션 = S).보고저장("2026-10-06", 2_300L)
+        assertEquals(보고저장결과.덮어씀, 결과)
+        assertEquals(1, e2.기록.size); assertEquals(1, e2.플랜들[0].한회); assertEquals(1, e2.향상기록들.size)
+        assertEquals(11.0, e2.루틴들[0].종목[1].무게)
+    }
+
+    @Test fun 세션_저장필드없는_옛JSON_그대로열림() {
+        // (a) 의 옛14 세션에는 '저장' 이 없다 → null (아직 저장 안 함)
+        assertNull(저장소.글에서(옛14).세션?.저장)
+        // 깨진 '저장' 은 버리고 세션은 살린다
+        val 글 = 저장소.글로(앱데이터(세션 = 운동세션("r", "R", 1L, 종목들 = listOf(줄("A")))))
+            .replace("\"멈춘\": 0", "\"멈춘\": 0, \"저장\": {\"열쇠\": \"\"}")
+        val e = 저장소.글에서(글)
+        assertNotNull(e.세션); assertNull(e.세션?.저장)
+        val 글2 = 저장소.글로(앱데이터(세션 = 운동세션("r", "R", 1L, 종목들 = listOf(줄("A")))))
+            .replace("\"멈춘\": 0", "\"멈춘\": 0, \"저장\": {\"열쇠\": \"2026-10-06\", \"피로\": 3}")
+        assertEquals("2026-10-06", 저장소.글에서(글2).세션?.저장?.열쇠)
+    }
+
+    @Test fun 보고저장_루틴을_그사이_고쳤으면_그줄은_그대로() {
+        val (d1, _) = 보고판().한운동(1_000L).보고저장("2026-10-06", 1_200L)
+        // 보고서를 둔 채 루틴 탭에서 줄 하나 더함 → 다시 끝내도 더한 줄은 남는다
+        val r = d1.루틴들[0]
+        val d1b = d1.copy(루틴들 = listOf(r.copy(종목 = r.종목 + 루틴종목("스쿼트", 세트 = 3))))
+        val S = assertNotNull(d1b.세션).재개(1_300L).끝냄(1_400L)
+        val d2 = d1b.copy(세션 = S).보고저장("2026-10-06", 1_400L).first
+        assertEquals(listOf(r.종목[0].이름, "덤벨컬", "스쿼트"), d2.루틴들[0].종목.map { it.이름 })
+        assertEquals(11.0, d2.루틴들[0].종목[1].무게)
+    }
 }
