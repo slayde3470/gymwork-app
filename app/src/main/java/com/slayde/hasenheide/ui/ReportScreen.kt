@@ -19,8 +19,8 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
@@ -40,6 +40,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
@@ -62,6 +63,10 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.vector.addPathNodes
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
@@ -81,10 +86,10 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
@@ -109,10 +114,12 @@ import com.slayde.hasenheide.data.세트종류
 import com.slayde.hasenheide.data.실제진행값
 import com.slayde.hasenheide.data.앱데이터
 import com.slayde.hasenheide.data.운동세션
-import com.slayde.hasenheide.data.운동저장하기
 import com.slayde.hasenheide.data.웜칸수
 import com.slayde.hasenheide.data.일RM
 import com.slayde.hasenheide.data.재개
+import com.slayde.hasenheide.data.보고끝
+import com.slayde.hasenheide.data.보고저장
+import com.slayde.hasenheide.data.보고저장결과
 import com.slayde.hasenheide.data.종목기록
 import com.slayde.hasenheide.data.종목열쇠
 import com.slayde.hasenheide.data.종목찾기
@@ -131,6 +138,7 @@ import com.slayde.hasenheide.data.흐른초
 import com.slayde.hasenheide.ui.theme.Local색
 import com.slayde.hasenheide.ui.theme.간격
 import com.slayde.hasenheide.ui.theme.글꼴
+import com.slayde.hasenheide.ui.theme.보고떠값
 import com.slayde.hasenheide.ui.theme.높이
 import com.slayde.hasenheide.ui.theme.모서리
 import com.slayde.hasenheide.ui.theme.선굵기
@@ -152,9 +160,10 @@ import kotlin.math.roundToInt
  *
  *  · 띠 '운동 보고서' + 날짜(제목 오른쪽 15 · 아래 15) · 왼쪽 카메라(갤러리 저장) · 오른쪽 공유 (v9 mdot · v17 · v19 B)
  *  · 프로필 상자 — 사진 58 + 닉네임 · 큰 운동 칸(N대 파란 상자 + SBD …, 늘 한 줄) · 톱니 (v10 · v11~16 · v17)
- *  · 루틴 상자 — 이름 · 볼륨 ▲▼ · 세트 | 총 볼륨 | 운동 시간 (누르면 루틴 상세 — 틀만) (v9 wxgv · v10 0vnw · v18 B)
+ *  · 루틴 상자 — 한 줄 [이름(7자 폭) · 볼륨 ▲▼ | 세트 | 총 볼륨 | 운동 시간] (누르면 루틴 상세 — 틀만) (v9 wxgv · v18 B · 10-06 v23 ② · v24 ①)
  *  · 종목 두 칸 격자 — 1RM · 볼륨 지난번 대비 ▲▼ · 누르면 그 줄 아래 상세(세트 세로 먼저) (v9 7jjc · ya8r · v10 oaee)
- *  · 아래 단추 — 운동으로 돌아가기 1 : 저장하고 종료 2 : 기록없이 종료 1 (두 번 눌러 버림) / 저장된 보고서는 [확인] (v17 · v18)
+ *  · 끝내기 전 보고서 — 열리는 순간 저장(다시 끝내면 같은 기록에 덮어씀) · 아래 단추 줄 없음 · 떠 있는 ‹ (운동으로) › (스탯) (10-06 v22 D · v23 ③)
+ *    저장된 보고서는 아래 [확인] (v17 · v18)
  *
  * 다른 파일이 부르는 것: [결과화면] (App) · [마무리] (운동화면) — 매개변수를 바꾸지 않는다.
  * 새로 둔 것: [기록보고서] (캘린더 [운동 보고서] 가 저장된 기록 하나를 열 때) · [보고방식시트] · [큰운동판] · [큰운동값] (프로필 탭이 같이 쓸 수 있게)
@@ -177,7 +186,6 @@ private object 보고치수 {
     val 큰합옆 = 15.dp            // v16 — 파란 상자 좌우
     const val 큰합비율 = 0.935f   // v17 B 6 · v18 B 5 — 85% × 1.1
     val 칩옆 = 10.dp              // 시안 .칩 좌우 여백
-    val 끝살옆 = 4.dp             // v18 B 3 — ‹ › 살표
     val 들어옴거리 = 6.dp
     val 좁은칸옆 = 1.dp           // 5~6칸이면 칸 좌우 1 (시안 .열5>div)
     const val 띠들어옴 = 1_600    // v17 B 1 — .8s × 2
@@ -385,14 +393,32 @@ internal fun 큰값글(x: 큰칸, 합: Boolean): String = if (x.v <= 0) "—" el
 @Composable
 internal fun 마무리(상태: 앱상태, S: 운동세션, 저장됨: Boolean = false) {
     val d = 상태.d
-    val 저장키 = if (저장됨) remember(d.기록, S.루틴id, S.끝시각) { 저장열쇠(d, S) } else null
+    // 10-06 v22 D 13-1 — 보고서가 열리는 순간 저장한다(세션은 둔다). ‹ 로 돌아가 더 하고 다시 끝내면 같은 기록에 덮어쓴다.
+    //   이번 끝내기(끝시각)를 이미 저장했으면 아무것도 안 한다 — 다시 그려도 · 앱을 껐다 켜도 한 번만 (data/Logic.kt 보고저장)
+    if (!저장됨) {
+        LaunchedEffect(S.시작시각, S.끝시각) {
+            var 결과 = 보고저장결과.없음
+            상태.바꿈 { dd ->
+                val s = dd.세션
+                if (s == null || !s.끝화면 || s.시작시각 != S.시작시각) return@바꿈 dd
+                val (x, r) = dd.보고저장(상태.오늘, System.currentTimeMillis()); 결과 = r; x
+            }
+            when (결과) {
+                보고저장결과.저장함, 보고저장결과.덮어씀 -> 상태.알림.토스트("저장했습니다")
+                보고저장결과.체크없음 -> 상태.알림.토스트("체크한 세트가 없어 저장하지 않았습니다")
+                else -> {}
+            }
+        }
+    }
+    // 끝내기 전(세션) 보고서도 방금 저장한 자기 기록이 있으면 그 열쇠로 견준다 — 자기 기록은 빼고 · 플랜은 '반영됨' (시안 v22 D)
+    val 자기 = if (저장됨) null else S.저장?.열쇠?.takeIf { d.기록.containsKey(it) }
+    val 저장키 = if (저장됨) remember(d.기록, S.루틴id, S.끝시각) { 저장열쇠(d, S) } else 자기
     val 날 = 저장키?.let { 날짜만(it) } ?: 상태.오늘
-    // 저장된 결과를 보다가 그 기록이 지워져도 세션 값으로 그린다
-    val rec = remember(S, 저장키, d.기록) { 저장키?.let { d.기록[it] } ?: 세션기록(S, System.currentTimeMillis()) }
-    val 총칸들 = remember(S, 저장키) { if (저장키 == null) 세션총칸(S) else null }
-    보고틀(상태, rec, 저장키, 날, 총칸들, 키 = 저장키 ?: "세션${S.시작시각}", 조절됨 = S.조절됨) {
-        if (저장됨) 확인단추 { 상태.바꿈 { it.copy(결과 = null) } }
-        else 끝단추줄(상태, S)
+    // 저장된 결과를 보다가 그 기록이 지워져도 세션 값으로 그린다 · 끝내기 전은 늘 세션 값 (빈 종목도 차례대로)
+    val rec = remember(S, 저장키, d.기록) { (if (저장됨) 저장키?.let { d.기록[it] } else null) ?: 세션기록(S, System.currentTimeMillis()) }
+    val 총칸들 = remember(S, 저장됨) { if (!저장됨) 세션총칸(S) else null }
+    보고틀(상태, rec, 저장키, 날, 총칸들, 키 = if (저장됨) 저장키 ?: "결과${S.시작시각}" else "세션${S.시작시각}", 조절됨 = S.조절됨, 떠있음 = if (저장됨) null else S) {
+        확인단추 { 상태.바꿈 { it.copy(결과 = null) } }
     }
 }
 
@@ -426,6 +452,7 @@ private sealed interface 보고시트 {
 @Composable
 private fun 보고틀(
     상태: 앱상태, rec: 날기록, 저장키: String?, 날: String, 총칸들: List<Int>?, 키: String, 조절됨: Boolean,
+    떠있음: 운동세션? = null,
     아래: @Composable () -> Unit,
 ) {
     val c = Local색.current
@@ -528,14 +555,18 @@ private fun 보고틀(
                     on펼침 = { n -> 펼침 = if (펼친것 == n) null else n },
                     넘김 = 넘김, 띠p = { 띠p.value }, 상자p = { 상자p.value }, 찍는중 = 찍기 != null,
                     on찍기 = { 무엇 -> if (찍기 == null && 폭 > 0) 찍기 = 무엇 }, on시트 = { 시트 = it }, on사진 = 사진고름,
+                    // 10-06 v22 D 13-3 — 목록 끝이 떠 있는 ‹ › 에 가리지 않게 (단추 30 + 아래 12)
+                    아래여백 = if (떠있음 != null) 보고떠값.지름 + 보고떠값.옆 else 0.dp,
                 )
             }
-            Column(
+            // 저장된 보고서만 아래 [확인] 줄. 끝내기 전 보고서는 단추 셋을 없애고 떠 있는 ‹ › (10-06 v22 D 13-2)
+            if (떠있음 == null) Column(
                 Modifier.fillMaxWidth().background(c.면)
                     .drawBehind { drawRect(c.선, size = Size(size.width, 선굵기.보통.toPx())) }
                     .padding(horizontal = 간격.보통, vertical = 간격.좁게),
             ) { 아래() }
         }
+        if (떠있음 != null) 보고떠단추(상태, 떠있음)
 
         when (val s = 시트) {
             null -> {}
@@ -569,6 +600,7 @@ private fun ColumnScope.보고본문(
     찍는용: Boolean, 펼침: Int?, on펼침: (Int) -> Unit, 넘김: ScrollState?,
     띠p: () -> Float, 상자p: () -> Float, 찍는중: Boolean,
     on찍기: (String) -> Unit, on시트: (보고시트) -> Unit, on사진: () -> Unit,
+    아래여백: Dp = 0.dp,
 ) {
     val c = Local색.current
     val d = 상태.d
@@ -624,15 +656,23 @@ private fun ColumnScope.보고본문(
     }
 
     // ── 루틴 상자 — 늘 보인다 (v18 B 2). 누르면 루틴 상세(틀만) ──
+    // 10-06 v23 ② · v24 ① 한 줄 [루틴 이름 | 세트 | 총 볼륨 | 운동 시간]. 이름 칸 = 이름 글자(13 Bold) 7자 + 오른쪽 8, 더 길면 … ·
+    //   볼륨 차이는 이름 아래 작게 · 이름 칸과 수치 칸 사이도 수치 칸 사이와 같은 세로선 · 위아래 안 여백 4 · 좌우 8 ·
+    //   프로필을 꺼서 톱니가 여기 오면 오른쪽 32
     val 루틴이름 = 루틴표시(값.루틴이름)
+    val 톱니여기 = !보임.프로필 && !찍는용
+    val 이름폭 = with(LocalDensity.current) { (크기.조금작게 * 보고떠값.이름칸글자).toDp() } + 보고떠값.이름칸뒤
     Box(
         Modifier.fillMaxWidth().들어옴(상자p, false).보고상자(c.면2, c.선)
             .then(if (찍는용) Modifier else Modifier.눌림 { on시트(보고시트.루틴(루틴이름)) }.semantics { contentDescription = "$루틴이름 상세"; role = Role.Button }),
     ) {
-        Column(Modifier.fillMaxWidth().padding(horizontal = 간격.보통, vertical = 간격.좁게), verticalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
-            Row(Modifier.fillMaxWidth().padding(end = if (보임.프로필) 0.dp else 보고치수.톱니비킴), verticalAlignment = Alignment.CenterVertically) {
-                Text(루틴이름, Modifier.weight(1f, fill = false), style = 글꼴.보통(크기.조금작게, FontWeight.Bold), color = c.글, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Box(Modifier.weight(1f))
+        Row(
+            Modifier.fillMaxWidth().height(IntrinsicSize.Min)
+                .padding(start = 보고떠값.루틴옆, end = if (!보임.프로필) 보고떠값.톱니있음옆 else 보고떠값.루틴옆, top = 보고떠값.루틴위아래, bottom = 보고떠값.루틴위아래),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(Modifier.width(이름폭).padding(end = 보고떠값.이름칸뒤)) {
+                Text(루틴이름, style = 글꼴.보통(크기.조금작게, FontWeight.Bold), color = c.글, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 if (보고차글(값.루차, "kg") != null) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
                         Text("볼륨", style = 글꼴.보통(크기.작게), color = c.흐림, maxLines = 1)
@@ -641,24 +681,25 @@ private fun ColumnScope.보고본문(
                 }
             }
             // 세트 | 총 볼륨 | 운동 시간 — 0 부터 올라간다 (D5-9)
-            Row(Modifier.fillMaxWidth()) {
-                val 세트 = if (움직) 움직수(값.세트.toDouble(), true, 열쇠 = 키) else 값.세트.toDouble()
-                val 볼 = if (움직) 움직수(값.볼륨, true, 열쇠 = 키) else 값.볼륨
-                val 초 = if (움직) 움직수(값.초.toDouble(), true, 열쇠 = 키) else 값.초.toDouble()
-                listOf("${세트.roundToInt()}" to "세트", "${콤마(볼)}kg" to "총 볼륨", 분초(초.roundToInt()) to "운동 시간").forEachIndexed { i, (v, 이름) ->
-                    Column(Modifier.weight(1f).세로선(i > 0, c.선), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(v, style = 글꼴.보통(크기.본문, FontWeight.Bold), color = c.글, maxLines = 1, softWrap = false)
-                        Text(이름, style = 글꼴.보통(크기.작게), color = c.흐림, maxLines = 1)
-                    }
+            val 세트 = if (움직) 움직수(값.세트.toDouble(), true, 열쇠 = 키) else 값.세트.toDouble()
+            val 볼 = if (움직) 움직수(값.볼륨, true, 열쇠 = 키) else 값.볼륨
+            val 초 = if (움직) 움직수(값.초.toDouble(), true, 열쇠 = 키) else 값.초.toDouble()
+            listOf("${세트.roundToInt()}" to "세트", "${콤마(볼)}kg" to "총 볼륨", 분초(초.roundToInt()) to "운동 시간").forEach { (v, 이름) ->
+                Column(
+                    Modifier.weight(1f).fillMaxHeight().세로선(true, c.선),
+                    horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center,
+                ) {
+                    Text(v, style = 글꼴.보통(크기.본문, FontWeight.Bold), color = c.글, maxLines = 1, softWrap = false)
+                    Text(이름, style = 글꼴.보통(크기.작게), color = c.흐림, maxLines = 1)
                 }
             }
         }
-        if (!보임.프로필 && !찍는용) 톱니단추(Modifier.align(Alignment.TopEnd)) { on시트(보고시트.방식) }
+        if (톱니여기) 톱니단추(Modifier.align(Alignment.TopEnd)) { on시트(보고시트.방식) }
     }
 
     // ── 종목 두 칸 격자 — 이 안에서만 넘긴다. 누르면 그 줄 아래 두 칸 폭으로 상세 (한 번에 하나) ──
     Column(
-        (if (넘김 != null) Modifier.weight(1f).verticalScroll(넘김) else Modifier).fillMaxWidth(),
+        (if (넘김 != null) Modifier.weight(1f).verticalScroll(넘김) else Modifier).fillMaxWidth().padding(bottom = 아래여백),
         verticalArrangement = Arrangement.spacedBy(간격.아주좁게),
     ) {
         if (값.칸들.isEmpty()) {
@@ -883,70 +924,43 @@ private fun 확인단추(onClick: () -> Unit) {
 }
 
 /**
- * 끝 단추 한 줄 (v17 B 5 · v18 B 3 · 4) — ‹ 운동으로/돌아가기 1 : 운동 기록 저장하고 종료 2 : 기록없이/종료하기 › 1 (사이 8 · 높이 40).
- * 버림은 두 번 — 처음 누르면 빨간 상자 '다시 누르면 저장하지 않습니다.'
+ * 10-06 v22 D 13-3 · v23 ③ — 끝내기 전 보고서의 떠 있는 동그라미. 화면 기준이라 목록을 넘겨도 제자리 (이미지에는 안 나온다 — 찍는 복제본 밖).
+ *  · 왼쪽 아래 ‹ = 운동으로 돌아가기 (저장은 그대로 — 다시 끝내면 같은 기록에 덮어쓴다)
+ *  · 오른쪽 아래 › = 스탯 화면 (이미 저장됨 → 세션만 닫고 캘린더 띠 [스탯] 과 같은 화면)
  * 세션이 이미 바뀌었으면(두 번 빨리 누름 · 다른 곳에서 끝남) 아무것도 하지 않는다
  */
 @Composable
-private fun 끝단추줄(상태: 앱상태, S: 운동세션) {
-    val c = Local색.current
-    var 버림 by remember(S.시작시각) { mutableStateOf(false) }
-    fun 지금이면(f: (운동세션) -> Unit) { val ss = 상태.d.세션; if (ss != null && ss.끝화면 && ss.시작시각 == S.시작시각) f(ss) }
-    Row(Modifier.fillMaxWidth().height(높이.보통), horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
-        끝단추(Modifier.weight(1f), 바탕 = c.면, 테 = c.속선, 설명 = "운동으로 돌아가기", onClick = {
-            지금이면 { 상태.바꿈 { dd -> dd.copy(세션 = dd.세션?.재개(System.currentTimeMillis())) } }
-        }) {
-            Text("운동으로\n돌아가기", style = 글꼴.보통(크기.조금작게, FontWeight.Bold), color = c.글, textAlign = TextAlign.Center, maxLines = 2)
-            Text("‹", Modifier.align(Alignment.CenterStart).padding(start = 보고치수.끝살옆), style = 글꼴.보통(크기.본문), color = c.글)
-        }
-        끝단추(Modifier.weight(2f), 바탕 = c.강조, 테 = c.강조, 설명 = "운동 기록 저장하고 종료", onClick = {
-            지금이면 { ss ->
-                // 시안 22 버그 #4 — 체크한 세트가 없으면 저장하지 않는다
-                if (ss.종목들.none { it.찬것().isNotEmpty() }) {
-                    상태.바꿈 { it.copy(세션 = null) }; 상태.알림.토스트("체크한 세트가 없어 저장하지 않았습니다")
-                } else {
-                    상태.바꿈 { it.운동저장하기(상태.오늘, System.currentTimeMillis()) }; 상태.알림.토스트("저장했습니다")
-                }
-            }
-        }) {
-            Text(
-                "운동 기록 저장하고 종료", Modifier.padding(horizontal = 간격.아주좁게), style = 글꼴.보통(크기.조금작게, FontWeight.Bold), color = c.강조글,
-                textAlign = TextAlign.Center, maxLines = 2,
-            )
-        }
-        끝단추(
-            Modifier.weight(1f), 바탕 = if (버림) c.나쁨 else c.면, 테 = if (버림) c.나쁨 else c.속선,
-            설명 = if (버림) "다시 누르면 저장하지 않습니다" else "기록없이 종료하기",
-            onClick = {
-                if (!버림) 버림 = true
-                // 시안은 토스트만 — 앱은 전처럼 [되돌리기] 도 단다 (U5-4 · 잘못 두 번 눌렀을 때)
-                else 지금이면 { 상태.지우고알림("기록 없이 끝냈습니다") { it.copy(세션 = null) } }
-            },
-        ) {
-            if (버림) {
-                Text(
-                    "다시 누르면\n저장하지 않습니다.", Modifier.padding(horizontal = 간격.아주좁게), style = 글꼴.보통(크기.작게, FontWeight.Bold),
-                    color = c.나쁨글, textAlign = TextAlign.Center, maxLines = 3,
-                )
-            } else {
-                Text("기록없이\n종료하기", style = 글꼴.보통(크기.조금작게, FontWeight.Bold), color = c.나쁨, textAlign = TextAlign.Center, maxLines = 2)
-                Text("›", Modifier.align(Alignment.CenterEnd).padding(end = 보고치수.끝살옆), style = 글꼴.보통(크기.본문), color = c.나쁨)
-            }
+private fun BoxScope.보고떠단추(상태: 앱상태, S: 운동세션) {
+    fun 지금이면(f: () -> Unit) { val ss = 상태.d.세션; if (ss != null && ss.끝화면 && ss.시작시각 == S.시작시각) f() }
+    떠동그라미(보고화살왼, "운동으로 돌아가기", Modifier.align(Alignment.BottomStart).padding(start = 보고떠값.옆, bottom = 보고떠값.옆)) {
+        지금이면 { 상태.바꿈 { dd -> dd.copy(세션 = dd.세션?.재개(System.currentTimeMillis())) } }
+    }
+    떠동그라미(보고화살오른, "스탯 보기", Modifier.align(Alignment.BottomEnd).padding(end = 보고떠값.옆, bottom = 보고떠값.옆)) {
+        지금이면 {
+            상태.바꿈 { it.보고끝(상태.오늘, System.currentTimeMillis()).copy(결과 = null) }
+            상태.스탯열기?.invoke()
         }
     }
 }
 
+/** 지름 30 · 면 바탕 · 속선 테 1 · 화살표 13.5 굵게(선 3) — 시안 `.화면>.보고떠` */
 @Composable
-private fun 끝단추(modifier: Modifier, 바탕: Color, 테: Color, 설명: String, onClick: () -> Unit, content: @Composable BoxScope.() -> Unit) {
-    val 손 = remember { MutableInteractionSource() }
-    val 배 = 눌림배율(손)
-    val 모양 = RoundedCornerShape(모서리.작게)
+private fun 떠동그라미(그림: ImageVector, 설명: String, modifier: Modifier, onClick: () -> Unit) {
+    val c = Local색.current
     Box(
-        modifier.fillMaxHeight().배율(배).clip(모양).background(색움직(바탕, "끝단추")).border(선굵기.보통, 색움직(테, "끝단추테"), 모양)
-            .눌림손(손, onClick).semantics { contentDescription = 설명; role = Role.Button },
-        contentAlignment = Alignment.Center, content = content,
-    )
+        modifier.size(보고떠값.지름).clip(CircleShape).background(c.면).border(선굵기.보통, c.속선, CircleShape)
+            .눌림(onClick).semantics { contentDescription = 설명; role = Role.Button },
+        contentAlignment = Alignment.Center,
+    ) { Icon(그림, null, Modifier.size(보고떠값.화살), tint = c.글) }
 }
+
+/** 굵은 ‹ › (시안 `칩화살그림` 의 길 · 선 3) — Icons.kt 의 칩화살은 선 2 라 여기 따로 */
+private fun 굵은화살(이름: String, 길: String): ImageVector = ImageVector.Builder(이름, 24.dp, 24.dp, 24f, 24f).addPath(
+    pathData = addPathNodes(길), fill = null, stroke = SolidColor(Color.Black),
+    strokeLineWidth = 보고떠값.화살선, strokeLineCap = StrokeCap.Round, strokeLineJoin = StrokeJoin.Round,
+).build()
+private val 보고화살왼 = 굵은화살("reportL", "M15 6l-6 6 6 6")
+private val 보고화살오른 = 굵은화살("reportR", "M9 6l6 6-6 6")
 
 // ═════════════════════ 시트 ═════════════════════
 

@@ -56,14 +56,14 @@ object 저장소 {
         d.결과?.let { o.put("결과", 세션to(it)) }   // 스키마 11 (10-01) — 저장 뒤 한 번 보여 줄 결과 화면
         o.put("예정고정", JSONObject().also { m -> d.예정고정.forEach { (k, v) -> m.put(k, v) } })
         o.put("미실시", JSONObject().also { m -> d.미실시.forEach { (k, v) -> m.put(k, v) } })
-        o.put("조절", JSONObject().also { m -> d.조절.forEach { (k, v) -> m.put(k, JSONObject().put("볼륨", v.볼륨).put("무게", v.무게).put("세트", v.세트)) } })
+        o.put("조절", JSONObject().also { m -> d.조절.forEach { (k, v) -> m.put(k, 조절to(v)) } })
         // 운동 플랜 (09-28, 스키마 8)
         o.put("플랜들", JSONArray().also { a -> d.플랜들.forEach { a.put(플랜to(it)) } })
         o.put("몸", JSONObject().put("나이", d.몸.나이).put("남", d.몸.남).put("체중", d.몸.체중))
         // 향상 데이터 (09-30, 스키마 10 · 21 문서 5절) — 이 줄들이 있어야 속도표를 다시 짤 수 있다
         o.put("향상기록들", JSONArray().also { a -> d.향상기록들.forEach { a.put(향상to(it)) } })
         // 근육 피로 (10-02, 스키마 13 · 07 근육지도 4·5절) — 잎 id → [lv0, 시작, 끝] · 잎 id → 이전 최대 볼륨
-        o.put("피로", JSONObject().also { m -> d.피로.forEach { (k, f) -> m.put(k, JSONArray().put(f.lv0).put(f.시작).put(f.끝)) } })
+        o.put("피로", 피로to(d.피로))
         o.put("최대볼륨", JSONObject().also { m -> d.최대볼륨.forEach { (k, v) -> m.put(k, v) } })
         // 스탯 · 업적 (10-02, 스키마 14 · 스탯명세 7-2)
         o.put("업적", JSONObject().also { m -> d.업적.forEach { (k, v) -> m.put(k, v) } })
@@ -184,6 +184,21 @@ object 저장소 {
                     .also { if (h.다음s != null) it.put("다음s", h.다음s) })
             }
         }
+        .also { o -> S.저장?.let { o.put("저장", 저장앞to(it)) } }   // 10-06 v22 D — 보고서가 열릴 때 저장한 것 (되감기 자료)
+
+    /** 10-06 v22 D 13-1 — 보고서 저장 되감기 자료. 앱을 껐다 켜도 다시 끝내면 같은 기록에 덮어쓴다 */
+    private fun 저장앞to(z: 저장앞) = JSONObject().put("열쇠", z.열쇠).put("날", z.날)
+        .also { o -> z.끝시각?.let { o.put("끝시각", it) } }
+        .also { o -> z.루틴?.let { l -> o.put("루틴", JSONArray().also { a -> l.forEach { a.put(루틴종목to(it)) } }) } }
+        .put("플랜", JSONArray().also { a -> z.플랜.forEach { a.put(플랜to(it)) } })
+        .put("피로", 피로to(z.피로))
+        .put("최대볼륨", JSONObject().also { m -> z.최대볼륨.forEach { (k, v) -> m.put(k, v) } })
+        .put("향상", JSONArray().also { a -> z.향상.forEach { a.put(향상to(it)) } })
+        .put("예정", JSONObject().also { m -> z.예정.forEach { (k, v) -> m.put(k, v) } })
+        .also { o -> z.조절?.let { v -> o.put("조절", 조절to(v)) } }
+
+    private fun 피로to(f: Map<String, 피로상태>) = JSONObject().also { m -> f.forEach { (k, x) -> m.put(k, JSONArray().put(x.lv0).put(x.시작).put(x.끝)) } }
+    private fun 조절to(v: 오늘조절) = JSONObject().put("볼륨", v.볼륨).put("무게", v.무게).put("세트", v.세트)
 
     // ─────────────── 글 → 앱데이터 ───────────────
 
@@ -215,7 +230,7 @@ object 저장소 {
             결과 = o.optJSONObject("결과")?.let { 세션from(it) },
             예정고정 = 사전(o.optJSONObject("예정고정")) { m, k -> m.getString(k) },
             미실시 = 사전(o.optJSONObject("미실시")) { m, k -> m.getString(k) },
-            조절 = 사전(o.optJSONObject("조절")) { m, k -> m.getJSONObject(k).let { j -> 오늘조절(j.optInt("볼륨", 100), j.optDouble("무게", 0.0), j.optInt("세트", 0)) } },
+            조절 = 사전(o.optJSONObject("조절")) { m, k -> 조절from(m.getJSONObject(k)) },
             // 스키마 8 — 옛 파일에는 없다 → 빈 목록 · 기본 몸조건 (시험으로 확인)
             플랜들 = 목록(o.optJSONArray("플랜들")) { a, i -> 플랜from(a.getJSONObject(i)) },
             // 09-29: 기본값을 비워 두었다. 비면 화면이 "설정에서 넣어 주세요" 로 안내한다 (01 ⑳)
@@ -223,7 +238,7 @@ object 저장소 {
             // 스키마 10 — 옛 파일에는 없다 → 빈 목록 (기본표를 쓴다)
             향상기록들 = 목록(o.optJSONArray("향상기록들")) { a, i -> 향상from(a.getJSONObject(i)) },
             // 스키마 13 (10-02) — 옛 파일에는 없다 → 빈 피로 · 빈 최대 (처음 운동하는 것처럼)
-            피로 = 사전(o.optJSONObject("피로")) { m, k -> m.getJSONArray(k).let { a -> 피로상태(a.optDouble(0, 0.0), a.optLong(1, 0L), a.optLong(2, 0L)) } },
+            피로 = 피로from(o.optJSONObject("피로")),
             최대볼륨 = 사전(o.optJSONObject("최대볼륨")) { m, k -> m.optDouble(k, 0.0) },
             // 스키마 14 (10-02) — 옛 파일에는 없다 → 빈 업적 · 대표 칭호 없음 · 빈 기록 (다음 판정 때 지난 기록으로 소급한다)
             업적 = 사전(o.optJSONObject("업적")) { m, k -> m.optLong(k, 0L) }.filterValues { it > 0 },
@@ -305,17 +320,37 @@ object 저장소 {
     private fun 글또는널(o: JSONObject, k: String): String? = if (o.has(k) && !o.isNull(k)) o.getString(k) else null
     private fun 수또는널(o: JSONObject, k: String): Int? = if (o.has(k) && !o.isNull(k)) o.getInt(k) else null
 
+    private fun 루틴종목from(it: JSONObject) = 루틴종목(it.getString("이름"), it.optInt("세트", 3), it.optDouble("무게", 20.0), it.optInt("횟수", 10),
+        it.optInt("휴식", 90), 글또는널(it, "슈퍼"),
+        세트들from(it.optJSONArray("세트값")).filterNotNull(),
+        목록(it.optJSONArray("휴식값")) { h, j -> h.getInt(j) },
+        글또는널(it, "플랜id"), 종id = 글또는널(it, "종id"))
+
+    private fun 피로from(m: JSONObject?): Map<String, 피로상태> =
+        사전(m) { x, k -> x.getJSONArray(k).let { a -> 피로상태(a.optDouble(0, 0.0), a.optLong(1, 0L), a.optLong(2, 0L)) } }
+    private fun 조절from(j: JSONObject) = 오늘조절(j.optInt("볼륨", 100), j.optDouble("무게", 0.0), j.optInt("세트", 0))
+
+    /** 10-06 v22 D — 세션의 '저장'. 옛 파일에는 없다 → null(아직 저장 안 함). 열쇠가 비었으면 버린다 */
+    private fun 저장앞from(o: JSONObject?): 저장앞? {
+        if (o == null) return null
+        val 열쇠 = o.optString("열쇠", "").takeIf { it.isNotBlank() } ?: return null
+        return try {
+            저장앞(
+                열쇠 = 열쇠, 끝시각 = if (o.has("끝시각") && !o.isNull("끝시각")) o.getLong("끝시각") else null, 날 = o.optString("날", ""),
+                루틴 = o.optJSONArray("루틴")?.let { a -> 목록(a) { x, i -> 루틴종목from(x.getJSONObject(i)) } },
+                플랜 = 목록(o.optJSONArray("플랜")) { a, i -> 플랜from(a.getJSONObject(i)) },
+                피로 = 피로from(o.optJSONObject("피로")),
+                최대볼륨 = 사전(o.optJSONObject("최대볼륨")) { m, k -> m.optDouble(k, 0.0) },
+                향상 = 목록(o.optJSONArray("향상")) { a, i -> 향상from(a.getJSONObject(i)) },
+                예정 = 사전(o.optJSONObject("예정")) { m, k -> m.getString(k) },
+                조절 = o.optJSONObject("조절")?.let { 조절from(it) },
+            )
+        } catch (_: Exception) { null }   // 깨진 되감기 자료 때문에 세션 전체를 잃지 않게
+    }
+
     private fun 루틴from(o: JSONObject) = 루틴(
         o.getString("id"), o.getString("이름"), o.optBoolean("휴식일"),
-        목록(o.optJSONArray("종목")) { a, i ->
-            a.getJSONObject(i).let {
-                루틴종목(it.getString("이름"), it.optInt("세트", 3), it.optDouble("무게", 20.0), it.optInt("횟수", 10),
-                    it.optInt("휴식", 90), 글또는널(it, "슈퍼"),
-                    세트들from(it.optJSONArray("세트값")).filterNotNull(),
-                    목록(it.optJSONArray("휴식값")) { h, j -> h.getInt(j) },
-                    글또는널(it, "플랜id"), 종id = 글또는널(it, "종id"))
-            }
-        },
+        목록(o.optJSONArray("종목")) { a, i -> 루틴종목from(a.getJSONObject(i)) },
         // 스키마 5 까지는 모든 루틴이 캘린더에 깔렸다 → 옛 루틴은 켜진 채로 옮긴다 (달력이 갑자기 비지 않게)
         자동생성 = o.optBoolean("자동생성", true),
     )
@@ -443,5 +478,6 @@ object 저장소 {
         o.optLong("마지막", 0L),
         o.optBoolean("조절됨", false),
         멈춘 = o.optLong("멈춘", 0L).coerceAtLeast(0L),   // 10-05
+        저장 = 저장앞from(o.optJSONObject("저장")),   // 10-06 v22 D
     )
 }

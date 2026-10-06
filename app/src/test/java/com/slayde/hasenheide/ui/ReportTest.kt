@@ -9,6 +9,10 @@ import com.slayde.hasenheide.data.세트
 import com.slayde.hasenheide.data.세트종류
 import com.slayde.hasenheide.data.앱데이터
 import com.slayde.hasenheide.data.운동세션
+import com.slayde.hasenheide.data.끝냄
+import com.slayde.hasenheide.data.체크
+import com.slayde.hasenheide.data.보고저장결과
+import com.slayde.hasenheide.data.보고저장
 import com.slayde.hasenheide.data.운동시작
 import com.slayde.hasenheide.data.종목
 import com.slayde.hasenheide.data.종목기록
@@ -212,5 +216,25 @@ class ReportTest {
         assertEquals("▼2회", 보고차글(-2.0, "회"))
         assertEquals("▲2,350kg", 보고차글(2350.0, "kg"))
         assertNull(보고차글(0.04, "kg")); assertNull(보고차글(null, "kg"))
+    }
+
+    // ─────────────── 10-06 v22 D — 보고서가 열릴 때 저장한 뒤에도 숫자는 자기 기록을 빼고 견준다 ───────────────
+
+    @Test fun 열릴때저장_자기기록빼고_견줌() {
+        val r = 루틴("r1", "가슴", 종목 = listOf(루틴종목("벤치프레스", 세트 = 2, 무게 = 80.0, 횟수 = 5)))
+        val d0 = 앱데이터(루틴들 = listOf(r), 기록 = mapOf("2026-10-03" to 기록("r1", 줄("벤치프레스", 세트(70.0, 5)))))
+        var S: 운동세션 = 운동시작(r, 1_000L)!!
+        S = S.체크(0, 0, 2_000L).체크(0, 1, 3_000L).끝냄(4_000L)
+        val 전 = d0.보고계산(세션기록(S, 4_000L), null, "2026-10-06", 세션총칸(S))
+        val (d1, 결과) = d0.copy(세션 = S).보고저장("2026-10-06", 4_000L)
+        assertEquals(보고저장결과.저장함, 결과)
+        val 열쇠 = d1.세션!!.저장!!.열쇠
+        val 후 = d1.보고계산(세션기록(d1.세션!!, 4_000L), 열쇠, "2026-10-06", 세션총칸(d1.세션!!))
+        assertEquals(전.칸들.single().줄1.차!!, 후.칸들.single().줄1.차!!, 1e-9)   // 방금 저장한 자기와 견주면 0 이 된다
+        assertEquals(전.루차!!, 후.루차!!, 1e-9)
+        assertEquals(전.볼륨, 후.볼륨, 1e-9)
+        // 큰 운동 — 앞 = 자기 기록 앞까지
+        val 큰 = d1.큰운동값(d1.기록[열쇠], 열쇠, "2026-10-06")
+        assertTrue(큰[2].v > 큰[2].앞)
     }
 }
