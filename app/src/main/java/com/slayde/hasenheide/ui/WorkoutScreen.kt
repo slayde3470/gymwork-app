@@ -72,6 +72,7 @@ import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.layout.SubcomposeLayout
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.layout.positionInParent
@@ -159,6 +160,7 @@ import com.slayde.hasenheide.ui.theme.선굵기
 import com.slayde.hasenheide.ui.theme.움직임
 import com.slayde.hasenheide.ui.theme.크기
 import com.slayde.hasenheide.ui.theme.휴식칸값
+import com.slayde.hasenheide.ui.theme.쉼게이지글
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlin.math.abs
@@ -493,6 +495,7 @@ private fun 세트목록(
     val 목 = rememberScrollState()
     val 자 = remember { 줄자리() }
     var 다음줄 by remember { mutableStateOf<Triple<Int, Int, Long>?>(null) }   // (보는 칸, 줄, 누른 때) — 한 번만 쓴다
+    var 세트더 by remember { mutableStateOf<Pair<Int, Long>?>(null) }           // (보는 칸, 누른 때) — '+ 세트' 를 눌렀다 · 한 번만 쓴다
     val 본키 = "${S.시작시각}|$본|${e.열쇠}"
     LaunchedEffect(본키) { 목.scrollTo(0) }
     LaunchedEffect(다음줄) {
@@ -502,6 +505,16 @@ private fun 세트목록(
         val y = 자.위[k] ?: return@LaunchedEffect
         val 목표 = (y + 자.위끝 + 자.높이 / 2 - 자.보임 / 2).coerceIn(0, 목.maxValue)
         if (목표 > 목.value + 1) 목.animateScrollTo(목표)
+    }
+    // 10-06 v22 W ⑬ (시안 v22 C ⑬) — '+ 세트' 를 눌러 단추가 보이는 칸 아래로 넘어갔으면, 단추가 다 보일 만큼 한 번 부드럽게 내린다.
+    //   새 줄이 다 그려진 뒤(두 프레임 기다려 자리가 정해진 다음 · U5-6) 한 번 재고 한 번만 움직인다. 안 넘어가면 그대로
+    val 아래여백px = with(LocalDensity.current) { 간격.좁게.roundToPx() }
+    LaunchedEffect(세트더) {
+        val (b, _) = 세트더 ?: return@LaunchedEffect
+        withFrameNanos { }; withFrameNanos { }
+        if (b != 운보기.본 || 자.단추아래 <= 0) return@LaunchedEffect
+        val 목표 = 세트더내림(자.위끝 + 자.단추아래, 목.value, 자.보임, 목.maxValue, 아래여백px) ?: return@LaunchedEffect
+        목.animateScrollTo(목표)
     }
     val 지금k = 첫빈칸(e)
     val 무게폭 = 상태.d.설정.무게폭
@@ -548,13 +561,16 @@ private fun 세트목록(
                 )
             }
             Spacer(Modifier.height(높이.높게))   // v17 ④ '+ 세트' = 마지막 세트의 다음다음 줄
-            버튼("+ 세트", { 발자취.적기("세트 추가"); 바꿈 { it.세트추가(본) }; 당김() }, Modifier.fillMaxWidth(), 낮게 = true)
+            버튼(
+                "+ 세트", { 발자취.적기("세트 추가"); 바꿈 { it.세트추가(본) }; 세트더 = 본 to System.nanoTime(); 당김() },
+                Modifier.fillMaxWidth().onPlaced { 자.단추아래 = it.positionInParent().y.roundToInt() + it.size.height }, 낮게 = true,
+            )
         }
     }
 }
 
 /** 세트 목록의 줄 자리 (px) — 화면 맞추기에만 쓴다. 상태가 아니다 */
-private class 줄자리 { val 위 = HashMap<Int, Int>(); var 높이 = 0; var 보임 = 0; var 위끝 = 0 }
+private class 줄자리 { val 위 = HashMap<Int, Int>(); var 높이 = 0; var 보임 = 0; var 위끝 = 0; var 단추아래 = 0 }
 
 /** 세트 지우기 — 묻지 않고 지우고 아래띠 [되돌리기] (U5-4 · 시안 `세트지우기`). 하나 남으면 지우지 않는다 */
 private fun 세트지우기(상태: 앱상태, j: Int, k: Int, 다음: () -> Unit) {
@@ -763,8 +779,12 @@ private fun 쉼게이지(남은비율: Float, 시간: String, 문구: String, mo
             노란점()
             Spacer(Modifier.width(간격.좁게))
             Column(Modifier.weight(1f, fill = false), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(시간, style = 글꼴.보통(크기.본문, FontWeight.Bold).copy(fontFeatureSettings = "tnum", lineHeight = 운치수.게이지줄.em), color = 색, maxLines = 1)
-                자간맞춤글(문구, 글꼴.보통(크기.작게, FontWeight.Bold).copy(lineHeight = 운치수.게이지문구줄.em, lineHeightStyle = LineHeightStyle(LineHeightStyle.Alignment.Center, LineHeightStyle.Trim.None)), 색)
+                // 10-06 v22 W ⑫ — 시간 15 → 12.75 · 문구 11 → 9.35 · 자간 25% 넓게 · 둘 사이 30% 줄임 (값과 까닭은 Theme.kt `쉼게이지글`)
+                Text(시간, style = 글꼴.보통(쉼게이지글.시간크기, FontWeight.Bold).copy(fontFeatureSettings = "tnum", lineHeight = 운치수.게이지줄.em, letterSpacing = 쉼게이지글.시간자간), color = 색, maxLines = 1)
+                자간맞춤글(
+                    문구, 글꼴.보통(쉼게이지글.문구크기, FontWeight.Bold).copy(lineHeight = 운치수.게이지문구줄.em, lineHeightStyle = LineHeightStyle(LineHeightStyle.Alignment.Center, LineHeightStyle.Trim.None), letterSpacing = 쉼게이지글.문구자간),
+                    색, Modifier.위로당김((쉼게이지글.문구크기 * 쉼게이지글.문구당김)),
+                )
             }
         }
     }
@@ -783,13 +803,23 @@ private fun 쉼게이지(남은비율: Float, 시간: String, 문구: String, mo
 
 /** 한 줄 글 — 넘치면 자간만 −0.02em 씩 −0.08em 까지, 그래도 넘치면 … (시안 v21 ⑦② `쉼글맞춤`) */
 @Composable
-private fun 자간맞춤글(글: String, 꼴: TextStyle, 색: Color) {
+private fun 자간맞춤글(글: String, 꼴: TextStyle, 색: Color, modifier: Modifier = Modifier) {
     var n by remember(글) { mutableIntStateOf(0) }
     Text(
-        글, style = if (n == 0) 꼴 else 꼴.copy(letterSpacing = (-n / 100f).em), color = 색, maxLines = 1, softWrap = false,
+        글, modifier, style = if (n == 0) 꼴 else 꼴.copy(letterSpacing = (-n / 100f).em), color = 색, maxLines = 1, softWrap = false,
         overflow = if (n >= 8) TextOverflow.Ellipsis else TextOverflow.Clip,
         onTextLayout = { r -> if (r.hasVisualOverflow && n < 8) n = if (n == 0) 2 else n + 1 },
     )
+}
+
+/**
+ * 위로 당기기 (10-06 v22 W ⑫) — 글을 [당김] 만큼 위로 그리고, 차지하는 높이도 그만큼 줄인다.
+ * offset 과 달리 높이가 줄어 둘을 묶은 칸이 게이지 높이 가운데에 그대로 온다. 줄 높이는 건드리지 않아 글이 잘리지 않는다
+ */
+private fun Modifier.위로당김(당김: androidx.compose.ui.unit.TextUnit): Modifier = layout { m, c ->
+    val p = m.measure(c)
+    val d = 당김.toPx().roundToInt().coerceIn(0, p.height)
+    layout(p.width, p.height - d) { p.place(0, -d) }
 }
 
 // ═════════════════════ 아래 진행 상자 · 종목 칸 줄 ═════════════════════
@@ -1260,6 +1290,17 @@ internal fun 격자폭(남는: Float, 최소: List<Float>, fr: List<Float>): Lis
 }
 
 /** 맨 아래 단추 넷의 폭 — 줄 안 폭에서 틈 × 3 을 뺀 나머지를 비율대로 (v21 ④ 12.5 : 47.5 : 27.5 : 12.5) */
+/**
+ * '+ 세트' 자동 스크롤 (10-06 v22 W ⑬ · 시안 v22 C ⑬) — 단추 아래끝이 보이는 칸 아래로 넘어갔으면 내릴 자리, 아니면 null.
+ * [단추아래] 목록 맨 위(넘김 0)부터 단추 아래끝까지 · [넘김] 지금 넘긴 양 · [보임] 보이는 칸 높이 · [최대] 넘길 수 있는 끝 · [여백] 목록 아래 여백(단추 밑까지 보이게)
+ * 끝을 넘지 않고, 지금보다 1 넘게 내려갈 때만 (올리지는 않는다)
+ */
+internal fun 세트더내림(단추아래: Int, 넘김: Int, 보임: Int, 최대: Int, 여백: Int): Int? {
+    if (보임 <= 0 || 단추아래 <= 넘김 + 보임) return null
+    val 목표 = min(최대, 단추아래 + 여백 - 보임)
+    return if (목표 > 넘김 + 1) 목표 else null
+}
+
 internal fun 단추폭(줄: Float, 틈: Float, 비: List<Float>): List<Float> = 비.map { (줄 - 틈 * (비.size - 1)).coerceAtLeast(0f) * it }
 
 /** 칸 줄을 어디로 넘길까 — 보는 칸이 맨 앞. 앞에 칸이 있으면 ‹ 자리만큼 비운다. 0 ~ 최대 안으로 */
