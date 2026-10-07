@@ -28,10 +28,10 @@ jobs:
         run: |
           set -o pipefail
           # 찍을 화면 — app/src/test/찍을것.txt 한 줄 (예: Shot_s16* · 비우면 전부). 계산 시험(*Test)도 같은 판에 돈다
-          고름=$(grep -v '^#' app/src/test/찍을것.txt 2>/dev/null | tr -d ' \r' | head -1)
-          [ -z "$고름" ] && 고름='Shot_*'
-          echo "찍을 것: $고름"
-          gradle testDebugUnitTest --tests '*Test' --tests "com.slayde.hasenheide.ui.$고름" --no-daemon --stacktrace 2>&1 | tee 로그.txt
+          PICK=$(grep -v '^#' app/src/test/찍을것.txt 2>/dev/null | tr -d ' \r' | head -1)
+          [ -z "$PICK" ] && PICK='Shot_*'
+          echo "찍을 것: $PICK"
+          gradle testDebugUnitTest --tests '*Test' --tests "com.slayde.hasenheide.ui.$PICK" --no-daemon --stacktrace 2>&1 | tee 로그.txt
       - name: 올리기
         run: |
           mkdir -p app/screens
