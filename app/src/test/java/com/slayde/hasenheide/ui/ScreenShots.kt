@@ -85,8 +85,10 @@ class ScreenShots {
         상태 = 앱상태(파일)
         val 폰 = 폰기능({}, {}, {}, {}, {})
         rule.mainClock.autoAdvance = false
+        // 진짜 앱처럼 가장자리까지 그려야 Compose 가 '자판 없음'을 안다 (안 하면 자판이 떠 있다고 보고 탭줄을 숨긴다)
+        rule.runOnUiThread { androidx.core.view.WindowCompat.setDecorFitsSystemWindows(rule.activity.window, false) }
         rule.setContent { 하젠하이데테마(어둡게 = false) { 앱(상태, 폰) } }
-        쉼(1500)
+        쉼(1500); 상태.새업적치움(); 쉼(6000)
     }
 
     private fun 쉼(ms: Long = 1200) { rule.mainClock.advanceTimeBy(ms); rule.waitForIdle(); rule.mainClock.advanceTimeBy(300) }
