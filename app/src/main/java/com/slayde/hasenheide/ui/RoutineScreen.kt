@@ -748,6 +748,7 @@ private fun 종목상자(
                     { 글("휴식", 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true) },
                     { },
                 )
+                val 앞 = 앞줄개수(e.세트)   // 10-08: 방금 더한 줄은 한 번 점멸 · 눌렸다 제자리
                 for (k in 0 until e.세트) {
                     val v = e.목표(k)
                     val t = e.휴식(k)
@@ -784,6 +785,7 @@ private fun 종목상자(
                                     tint = if (하나) c.선 else c.옅음)
                             }
                         },
+                        줄모양 = Modifier.새줄효과(k >= 앞),
                     )
                 }
                 val 판 = remember루톡(true)
@@ -799,8 +801,9 @@ private fun 종목상자(
 private fun 세트칸줄(
     번호: @Composable () -> Unit, 무게: @Composable () -> Unit, 횟수: @Composable () -> Unit,
     휴식: @Composable () -> Unit, 끝: @Composable () -> Unit,
+    줄모양: Modifier = Modifier,
 ) {
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
+    Row(줄모양.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
         Box(Modifier.width(루틴값.번호칸), contentAlignment = Alignment.Center) { 번호() }
         Box(Modifier.weight(루틴값.무게몫), contentAlignment = Alignment.Center) { 무게() }
         Box(Modifier.weight(루틴값.횟수몫), contentAlignment = Alignment.Center) { 횟수() }
