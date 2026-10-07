@@ -1,10 +1,34 @@
-> Task :app:compileDebugUnitTestKotlin FAILED
-e: file:///home/runner/work/gymwork-app/gymwork-app/app/src/test/java/com/slayde/hasenheide/ui/ScreenShots.kt:95:43 Unresolved reference 'click'.
+ScreenShots > s08_newExercise FAILED
+    java.lang.IllegalStateException at ScreenShots.kt:104
+ScreenShots > s14_status FAILED
+    java.lang.IllegalStateException at ScreenShots.kt:104
+ScreenShots > s05_addSheet FAILED
+    java.lang.IllegalStateException at ScreenShots.kt:104
+ScreenShots > s15_achievements FAILED
+    java.lang.IllegalStateException at ScreenShots.kt:104
+> Task :app:testDebugUnitTest FAILED
 * Exception is:
-org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':app:compileDebugUnitTestKotlin'.
+org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':app:testDebugUnitTest'.
 	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
-Caused by: org.gradle.workers.internal.DefaultWorkerExecutor$WorkExecutionException: A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+Caused by: org.gradle.api.internal.exceptions.MarkedVerificationException: There were failing tests. See the report at: file:///home/runner/work/gymwork-app/gymwork-app/app/build/reports/tests/testDebugUnitTest/index.html
 	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
-Caused by: org.jetbrains.kotlin.gradle.tasks.CompilationErrorException: Compilation error. See log for more details
-	at org.jetbrains.kotlin.gradle.tasks.TasksUtilsKt.throwExceptionIfCompilationFailed(tasksUtils.kt:21)
-BUILD FAILED in 1m 2s
+BUILD FAILED in 2m 3s
+    <failure message="java.lang.IllegalStateException: '+ 새 종목 만들기' 없음" type="java.lang.IllegalStateException">java.lang.IllegalStateException: '+ 새 종목 만들기' 없음
+	at com.slayde.hasenheide.ui.ScreenShots.누름(ScreenShots.kt:104)
+	at com.slayde.hasenheide.ui.ScreenShots.누름$default(ScreenShots.kt:101)
+	at com.slayde.hasenheide.ui.ScreenShots.s08_newExercise(ScreenShots.kt:118)
+--
+    <failure message="java.lang.IllegalStateException: '스탯' 없음" type="java.lang.IllegalStateException">java.lang.IllegalStateException: '스탯' 없음
+	at com.slayde.hasenheide.ui.ScreenShots.누름(ScreenShots.kt:104)
+	at com.slayde.hasenheide.ui.ScreenShots.누름$default(ScreenShots.kt:101)
+	at com.slayde.hasenheide.ui.ScreenShots.s14_status(ScreenShots.kt:124)
+--
+    <failure message="java.lang.IllegalStateException: '운동 종목 추가' 없음" type="java.lang.IllegalStateException">java.lang.IllegalStateException: '운동 종목 추가' 없음
+	at com.slayde.hasenheide.ui.ScreenShots.누름(ScreenShots.kt:104)
+	at com.slayde.hasenheide.ui.ScreenShots.누름$default(ScreenShots.kt:101)
+	at com.slayde.hasenheide.ui.ScreenShots.s05_addSheet(ScreenShots.kt:115)
+--
+    <failure message="java.lang.IllegalStateException: '업적' 없음" type="java.lang.IllegalStateException">java.lang.IllegalStateException: '업적' 없음
+	at com.slayde.hasenheide.ui.ScreenShots.누름(ScreenShots.kt:104)
+	at com.slayde.hasenheide.ui.ScreenShots.누름$default(ScreenShots.kt:101)
+	at com.slayde.hasenheide.ui.ScreenShots.s15_achievements(ScreenShots.kt:125)
