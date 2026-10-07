@@ -318,6 +318,8 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
     var 시트날 by remember { mutableStateOf(오늘) }
     var 록골 by remember { mutableStateOf<Set<String>>(emptySet()) }   // 지우려고 고른 기록 열쇠 (기본 = 아무것도 안 고름)
     var 예펼침 by remember { mutableStateOf<String?>(null) }
+    // 10-08 홍겸 님: [기록 삭제] 를 누르면 지움 모드 — 기록마다 오른쪽 끝에 체크가 생긴다. 아래 줄은 [취소][기록 삭제]
+    var 지움모드 by remember { mutableStateOf(false) }
     // 10-05 합치기: 저장된 기록 보고서는 R 의 [기록보고서] 로 이 화면 위에 띄운다 (전: 저장 데이터 `결과` 에 세션을 넣어 App 이 그림)
     var 보는기록 by remember { mutableStateOf<String?>(null) }
     // 맨 아래 단추 연타 막기 — 지운 뒤 체크가 풀려(록골 비움) 두 번째 누름이 남겨 둔 기록까지 지우던 것 · '한 번 더' 두 번
@@ -329,7 +331,7 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
         f()
     }
 
-    fun 날고름(k: String) { if (k != 고른날) 록골 = emptySet(); 고른날 = k }
+    fun 날고름(k: String) { if (k != 고른날) { 록골 = emptySet(); 지움모드 = false }; 고른날 = k }
     // 달 넘기기 — ‹ › · 달력 좌우 스와이프 · 끌며 넘김이 모두 이 함수. 고른 날도 같은 '일' 로 (없으면 그 달 마지막 날)
     // [날따라] 가 false 면 달만 넘긴다 — 날을 집어 옮기는 중(꾹 눌러 끌기 · 집어 둔 날)에는 고른 날을 건드리지 않는다
     fun 달넘김(n: Int, 날따라: Boolean = true) {
@@ -361,7 +363,7 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
     fun 기록지움(k: String) {
         val (새, x) = 상태.d.캘기록지우기(k, 록골) ?: return
         상태.바꿈 { 새.예정초기화(상태.오늘) }
-        록골 = emptySet(); 예펼침 = null
+        록골 = emptySet(); 예펼침 = null; 지움모드 = false
         발자취.적기("${캘날글(k)} 운동 기록 삭제${if (x.개수 > 1) " (${x.개수}개)" else ""}")
         // 띠가 떠 있는 동안 또 지우면 한 띠로 합친다 — 글은 지운 기록 수 전부 (시안 `기록지움띠`)
         val 묶음 = "캘린더기록"
@@ -415,7 +417,7 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
                         on스와이프 = { n -> 달넘김(n) })
                 }
                 날판(
-                    상태, 고른날, 다른달 = 보는달 != 이번달, 록골 = 록골, 예펼침 = 예펼침,
+                    상태, 고른날, 다른달 = 보는달 != 이번달, 록골 = 록골, 지움모드 = 지움모드, 예펼침 = 예펼침,
                     on오늘 = { 보는달 = 이번달; 날고름(오늘) },
                     on변경 = { 시트날 = it; 열린 = 캘시트.변경 },
                     on루틴넣기 = { 시트날 = it; 열린 = 캘시트.루틴 },
@@ -424,7 +426,13 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
                     modifier = Modifier.weight(1f),
                 )
             }
-            판단추(상태, 고른날, 록골, 시작 = { S -> 한번 { 시작(S) } }, 지움 = { kk -> 한번 { 기록지움(kk) } }, 보고서 = { kk, rr -> 한번 { 보고서(kk, rr) } })
+            판단추(상태, 고른날, 록골, 지움모드,
+                on지움모드 = { 켬 ->
+                    지움모드 = 켬
+                    // 기록이 하나뿐이면 미리 골라 둔다 (바로 [기록 삭제] 한 번으로 지운다)
+                    록골 = if (켬) 상태.d.캘기록목록(고른날).let { l -> if (l.size == 1) setOf(l[0].first) else emptySet() } else emptySet()
+                },
+                시작 = { S -> 한번 { 시작(S) } }, 지움 = { kk -> 한번 { 기록지움(kk) } }, 보고서 = { kk, rr -> 한번 { 보고서(kk, rr) } })
         }
 
         // 집어 둔 예정 — 날을 누르면 옮겨진다. 다른 달도 ‹ › 로 넘겨 누른다 (시안 `아래띠`). 뒤로가기 = 취소
@@ -716,7 +724,7 @@ private fun 날칸(값: 캘칸값?, 일: Int, 요일: Int, 오늘임: Boolean, �
         val 숫자색 = if (놓기) 강조글 else 주말색(요일, c.글)
         if (오늘임) Box(Modifier.clip(RoundedCornerShape(모서리.작게)).background(if (놓기) 강조글 else c.강조).padding(horizontal = 간격.아주좁게)) {
             Text("$일", style = 글꼴.보통(크기.조금작게, FontWeight.Bold), color = if (놓기) c.강조 else 강조글, maxLines = 1)
-        } else Text("$일", style = 글꼴.보통(크기.조금작게, FontWeight.Bold), color = 숫자색, maxLines = 1)
+        } else Text("$일", style = 글꼴.보통(크기.조금작게), color = 숫자색, maxLines = 1)   // 10-08 홍겸 님: 오늘만 굵게
         if (값 != null) {
             val (칩바탕, 칩글) = when (값.종류) {
                 캘칸종류.예 -> c.강조옅음 to c.강조
@@ -751,7 +759,7 @@ private fun Modifier.윗선(켬: Boolean, 색: Color): Modifier =
  */
 @Composable
 private fun 날판(
-    상태: 앱상태, k: String, 다른달: Boolean, 록골: Set<String>, 예펼침: String?,
+    상태: 앱상태, k: String, 다른달: Boolean, 록골: Set<String>, 지움모드: Boolean, 예펼침: String?,
     on오늘: () -> Unit, on변경: (String) -> Unit, on루틴넣기: (String) -> Unit, on록고름: (String) -> Unit, on펼침: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -777,7 +785,7 @@ private fun 날판(
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(넘김).padding(horizontal = 간격.보통, vertical = 간격.좁게), verticalArrangement = Arrangement.spacedBy(간격.좁게)) {
             var 앞것 = false
             록.forEach { (rk, rec) ->
-                기록머리(d, rec, 켬 = rk in 록골, 선위 = 앞것) { on록고름(rk) }
+                기록머리(d, rec, 켬 = rk in 록골, 선위 = 앞것, 지움모드 = 지움모드) { on록고름(rk) }
                 val 키 = "록$rk"
                 종목목록(기록줄들(rec), 예펼침 == 키) { on펼침(키) }
                 앞것 = true
@@ -808,17 +816,20 @@ private fun 앱데이터.보일루틴(k: String, r: 루틴): 루틴 = 플랜줄�
 
 /** 기록의 종목 줄 — '60kg × 9회'. 워밍업은 넣지 않는다. 세트 수는 보이지 않는다 (10-06 홍겸 님 ⑤ — 기록머리 칩에 합계가 있다) */
 private fun 기록줄들(rec: 날기록): List<Pair<String, String>> =
-    rec.종목들.map { e -> e.이름 to 캘세트글(e.세트들.filter { it.종류 != 세트종류.워밍업 }) }
+    rec.종목들.map { e -> e.이름 to "" }   // 10-08 홍겸 님: 무게×횟수 글 뺌 — 무슨 운동을 했는지만 (자세한 건 운동 보고서)
 
-/** 시안 `.예칩 span` — 높이 28 · 속선 · 11 흐림 */
+/** 시안 `.예칩 span` — 높이 28 · 11 흐림. 10-08 홍겸 님: 둥근 테두리 없앰 · 글 15% 더 흐리게 */
 @Composable
 private fun 판칩(글자: String) {
     val c = Local색.current
     Box(
-        Modifier.height(높이.아주낮게).border(선굵기.보통, c.속선, RoundedCornerShape(모서리.작게)).padding(horizontal = 간격.좁게),
+        Modifier.height(높이.아주낮게).padding(horizontal = 간격.아주좁게),
         contentAlignment = Alignment.Center,
-    ) { Text(글자, style = 글꼴.보통(크기.작게).copy(fontFeatureSettings = "tnum"), color = c.흐림, maxLines = 1, softWrap = false) }
+    ) { Text(글자, style = 글꼴.보통(크기.작게).copy(fontFeatureSettings = "tnum"), color = c.흐림.copy(alpha = c.흐림.alpha * 판칩흐림), maxLines = 1, softWrap = false) }
 }
+
+/** 10-08 홍겸 님: 날짜 판 칩 글(세트 · 볼륨 · 시간) 15% 흐리게 [11_UI지침에 올릴 값] */
+private const val 판칩흐림 = 0.85f
 
 /** 시안 `.알약.달성` (좋음옅음 바탕 · 좋음) / `.알약.미달성` (나쁨 테두리 · 나쁨) — 11 굵게 */
 @Composable
@@ -845,10 +856,10 @@ private fun 록체크(켬: Boolean, 이름: String, onClick: () -> Unit) {
 
 private fun Modifier.semanticsDesc(글: String): Modifier = this.semantics { contentDescription = 글 }
 
-/** 기록 이름 줄 (시안 `기록머리`) — [고르기 체크(기록마다 · 하나뿐이어도)][이름 15 굵게 · 40% 까지][달성 알약][세트][볼륨][시간] */
+/** 기록 이름 줄 (시안 `기록머리`) — [이름 15 굵게 · 40% 까지][달성 알약][세트][볼륨][시간][고르기 체크(지움 모드에서만 · 10-08)] */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun 기록머리(d: 앱데이터, rec: 날기록, 켬: Boolean, 선위: Boolean, on고름: () -> Unit) {
+private fun 기록머리(d: 앱데이터, rec: 날기록, 켬: Boolean, 선위: Boolean, 지움모드: Boolean, on고름: () -> Unit) {
     val c = Local색.current
     val 량 = 운동량(rec)
     val 짝 = d.루틴들.firstOrNull { it.id == rec.루틴id }
@@ -858,7 +869,6 @@ private fun 기록머리(d: 앱데이터, rec: 날기록, 켬: Boolean, 선위: 
     BoxWithConstraints(Modifier.fillMaxWidth().윗선(선위, c.선)) {
         val 이름최대 = maxWidth * 이름폭비
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
-            록체크(켬, rec.루틴이름, on고름)
             Text(rec.루틴이름, Modifier.widthIn(max = 이름최대), style = 글꼴.보통(크기.본문, FontWeight.Bold), color = c.글, maxLines = 1, overflow = TextOverflow.Ellipsis)
             기록알약(rec.달성)
             FlowRow(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(간격.아주좁게), verticalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
@@ -866,6 +876,8 @@ private fun 기록머리(d: 앱데이터, rec: 날기록, 켬: Boolean, 선위: 
                 판칩("볼륨 ${콤마(량.볼륨)}kg")
                 if (rec.걸린초 > 0) 판칩(시간글(rec.걸린초))
             }
+            // 10-08 홍겸 님: 고르기 체크는 [기록 삭제] 를 누른 뒤에만 · 오른쪽 끝에
+            if (지움모드) 록체크(켬, rec.루틴이름, on고름)
         }
     }
 }
@@ -930,7 +942,8 @@ private fun 목록칸(i: Int, 이름: String, 곁: String) {
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.아주좁게),
     ) {
         Text("${i + 1}", Modifier.width(간격.넓게), style = 글꼴.보통(크기.작게, FontWeight.Bold), color = c.옅음, textAlign = TextAlign.Center, maxLines = 1)
-        Text(이름, Modifier.weight(1f, fill = false), style = 글꼴.보통(크기.조금작게), color = c.글, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        // 10-08 홍겸 님: '…' 없이 — 먼저 글자를 줄이고(13 → 11), 그래도 넘치면 보이는 만큼만 (잘라냄)
+        맞춤글(이름, Modifier.weight(1f), 최대 = 크기.조금작게, 최소 = 크기.작게, 색 = c.글)
         if (곁.isNotEmpty()) 맞춤글(곁, Modifier.weight(1f, fill = false), 최대 = 크기.작게, 색 = c.흐림)
     }
 }
@@ -953,12 +966,13 @@ private val 그림작게 = 16.dp   // 11 지침 U3-6 글 옆 · 체크 안
 
 /**
  * 맨 아래 단추 줄 (시안 `.판단추` — 넘겨도 아래에 붙박이 · 높이 40).
- *  · 기록 날: [운동 보고서] [한 번 더(오늘 · 마지막 기록의 루틴)] [운동 기록 삭제(빨강)] — 고른 기록이 없으면 삭제는 흐리게 (누를 수 없음)
+ *  · 기록 날: [운동 보고서] [한 번 더 운동하기(오늘 · 마지막 기록의 루틴)] [기록 삭제(빨강 · 좁게)] (10-08)
+ *  · 지움 모드: [취소] [기록 삭제(빨강)] — 고른 기록이 없으면 삭제는 흐리게 (누를 수 없음)
  *  · 오늘 예정: [운동 시작]
  */
 @Composable
 private fun 판단추(
-    상태: 앱상태, k: String, 록골: Set<String>,
+    상태: 앱상태, k: String, 록골: Set<String>, 지움모드: Boolean, on지움모드: (Boolean) -> Unit,
     시작: (운동세션?) -> Unit, 지움: (String) -> Unit, 보고서: (String, 날기록) -> Unit,
 ) {
     val c = Local색.current
@@ -972,18 +986,22 @@ private fun 판단추(
         Modifier.fillMaxWidth().background(c.바탕).padding(horizontal = 간격.보통, vertical = 간격.좁게),
         horizontalArrangement = Arrangement.spacedBy(간격.좁게),
     ) {
-        if (록.isNotEmpty()) {
+        if (록.isNotEmpty() && 지움모드) {
+            val 꺼짐 = 록.none { it.first in 록골 }
+            버튼("취소", { on지움모드(false) }, Modifier.weight(1f), 작게 = true)
+            버튼("기록 삭제", { if (!꺼짐) 지움(k) }, Modifier.weight(1f).alpha(if (꺼짐) 꺼짐투명 else 1f), 작게 = true, 글색 = c.나쁨)
+        } else if (록.isNotEmpty()) {
             val 끝 = 록.last().second
             버튼("운동 보고서", { 상태.d.캘기록목록(k).lastOrNull()?.let { (kk, rr) -> 보고서(kk, rr) } }, Modifier.weight(1f).번호("캘3"), 작게 = true)
             val 다시 = if (k == 오늘) d.루틴들.firstOrNull { it.id == 끝.루틴id }?.takeIf { !it.휴식일 } else null
-            if (다시 != null) 버튼("한 번 더", {
+            if (다시 != null) 버튼("한 번 더 운동하기", {
                 // 측정일이면 플랜 줄 앞에 워밍업 (20 B-3 · 조절해시작과 같은 함수). 저장하면 그 날 '~2' 기록으로 따로 남는다
                 val dd = 상태.d
                 val rr = dd.루틴들.firstOrNull { it.id == 다시.id }
                 시작(rr?.let { 운동시작(dd.측정워밍업붙임(dd.플랜줄채움(it)), System.currentTimeMillis()) })
-            }, Modifier.weight(1f), 주요 = true, 작게 = true)
-            val 꺼짐 = 록.none { it.first in 록골 }
-            버튼("운동 기록 삭제", { if (!꺼짐) 지움(k) }, Modifier.weight(1f).alpha(if (꺼짐) 꺼짐투명 else 1f), 작게 = true, 글색 = c.나쁨)
+            }, Modifier.weight(판단추폭.넓게), 주요 = true, 작게 = true, 줄임 = true)
+            // 10-08 홍겸 님: '기록 삭제' 로 줄이고 폭을 줄인다 — 줄어든 만큼 [한 번 더 운동하기] 가 넓어진다. 누르면 지움 모드
+            버튼("기록 삭제", { on지움모드(true) }, Modifier.weight(판단추폭.좁게), 작게 = true, 글색 = c.나쁨, 줄임 = true)
         } else if (r != null) {
             버튼("운동 시작", {
                 val dd = 상태.d
@@ -994,6 +1012,9 @@ private fun 판단추(
         }
     }
 }
+
+/** 10-08 홍겸 님: 아래 단추 폭 비율 — [운동 보고서] 1 · [한 번 더 운동하기] 1.4 · [기록 삭제] 0.6 [11_UI지침에 올릴 값] */
+private object 판단추폭 { const val 넓게 = 1.4f; const val 좁게 = 0.6f }
 
 // ─────────────── 시트 ───────────────
 
