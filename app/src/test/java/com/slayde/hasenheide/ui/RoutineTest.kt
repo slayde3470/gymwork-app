@@ -34,12 +34,13 @@ class RoutineTest {
     )
     private fun 플(id: String, 이름: String, 종목: String, 켬: Boolean = true) = 플랜(id = id, 이름 = 이름, 종목 = 종목, 시작1RM = 60.0, 켬 = 켬)
 
-    @Test fun 넣기목록_가나다순_전체() {
+    @Test fun 넣기목록_종목표차례_전체() {
+        // 10-07 홍겸 님: 가나다순 → 종목표 차례 (꾹 눌러 끌어 바꾼다 · 종목 탭과 같다)
         val l = 넣기칸들(표, emptyList(), 넣기전체, true)
-        assertEquals(listOf("랫풀다운", "벤치프레스", "벤치프레스", "스쿼트"), l.map { it.이름 })
+        assertEquals(listOf("스쿼트", "벤치프레스", "벤치프레스", "랫풀다운"), l.map { it.이름 })
         // 같은 이름 — 만든 순서 번호 1 · 2, 하나뿐이면 0
         assertEquals(listOf(0, 1, 2, 0), l.map { it.번호 })
-        assertEquals(listOf("랫풀다운", "벤치프레스", "종b2", "스쿼트"), l.map { it.키 })
+        assertEquals(listOf("스쿼트", "벤치프레스", "종b2", "랫풀다운"), l.map { it.키 })
     }
 
     @Test fun 넣기목록_칸으로_거름() {

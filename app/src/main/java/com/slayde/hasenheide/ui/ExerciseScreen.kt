@@ -130,6 +130,12 @@ fun 종목화면(상태: 앱상태) {
     var 새시트 by remember { mutableStateOf<String?>(null) }
 
     val 판 = d.종목탭판(고른칸)
+    // 10-07 홍겸 님: 꾹 눌러 끌어 종목 순서 바꾸기 — 같은 카테고리 안에서만 (넣기 시트와 같은 차례 = 종목표 차례)
+    val 넘김 = rememberScrollState()
+    val 끌판 = remember격자끌기판({ a, b, 뒤 ->
+        발자취.적기("종목 탭 · 순서 옮김")
+        상태.바꿈 { it.copy(종목표 = 종목옮김(it.종목표, a, b, 뒤)) }
+    })
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
             머리띠("종목", Modifier.번호("종1"), 오른쪽 = {
@@ -138,7 +144,7 @@ fun 종목화면(상태: 앱상태) {
             })
             당겨새로고침({ }, Modifier.weight(1f)) {
                 Column(
-                    Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+                    Modifier.fillMaxSize().격자끌기틀(끌판, 넘김).verticalScroll(넘김)
                         .padding(start = 간격.보통, end = 간격.보통, top = 간격.보통, bottom = 종목치수.뜸자리),
                     verticalArrangement = Arrangement.spacedBy(간격.좁게),
                 ) {
@@ -148,13 +154,14 @@ fun 종목화면(상태: 앱상태) {
                         key(칸이름) {
                             Column(verticalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
                                 if (판.고름 == "전체") 이름표(칸이름, Modifier.padding(start = 간격.아주좁게, top = 간격.아주좁게))
-                                종목격자(상태, l, 펼친, { k -> 펼친 = if (펼친 == k) null else k }, { id -> if (새시트 == null) 새시트 = id })
+                                종목격자(상태, l, 칸이름, 끌판, 펼친, { k -> 펼친 = if (펼친 == k) null else k }, { id -> if (새시트 == null) 새시트 = id })
                             }
                         }
                     }
                 }
             }
         }
+        격자끌기이름표(끌판)
         // 10-07 홍겸 님: [+ 새 종목 만들기] 오른쪽 아래 고정 · 파란 상자 흰 글 (루틴 화면 떠 있는 단추와 같은 모양)
         버튼("+ 새 종목 만들기", { if (새시트 == null) 새시트 = "" }, Modifier.align(Alignment.BottomEnd).padding(간격.보통), 주요 = true)
         if (카테고리시트) 카테고리관리(상태) { 카테고리시트 = false }
@@ -174,18 +181,18 @@ fun 종목화면(상태: 앱상태) {
 
 /** 2열 격자 — 접힌 상자는 한 칸, 펼친 상자는 줄 전체. 줄마다 접힌 이름이 두 줄이면 옆 상자도 같은 높이 */
 @Composable
-private fun 종목격자(상태: 앱상태, l: List<종목칸값>, 펼친: String?, 펼침: (String) -> Unit, 편집: (String) -> Unit) {
+private fun 종목격자(상태: 앱상태, l: List<종목칸값>, 무리: String, 끌판: 격자끌기판, 펼친: String?, 펼침: (String) -> Unit, 편집: (String) -> Unit) {
     val 줄들 = 격자줄(l.map { it.열쇠 == 펼친 })
     val 두줄높이 = with(LocalDensity.current) { (크기.본문 * 1.4f * 2).toDp() }
     Column(verticalArrangement = Arrangement.spacedBy(간격.좁게)) {
         줄들.forEach { 줄 ->
             val 첫 = l[줄[0]]
             key(첫.열쇠) {
-                if (줄.size == 1 && 첫.열쇠 == 펼친) 종목상자(상태, 첫, true, Modifier.fillMaxWidth(), 0.dp, 펼침, 편집)
+                if (줄.size == 1 && 첫.열쇠 == 펼친) 종목상자(상태, 첫, true, Modifier.fillMaxWidth().끌기칸(끌판, 첫, 무리), 0.dp, 끌판, 펼침, 편집)
                 else {
                     val 높이맞춤 = if (줄.any { 이름줄수(l[it].이름) > 1 }) 두줄높이 else 0.dp
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
-                        줄.forEach { i -> key(l[i].열쇠) { 종목상자(상태, l[i], false, Modifier.weight(1f), 높이맞춤, 펼침, 편집) } }
+                        줄.forEach { i -> key(l[i].열쇠) { 종목상자(상태, l[i], false, Modifier.weight(1f).끌기칸(끌판, l[i], 무리), 높이맞춤, 끌판, 펼침, 편집) } }
                         if (줄.size == 1) Box(Modifier.weight(1f))
                     }
                 }
@@ -194,9 +201,13 @@ private fun 종목격자(상태: 앱상태, l: List<종목칸값>, 펼친: Strin
     }
 }
 
+/** 상자 자리 · 그리기 — 종목표에 있는 종목만(플랜만 남은 '기타' 상자는 못 끈다). 잡는 손은 상자 머리([종목상자]) */
+private fun Modifier.끌기칸(끌판: 격자끌기판, x: 종목칸값, 무리: String): Modifier =
+    this.격자끌기자리(끌판, x.종목?.id ?: x.열쇠, 무리, 켬 = x.종목 != null)
+
 /** 종목 상자 하나 (시안 `종목칸`) */
 @Composable
-private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modifier: Modifier, 이름높이: androidx.compose.ui.unit.Dp, 펼침: (String) -> Unit, 편집: (String) -> Unit) {
+private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modifier: Modifier, 이름높이: androidx.compose.ui.unit.Dp, 끌판: 격자끌기판, 펼침: (String) -> Unit, 편집: (String) -> Unit) {
     val c = Local색.current
     val d = 상태.d
     val t = x.종목
@@ -209,7 +220,8 @@ private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modif
     ) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(간격.좁게), verticalAlignment = Alignment.Top) {
             if (펼 && t != null) 사진넣는칸(상태, t)
-            Column(Modifier.weight(1f).눌림 { 펼침(x.열쇠) }) {
+            // 10-07 꾹 눌러 끌기 — 손은 누름보다 안쪽(먼저 받아야 끊기지 않는다). 꾹 누르고 떼어도 펼치지 않게 길게 누름은 빈 동작
+            Column(Modifier.weight(1f).눌림길게({ 펼침(x.열쇠) }, { }).격자끌기손(끌판, x.종목?.id ?: x.열쇠, x.이름, 켬 = x.종목 != null)) {
                 Row(
                     Modifier.fillMaxWidth().heightIn(min = maxOf(높이.아주낮게, 이름높이)),
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.아주좁게),
@@ -386,16 +398,19 @@ private fun 세트값칸(
         Box(Modifier.width(부품치수.값칸단추).fillMaxHeight().then(if (뺄수있음) Modifier.눌림 { 버튼값 = true; 빼기() } else Modifier), contentAlignment = Alignment.Center) {
             Icon(아이콘.빼기, "$이름 빼기", Modifier.size(종목치수.값그림), tint = if (뺄수있음) c.강조 else c.옅음)
         }
-        BasicTextField(
-            value = if (초점) 친글 else 값글,
-            onValueChange = { t -> 친글 = t; 넣기(t) },
-            singleLine = true,
-            textStyle = 글꼴.보통(크기.버튼, FontWeight.Bold).copy(color = c.글, textAlign = TextAlign.Center, fontFeatureSettings = "tnum"),
-            cursorBrush = SolidColor(c.강조),
-            keyboardOptions = KeyboardOptions(keyboardType = if (정수) KeyboardType.Number else KeyboardType.Decimal, imeAction = ImeAction.Done),
-            keyboardActions = KeyboardActions(onDone = { 자판.clearFocus() }),
-            modifier = Modifier.weight(1f).onFocusChanged { 초점 = it.isFocused },
-        )
+        val 판 = 가운데판(초점)   // 10-07 홍겸 님: 좌우로 밀어도 손 떼면 가운데 (NewExerciseSheet.kt)
+        key(판.번호) {
+            BasicTextField(
+                value = if (초점) 친글 else 값글,
+                onValueChange = { t -> 친글 = t; 넣기(t) },
+                singleLine = true,
+                textStyle = 글꼴.보통(크기.버튼, FontWeight.Bold).copy(color = c.글, textAlign = TextAlign.Center, fontFeatureSettings = "tnum"),
+                cursorBrush = SolidColor(c.강조),
+                keyboardOptions = KeyboardOptions(keyboardType = if (정수) KeyboardType.Number else KeyboardType.Decimal, imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = { 자판.clearFocus() }),
+                modifier = Modifier.weight(1f).then(판.손).onFocusChanged { 초점 = it.isFocused },
+            )
+        }
         Box(Modifier.width(부품치수.값칸단추).fillMaxHeight().눌림 { 버튼값 = true; 더하기() }, contentAlignment = Alignment.Center) {
             Icon(아이콘.더하기, "$이름 더하기", Modifier.size(종목치수.값그림), tint = c.강조)
         }

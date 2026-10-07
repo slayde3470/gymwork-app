@@ -99,6 +99,12 @@ import com.slayde.hasenheide.ui.theme.부품치수
 import com.slayde.hasenheide.ui.theme.선굵기
 import com.slayde.hasenheide.ui.theme.움직임
 import com.slayde.hasenheide.ui.theme.크기
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /**
  * 새 종목 / 종목 편집 시트 (시안 v18 C ⑤ · v19 D · v20 ③⑤ `새종목시트`) — 종목 화면 · 종목 넣기 시트(루틴 · 운동 중)가 **같이** 쓴다.
@@ -341,6 +347,10 @@ internal object 새시트치수 {
     /** 10-06 홍겸 님: 시트 위끝 = 화면 높이의 5% (공용 [시트] 에 매개변수가 생기면 이 값을 넘긴다) */
     const val 위끝 = 0.05f
     val 팝목록최대 = 320.dp     // 팝업 근육 목록이 이보다 길면 안에서 넘긴다
+    // 10-07 홍겸 님: 루틴 → 새 종목에서 12.5 가 잘림 → − ＋ 를 작게 (누르는 칸 28 → 20 · 그림 18 → 14). 무게 글 칸이 16 넓어진다
+    val 값단추 = 20.dp
+    val 값그림 = 14.dp
+    const val 가운데기다림 = 200L   // 손 뗀 뒤 이만큼(ms) 기다렸다가 초점이 없으면 가운데로
     val 번호칸 = 28.dp          // 세트 번호 칸 — 머리 글 '세트' 가 …로 잘리지 않을 폭 (공용 16 → 28)
     /** 무게 칸을 좌우 15% 줄인다 (홍겸 님): 무게 · 횟수 · 휴식 = 83 : 70 : 79 에서 무게 몫이 15% 줄도록 몫을 다시 구한 값 */
     const val 무게줄임 = 0.85f
@@ -409,21 +419,24 @@ private fun 새세트값칸(
     LaunchedEffect(값글, 초점) { if (!초점) 친글 = 값글 }
     val 자판 = LocalFocusManager.current
     Row(modifier.height(높이.아주낮게).clip(모양).border(선굵기.보통, c.속선, 모양), verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.width(부품치수.값칸단추).fillMaxHeight().then(if (뺄수있음) Modifier.눌림 { 버튼값 = true; 빼기() } else Modifier), contentAlignment = Alignment.Center) {
-            Icon(아이콘.빼기, "$이름 빼기", Modifier.size(종목치수.값그림), tint = if (뺄수있음) c.강조 else c.옅음)
+        Box(Modifier.width(새시트치수.값단추).fillMaxHeight().then(if (뺄수있음) Modifier.눌림 { 버튼값 = true; 빼기() } else Modifier), contentAlignment = Alignment.Center) {
+            Icon(아이콘.빼기, "$이름 빼기", Modifier.size(새시트치수.값그림), tint = if (뺄수있음) c.강조 else c.옅음)
         }
-        BasicTextField(
-            value = if (초점 && !버튼값) 친글 else 값글,
-            onValueChange = { t -> 버튼값 = false; 친글 = t; 넣기(t) },
-            singleLine = true,
-            textStyle = 글꼴.보통(크기.버튼, FontWeight.Bold).copy(color = c.글, textAlign = TextAlign.Center, fontFeatureSettings = "tnum"),
-            cursorBrush = SolidColor(c.강조),
-            keyboardOptions = KeyboardOptions(keyboardType = if (정수) KeyboardType.Number else KeyboardType.Decimal, imeAction = ImeAction.Done),
-            keyboardActions = KeyboardActions(onDone = { 자판.clearFocus() }),
-            modifier = Modifier.weight(1f).onFocusChanged { 초점 = it.isFocused; if (!it.isFocused) 버튼값 = false },
-        )
-        Box(Modifier.width(부품치수.값칸단추).fillMaxHeight().눌림 { 버튼값 = true; 더하기() }, contentAlignment = Alignment.Center) {
-            Icon(아이콘.더하기, "$이름 더하기", Modifier.size(종목치수.값그림), tint = c.강조)
+        val 판 = 가운데판(초점)
+        key(판.번호) {
+            BasicTextField(
+                value = if (초점 && !버튼값) 친글 else 값글,
+                onValueChange = { t -> 버튼값 = false; 친글 = t; 넣기(t) },
+                singleLine = true,
+                textStyle = 글꼴.보통(크기.버튼, FontWeight.Bold).copy(color = c.글, textAlign = TextAlign.Center, fontFeatureSettings = "tnum"),
+                cursorBrush = SolidColor(c.강조),
+                keyboardOptions = KeyboardOptions(keyboardType = if (정수) KeyboardType.Number else KeyboardType.Decimal, imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = { 자판.clearFocus() }),
+                modifier = Modifier.weight(1f).then(판.손).onFocusChanged { 초점 = it.isFocused; if (!it.isFocused) 버튼값 = false },
+            )
+        }
+        Box(Modifier.width(새시트치수.값단추).fillMaxHeight().눌림 { 버튼값 = true; 더하기() }, contentAlignment = Alignment.Center) {
+            Icon(아이콘.더하기, "$이름 더하기", Modifier.size(새시트치수.값그림), tint = c.강조)
         }
     }
 }
@@ -745,4 +758,30 @@ internal fun 앱데이터.종목지우기(id: String): 앱데이터 {
             r.copy(종목 = r.종목.filter { !(it.종id == id || (it.종id == null && 첫 && !이름남음 && it.이름 == t.이름 && it.플랜id == null)) })
         },
     )
+}
+
+/**
+ * 숫자 칸 가운데 되돌리기 — 10-07 홍겸 님: 무게 칸을 좌우로 밀어도 손을 떼면 다시 가운데.
+ * 한 줄 입력칸(BasicTextField)은 글이 칸보다 길면 옆으로 밀리고 그 자리에 머문다. 밀린 자리는 바깥에서 못 고치므로
+ * 손을 뗀 뒤(쳐 넣는 중이 아니면) · 초점이 나가면 [번호] 를 올려 칸을 새로 그린다(= 넘김 0 · 가운데 정렬).
+ * 쓰는 법: `val 판 = 가운데판(초점); key(판.번호) { BasicTextField(modifier = … .then(판.손)) }`
+ */
+internal class 가운데되돌림판(val 번호: Int, val 손: Modifier)
+
+@Composable
+internal fun 가운데판(초점: Boolean): 가운데되돌림판 {
+    var 번호 by remember { mutableIntStateOf(0) }
+    val 초점최신 by rememberUpdatedState(초점)
+    val 범위 = rememberCoroutineScope()
+    var 처음 by remember { mutableStateOf(true) }
+    LaunchedEffect(초점) { if (처음) 처음 = false else if (!초점) 번호++ }
+    val 손 = Modifier.pointerInput(Unit) {
+        awaitEachGesture {
+            awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+            do { val e = awaitPointerEvent(PointerEventPass.Initial) } while (e.changes.any { it.pressed })
+            // 누르고 떼어 초점을 얻는 중이면 건드리지 않는다 — 초점이 붙을 틈을 준다
+            범위.launch { delay(새시트치수.가운데기다림); if (!초점최신) 번호++ }
+        }
+    }
+    return 가운데되돌림판(번호, 손)
 }
