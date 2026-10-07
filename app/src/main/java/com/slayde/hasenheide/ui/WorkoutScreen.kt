@@ -300,7 +300,11 @@ private object 운입력 { var 확정: (() -> Unit)? = null }
 private object 운치수 {
     val 번호 = 36.dp                // 세트 번호 동그라미 (v10 · 줄 높이 44 = 36 + 위아래 4)
     val 값단추 = 20.dp              // 세트 줄 − ＋ 누르는 칸 폭 (시안 `.운세트들 .값칸 button`)
-    val 칸폭 = 72.dp                // 아래 종목 칸 (시안 `.운칸 flex 72`)
+    val 칸폭 = 72.dp                // (옛) 아래 종목 칸 폭 — 10-08 부터 칸은 글 길이만큼
+    const val 채움투명 = 0.2f        // 10-08 운동 칸 게이지 — 찬 쪽 = 강조 × 0.2 (끝낸 칸은 좋음 × 0.2) [11_UI지침에 올릴 값]
+    val 나선물결 = 28.dp            // 10-08 안 찬 쪽 나선 — 한 물결 길이
+    const val 나선높이 = 0.3f        // 나선 높이 = 칸 높이 × 이만큼 (위아래로)
+    val 나선굵기 = 1.5.dp
     val 칸앞비움 = 32.dp            // 보는 칸을 맨 앞으로 넘길 때 ‹ 자리 (28 + 틈 4 · v21 ③)
     val 끌기오른끝 = 76.dp          // 끄는 손이 이 안에 들면 오른쪽으로 넘긴다 ([＋] 44 + 32)
     val 뺌동그라미 = 16.dp          // 보는 칸 ✕ (v21 ①)
@@ -538,10 +542,11 @@ private fun 세트목록(
                     Text(t, Modifier.width(폭[x]), style = 글꼴.보통(크기.작게), color = c.옅음, textAlign = TextAlign.Center, maxLines = 1)
                 }
             }
+            val 앞 = 앞줄개수(e.총칸(), 본키)   // 10-08: 방금 더한 줄은 한 번 점멸 · 눌렸다 제자리
             for (k in 0 until e.총칸()) {
                 운세트줄(
                     S, 본, k, 지금k, 폭, 지금, 무게폭,
-                    Modifier.onPlaced { 자.위[k] = it.positionInParent().y.roundToInt(); 자.높이 = it.size.height },
+                    Modifier.새줄효과(k >= 앞).onPlaced { 자.위[k] = it.positionInParent().y.roundToInt(); 자.높이 = it.size.height },
                     체크 = {
                         val 전 = 상태.d.세션?.종목들?.getOrNull(본)
                         val 체크함 = 전 != null && 전.기록.칸(k) == null
@@ -875,7 +880,14 @@ private fun 칸줄(
     val n = S.종목들.size
     val 넘김 = rememberScrollState()
     val 밀도 = LocalDensity.current
-    val 걸음 = with(밀도) { (운치수.칸폭 + 간격.아주좁게).toPx() }
+    val 틈px = with(밀도) { 간격.아주좁게.toPx() }
+    // 10-08: 칸 폭이 글 길이만큼이라 칸마다 잰 자리(줄 안 왼끝 · 오른끝 px)로 넘긴다
+    val 칸자리 = remember { androidx.compose.runtime.mutableStateMapOf<Int, Pair<Float, Float>>() }
+    val 내용끝 = (칸자리[n - 1]?.second ?: 0f) + 틈px
+    // 안 찬 쪽 나선 — 칸 모두 한 시계로 천천히 돈다 (그리기에서만 읽는다 · 다시 짜지 않음)
+    val 나선 = androidx.compose.animation.core.rememberInfiniteTransition(label = "나선")
+    val 위상 = 나선.animateFloat(0f, (2 * Math.PI).toFloat(),
+        androidx.compose.animation.core.infiniteRepeatable(tween(움직임.나선한바퀴, easing = LinearEasing)), label = "나선위상")
     val 판 = remember가로끌기판 { 원, 대상, 뒤에 ->
         발자취.적기("운동 순서 바꿈")
         함 { s -> s.종목옮기기(원, 대상, 뒤에, 운보기.본).let { r -> 운결과(r.세션, r.본 ?: 운보기.본) } }
@@ -886,7 +898,7 @@ private fun 칸줄(
     LaunchedEffect(S.시작시각, 본, 본열쇠, 당김, n) {
         withFrameNanos { }   // 칸이 늘고 준 뒤의 자리로 (U5-6 — 바뀌는 중에 재지 않는다)
         val 최대 = snapshotFlow { 넘김.maxValue }.first { it < Int.MAX_VALUE }
-        val 목표 = 칸줄목표(본, 걸음, with(밀도) { 운치수.칸앞비움.toPx() }, 최대.toFloat()).roundToInt()
+        val 목표 = 칸줄목표(본, 칸자리[본]?.first ?: 0f, with(밀도) { 운치수.칸앞비움.toPx() }, 최대.toFloat()).roundToInt()
         if (abs(목표 - 넘김.value) > 1) { if (처음) 넘김.scrollTo(목표) else 넘김.animateScrollTo(목표) }
         처음 = false
     }
@@ -901,8 +913,9 @@ private fun 칸줄(
             ) {
                 S.종목들.forEachIndexed { i, x ->
                     val 다끝 = x.총칸() > 0 && x.찬것().size >= x.총칸()
-                    운칸(d, x, 지금칸 = i == 본, 끝 = 다끝 && i != 본, 뺄수 = i == 본 && n > 1,
-                        Modifier.가로끌기(판, i).눌림 { 발자취.적기("${x.이름} 칸 고름"); 고름(i) }
+                    운칸(d, x, 지금칸 = i == 본, 끝 = 다끝 && i != 본, 위상 = 위상,
+                        Modifier.onPlaced { val l = it.positionInParent().x; val 새 = l to (l + it.size.width); if (칸자리[i] != 새) 칸자리[i] = 새 }
+                            .가로끌기(판, i).눌림 { 발자취.적기("${x.이름} 칸 고름"); 고름(i) }
                             .semantics { contentDescription = "${x.이름} ${x.찬것().size}/${x.총칸()}세트" })
                 }
                 Spacer(Modifier.width(높이.높게))   // [＋] 자리
@@ -910,7 +923,7 @@ private fun 칸줄(
             // 붙박이 [＋] — 칸이 적으면 마지막 칸 바로 뒤, 넘치면 오른쪽 끝에 붙는다 (시안 position:sticky · v14)
             Box(Modifier.matchParentSize()) {
                 Box(
-                    Modifier.offset { IntOffset(더칸자리(n, 걸음, 넘김.value.toFloat(), 폭px, 더px).roundToInt(), 0) }
+                    Modifier.offset { IntOffset(더칸자리(내용끝, 넘김.value.toFloat(), 폭px, 더px).roundToInt(), 0) }
                         .width(높이.높게).fillMaxHeight()
                         .drawBehind {   // 왼쪽 4 — 밑으로 들어가는 칸을 가른다 (box-shadow −4 면2)
                             val w = 간격.아주좁게.toPx()
@@ -928,9 +941,9 @@ private fun 칸줄(
                 ) { Text("＋", style = 글꼴.보통(크기.제목, FontWeight.Bold), color = c.강조) }
                 // 보는 칸 ✕ — 칸 오른쪽 위 꼭짓점이 가운데. [＋] 위에 그린다. 칸이 [＋] 밑으로 들어가면 · 끄는 동안은 감춘다
                 val 뺌px = with(밀도) { 높이.아주낮게.toPx() }
-                val 칸끝 = 본 * 걸음 + with(밀도) { 운치수.칸폭.toPx() } - 넘김.value
+                val 칸끝 = (칸자리[본]?.second ?: -1f) - 넘김.value
                 val 뺌보임 = n > 1 && 판.원 == null && 칸끝 >= 0f &&
-                    칸끝 <= 더칸자리(n, 걸음, 넘김.value.toFloat(), 폭px, 더px) - with(밀도) { 간격.아주좁게.toPx() } + 0.5f
+                    칸끝 <= 더칸자리(내용끝, 넘김.value.toFloat(), 폭px, 더px) - 틈px + 0.5f
                 if (뺌보임) {
                     Box(
                         Modifier.offset { IntOffset((칸끝 - 뺌px / 2).roundToInt(), (-뺌px / 2).roundToInt()) }
@@ -963,33 +976,75 @@ private fun 운종목빼기(상태: 앱상태, 함: ((운동세션) -> 운결과
     }
 }
 
-/** 아래 종목 칸 하나 (시안 `.운칸`) — 이름 11 두 줄 · n/m · 막대. 보는 칸 = 테 2 강조 · 점멸, 다 끝낸 칸 = 흐림 · 막대 좋음 */
+/**
+ * 아래 종목 칸 하나 (10-08 홍겸 님) — 한 줄 [이름 굵게][같은 이름 번호][n/m]. 칸 폭 = 글 길이, 높이 28.
+ * 칸 전체가 게이지: 끝낸 세트만큼 왼쪽부터 찬다(강조 × 0.2 · 다 끝내면 좋음 × 0.2). 안 찬 쪽은 나선 두 줄이 가로로 천천히 돈다 (진행 중).
+ * 보는 칸 = 테 2 강조 · 점멸, 다 끝낸 칸(보는 칸 아님) = 흐림
+ */
 @Composable
-private fun 운칸(d: 앱데이터, x: 세션종목, 지금칸: Boolean, 끝: Boolean, 뺄수: Boolean, modifier: Modifier) {
+private fun 운칸(d: 앱데이터, x: 세션종목, 지금칸: Boolean, 끝: Boolean, 위상: androidx.compose.runtime.State<Float>, modifier: Modifier) {
     val c = Local색.current
     val m = x.총칸(); val k = x.찬것().size
     val 모양 = RoundedCornerShape(모서리.작게)
     val 번 = d.같은이름번호(x.종id, x.이름)
+    val 다 = m > 0 && k >= m
+    val 채움 by animateFloatAsState(if (m > 0) (k.toFloat() / m).coerceIn(0f, 1f) else 0f, tween(움직임.게이지), label = "칸게이지")
+    val 찬색 = (if (다) c.좋음 else c.강조).copy(alpha = 운치수.채움투명)
+    val 선색 = c.속선
     Box(
-        modifier.width(운치수.칸폭).alpha(if (끝) 운치수.끝칸흐림 else 1f)
+        modifier.height(높이.아주낮게).alpha(if (끝) 운치수.끝칸흐림 else 1f)
             .clip(모양).background(c.면).점멸바탕(지금칸, 모양)
-            .border(if (지금칸) 선굵기.굵게 else 선굵기.보통, if (지금칸) c.강조 else c.선, 모양),
-    ) {
-        Column(Modifier.padding(start = 간격.좁게, end = 간격.좁게, top = 간격.아주좁게, bottom = 간격.좁게)) {
-            Text(
-                x.이름, Modifier.fillMaxWidth().height(높이.아주낮게), style = 글꼴.보통(크기.작게, FontWeight.Bold).copy(lineHeight = 운치수.칸이름줄.em),
-                color = c.글, maxLines = 2, overflow = TextOverflow.Ellipsis,
-            )
-            Text("$k/$m", style = 글꼴.보통(크기.작게).copy(fontFeatureSettings = "tnum"), color = c.흐림, maxLines = 1)
-            Box(Modifier.padding(top = 간격.아주좁게).fillMaxWidth().height(막대치수.높이).clip(CircleShape).background(c.면2)) {
-                Box(Modifier.fillMaxWidth(if (m > 0) k.toFloat() / m else 0f).fillMaxHeight().background(if (끝) c.좋음 else c.강조))
+            .drawBehind {
+                val w = size.width * 채움
+                if (w > 0f) drawRect(찬색, size = Size(w, size.height))
+                if (w < size.width - 0.5f) 나선그림(w, 위상.value, 선색)
             }
+            .border(if (지금칸) 선굵기.굵게 else 선굵기.보통, if (지금칸) c.강조 else c.선, 모양),
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        Row(Modifier.padding(horizontal = 간격.좁게), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
+            Text(x.이름, style = 글꼴.보통(크기.작게, FontWeight.Bold), color = c.글, maxLines = 1, softWrap = false)
+            if (번 > 0) 번호딱지(번)
+            Text("$k/$m", style = 글꼴.보통(크기.작게).copy(fontFeatureSettings = "tnum"), color = c.흐림, maxLines = 1, softWrap = false)
         }
-        if (번 > 0) Box(
-            Modifier.align(Alignment.TopEnd).padding(
-                top = if (뺄수) 운치수.칸번호뺄수위 else 운치수.칸번호위, end = if (뺄수) 운치수.칸번호뺄수옆 else 운치수.칸번호옆,
-            ),
-        ) { 번호딱지(번) }
+    }
+}
+
+/**
+ * 안 찬 쪽 나선 (10-08) — [왼] 부터 오른끝까지 두 가닥(반 바퀴 어긋남)이 물결치고, 앞에 오는 가닥은 진하게 · 뒤로 가는 가닥은 옅게.
+ * [위상] 이 흐르면 가로로 빙글빙글 도는 것처럼 보인다. 가닥 사이 가로대는 물결 ¼ 마다
+ */
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.나선그림(왼: Float, 위상: Float, 색: Color) {
+    val 물결 = 운치수.나선물결.toPx()
+    val 높이 = size.height * 운치수.나선높이
+    val 가운데 = size.height / 2
+    val 굵기 = 운치수.나선굵기.toPx()
+    val 걸음 = 2.dp.toPx()
+    val k = (2 * Math.PI / 물결).toFloat()
+    var x = 왼
+    while (x < size.width) {
+        val x2 = min(x + 걸음, size.width)
+        val a1 = k * x + 위상; val a2 = k * x2 + 위상
+        // 가닥 둘 — 앞(cos > 0)은 진하게, 뒤는 옅게
+        for (뒤집 in 0..1) {
+            val s = if (뒤집 == 0) 1f else -1f
+            val 깊이 = (1f + s * kotlin.math.cos(a1)) / 2f
+            drawLine(색.copy(alpha = 색.alpha * (0.25f + 0.75f * 깊이)),
+                Offset(x, 가운데 + s * 높이 * kotlin.math.sin(a1)), Offset(x2, 가운데 + s * 높이 * kotlin.math.sin(a2)), 굵기)
+        }
+        x = x2
+    }
+    // 가로대 (세로 짧은 선) — 물결 ¼ 마다, 위상을 따라 같이 흐른다
+    val 대간격 = 물결 / 4f
+    val 밀림 = ((-위상 / k) % 대간격 + 대간격) % 대간격
+    var bx = 왼 - (왼 % 대간격) + 밀림
+    while (bx < size.width) {
+        if (bx >= 왼) {
+            val a = k * bx + 위상
+            val y = 높이 * kotlin.math.sin(a)
+            drawLine(색.copy(alpha = 색.alpha * 0.35f), Offset(bx, 가운데 - y), Offset(bx, 가운데 + y), 굵기 * 0.7f)
+        }
+        bx += 대간격
     }
 }
 
@@ -1313,11 +1368,11 @@ internal fun 세트더내림(단추아래: Int, 넘김: Int, 보임: Int, 최대
 
 internal fun 단추폭(줄: Float, 틈: Float, 비: List<Float>): List<Float> = 비.map { (줄 - 틈 * (비.size - 1)).coerceAtLeast(0f) * it }
 
-/** 칸 줄을 어디로 넘길까 — 보는 칸이 맨 앞. 앞에 칸이 있으면 ‹ 자리만큼 비운다. 0 ~ 최대 안으로 */
-internal fun 칸줄목표(본: Int, 걸음: Float, 앞비움: Float, 최대: Float): Float =
-    if (본 <= 0) 0f else (본 * 걸음 - 앞비움).coerceIn(0f, 최대.coerceAtLeast(0f))
+/** 칸 줄을 어디로 넘길까 — 보는 칸이 맨 앞. 앞에 칸이 있으면 ‹ 자리만큼 비운다. 0 ~ 최대 안으로. [왼] 보는 칸 왼끝(줄 안 자리 · 10-08 칸 폭이 글 길이만큼이라 잰 값) */
+internal fun 칸줄목표(본: Int, 왼: Float, 앞비움: Float, 최대: Float): Float =
+    if (본 <= 0) 0f else (왼 - 앞비움).coerceIn(0f, 최대.coerceAtLeast(0f))
 
-/** 붙박이 [＋] 의 왼쪽 자리 — 마지막 칸 뒤(틈 다음), 넘치면 줄 오른쪽 끝 (시안 position:sticky; right:0) */
-internal fun 더칸자리(n: Int, 걸음: Float, 넘김: Float, 폭: Float, 더폭: Float): Float = min(n * 걸음 - 넘김, 폭 - 더폭)
+/** 붙박이 [＋] 의 왼쪽 자리 — 마지막 칸 뒤(틈 다음), 넘치면 줄 오른쪽 끝 (시안 position:sticky; right:0). [내용끝] 마지막 칸 오른끝 + 틈 */
+internal fun 더칸자리(내용끝: Float, 넘김: Float, 폭: Float, 더폭: Float): Float = min(내용끝 - 넘김, 폭 - 더폭)
 
 // ── 순수 계산 끝 ──

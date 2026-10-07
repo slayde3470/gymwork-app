@@ -218,12 +218,12 @@ class WorkoutPortTest {
     }
 
     @Test fun 칸줄_보는칸_맨앞_붙박이더() {
-        assertEquals(0f, 칸줄목표(0, 76f, 32f, 500f))
-        assertEquals(120f, 칸줄목표(2, 76f, 32f, 500f))
-        assertEquals(100f, 칸줄목표(9, 76f, 32f, 100f))   // 끝을 넘지 않는다
-        assertEquals(0f, 칸줄목표(3, 76f, 32f, 0f))       // 넘치지 않으면 그대로
-        assertEquals(228f, 더칸자리(3, 76f, 0f, 400f, 44f))   // 칸이 적으면 마지막 칸 뒤
-        assertEquals(356f, 더칸자리(9, 76f, 0f, 400f, 44f))   // 넘치면 오른쪽 끝
+        assertEquals(0f, 칸줄목표(0, 0f, 32f, 500f))
+        assertEquals(120f, 칸줄목표(2, 152f, 32f, 500f))
+        assertEquals(100f, 칸줄목표(9, 684f, 32f, 100f))   // 끝을 넘지 않는다
+        assertEquals(0f, 칸줄목표(3, 228f, 32f, 0f))       // 넘치지 않으면 그대로
+        assertEquals(228f, 더칸자리(228f, 0f, 400f, 44f))   // 칸이 적으면 마지막 칸 뒤
+        assertEquals(356f, 더칸자리(684f, 0f, 400f, 44f))   // 넘치면 오른쪽 끝
     }
 
     @Test fun 첫빈칸() {

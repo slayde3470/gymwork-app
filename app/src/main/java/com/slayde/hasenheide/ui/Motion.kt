@@ -32,6 +32,8 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.drawOutline
+import kotlinx.coroutines.launch
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -195,3 +197,45 @@ fun 작은표(글자: String, 채움: Boolean = false) {
     ) { Text(글자, style = 글꼴.보통(10.sp, FontWeight.Bold), color = if (채움) c.강조글 else c.글, maxLines = 1) }
 }
 
+
+
+// ═════════════════════ 10-08 홍겸 님: 세트를 더하면 — 새 줄 한 번 점멸 · 오목하게 눌렸다 제자리 ═════════════════════
+
+/** 줄 목록의 바로 앞 개수 — 처음 그려지는 줄의 번호가 이 값 이상이면 '방금 더한 줄'. [열쇠] 가 바뀌면(다른 종목을 볼 때) 그때 개수부터 */
+@Composable
+fun 앞줄개수(개수: Int, 열쇠: Any? = Unit): Int {
+    val 전 = remember(열쇠) { intArrayOf(개수) }
+    val v = 전[0]
+    androidx.compose.runtime.SideEffect { 전[0] = 개수 }
+    return v
+}
+
+/**
+ * 방금 더한 줄 (세트 줄 · 어디서나 같은 모양) — 처음 그려질 때 [새] 면 한 번만:
+ * 줄 전체가 [움직임.새줄눌림] 로 눌렸다가 탄성으로 제자리 + 줄 바탕에 강조색이 한 번 켜졌다 꺼진다. 줄 modifier 맨 앞에 둔다
+ */
+fun Modifier.새줄효과(새: Boolean, 모양: androidx.compose.ui.graphics.Shape = RoundedCornerShape(com.slayde.hasenheide.ui.theme.모서리.작게)): Modifier =
+    androidx.compose.ui.composed {
+        val 켬 = remember { 새 }
+        if (!켬) return@composed Modifier
+        val c = com.slayde.hasenheide.ui.theme.Local색.current
+        val 빛 = remember { Animatable(0f) }
+        val 배 = remember { Animatable(1f) }
+        LaunchedEffect(Unit) {
+            kotlinx.coroutines.coroutineScope {
+                launch {
+                    배.animateTo(com.slayde.hasenheide.ui.theme.움직임.새줄눌림, tween(com.slayde.hasenheide.ui.theme.움직임.눌림))
+                    배.animateTo(1f, androidx.compose.animation.core.spring(dampingRatio = com.slayde.hasenheide.ui.theme.움직임.톡탄성, stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow))
+                }
+                빛.animateTo(1f, tween(com.slayde.hasenheide.ui.theme.움직임.새줄빛올림))
+                빛.animateTo(0f, tween(com.slayde.hasenheide.ui.theme.움직임.새줄빛내림))
+            }
+        }
+        Modifier
+            .graphicsLayer { scaleX = 배.value; scaleY = 배.value }
+            .drawWithContent {
+                drawContent()
+                val a = 빛.value
+                if (a > 0f) drawOutline(모양.createOutline(size, layoutDirection, this), c.강조.copy(alpha = com.slayde.hasenheide.ui.theme.움직임.새줄빛 * a))
+            }
+    }

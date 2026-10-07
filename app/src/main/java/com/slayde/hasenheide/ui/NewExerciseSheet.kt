@@ -376,9 +376,10 @@ private fun 새세트줄표(세트: List<종목세트>, 무게폭: Double, 바�
             Box(Modifier.width(종목치수.지움칸))
         }
         val 하나 = 세트.size <= 1
+        val 앞 = 앞줄개수(세트.size)   // 10-08: 방금 더한 줄은 한 번 점멸 · 눌렸다 제자리
         세트.forEachIndexed { k, x ->
             key(k) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
+                Row(Modifier.새줄효과(k >= 앞), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
                     글("${k + 1}", Modifier.width(새시트치수.번호칸), 크기값 = 크기.조금작게, 굵기 = FontWeight.Bold, 가운데 = true)
                     새세트값칸(무게글(x.w), Modifier.weight(새시트치수.열무게), "${k + 1}세트 무게", x.w > 0,
                         { 바꿈 { l -> 세트값바꿈(l, k, 'w', -1, 무게폭) } }, { 바꿈 { l -> 세트값바꿈(l, k, 'w', 1, 무게폭) } },
