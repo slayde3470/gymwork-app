@@ -9,7 +9,7 @@ import androidx.compose.ui.test.click
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.github.takahirom.roborazzi.captureRoboImage
+import com.github.takahirom.roborazzi.captureScreenRoboImage
 import com.slayde.hasenheide.data.날기록
 import com.slayde.hasenheide.data.루틴
 import com.slayde.hasenheide.data.루틴종목
@@ -108,9 +108,10 @@ class ScreenShots {
         쉼()
     }
 
-    private fun 찍(이름: String) { 쉼(); rule.onRoot().captureRoboImage("screens/$이름.png") }
+    private fun 찍(이름: String) { 쉼(); captureScreenRoboImage("screens/$이름.png") }
 
     @Test fun s01_calendar() { 켜기(); 찍("01_캘린더") }
+    @Test fun s01b_calendarDay() { 켜기(); 누름(오늘.minusDays(2).dayOfMonth.toString()); 찍("01b_캘린더_지난날") }
     @Test fun s02_search() { 켜기(); 탭(1); 찍("02_검색") }
     @Test fun s03_routines() { 켜기(); 탭(2); 찍("03_루틴") }
     @Test fun s04_routineDetail() { 켜기(); 탭(2); 누름("상체 A"); 찍("04_루틴_상세") }
@@ -122,9 +123,12 @@ class ScreenShots {
     @Test fun s10_memo() { 켜기(); 탭(5); 찍("10_메모시트") }
     @Test fun s11_social() { 켜기(); 탭(6); 찍("11_소셜") }
     @Test fun s12_settings() { 켜기(); 탭(7); 찍("12_설정") }
+    @Test @Config(qualifiers = "w412dp-h2400dp-xhdpi") fun s12b_settingsFull() { 켜기(); 탭(7); 찍("12b_설정_전체") }
     @Test fun s13_profile() { 켜기(); 탭(8); 찍("13_프로필") }
     @Test fun s14_status() { 켜기(); 탭(8); 누름("스탯", -1); 찍("14_스테이터스") }
     @Test fun s15_achievements() { 켜기(); 탭(8); 누름("업적", -1); 찍("15_도전과제") }
+
+    @Test @Config(qualifiers = "w412dp-h2400dp-xhdpi") fun s15b_achievementsFull() { 켜기(); 탭(8); 누름("업적", -1); 찍("15b_도전과제_전체") }
 
     private fun 세션넣기(d: 앱데이터, 몇세트: Int): 앱데이터 {
         val r = d.루틴들.first()

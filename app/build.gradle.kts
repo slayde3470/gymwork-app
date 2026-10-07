@@ -36,7 +36,7 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
-    testOptions { unitTests { isIncludeAndroidResources = true; all { it.systemProperty("roborazzi.test.record", "true"); it.maxHeapSize = "3g" } } }
+    testOptions { unitTests { isIncludeAndroidResources = true; all { it.systemProperty("roborazzi.test.record", "true"); it.maxHeapSize = "3g"; it.forkEvery = 1 } } }
     buildFeatures {
         compose = true
         buildConfig = true
