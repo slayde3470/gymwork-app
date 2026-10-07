@@ -33,8 +33,8 @@ import java.io.File
 import java.time.LocalDate
 
 /**
- * 화면 사진 (screens/** 가지 전용 — main 에는 넣지 않는다).
- * 지금 코드를 그대로 그려 화면마다 한 장씩 app/screens/*.png 로 남긴다.
+ * 화면 사진 (screens 가지 전용 — main 에는 넣지 않는다).
+ * 지금 코드를 그대로 그려 화면마다 한 장씩 app/screens 폴더 로 남긴다.
  * 자료는 보기용 예시 (루틴 3개 · 지난 기록 5일 · 벤치 플랜 1개).
  */
 @RunWith(AndroidJUnit4::class)
