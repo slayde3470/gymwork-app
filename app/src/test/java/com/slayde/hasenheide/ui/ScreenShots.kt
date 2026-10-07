@@ -283,7 +283,7 @@ class Shot_s01d_calendarDeleteMode : ShotBase() {
 
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class Shot_s16b_addSetScroll : ShotBase() {
-    @Test fun s16b() { 켜기 { 세션넣기(it, 2, 더 = 6) }; 누름("+ 세트"); 찍("16b_운동_세트추가_스크롤") }
+    @Test fun s16b() { 켜기 { 세션넣기(it, 2, 더 = 4) }; 찍("16a_운동_세트추가_전"); 누름("+ 세트"); 찍("16b_운동_세트추가_스크롤") }
 }
 
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
