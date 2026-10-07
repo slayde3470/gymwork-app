@@ -109,6 +109,8 @@ abstract class ShotBase {
         쉼()
     }
 
+    protected fun 바로찍(이름: String, ms: Long) { rule.mainClock.advanceTimeBy(ms); captureScreenRoboImage("screens/$이름.png") }
+
     protected fun 찍(이름: String) { 쉼(); captureScreenRoboImage("screens/$이름.png") }
 
     /** 오늘도 상체 A 를 한 기록 (한 번 더 · 기록 삭제 단추) */
