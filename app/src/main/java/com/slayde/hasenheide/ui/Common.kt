@@ -252,6 +252,8 @@ fun 버튼(
     글색: Color? = null,
     /** 32 높이 — 캘린더 아래 판처럼 자리가 좁은 곳 */
     낮게: Boolean = false,
+    /** 10-08 홍겸 님: 글이 넘치면 글자를 줄인다 (맞춤글 — 캘린더 아래 단추 줄) */
+    줄임: Boolean = false,
 ) {
     val c = Local색.current
     val 손 = remember { MutableInteractionSource() }
@@ -273,7 +275,9 @@ fun 버튼(
             Icon(그림, null, Modifier.size(if (낮게) 14.dp else 16.dp), tint = 색)
             Box(Modifier.width(if (낮게) 4.dp else 6.dp))
         }
-        글(text, 크기값 = if (낮게) 크기.조금작게 else if (작게) 크기.버튼 else 크기.본문, 색 = 색, 굵기 = FontWeight.Bold)
+        val 글크기 = if (낮게) 크기.조금작게 else if (작게) 크기.버튼 else 크기.본문
+        if (줄임) 맞춤글(text, 최대 = 글크기, 최소 = 크기.작게, 색 = 색, 굵기 = FontWeight.Bold)
+        else 글(text, 크기값 = 글크기, 색 = 색, 굵기 = FontWeight.Bold)
     }
 }
 
