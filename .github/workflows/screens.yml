@@ -1,0 +1,40 @@
+name: 화면 사진 (screens 가지)
+
+# screens/** 가지 전용 — 지금 코드로 화면마다 사진을 찍어 app/screens/ 에 올린다. main 과 APK 에는 영향 없음.
+on:
+  push:
+    branches: [ 'screens/**' ]
+    paths-ignore: [ 'app/screens/**' ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  shots:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+      - name: 한글 글꼴
+        run: sudo apt-get install -y fonts-noto-cjk >/dev/null || true
+      - name: 사진 찍기
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          gradle testDebugUnitTest --tests 'com.slayde.hasenheide.ui.ScreenShots' --no-daemon --stacktrace 2>&1 | tee 로그.txt
+      - name: 올리기
+        run: |
+          mkdir -p app/screens
+          grep -E "FAILED|Exception|error:|e: " 로그.txt | head -80 > app/screens/_로그.txt || true
+          for f in app/build/test-results/testDebugUnitTest/*.xml; do [ -f "$f" ] && grep -A3 "<failure" "$f" | head -20 >> app/screens/_로그.txt; done
+          git config user.name "screens-bot"; git config user.email "screens-bot@users.noreply.github.com"
+          git add -f app/screens
+          git commit -m "화면 사진 (빌드 ${{ github.run_number }})" || exit 0
+          git push

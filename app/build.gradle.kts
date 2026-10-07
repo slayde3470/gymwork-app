@@ -5,6 +5,7 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
+    id("io.github.takahirom.roborazzi")
 }
 
 android {
@@ -35,6 +36,7 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
+    testOptions { unitTests { isIncludeAndroidResources = true; all { it.systemProperty("roborazzi.test.record", "true"); it.maxHeapSize = "3g" } } }
     buildFeatures {
         compose = true
         buildConfig = true
@@ -59,4 +61,13 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     // Storage(org.json) 시험 (10-05 · PortTest) — 안드로이드 단위시험의 org.json 은 빈 껍데기라 진짜를 넣는다
     testImplementation("org.json:json:20240303")
+
+    // 화면 사진 (screens/** 가지 전용)
+    testImplementation(platform("androidx.compose:compose-bom:2024.12.01"))
+    testImplementation("androidx.compose.ui:ui-test-junit4")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
+    testImplementation("org.robolectric:robolectric:4.14.1")
+    testImplementation("androidx.test.ext:junit:1.2.1")
+    testImplementation("io.github.takahirom.roborazzi:roborazzi:1.32.2")
+    testImplementation("io.github.takahirom.roborazzi:roborazzi-compose:1.32.2")
 }
