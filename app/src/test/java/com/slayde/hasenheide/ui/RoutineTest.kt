@@ -52,7 +52,7 @@ class RoutineTest {
         val 플랜들 = listOf(플("p1", "벤치프레스", "벤치프레스"), 플("p2", "벤치프레스 2", "벤치프레스"))
         val l = 넣기칸들(표, 플랜들, 넣기전체, true)
         // 첫 벤치프레스 → 플랜 두 칸, 둘째 벤치프레스(종b2) → 그냥 종목 칸
-        assertEquals(listOf("p1", null, "p2"), l.filter { it.종목이름 == "벤치프레스" }.map { it.플랜id })
+        assertEquals(listOf("p1", "p2", null), l.filter { it.종목이름 == "벤치프레스" }.map { it.플랜id })   // 10-07 종목표 차례
         assertEquals("종b2", l.first { it.플랜id == null && it.종목이름 == "벤치프레스" }.키)
         // 플랜 이름이 종목 이름과 같으면 번호 딱지(1) · 다르면 없음
         assertEquals(1, l.first { it.플랜id == "p1" }.번호)
