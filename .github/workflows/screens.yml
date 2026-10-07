@@ -22,14 +22,16 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.11.1'
-      - name: 한글 글꼴
-        run: sudo apt-get install -y fonts-noto-cjk >/dev/null || true
-      - name: 사진 찍기
+      # 10-08: 한글 글꼴 설치(apt) 단계를 뺐다 — 한 번 15분 멈췄다. Robolectric 이 안드로이드 글꼴을 쓰므로 필요 없는지 확인 중
+      - name: 시험 + 사진 찍기
         continue-on-error: true
         run: |
           set -o pipefail
-          rm -f app/screens/*.png
-          gradle testDebugUnitTest --tests 'com.slayde.hasenheide.ui.Shot_*' --no-daemon --stacktrace 2>&1 | tee 로그.txt
+          # 찍을 화면 — app/src/test/찍을것.txt 한 줄 (예: Shot_s16* · 비우면 전부). 계산 시험(*Test)도 같은 판에 돈다
+          고름=$(grep -v '^#' app/src/test/찍을것.txt 2>/dev/null | tr -d ' \r' | head -1)
+          [ -z "$고름" ] && 고름='Shot_*'
+          echo "찍을 것: $고름"
+          gradle testDebugUnitTest --tests '*Test' --tests "com.slayde.hasenheide.ui.$고름" --no-daemon --stacktrace 2>&1 | tee 로그.txt
       - name: 올리기
         run: |
           mkdir -p app/screens
