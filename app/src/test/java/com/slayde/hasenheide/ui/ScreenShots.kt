@@ -59,7 +59,7 @@ abstract class ShotBase {
             루틴("rB", "하체 B", 종목 = listOf(루틴종목("스쿼트", 4, 80.0, 6, 150), 루틴종목("루마니안 데드리프트", 3, 70.0, 8, 120),
                 루틴종목("레그 프레스", 3, 140.0, 10, 90))),
             루틴("rC", "등 C", 종목 = listOf(루틴종목("풀업", 4, 0.0, 8, 120), 루틴종목("바벨 로우", 3, 60.0, 8, 90),
-                루틴종목("랫풀다운", 3, 50.0, 12, 60))),
+                루틴종목("랫풀다운", 3, 50.0, 12, 60), 루틴종목("케이블 트라이셉스 푸시다운", 3, 25.0, 12, 60))),
             루틴("rR", "휴식", 휴식일 = true)
         ).map { it.copy(자동생성 = true) }
         fun 기록(r: 루틴, 날: LocalDate): Pair<String, 날기록> {
@@ -109,6 +109,14 @@ abstract class ShotBase {
     }
 
     protected fun 찍(이름: String) { 쉼(); captureScreenRoboImage("screens/$이름.png") }
+
+    /** 오늘도 상체 A 를 한 기록 (한 번 더 · 기록 삭제 단추) */
+    protected fun 오늘기록(d: 앱데이터): 앱데이터 {
+        val r = d.루틴들.first()
+        val 시작 = System.currentTimeMillis() - 2 * 3_600_000
+        return d.copy(기록 = d.기록 + (오늘.toString() to 날기록(r.id, r.이름, true,
+            r.종목.map { e -> 종목기록(e.이름, List(e.세트) { 세트(e.무게, e.횟수) }) }, 3600, 시작, 시작 + 3_600_000)))
+    }
 
     protected fun 세션넣기(d: 앱데이터, 몇세트: Int): 앱데이터 {
         val r = d.루틴들.first()
@@ -258,3 +266,13 @@ class Shot_s19_workoutOtherTab : ShotBase() {
     @Test fun s19_workoutOtherTab() { 켜기 { 세션넣기(it, 1) }; 탭(0); 찍("19_운동중_다른탭") }
 }
 
+
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+class Shot_s01c_calendarTodayDone : ShotBase() {
+    @Test fun s01c() { 켜기 { 오늘기록(it) }; 찍("01c_캘린더_오늘기록") }
+}
+
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+class Shot_s01d_calendarDeleteMode : ShotBase() {
+    @Test fun s01d() { 켜기 { 오늘기록(it) }; 누름("기록 삭제"); 찍("01d_캘린더_기록삭제") }
+}
