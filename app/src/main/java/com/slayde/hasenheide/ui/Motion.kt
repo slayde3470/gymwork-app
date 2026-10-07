@@ -34,6 +34,7 @@ import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.drawOutline
 import kotlinx.coroutines.launch
+import androidx.compose.ui.composed
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -215,7 +216,7 @@ fun 앞줄개수(개수: Int, 열쇠: Any? = Unit): Int {
  * 줄 전체가 [움직임.새줄눌림] 로 눌렸다가 탄성으로 제자리 + 줄 바탕에 강조색이 한 번 켜졌다 꺼진다. 줄 modifier 맨 앞에 둔다
  */
 fun Modifier.새줄효과(새: Boolean, 모양: androidx.compose.ui.graphics.Shape = RoundedCornerShape(com.slayde.hasenheide.ui.theme.모서리.작게)): Modifier =
-    androidx.compose.ui.composed {
+    composed {
         val 켬 = remember { 새 }
         if (!켬) return@composed Modifier
         val c = com.slayde.hasenheide.ui.theme.Local색.current
