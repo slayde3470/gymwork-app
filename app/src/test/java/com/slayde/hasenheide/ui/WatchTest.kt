@@ -17,10 +17,11 @@ class WatchTest {
         assertEquals(바뀐.id, nd.종목찾기(x.종id, x.이름)?.id)
     }
 
-    @Test fun 이름바꿈_운최고() {
+    // 10-08: 운동 화면 지표 줄(운최고)을 지웠다 — 같은 뜻(지난 기록을 새 열쇠로 찾는다)을 열쇠 비교로 지킨다
+    @Test fun 이름바꿈_지난기록_열쇠() {
         val d = 앱데이터(종목표 = listOf(종목("벤치프레스", "가슴")),
             기록 = mapOf("2026-10-01" to 날기록("r", "R", true, listOf(종목기록("벤치프레스", listOf(세트(100.0, 1)))))))
         val nd = assertNotNull(d.종목고침(새종목값(이름 = "벤치", 칸 = "가슴", 편집 = "벤치프레스", 근육 = mapOf("chest_mid" to "P")), 5L).d)
-        assertNotNull(운최고(nd.기록, nd.세션줄(nd.종목표[0].id).열쇠, "2026-10-05", false).first)
+        assertEquals(nd.기록.getValue("2026-10-01").종목들[0].열쇠, nd.세션줄(nd.종목표[0].id).열쇠)
     }
 }
