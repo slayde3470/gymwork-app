@@ -77,13 +77,10 @@ import com.slayde.hasenheide.data.날짜만
 import com.slayde.hasenheide.data.대비결과
 import com.slayde.hasenheide.data.두대비
 import com.slayde.hasenheide.data.루틴
-import com.slayde.hasenheide.data.건너뜀남김
 import com.slayde.hasenheide.data.그날만바꾸기
 import com.slayde.hasenheide.data.꽂기
-import com.slayde.hasenheide.data.날휴식
 import com.slayde.hasenheide.data.목표
 import com.slayde.hasenheide.data.무게글
-import com.slayde.hasenheide.data.사흘미리
 import com.slayde.hasenheide.data.세션종목
 import com.slayde.hasenheide.data.세트
 import com.slayde.hasenheide.data.세트종류
@@ -295,7 +292,8 @@ private object 캘기억 {
     var 보는달: YearMonth? = null
 }
 
-private enum class 캘시트 { 변경, 루틴, 휴식, 달 }
+// 10-08 홍겸 님: [변경] 단추와 그 시트(변경 · 휴식)를 없앴다 — 루틴 시트는 [운동 계획 만들기/바꾸기] 가 연다
+private enum class 캘시트 { 루틴, 달 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -360,6 +358,22 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
             else -> 상태.바꿈 { it.copy(세션 = S) }   // App 이 세션을 보고 운동 화면으로 간다
         }
     }
+    // 10-08 홍겸 님: [초기화] — 그 날 예정을 비운다. 전 '예정 지우기'(변경 시트) 처리 그대로 (되돌리기 띠 · 발자취 · 지울 수 없는 날)
+    fun 예정비움(k: String) {
+        val dd = 상태.d
+        val rid = dd.예정[k] ?: return
+        val 이름 = dd.예정루틴(k)?.이름 ?: ""
+        val 전고정 = dd.예정고정[k]
+        상태.바꿈 { it.예정지우기(k, 상태.오늘) }
+        if (상태.d.예정.containsKey(k)) return   // 지울 수 없는 날(지난 날 · 기록 있는 날)
+        발자취.적기("${캘날글(k)} 예정 지움")
+        상태.알림.되돌림("캘린더예정", { n -> if (n > 1) "예정 ${n}개를 지웠습니다" else "${캘날글(k)} $이름 예정을 지웠습니다" }) {
+            상태.바꿈 { dd2 ->
+                if (dd2.예정.containsKey(k) || dd2.캘기록있음(k) || dd2.루틴들.none { it.id == rid }) dd2
+                else dd2.copy(예정 = dd2.예정 + (k to rid), 예정고정 = if (전고정 == null) dd2.예정고정 - k else dd2.예정고정 + (k to 전고정))
+            }
+        }
+    }
     fun 기록지움(k: String) {
         val (새, x) = 상태.d.캘기록지우기(k, 록골) ?: return
         상태.바꿈 { 새.예정초기화(상태.오늘) }
@@ -419,8 +433,6 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
                 날판(
                     상태, 고른날, 다른달 = 보는달 != 이번달, 록골 = 록골, 지움모드 = 지움모드, 예펼침 = 예펼침,
                     on오늘 = { 보는달 = 이번달; 날고름(오늘) },
-                    on변경 = { 시트날 = it; 열린 = 캘시트.변경 },
-                    on루틴넣기 = { 시트날 = it; 열린 = 캘시트.루틴 },
                     on록고름 = { rk -> 록골 = if (rk in 록골) 록골 - rk else 록골 + rk },
                     on펼침 = { 키 -> 예펼침 = if (예펼침 == 키) null else 키 },
                     modifier = Modifier.weight(1f),
@@ -432,7 +444,8 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
                     // 기록이 하나뿐이면 미리 골라 둔다 (바로 [기록 삭제] 한 번으로 지운다)
                     록골 = if (켬) 상태.d.캘기록목록(고른날).let { l -> if (l.size == 1) setOf(l[0].first) else emptySet() } else emptySet()
                 },
-                시작 = { S -> 한번 { 시작(S) } }, 지움 = { kk -> 한번 { 기록지움(kk) } }, 보고서 = { kk, rr -> 한번 { 보고서(kk, rr) } })
+                시작 = { S -> 한번 { 시작(S) } }, 지움 = { kk -> 한번 { 기록지움(kk) } }, 보고서 = { kk, rr -> 한번 { 보고서(kk, rr) } },
+                계획 = { kk -> 한번 { 시트날 = kk; 열린 = 캘시트.루틴 } }, 초기화 = { kk -> 한번 { 예정비움(kk) } })
         }
 
         // 집어 둔 예정 — 날을 누르면 옮겨진다. 다른 달도 ‹ › 로 넘겨 누른다 (시안 `아래띠`). 뒤로가기 = 취소
@@ -442,35 +455,11 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
         }
 
         val k = 시트날
-        val 이날 = if (k == 오늘) "오늘" else "이 날"
         when (열린) {
-            // 시안 `시트` '변경' — 다른 루틴으로 · 다른 날로 옮기기 · 휴식 · 예정 지우기
-            캘시트.변경 -> 시트("${캘날글(k)} (${캘요일글(k)})", { 열린 = null }) {
-                val r = d.예정루틴(k)
-                고르기줄("다른 루틴으로", r?.이름) { 열린 = 캘시트.루틴 }
-                고르기줄("다른 날로 옮기기") { 집은날 = k; 날고름(k); 열린 = null }
-                if (r != null && !r.휴식일) 고르기줄("${이날}은 휴식") { 열린 = 캘시트.휴식 }
-                빨간고르기줄("$이날 예정 지우기") {
-                    열린 = null
-                    val dd = 상태.d
-                    val rid = dd.예정[k] ?: return@빨간고르기줄
-                    val 이름 = dd.예정루틴(k)?.이름 ?: ""
-                    val 전고정 = dd.예정고정[k]
-                    상태.바꿈 { it.예정지우기(k, 상태.오늘) }
-                    if (상태.d.예정.containsKey(k)) return@빨간고르기줄   // 지울 수 없는 날(지난 날 · 기록 있는 날)
-                    발자취.적기("${캘날글(k)} 예정 지움")
-                    상태.알림.되돌림("캘린더예정", { n -> if (n > 1) "예정 ${n}개를 지웠습니다" else "${캘날글(k)} $이름 예정을 지웠습니다" }) {
-                        상태.바꿈 { dd2 ->
-                            if (dd2.예정.containsKey(k) || dd2.캘기록있음(k) || dd2.루틴들.none { it.id == rid }) dd2
-                            else dd2.copy(예정 = dd2.예정 + (k to rid), 예정고정 = if (전고정 == null) dd2.예정고정 - k else dd2.예정고정 + (k to 전고정))
-                        }
-                    }
-                }
-            }
             // 시안 '루틴고르기' — [이 날만][이 날부터 순서대로] · 루틴마다 예상 시간 · 지금 루틴 ✓
             캘시트.루틴 -> {
                 var 이날만 by remember { mutableStateOf(true) }
-                시트("${캘날글(k)} 루틴", { 열린 = null }) {
+                시트("${캘날글(k)} 운동 계획", { 열린 = null }) {
                     칩줄(listOf("이 날만", "이 날부터 순서대로"), if (이날만) "이 날만" else "이 날부터 순서대로", { 이날만 = it == "이 날만" })
                     Box(Modifier.height(간격.좁게))
                     d.루틴들.forEach { r ->
@@ -483,18 +472,6 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
                         }
                     }
                     if (d.루틴들.isEmpty()) 고르기줄("루틴 만들러 가기") { 열린 = null; 루틴으로() }
-                }
-            }
-            // 시안 '휴식' — 미루기 · 건너뛰기, 앞으로 사흘을 미리 보인다
-            캘시트.휴식 -> 시트("${이날}은 휴식", { 열린 = null }) {
-                listOf(true to "미루기", false to "건너뛰기").forEach { (미루기, 이름) ->
-                    고르기줄(이름, "다음 날부터 ${d.사흘미리(미루기, k).joinToString(" → ")}") {
-                        열린 = null
-                        // 건너뛴 날을 남긴다 (업적 2-11 '하체 날 건너뛰기')
-                        상태.바꿈 { if (미루기) it.날휴식(true, k, 상태.오늘) else it.건너뜀남김(k).날휴식(false, k, 상태.오늘) }
-                        발자취.적기("${캘날글(k)} 휴식 ($이름)")
-                        상태.알림.토스트("${캘날글(k)} 휴식 · $이름")
-                    }
                 }
             }
             캘시트.달 -> 달고르기(보는달, 이번달, { 보는달 = it; 열린 = null }, { 열린 = null })
@@ -753,14 +730,14 @@ private fun Modifier.윗선(켬: Boolean, 색: Color): Modifier =
     if (!켬) this else this.drawBehind { drawLine(색, Offset(0f, 0f), Offset(size.width, 0f), 선굵기.보통.toPx()) }.padding(top = 간격.좁게)
 
 /**
- * 날짜 판 (시안 `날판`) — 띠 '10월 5일 (월) · 오늘' [오늘][변경 | 루틴 넣기] /
+ * 날짜 판 (시안 `날판`) — 띠 '10월 5일 (월) · 오늘' [오늘] /
  * 기록마다 이름 줄([체크][이름][달성][세트][볼륨][시간]) + 두 칸 종목 목록 / 미실시 / 예정 이름 줄([이름][세트][볼륨][예상]) + 목록.
  * 단추 줄은 화면 맨 아래 [판단추] (넘겨도 붙박이)
  */
 @Composable
 private fun 날판(
     상태: 앱상태, k: String, 다른달: Boolean, 록골: Set<String>, 지움모드: Boolean, 예펼침: String?,
-    on오늘: () -> Unit, on변경: (String) -> Unit, on루틴넣기: (String) -> Unit, on록고름: (String) -> Unit, on펼침: (String) -> Unit,
+    on오늘: () -> Unit, on록고름: (String) -> Unit, on펼침: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val c = Local색.current
@@ -773,14 +750,13 @@ private fun 날판(
     val 넘김 = rememberScrollState()
     LaunchedEffect(k) { 넘김.scrollTo(0) }
     Column(modifier.fillMaxWidth().번호("캘1")) {
-        // ── 띠 — 오른쪽 끝: 예정이 있으면 [변경] · 없으면 [루틴 넣기] · 기록만 있는 날은 비움. 다른 달을 볼 때 [오늘] ──
+        // ── 띠 — 오른쪽 끝: 다른 달을 볼 때만 [오늘] (10-08: [변경] · [루틴 넣기] 는 없앴다 — 아래 단추 줄이 한다) ──
         Row(
             Modifier.fillMaxWidth().heightIn(min = 높이.보통).background(c.강조).padding(horizontal = 간격.보통, vertical = 부품치수.띠세로여백),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.좁게),
         ) {
             띠글("${캘날글(k)} (${캘요일글(k)})${if (k == 오늘) " · 오늘" else ""}", Modifier.weight(1f))
             if (다른달) 흰칩("오늘", on오늘)
-            if (예) { if (r != null) 흰칩("변경", { on변경(k) }) else 흰칩("루틴 넣기", { on루틴넣기(k) }) }
         }
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(넘김).padding(horizontal = 간격.보통, vertical = 간격.좁게), verticalArrangement = Arrangement.spacedBy(간격.좁게)) {
             var 앞것 = false
@@ -968,20 +944,24 @@ private val 그림작게 = 16.dp   // 11 지침 U3-6 글 옆 · 체크 안
  * 맨 아래 단추 줄 (시안 `.판단추` — 넘겨도 아래에 붙박이 · 높이 40).
  *  · 기록 날: [운동 보고서] [한 번 더 운동하기(오늘 · 마지막 기록의 루틴)] [기록 삭제(빨강 · 좁게)] (10-08)
  *  · 지움 모드: [취소] [기록 삭제(빨강)] — 고른 기록이 없으면 삭제는 흐리게 (누를 수 없음)
- *  · 오늘 예정: [운동 시작]
+ *  · 기록 없는 날 (10-08 홍겸 님 — 지난 날은 단추 없음):
+ *     - 오늘 이후 · 예정 없음/휴식 → [운동 계획 만들기] (휴식 예정이 있으면 오른쪽에 [초기화])
+ *     - 오늘 · 운동 예정 → [운동 시작] 75% + [초기화] 25%
+ *     - 내일 이후 · 운동 예정 → [운동 계획 바꾸기] 75% + [초기화] 25%
  */
 @Composable
 private fun 판단추(
     상태: 앱상태, k: String, 록골: Set<String>, 지움모드: Boolean, on지움모드: (Boolean) -> Unit,
     시작: (운동세션?) -> Unit, 지움: (String) -> Unit, 보고서: (String, 날기록) -> Unit,
+    계획: (String) -> Unit, 초기화: (String) -> Unit,
 ) {
     val c = Local색.current
     val d = 상태.d
     val 오늘 = 상태.오늘
     val 록 = d.캘기록목록(k)
     val r = d.예정루틴(k)
-    val 예시작 = 록.isEmpty() && k == 오늘 && r != null && !r.휴식일
-    if (록.isEmpty() && !예시작) return
+    val 운동예정 = r != null && !r.휴식일
+    if (록.isEmpty() && k < 오늘) return   // 지난 날 · 기록 없음 = 단추 없음
     Row(
         Modifier.fillMaxWidth().background(c.바탕).padding(horizontal = 간격.보통, vertical = 간격.좁게),
         horizontalArrangement = Arrangement.spacedBy(간격.좁게),
@@ -1002,47 +982,50 @@ private fun 판단추(
             }, Modifier.weight(판단추폭.넓게), 주요 = true, 작게 = true, 줄임 = true)
             // 10-08 홍겸 님: '기록 삭제' 로 줄이고 폭을 줄인다 — 줄어든 만큼 [한 번 더 운동하기] 가 넓어진다. 누르면 지움 모드
             버튼("기록 삭제", { on지움모드(true) }, Modifier.weight(판단추폭.좁게), 작게 = true, 글색 = c.나쁨, 줄임 = true)
-        } else if (r != null) {
-            버튼("운동 시작", {
-                val dd = 상태.d
-                val 지금r = dd.예정루틴(k)
-                if (지금r == null || 지금r.휴식일) return@버튼
-                시작(dd.조절해시작(지금r, k, System.currentTimeMillis()))
-            }, Modifier.weight(1f).번호("캘3"), 주요 = true, 작게 = true)
+        } else {
+            // 10-08 홍겸 님: 기록 없는 오늘 이후. 휴식 예정이 있어도 [초기화] 는 오른쪽에 둔다
+            val 초기화있음 = r != null
+            val 큰폭 = if (초기화있음) 판단추폭.계획 else 1f
+            if (운동예정 && k == 오늘) {
+                버튼("운동 시작", {
+                    val dd = 상태.d
+                    val 지금r = dd.예정루틴(k)
+                    if (지금r == null || 지금r.휴식일) return@버튼
+                    시작(dd.조절해시작(지금r, k, System.currentTimeMillis()))
+                }, Modifier.weight(큰폭).번호("캘3"), 주요 = true, 작게 = true, 줄임 = true)
+            } else {
+                // 이름 [운동 계획 바꾸기] 는 Claude 판단 (홍겸 님 요청에 이름 없음)
+                버튼(if (운동예정) "운동 계획 바꾸기" else "운동 계획 만들기", { 계획(k) }, Modifier.weight(큰폭).번호("캘3"), 주요 = true, 작게 = true, 줄임 = true)
+            }
+            if (초기화있음) 버튼("초기화", { 초기화(k) }, Modifier.weight(판단추폭.초기화), 작게 = true, 글색 = c.나쁨, 줄임 = true)
         }
     }
 }
 
 /** 10-08 홍겸 님: 아래 단추 폭 비율 — [운동 보고서] 1 · [한 번 더 운동하기] 1.4 · [기록 삭제] 0.6 [11_UI지침에 올릴 값] */
-private object 판단추폭 { const val 넓게 = 1.4f; const val 좁게 = 0.6f }
+private object 판단추폭 { const val 넓게 = 1.4f; const val 좁게 = 0.6f
+    /** 10-08 홍겸 님: 기록 없는 날 — [운동 시작]/[운동 계획 바꾸기] 75% · [초기화] 25% [11_UI지침에 올릴 값] */
+    const val 계획 = 0.75f; const val 초기화 = 0.25f }
 
 // ─────────────── 시트 ───────────────
 
-/** 지우기처럼 빨간 고르기 줄 (시안 `.고르기.나쁨` — › 없음) */
-@Composable
-private fun 빨간고르기줄(이름: String, onClick: () -> Unit) {
-    val c = Local색.current
-    val 손 = remember { MutableInteractionSource() }
-    val 배 = 눌림배율(손)
-    Row(Modifier.fillMaxWidth().배율(배).눌림손(손, onClick).padding(vertical = 간격.보통), verticalAlignment = Alignment.CenterVertically) {
-        글(이름, Modifier.weight(1f), 색 = c.나쁨)
-    }
-    구분선()
-}
-
 /**
- * 달 고르기 (시안 v9 xz0l `달고르기시트` · v17 `년고르기`) — ‹ 2026년 › (해 넘기기) · 1~12월 3×4.
- * '2026년' 을 누르면 12해 격자(‹ › 는 12해씩) → 해를 고르면 다시 달. 보는 달 · 해 = 고른 표시, 이번 달 · 올해 = 오늘 표시
+ * 달 고르기 (시안 v9 xz0l `달고르기시트` · v17 `년고르기`) — 제목 줄 = ‹ 2026 › (해 넘기기) · 1~12월 3×4.
+ * 10-08 홍겸 님: '달 고르기' · '해 고르기' · 범위 글(2021~2032)을 없애고 시트 제목 줄에 ‹ 고른 해 › 만 둔다.
+ * 가운데 해를 누르면 12해 격자(‹ › 는 12해씩, 가운데 글은 그대로 고른 해) → 해를 고르면 그 해의 달 격자 · 해 모드에서 가운데를 다시 누르면 달 격자.
+ * 보는 달 · 해 = 고른 표시(상자 전체 파랑), 이번 달 · 올해 = 오늘 표시
  */
 @Composable
 private fun 달고르기(보는달: YearMonth, 이번달: YearMonth, 고름: (YearMonth) -> Unit, 닫기: () -> Unit) {
     var 해 by remember { mutableIntStateOf(보는달.year) }
     var 해보기 by remember { mutableStateOf(false) }
     var 해시작 by remember { mutableIntStateOf(보는달.year - 5) }
-    시트(if (해보기) "해 고르기" else "달 고르기", 닫기) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(간격.아주좁게, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) {
-            val 이전 = if (해보기) "이전 12년" else "이전 해"
-            val 다음 = if (해보기) "다음 12년" else "다음 해"
+    시트("", 닫기, 제목칸 = {
+        val 이전 = if (해보기) "이전 12년" else "이전 해"
+        val 다음 = if (해보기) "다음 12년" else "다음 해"
+        // 오른쪽 ✕ 와 같은 폭을 왼쪽에 비워 ‹ 2026 › 가 제목 줄 한가운데에 오게 한다
+        Box(Modifier.width(높이.낮게))
+        Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(간격.아주좁게, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) {
             아이콘버튼(아이콘.왼쪽, 이전, {
                 if (해보기) 해시작 = (해시작 - 해칸수).coerceIn(해범위.first, 해범위.last - 해칸수 + 1) else 해 = (해 - 1).coerceIn(해범위)
             }, 칠함 = false, 색 = Local색.current.강조)
@@ -1051,12 +1034,12 @@ private fun 달고르기(보는달: YearMonth, 이번달: YearMonth, 고름: (Ye
                     .눌림 { if (!해보기) 해시작 = (해 - 5).coerceIn(해범위.first, 해범위.last - 해칸수 + 1); 해보기 = !해보기 }
                     .padding(horizontal = 간격.좁게),
                 contentAlignment = Alignment.Center,
-            ) { 글(if (해보기) "${해시작}~${해시작 + 해칸수 - 1}" else "${해}년", 크기값 = 크기.크게, 굵기 = FontWeight.Bold) }
+            ) { 글("${해}", 크기값 = 크기.크게, 굵기 = FontWeight.Bold) }
             아이콘버튼(아이콘.오른쪽, 다음, {
                 if (해보기) 해시작 = (해시작 + 해칸수).coerceIn(해범위.first, 해범위.last - 해칸수 + 1) else 해 = (해 + 1).coerceIn(해범위)
             }, 칠함 = false, 색 = Local색.current.강조)
         }
-        Box(Modifier.height(간격.좁게))
+    }) {
         if (해보기) 고르기칸들((0 until 해칸수).map { "${해시작 + it}" }, (0 until 해칸수).indexOfFirst { 해시작 + it == 보는달.year }, (0 until 해칸수).indexOfFirst { 해시작 + it == 이번달.year }) { i ->
             해 = 해시작 + i; 해보기 = false
         } else 고르기칸들((1..12).map { "${it}월" }, if (보는달.year == 해) 보는달.monthValue - 1 else -1, if (이번달.year == 해) 이번달.monthValue - 1 else -1) { i ->
@@ -1065,7 +1048,7 @@ private fun 달고르기(보는달: YearMonth, 이번달: YearMonth, 고름: (Ye
     }
 }
 
-/** 3 × 4 고르기 칸 (시안 `.달칸`) — 높이 44 · 속선 · 면 · 15. 고름 = 강조 테두리 · 강조옅음 · 굵게, 오늘 = 강조 알약 */
+/** 3 × 4 고르기 칸 (시안 `.달칸`) — 높이 44 · 속선 · 면 · 15. 고름 = 상자 전체 강조 바탕 · 강조글 · 굵게 (10-08), 오늘 = 강조 알약 */
 @Composable
 private fun 고르기칸들(글들: List<String>, 고름: Int, 오늘: Int, on: (Int) -> Unit) {
     val c = Local색.current
@@ -1077,13 +1060,15 @@ private fun 고르기칸들(글들: List<String>, 고름: Int, 오늘: Int, on: 
                     val i = 줄 * 3 + j
                     val 고른 = i == 고름
                     Box(
-                        Modifier.weight(1f).height(높이.높게).clip(모양).background(if (고른) c.강조옅음 else c.면)
+                        Modifier.weight(1f).height(높이.높게).clip(모양).background(if (고른) c.강조 else c.면)
                             .border(선굵기.보통, if (고른) c.강조 else c.속선, 모양).눌림 { on(i) },
                         contentAlignment = Alignment.Center,
                     ) {
-                        if (i == 오늘) Box(Modifier.clip(모양).background(c.강조).padding(horizontal = 간격.좁게)) {
+                        // 고른 칸은 상자 전체가 이미 파랑 — 오늘이어도 알약을 따로 얹지 않는다
+                        if (고른) 글(t, 색 = c.강조글, 굵기 = FontWeight.Bold)
+                        else if (i == 오늘) Box(Modifier.clip(모양).background(c.강조).padding(horizontal = 간격.좁게)) {
                             글(t, 색 = c.강조글, 굵기 = FontWeight.Bold)
-                        } else 글(t, 굵기 = if (고른) FontWeight.Bold else FontWeight.Medium)
+                        } else 글(t, 굵기 = FontWeight.Medium)
                     }
                 }
             }
