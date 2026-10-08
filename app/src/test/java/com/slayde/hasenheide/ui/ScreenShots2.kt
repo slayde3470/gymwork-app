@@ -20,12 +20,18 @@ import org.robolectric.annotation.GraphicsMode
 // ───────── 캘린더 ─────────
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class Shot_s01e_monthPick : ShotBase() {
-    @Test fun t() { 켜기(); 누름("${오늘.year}년 ${오늘.monthValue}월"); 찍("01e_캘린더_달고르기"); 누름("${오늘.year}년"); 찍("01f_캘린더_해고르기") }
+    @Test fun t() { 켜기(); 누름("${오늘.year}년 ${오늘.monthValue}월"); 찍("01e_캘린더_달고르기"); 누름("${오늘.year}", -1); 찍("01f_캘린더_해고르기") }
 }
 
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class Shot_s01g_reset : ShotBase() {
     @Test fun t() { 켜기(); 누름("초기화"); 찍("01g_캘린더_초기화뒤"); 누름("운동 계획 만들기"); 찍("01h_캘린더_운동계획시트") }
+}
+
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+class Shot_s01j_dayExercises : ShotBase() {
+    @Test fun t() { 켜기(); 누름("초기화"); 누름("운동 계획 만들기"); 찍("01j_캘린더_운동계획_종목고르기")
+        누름("종목 골라 넣기"); 누름("스쿼트", -1); 찍("01j2_캘린더_그날운동_넣기"); 누름("확인", -1); 찍("01j3_캘린더_그날운동_붙음") }
 }
 
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
