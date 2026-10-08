@@ -76,10 +76,12 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.slayde.hasenheide.data.근육계산
 import com.slayde.hasenheide.data.기록세트
 import com.slayde.hasenheide.data.날
@@ -129,7 +131,7 @@ import kotlin.math.roundToInt
  * 스탯 · 업적 화면 (10-05 옮기기 2단계 PF · 시안 v21 `스탯화면` · `스탯판` · `스탯그래프` · `업적판` · `업적줄`)
  *
  *  · 맨 위 줄 없음 (시안 rm2x). [스탯][업적] 은 아래 한 줄 — 반씩 나눠 엄지가 덜 움직이게
- *  · 스탯: 체력 큰 칸 + 나머지 2열 칸. 누르면 아래에 향상 그래프 [일][주][달][년] (시안 wuyc)
+ *  · 스탯: 체력 큰 칸 + 나머지는 한 줄에 한 스탯 [이름][숫자][게이지] 세로 목록 (10-08 홍겸 님). 누르면 아래에 향상 그래프 [일][주][달][년] (시안 wuyc)
  *  · 업적: 띠 '업적 n/m' (숨은 업적은 달성했을 때만 m 에 셈 · 시안 jdyt) · [달성][전체][+] · 달성 → 못 한 것
  *    잠긴 칭호는 흐리게 가려져 있다가 누르면 보인다 (v12) · 달성한 줄 오른쪽 '프로필' 체크 (v18 E ③)
  *
@@ -209,7 +211,10 @@ object 스탯화면글 {
  * 이 화면의 치수 · 시간 — 시안 CSS 값 그대로. 11 지침 단계 밖의 값이 섞여 있다 (그래프 · 체크 상자) → 합칠 때 Theme.kt 로 옮길 후보
  */
 private object 스탯치수2 {
-    val 칸최소 = 높이.높게            // 스탯칸 min-height 44
+    val 줄높이 = 높이.낮게             // 스탯 한 줄 최소 높이 32 (10-08 홍겸 님: 촘촘하게)
+    val 이름칸 = 64.dp                // 15sp 한글 4글자 폭 (한 글자 ≈ 15dp + 여유)
+    val 숫자칸 = 32.dp                // 15sp 굵게 세 자리(100) 폭 · 오른쪽 정렬
+    val 증감칸 = 48.dp                // 11sp 굵게 '▲ +12.5' 폭 · 오른쪽 정렬
     val 칭호표 = 높이.아주낮게         // 28
     val 보임칸 = 높이.높게             // 업적보임 폭 44
     val 체크상자 = 18.dp
@@ -245,9 +250,10 @@ private object 스탯치수2 {
 
 // ═══════════════════════════ 스탯 ═══════════════════════════
 
-/** 시안 `스탯판` — 체력 큰 칸 · 나머지 2열. 고른 칸이 있으면 아래에 그래프 (스크롤 밖에 붙박이) */
+/** 시안 `스탯판` — 체력 큰 칸 · 나머지는 한 줄에 한 스탯(10-08). 고른 줄이 있으면 아래에 그래프 (스크롤 밖에 붙박이) */
 @Composable
 private fun 스탯판(상태: 앱상태) {
+    val c = Local색.current
     val d = 상태.d
     val 오늘 = 상태.오늘
     val 들 = remember(d, 오늘) { d.스탯들(오늘) }
@@ -270,17 +276,17 @@ private fun 스탯판(상태: 앱상태) {
                 체력칸(체, 전[스탯.체력.name], 전.isNotEmpty(), 고름 == 스탯.체력, Modifier.bringIntoViewRequester(r)) {
                     고름 = if (고름 == 스탯.체력) null else 스탯.체력
                 }
-                // 2열 — 줄마다 두 칸 (시안 grid 1fr 1fr · 사이 4)
-                Column(verticalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
-                    들.filter { it.스탯 != 스탯.체력 }.chunked(2).forEach { 줄 ->
-                        Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
-                            줄.forEach { s ->
-                                val q = 끌어올림.getOrPut(s.스탯) { BringIntoViewRequester() }
-                                스탯칸(s, 전[s.스탯.name], 전.isNotEmpty(), 고름 == s.스탯, Modifier.weight(1f).fillMaxHeight().bringIntoViewRequester(q)) {
-                                    고름 = if (고름 == s.스탯) null else s.스탯
-                                }
-                            }
-                            if (줄.size == 1) Box(Modifier.weight(1f))
+                // 10-08 홍겸 님: 옛 RPG 능력치 창처럼 한 줄에 한 스탯 — [이름][숫자][게이지] 를 상자 하나에 세로로 (사이 4)
+                val 상자모양 = RoundedCornerShape(모서리.작게)
+                Column(
+                    Modifier.fillMaxWidth().clip(상자모양).background(c.면).border(선굵기.보통, c.선, 상자모양)
+                        .padding(horizontal = 간격.좁게, vertical = 간격.아주좁게),
+                    verticalArrangement = Arrangement.spacedBy(간격.아주좁게),
+                ) {
+                    들.filter { it.스탯 != 스탯.체력 }.forEach { s ->
+                        val q = 끌어올림.getOrPut(s.스탯) { BringIntoViewRequester() }
+                        스탯줄(s, 전[s.스탯.name], 전.isNotEmpty(), 고름 == s.스탯, Modifier.bringIntoViewRequester(q)) {
+                            고름 = if (고름 == s.스탯) null else s.스탯
                         }
                     }
                 }
@@ -315,29 +321,63 @@ private fun 체력칸(s: 스탯값, 앞: Double?, 전있음: Boolean, 고름: Bo
     }
 }
 
-/** 시안 `.스탯칸` — 테 1 선(고르면 강조) · 모서리 8 · 여백 4/8 · 높이 44 이상. 13 이름 · 15 굵게 값 / 막대 + ▲ */
+/**
+ * 10-08 홍겸 님: 한 줄에 한 스탯 — [이름 칸][숫자 칸][게이지][7일 전 대비]. 줄을 누르면 아래에 그래프 (고른 줄은 강조옅음 바탕).
+ * 값이 없으면 숫자 자리에 '–' 와 빈 막대 (설명 글은 줄에 두지 않는다)
+ */
 @Composable
-private fun 스탯칸(s: 스탯값, 앞: Double?, 전있음: Boolean, 고름: Boolean, modifier: Modifier, on누름: () -> Unit) {
+private fun 스탯줄(s: 스탯값, 앞: Double?, 전있음: Boolean, 고름: Boolean, modifier: Modifier, on누름: () -> Unit) {
     val c = Local색.current
     val 모양 = RoundedCornerShape(모서리.작게)
     val v = s.값
-    Column(
-        modifier.heightIn(min = 스탯치수2.칸최소).clip(모양).background(if (고름) c.강조옅음 else c.면)
-            .border(선굵기.보통, if (고름) c.강조 else c.선, 모양)
+    Row(
+        modifier.fillMaxWidth().heightIn(min = 스탯치수2.줄높이).clip(모양)
+            .then(if (고름) Modifier.background(c.강조옅음) else Modifier)
             .눌림(on누름).semantics { stateDescription = if (고름) "그래프 열림" else "" }
-            .padding(horizontal = 간격.좁게, vertical = 간격.아주좁게),
-        verticalArrangement = Arrangement.spacedBy(간격.아주좁게, Alignment.CenterVertically),
+            .padding(horizontal = 간격.아주좁게),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(s.스탯.이름, Modifier.weight(1f), style = 글꼴.보통(크기.조금작게, FontWeight.Medium), color = c.글, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            if (v != null) 글("${v.roundToInt()}", Modifier.padding(start = 간격.아주좁게), 크기값 = 크기.본문, 굵기 = FontWeight.Bold)
-        }
-        if (v == null) 빈게이지()
-        else Row(verticalAlignment = Alignment.CenterVertically) {
-            스탯막대(v, 앞, Modifier.weight(1f))
-            스탯차글(v, 앞, 전있음)?.let { (t, 오름) -> 글(t, Modifier.padding(start = 간격.아주좁게), 크기값 = 크기.작게, 색 = if (오름) c.오름 else c.내림, 굵기 = FontWeight.Bold) }
+        스탯이름(s.스탯.이름, Modifier.width(스탯치수2.이름칸))
+        Text(
+            if (v != null) "${v.roundToInt()}" else "–",
+            Modifier.padding(start = 간격.좁게).width(스탯치수2.숫자칸),
+            style = 글꼴.보통(크기.본문, FontWeight.Bold).copy(fontFeatureSettings = "tnum"),
+            color = if (v != null) c.글 else c.옅음, maxLines = 1, softWrap = false, textAlign = TextAlign.End,
+        )
+        if (v == null) 빈막대(Modifier.weight(1f).padding(start = 간격.좁게))
+        else 스탯막대(v, 앞, Modifier.weight(1f).padding(start = 간격.좁게))
+        Box(Modifier.padding(start = 간격.아주좁게).width(스탯치수2.증감칸), contentAlignment = Alignment.CenterEnd) {
+            if (v != null) 스탯차글(v, 앞, 전있음)?.let { (t, 오름) -> 글(t, 크기값 = 크기.작게, 색 = if (오름) c.오름 else c.내림, 굵기 = FontWeight.Bold) }
         }
     }
+}
+
+/**
+ * 이름 칸 — 한글 4글자 폭(스탯치수2.이름칸)에 한 줄로. 넘치면 15 → 11 까지 0.5 씩 줄이고,
+ * 그래도 넘치면(예: '나이 · 성별 대비') 11 로 두 줄. 줄 높이(32)에 두 줄 11 이 들어간다
+ */
+@Composable
+private fun 스탯이름(t: String, modifier: Modifier) {
+    val c = Local색.current
+    var 글자 by remember(t) { mutableStateOf(크기.본문) }
+    var 두줄 by remember(t) { mutableStateOf(false) }
+    Text(
+        t, modifier, style = 글꼴.보통(글자, FontWeight.Medium), color = c.글,
+        maxLines = if (두줄) 2 else 1, softWrap = 두줄, overflow = TextOverflow.Clip,
+        onTextLayout = { r ->
+            if (!두줄 && r.hasVisualOverflow) {
+                val 다음 = 글자.value - 0.5f
+                if (다음 >= 크기.작게.value) 글자 = 다음.sp else 두줄 = true
+            }
+        },
+    )
+}
+
+/** 값이 없는 줄의 빈 막대 — 스탯막대(U3-8)와 같은 높이 · 바탕 · 모양 */
+@Composable
+private fun 빈막대(modifier: Modifier) {
+    val c = Local색.current
+    Box(modifier.height(막대치수.높이).clip(CircleShape).background(c.면2))
 }
 
 /** 시안 `빈게이지` — 빈 막대 + '현재 측정값 없음' */
