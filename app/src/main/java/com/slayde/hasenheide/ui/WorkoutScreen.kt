@@ -96,6 +96,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
@@ -302,10 +304,19 @@ private object 운치수 {
     val 칸높이 = 높이.아주낮게        // 아래 종목 칸 높이 — [＋] 상자는 이 높이의 정사각형 (10-08 홍겸 님) [11_UI지침에 올릴 값]
     const val 더그림배 = 0.6f        // [＋] 그림 크기 = 옛 크기(제목 22) × 0.6 (40% 작게) [11_UI지침에 올릴 값]
     val 칸앞비움 = 32.dp            // 보는 칸을 맨 앞으로 넘길 때 ‹ 자리 (28 + 틈 4 · v21 ③)
-    val 끌기오른끝 = 칸높이 + 32.dp   // 끄는 손이 이 안에 들면 오른쪽으로 넘긴다 ([＋] 28 + 32)
+    val 화살자리 = 부품치수.칩화살 + 간격.아주좁게   // 10-09 홍겸 님: 칸 줄 맨 오른쪽 [›] 자리 (28 + 틈 4) — [＋] 는 그 왼쪽, 칸들 바로 뒤 [11_UI지침에 올릴 값]
+    val 끌기오른끝 = 칸높이 + 화살자리   // 끄는 손이 이 안에 들면 오른쪽으로 넘긴다 ([＋] 28 + [›] 자리 32)
     val 뺌동그라미 = 16.dp          // 보는 칸 ✕ (v21 ①)
     val 뺌그림 = 14.dp
     val 시계오른 = 20.dp            // 5gd1 타이머 왼쪽으로 20
+    const val 시계배 = 0.65f         // 10-09 홍겸 님: 위 띠 시간 글자 35% 작게 (18 → 11.7) [11_UI지침에 올릴 값]
+    val 띠게이지 = 3.dp             // 10-09: 위 띠 전체 진행 게이지 — 1번째 · 2번째 줄 사이 틈에 얇게 [11_UI지침에 올릴 값]
+    val 띠게이지틈 = 2.dp           // 게이지 위아래 틈
+    const val 띠게이지바탕 = 0.25f   // 게이지 안 찬 쪽 = 강조글 × 0.25
+    const val 띠라벨투명 = 0.7f      // 띠 지표 '종목 · 세트 · 볼륨' 이름 글자 = 강조글 × 0.7 (값은 진하게)
+    const val 더동그라미비 = 0.95f   // 10-09: 세트 줄 아래 [＋ 세트] 동그라미 = 번호 동그라미 × 0.95 [11_UI지침에 올릴 값]
+    const val 값그림배 = 0.97f       // 10-09: 세트 줄 − ＋ 그림 3% 작게 (16 → 15.52 · 누르는 칸 20 은 그대로) [11_UI지침에 올릴 값]
+    val 칸여유 = 4.dp               // 10-09: 세트 줄 kg · 회 · 휴식 칸 = 단추 둘 + 테 둘 + 잰 글자 폭 + 이 여유
     val 단추그림 = 20.dp            // 맨 아래 ‹ › (시안 `.운단추줄 svg`)
     val 점선 = 3.dp                 // [＋] 점선 테
     val 칸번호위 = 9.dp             // 칸 오른쪽 위 번호 딱지 (위 4 + 딱지가 스스로 올라가는 5)
@@ -320,43 +331,72 @@ private object 운치수 {
     const val 칸이름줄 = 1.25f       // 아래 칸 이름 11 두 줄이 28 안에 (시안 `.운칸 .ㅇ line-height 1.25`)
     val 단추비 = listOf(0.125f, 0.475f, 0.275f, 0.125f)   // v21 ④
     const val 세트줄간격비 = 0.75f   // 세트 줄 사이 간격 25% 줄임 (10-06 홍겸 님 ⑤) — 줄 위아래 안쪽 여백 · 줄 사이 틈 둘 다 이 비율로
-    val 줄최소 = listOf(44f, 72f, 56f, 86f)                  // 세트 줄 칸 — 번호 · kg · 회 · 휴식 (시안 v10 grid minmax)
-    val 줄비 = listOf(66f, 80f, 102f, 104f)
+    val 줄비 = listOf(66f, 80f, 102f, 104f)                  // 세트 줄 칸 비율 — 번호 · kg · 회 · 휴식. 최소 폭은 10-09 부터 글자를 재서 정한다(`세트칸최소`)
 }
 
 // ═════════════════════ 맨 위 띠 ═════════════════════
 
 /**
- * 시안 `.운머리.띠` — 강조 바탕. ‹ · 이름 · [그림] · 시계 한 줄만 (10-08 홍겸 님: 지표 줄 `1RM · 1주 · 최고 · 달성 · 볼륨` 을 뺐다).
- * 이름이 두 줄이 되어도 ‹ · 그림 · 시계는 세로 가운데에 선다
+ * 시안 `.운머리.띠` — 강조 바탕. 10-09 홍겸 님: 아래 상자에 있던 루틴 이름 · 전체 게이지 · 지표를 올렸다.
+ *  · 1번째 줄: ‹ · 루틴 이름 · (오른쪽 끝에서 왼쪽으로) 시계 · 볼륨 · 세트 · 종목  — 시계 글자는 35% 작게
+ *  · 게이지: 1번째 · 2번째 줄 사이 틈에 얇게 (전체 세트 진행)
+ *  · 2번째 줄: 지금 종목 이름(잘리지 않는다 · 두 줄까지) · 오른쪽에 [그림] 칩(그림을 감췄을 때)
  */
 @Composable
 private fun 운머리(상태: 앱상태, S: 운동세션, 본: Int, e: 세션종목, 지금: Long, 그림보기: (() -> Unit)?, 나가기: () -> Unit) {
     val c = Local색.current
     // 10-06 v22 검수: 보고서에서 ‹ 로 돌아왔으면 저장 전 플랜 회차 · 기록으로 (다음 회차 · 측정일로 보이지 않게)
     val d = 상태.d.let { x -> remember(x) { x.저장전 } }
-    Row(
+    // 10-09 홍겸 님: 아래 진행 상자에서 올라온 지표 — 종목 n/m · 세트 a/b · 볼륨 x/y
+    val n = S.종목들.size
+    val 전 = S.종목들.sumOf { it.총칸() }
+    val 끝낸 = S.종목들.sumOf { it.찬것().size }
+    val 끝종 = S.종목들.count { it.총칸() > 0 && it.찬것().size >= it.총칸() }
+    val 총볼 = S.종목들.sumOf { 볼륨(it.찬것()) }
+    val 총목 = S.종목들.sumOf { x -> 볼륨((0 until x.총칸()).map { S.세트값(x, it) }) }
+    Column(
         Modifier.fillMaxWidth().background(c.강조).번호("운0")
-            .padding(horizontal = 간격.보통, vertical = 부품치수.띠세로여백)
-            .heightIn(min = 높이.낮게),   // 10-08 홍겸 님: 한 줄이어도 위아래 여백이 같게 (이름이 길면 늘어난다)
-        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.좁게),
+            .padding(horizontal = 간격.보통, vertical = 부품치수.띠세로여백),
     ) {
-        Box(
-            Modifier.height(높이.낮게).widthIn(min = 높이.아주낮게).눌림(나가기).semantics { contentDescription = "나가기" },
-            contentAlignment = Alignment.Center,
-        ) { Text("‹", style = 글꼴.보통(크기.크게, FontWeight.Bold), color = c.강조글) }
-        운이름(d, S, 본, e, 상태.오늘, Modifier.weight(1f))
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
+            Box(
+                Modifier.height(높이.낮게).widthIn(min = 높이.아주낮게).눌림(나가기).semantics { contentDescription = "나가기" },
+                contentAlignment = Alignment.Center,
+            ) { Text("‹", style = 글꼴.보통(크기.크게, FontWeight.Bold), color = c.강조글) }
+            // 루틴 이름 — 지표가 먼저 자리를 잡고 남는 폭에 한 줄 (좁으면 …)
+            Text(S.루틴이름, Modifier.weight(1f), style = 글꼴.보통(크기.버튼, FontWeight.Bold), color = c.강조글, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            val 작 = 글꼴.보통(크기.작게).copy(fontFeatureSettings = "tnum")
+            fun 값(앞: String, b: String, 뒤: String = "") = buildAnnotatedString {
+                append(앞); withStyle(SpanStyle(color = c.강조글, fontWeight = FontWeight.Bold)) { append(b) }; append(뒤)
+            }
+            val 라벨색 = c.강조글.copy(alpha = 운치수.띠라벨투명)
+            Text(값("종목 ", "$끝종/$n"), style = 작, color = 라벨색, maxLines = 1, softWrap = false)
+            Text(값("세트 ", "$끝낸/$전"), style = 작, color = 라벨색, maxLines = 1, softWrap = false)
+            Text(값("볼륨 ", 콤마(총볼), "/${콤마(총목)}"), style = 작, color = 라벨색, maxLines = 1, softWrap = false)
+            Text(
+                분초(((S.끝시각 ?: 지금) - S.시작시각 - S.멈춘).coerceAtLeast(0L).div(1000).toInt()),
+                Modifier.padding(end = 운치수.시계오른),
+                style = 글꼴.보통(크기.크게 * 운치수.시계배, FontWeight.Bold).copy(fontFeatureSettings = "tnum"), color = c.강조글, maxLines = 1, softWrap = false,
+            )
+        }
+        띠게이지(if (전 > 0) 끝낸.toFloat() / 전 else 0f, Modifier.fillMaxWidth().padding(vertical = 운치수.띠게이지틈))
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
+            운이름(d, S, 본, e, 상태.오늘, Modifier.weight(1f))
             if (그림보기 != null) Box(
                 Modifier.clip(RoundedCornerShape(모서리.작게)).background(c.강조글).눌림(그림보기)
                     .padding(horizontal = 간격.좁게, vertical = 간격.아주좁게),
             ) { Text("그림", style = 글꼴.보통(크기.버튼, FontWeight.Bold), color = c.강조, maxLines = 1) }
-            Text(
-                분초(((S.끝시각 ?: 지금) - S.시작시각 - S.멈춘).coerceAtLeast(0L).div(1000).toInt()),
-                Modifier.padding(end = 운치수.시계오른),
-                style = 글꼴.보통(크기.크게, FontWeight.Bold).copy(fontFeatureSettings = "tnum"), color = c.강조글, maxLines = 1,
-            )
         }
+    }
+}
+
+/** 위 띠 전체 진행 게이지 (10-09) — 진행 막대(U3-8)와 같은 모양, 띠가 강조 바탕이라 찬 쪽 = 강조글 · 안 찬 쪽 = 강조글 × 0.25 */
+@Composable
+private fun 띠게이지(비율: Float, modifier: Modifier) {
+    val c = Local색.current
+    val 보일 by animateFloatAsState(비율.coerceIn(0f, 1f), tween(움직임.게이지, easing = 움직임.부드럽게), label = "띠게이지")
+    Box(modifier.height(운치수.띠게이지).clip(CircleShape).background(c.강조글.copy(alpha = 운치수.띠게이지바탕))) {
+        if (보일 > 0f) Box(Modifier.fillMaxWidth(보일).fillMaxHeight().clip(CircleShape).background(c.강조글))
     }
 }
 
@@ -457,7 +497,14 @@ private fun 세트목록(
     val 무게폭 = 상태.d.설정.무게폭
     BoxWithConstraints(modifier.fillMaxWidth()) {
         val 남는 = maxWidth - 간격.보통 * 2 - 높이.아주낮게 - 간격.아주좁게 * 4
-        val 폭 = 격자폭(남는.value, 운치수.줄최소, 운치수.줄비).map { it.dp }
+        // 10-09 홍겸 님: kg 칸은 100.00 · 횟수 칸은 100 · 휴식 칸은 10:00 이 다 들어가게 — 글자를 재서 칸 최소 폭을 정한다.
+        //   본문(15)으로 한 줄에 안 들어가는 좁은 폰이면 13 → 11 로 글자를 줄여 맞춘다
+        val 측정 = rememberTextMeasurer()
+        val 밀도 = LocalDensity.current
+        val 글크기 = remember(밀도, 남는) {
+            listOf(크기.본문, 크기.버튼).firstOrNull { 크 -> 세트칸최소(측정, 밀도, 크).sum() <= 남는.value } ?: 크기.작게
+        }
+        val 폭 = 격자폭(남는.value, 세트칸최소(측정, 밀도, 글크기), 운치수.줄비).map { it.dp }
         val 위끝px = with(LocalDensity.current) { 간격.좁게.roundToPx() }
         SideEffect { 자.위끝 = 위끝px }   // 목록 위 여백 — 줄 자리(positionInParent)에는 빠져 있다
         Column(
@@ -474,7 +521,7 @@ private fun 세트목록(
             val 앞 = 앞줄개수(e.총칸(), 본키)   // 10-08: 방금 더한 줄은 한 번 점멸 · 눌렸다 제자리
             for (k in 0 until e.총칸()) {
                 운세트줄(
-                    S, 본, k, 지금k, 폭, 지금, 무게폭,
+                    S, 본, k, 지금k, 폭, 글크기, 지금, 무게폭,
                     Modifier.새줄효과(k >= 앞).onPlaced { 자.위[k] = it.positionInParent().y.roundToInt(); 자.높이 = it.size.height },
                     체크 = {
                         val 전 = 상태.d.세션?.종목들?.getOrNull(본)
@@ -498,13 +545,37 @@ private fun 세트목록(
                     지우기 = { 세트지우기(상태, 본, k) { 당김() } },
                 )
             }
-            Spacer(Modifier.height(높이.높게))   // v17 ④ '+ 세트' = 마지막 세트의 다음다음 줄
-            버튼(
-                "+ 세트", { 발자취.적기("세트 추가"); 바꿈 { it.세트추가(본) }; 세트더 = 본 to System.nanoTime(); 당김() },
-                Modifier.fillMaxWidth().onPlaced { 자.단추아래 = it.positionInParent().y.roundToInt() + it.size.height }, 낮게 = true,
-            )
+            // 10-09 홍겸 님: [+ 세트] = 세트 줄들 바로 아래 줄, 세트 번호 동그라미 자리에 (번호 동그라미 × 0.95) 동그라미 + ＋
+            Row(
+                Modifier.fillMaxWidth().padding(vertical = 간격.아주좁게 * 운치수.세트줄간격비)
+                    .onPlaced { 자.단추아래 = it.positionInParent().y.roundToInt() + it.size.height },
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(Modifier.width(폭[0]), contentAlignment = Alignment.Center) {
+                    Box(
+                        Modifier.size(운치수.번호 * 운치수.더동그라미비).clip(CircleShape)
+                            .background(c.면).border(선굵기.굵게, c.강조, CircleShape)
+                            .눌림 { 발자취.적기("세트 추가"); 바꿈 { it.세트추가(본) }; 세트더 = 본 to System.nanoTime(); 당김() }
+                            .semantics { contentDescription = "세트 추가" },
+                        contentAlignment = Alignment.Center,
+                    ) { Icon(아이콘.더하기, null, Modifier.size(18.dp), tint = c.강조) }
+                }
+            }
         }
     }
+}
+
+/**
+ * 세트 줄 칸 최소 폭 (dp) — 번호 · kg · 회 · 휴식 (10-09 홍겸 님). kg 칸은 `100.00`, 횟수 칸은 `100`, 휴식 칸은 `10:00` 이 [글크기] 로 다 들어가는 폭:
+ * 단추 둘(20 × 2) + 테 둘(1 × 2) + 잰 글자 폭 + 여유 4. 번호 칸은 동그라미 36
+ */
+private fun 세트칸최소(측정: androidx.compose.ui.text.TextMeasurer, 밀도: Density, 글크기: TextUnit): List<Float> {
+    val 굵 = 글꼴.보통(글크기, FontWeight.Bold).copy(fontFeatureSettings = "tnum")
+    val 보통 = 글꼴.보통(글크기).copy(fontFeatureSettings = "tnum")
+    fun 칸(글: String, 꼴: TextStyle): Float =
+        with(밀도) { 측정.measure(글, 꼴, maxLines = 1, softWrap = false).size.width.toDp() }.value +
+            (운치수.값단추 * 2 + 선굵기.보통 * 2 + 운치수.칸여유).value
+    return listOf(운치수.번호.value, 칸("100.00", 굵), 칸("100", 굵), 칸("10:00", 보통))
 }
 
 /** 세트 목록의 줄 자리 (px) — 화면 맞추기에만 쓴다. 상태가 아니다 */
@@ -535,7 +606,7 @@ private fun 세트지우기(상태: 앱상태, j: Int, k: Int, 다음: () -> Uni
  */
 @Composable
 private fun 운세트줄(
-    S: 운동세션, j: Int, k: Int, 지금k: Int, 폭: List<Dp>, 지금: Long, 무게폭: Double, modifier: Modifier,
+    S: 운동세션, j: Int, k: Int, 지금k: Int, 폭: List<Dp>, 글크기: TextUnit, 지금: Long, 무게폭: Double, modifier: Modifier,
     체크: () -> Unit, 쉼누름: (마무리: Boolean) -> Unit, 값: ((운동세션) -> 운동세션) -> Unit, 지우기: () -> Unit,
 ) {
     val c = Local색.current
@@ -567,17 +638,17 @@ private fun 운세트줄(
                 Modifier.width(폭[1] + 폭[2] + 폭[3] + 간격.아주좁게 * 2),
             ) { 쉼누름(종류 == 쉼종류.마무리) }
         } else {
-            운값칸(무게글(v.w), "무게", 소수 = true, 끝남 = 완료, Modifier.width(폭[1]),
+            운값칸(무게글(v.w), "무게", 소수 = true, 끝남 = 완료, 글크기, Modifier.width(폭[1]),
                 빼기 = { 값 { s -> s.값고치기(j, k, 새무게 = s.세트값(s.종목들[j], k).w - 무게폭) } },
                 더하기 = { 값 { s -> s.값고치기(j, k, 새무게 = s.세트값(s.종목들[j], k).w + 무게폭) } },
                 넣기 = { t -> t.replace(',', '.').toDoubleOrNull()?.let { w -> 값 { s -> s.값고치기(j, k, 새무게 = w) } } })
-            운값칸("${v.r}", "횟수", 소수 = false, 끝남 = 완료, Modifier.width(폭[2]),
+            운값칸("${v.r}", "횟수", 소수 = false, 끝남 = 완료, 글크기, Modifier.width(폭[2]),
                 빼기 = { 값 { s -> s.값고치기(j, k, 새횟수 = s.세트값(s.종목들[j], k).r - 1) } },
                 더하기 = { 값 { s -> s.값고치기(j, k, 새횟수 = s.세트값(s.종목들[j], k).r + 1) } },
                 넣기 = { t -> t.toIntOrNull()?.let { r -> 값 { s -> s.값고치기(j, k, 새횟수 = r) } } })
             Box(Modifier.width(폭[3]), contentAlignment = Alignment.Center) {
                 // 슈퍼세트는 마지막 종목 줄에만 휴식 (09-21)
-                if (S.휴식보임(j)) 운휴칸(e.세트휴식(k), 완료, Modifier.fillMaxWidth()) { 방향 ->
+                if (S.휴식보임(j)) 운휴칸(e.세트휴식(k), 완료, 글크기, Modifier.fillMaxWidth()) { 방향 ->
                     값 { s -> s.종목들.getOrNull(j)?.let { x -> s.휴식고치기(j, k, 휴식한칸(x.세트휴식(k), 방향)) } ?: s }
                 }
             }
@@ -618,7 +689,7 @@ private fun 번호동그라미(번호: Int, 완료: Boolean, 설명: String, on�
  */
 @Composable
 private fun 운값칸(
-    값글: String, 이름: String, 소수: Boolean, 끝남: Boolean, modifier: Modifier,
+    값글: String, 이름: String, 소수: Boolean, 끝남: Boolean, 글크기: TextUnit, modifier: Modifier,
     빼기: () -> Unit, 더하기: () -> Unit, 넣기: (String) -> Unit,
 ) {
     val c = Local색.current
@@ -644,7 +715,6 @@ private fun 운값칸(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         값단추(아이콘.빼기, "$이름 빼기", !끝남, onClick = 빼기)
-        val 길이 = 글.text.length
         BasicTextField(
             value = 글,
             onValueChange = { t ->
@@ -662,7 +732,7 @@ private fun 운값칸(
                 잡힘 = f.isFocused
             },
             singleLine = true,
-            textStyle = 글꼴.보통(if (길이 >= 6) 크기.작게 else if (길이 == 5) 크기.버튼 else 크기.본문, FontWeight.Bold)
+            textStyle = 글꼴.보통(글크기, FontWeight.Bold)   // 10-09: 칸을 글자 폭에 맞췄으니 6글자('100.00')도 같은 크기
                 .copy(color = if (끝남) c.흐림 else c.글, textAlign = TextAlign.Center, fontFeatureSettings = "tnum"),
             keyboardOptions = KeyboardOptions(keyboardType = if (소수) KeyboardType.Decimal else KeyboardType.Number, imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { 초점.clearFocus() }),
@@ -674,7 +744,7 @@ private fun 운값칸(
 
 /** 휴식 칸 — kg · 회 와 같은 − 값 ＋ (15초씩 · 0:15 ~ 5:00 · ✎ ypk0 · v9). 값 15 · 끝난 줄은 테 · − ＋ 감춤 */
 @Composable
-private fun 운휴칸(초: Int, 끝남: Boolean, modifier: Modifier, 바꿈: (방향: Int) -> Unit) {
+private fun 운휴칸(초: Int, 끝남: Boolean, 글크기: TextUnit, modifier: Modifier, 바꿈: (방향: Int) -> Unit) {
     val c = Local색.current
     val 모양 = RoundedCornerShape(모서리.작게)
     Row(
@@ -683,7 +753,7 @@ private fun 운휴칸(초: Int, 끝남: Boolean, modifier: Modifier, 바꿈: (�
     ) {
         값단추(아이콘.빼기, "휴식 15초 줄이기", !끝남, 초 > 휴식칸값.최소) { 바꿈(-1) }
         Text(
-            분초(초), Modifier.weight(1f), style = 글꼴.보통(크기.본문).copy(fontFeatureSettings = "tnum"),
+            분초(초), Modifier.weight(1f), style = 글꼴.보통(글크기).copy(fontFeatureSettings = "tnum"),
             color = if (끝남) c.흐림 else c.글, maxLines = 1, textAlign = TextAlign.Center, softWrap = false,
         )
         값단추(아이콘.더하기, "휴식 15초 늘리기", !끝남, 초 < 휴식칸값.최대) { 바꿈(1) }
@@ -697,7 +767,7 @@ private fun 값단추(그림: androidx.compose.ui.graphics.vector.ImageVector, �
         Modifier.width(운치수.값단추).fillMaxHeight().alpha(if (!보임) 0f else if (!켬) 운치수.흐린단추 else 1f)
             .then(if (보임 && 켬) Modifier.눌림 { 운입력.확정?.invoke(); onClick() }.semantics { contentDescription = 설명 } else Modifier),
         contentAlignment = Alignment.Center,
-    ) { Icon(그림, null, Modifier.size(16.dp), tint = c.강조) }
+    ) { Icon(그림, null, Modifier.size(16.dp * 운치수.값그림배), tint = c.강조) }   // 10-09 홍겸 님: − ＋ 3% 작게
 }
 
 /**
@@ -766,8 +836,8 @@ private fun Modifier.위로당김(당김: androidx.compose.ui.unit.TextUnit): Mo
 // ═════════════════════ 아래 진행 상자 · 종목 칸 줄 ═════════════════════
 
 /**
- * 진행 상자 (시안 `.운아래`) — [루틴 이름 · 종목 n/m · 세트 n/m · 볼륨 n/m] · 막대 · 종목 칸 줄.
- * 칸 줄: 칸 72 · 틈 4 · 꾹 눌러 끌기 = 순서 · 보는 칸 오른쪽 위 ✕ = 빼기(되돌리기) · ‹ › · 오른쪽 붙박이 [＋] = 넣기
+ * 진행 상자 (시안 `.운아래`) — 10-09 홍겸 님: 루틴 이름 · 전체 게이지 · 지표(종목 n/m · 세트 n/m · 볼륨 n/m)는 위 띠로 올렸고, 종목 칸 줄만 남는다.
+ * 칸 줄: 칸 글 길이만큼 · 틈 4 · 꾹 눌러 끌기 = 순서 · 보는 칸 오른쪽 위 ✕ = 빼기(되돌리기) · ‹ · 칸들 바로 뒤 [＋] = 넣기 · 맨 오른쪽 [›]
  */
 @Composable
 private fun 진행상자(
@@ -775,29 +845,11 @@ private fun 진행상자(
     함: ((운동세션) -> 운결과?) -> Unit, 고름: (Int) -> Unit, 넣기: () -> Unit,
 ) {
     val c = Local색.current
-    val d = 상태.d
-    val n = S.종목들.size
-    val 전 = S.종목들.sumOf { it.총칸() }
-    val 끝낸 = S.종목들.sumOf { it.찬것().size }
-    val 끝종 = S.종목들.count { it.총칸() > 0 && it.찬것().size >= it.총칸() }
-    val 총볼 = S.종목들.sumOf { 볼륨(it.찬것()) }
-    val 총목 = S.종목들.sumOf { x -> 볼륨((0 until x.총칸()).map { S.세트값(x, it) }) }
     Column(
         modifier.fillMaxWidth().background(c.면2)
             .drawBehind { drawRect(c.선, size = Size(size.width, 선굵기.보통.toPx())) }
-            .padding(horizontal = 간격.보통, vertical = 간격.좁게),
+            .padding(start = 간격.보통, end = 간격.보통, bottom = 간격.좁게),   // 위 여백은 칸 줄 안(8 — ✕ 가 위로 걸친다)
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.보통)) {
-            글(S.루틴이름, Modifier.weight(1f), 크기값 = 크기.버튼, 굵기 = FontWeight.Bold)
-            val 작 = 글꼴.보통(크기.작게).copy(fontFeatureSettings = "tnum")
-            fun 값(앞: String, b: String, 뒤: String = "") = buildAnnotatedString {
-                append(앞); withStyle(SpanStyle(color = c.글, fontWeight = FontWeight.Bold)) { append(b) }; append(뒤)
-            }
-            Text(값("종목 ", "$끝종/$n"), style = 작, color = c.흐림, maxLines = 1)
-            Text(값("세트 ", "$끝낸/$전"), style = 작, color = c.흐림, maxLines = 1)
-            Text(값("볼륨 ", 콤마(총볼), "/${콤마(총목)}"), style = 작, color = c.흐림, maxLines = 1)
-        }
-        진행막대(if (전 > 0) 끝낸.toFloat() / 전 else 0f, Modifier.fillMaxWidth().padding(top = 간격.좁게))
         칸줄(상태, S, 본, 당김, 함, 고름, 넣기)
     }
 }
@@ -835,10 +887,12 @@ private fun 칸줄(
         처음 = false
     }
     Box(Modifier.fillMaxWidth().clipToBounds().padding(top = 간격.좁게)) {
-    화살줄(넘김, Modifier.fillMaxWidth(), 오른쪽비움 = 운치수.칸높이 + 간격.아주좁게) {
+    // 10-09 홍겸 님: 칸들 … [＋] [›] — [＋] 가 칸들 쪽(안쪽), [›] 는 맨 오른쪽 끝. 화살줄의 [›] 는 줄 오른쪽 끝에 붙는다
+    화살줄(넘김, Modifier.fillMaxWidth()) {
         var 폭px by remember { mutableStateOf(0f) }
         Box(Modifier.fillMaxWidth().onSizeChanged { 폭px = it.width.toFloat() }) {
-            val 더px = with(밀도) { 운치수.칸높이.toPx() }
+            val 화살px = with(밀도) { 운치수.화살자리.toPx() }
+            val 더px = with(밀도) { 운치수.칸높이.toPx() } + 화살px   // [＋] 왼쪽 자리 계산에 쓰는 오른쪽 몫 = [＋] + [›] 자리
             Row(
                 Modifier.fillMaxWidth().가로끌기줄(판, 넘김, 운치수.끌기오른끝).horizontalScroll(넘김),
                 horizontalArrangement = Arrangement.spacedBy(간격.아주좁게),
@@ -850,10 +904,12 @@ private fun 칸줄(
                             .가로끌기(판, i).눌림 { 발자취.적기("${x.이름} 칸 고름"); 고름(i) }
                             .semantics { contentDescription = "${x.이름} ${x.찬것().size}/${x.총칸()}세트" })
                 }
-                Spacer(Modifier.width(운치수.칸높이))   // [＋] 자리 (정사각형)
+                Spacer(Modifier.width(운치수.칸높이 + 운치수.화살자리))   // [＋] 자리 (정사각형) + [›] 자리
             }
-            // 붙박이 [＋] — 칸이 적으면 마지막 칸 바로 뒤, 넘치면 오른쪽 끝에 붙는다 (시안 position:sticky · v14)
+            // 붙박이 [＋] — 칸이 적으면 마지막 칸 바로 뒤, 넘치면 [›] 자리 바로 왼쪽에 붙는다 (시안 position:sticky · v14)
             Box(Modifier.matchParentSize()) {
+                // [＋] 와 [›] 사이 · [›] 밑으로 칸이 비치지 않게 면2 로 덮는다 ([›] 는 이 위에 그려진다)
+                Box(Modifier.align(Alignment.CenterEnd).width(운치수.화살자리).height(운치수.칸높이).background(c.면2))
                 Box(
                     Modifier.offset { IntOffset(더칸자리(내용끝, 넘김.value.toFloat(), 폭px, 더px).roundToInt(), 0) }
                         .size(운치수.칸높이)   // 10-08: 정사각형 — 높이 = 종목 칸 높이
