@@ -1,5 +1,11 @@
 package com.slayde.hasenheide.ui
 
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -158,6 +164,22 @@ fun 설정화면(상태: 앱상태, 폰: 폰기능) {
             칩줄(근육표.색표목록.map { it.second }, 근육표.색표목록.firstOrNull { it.first == s.색표 }?.second, { t ->
                 val v = 근육표.색표목록.first { it.second == t }.first; 고침 { it.copy(색표 = v) }
             })
+        }
+
+        // 10-08 홍겸 님: 운동 중 다른 앱 위 동그라미 — 유튜브 작은 창과 같이 쓰려면 '다른 앱 위에 표시' 권한이 필요하다
+        이름표("운동 중 작은 동그라미", Modifier.padding(top = 18.dp, bottom = 8.dp))
+        카드(안쪽 = 14.dp) {
+            var 됨 by remember { mutableStateOf(폰.떠있기됨()) }
+            val 생애 = androidx.compose.ui.platform.LocalLifecycleOwner.current
+            DisposableEffect(생애) {
+                val 봄 = androidx.lifecycle.LifecycleEventObserver { _, e -> if (e == androidx.lifecycle.Lifecycle.Event.ON_RESUME) 됨 = 폰.떠있기됨() }
+                생애.lifecycle.addObserver(봄); onDispose { 생애.lifecycle.removeObserver(봄) }
+            }
+            글("운동 중에 앱을 나가면 다른 앱 위에 동그라미가 떠요", 크기값 = 크기.조금작게, 색 = c.흐림, 줄 = 2)
+            글("유튜브 작은 창과 같이 쓸 수 있어요 · 누르면 운동 화면으로", 크기값 = 크기.작게, 색 = c.옅음, 줄 = 2)
+            Box(Modifier.height(12.dp))
+            if (됨) 글("켜져 있습니다", 크기값 = 크기.조금작게, 색 = c.좋음, 굵기 = FontWeight.Bold)
+            else 버튼("다른 앱 위에 표시 허용하기", 폰.떠있기켜기, Modifier.fillMaxWidth(), 주요 = true, 작게 = true)
         }
 
         이름표("데이터", Modifier.padding(top = 18.dp, bottom = 8.dp))

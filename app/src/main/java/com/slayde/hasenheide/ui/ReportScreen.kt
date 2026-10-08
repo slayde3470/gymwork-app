@@ -417,9 +417,9 @@ internal fun 마무리(상태: 앱상태, S: 운동세션, 저장됨: Boolean = 
     // 저장된 결과를 보다가 그 기록이 지워져도 세션 값으로 그린다 · 끝내기 전은 늘 세션 값 (빈 종목도 차례대로)
     val rec = remember(S, 저장키, d.기록) { (if (저장됨) 저장키?.let { d.기록[it] } else null) ?: 세션기록(S, System.currentTimeMillis()) }
     val 총칸들 = remember(S, 저장됨) { if (!저장됨) 세션총칸(S) else null }
-    보고틀(상태, rec, 저장키, 날, 총칸들, 키 = if (저장됨) 저장키 ?: "결과${S.시작시각}" else "세션${S.시작시각}", 조절됨 = S.조절됨, 떠있음 = if (저장됨) null else S) {
-        확인단추 { 상태.바꿈 { it.copy(결과 = null) } }
-    }
+    // 10-08 홍겸 님: 저장된 뒤 보는 결과 화면(오래 손대지 않아 저절로 끝난 운동 등)도 [확인] 대신 떠 있는 ‹ (닫기) › (스테이터스)
+    보고틀(상태, rec, 저장키, 날, 총칸들, 키 = if (저장됨) 저장키 ?: "결과${S.시작시각}" else "세션${S.시작시각}", 조절됨 = S.조절됨,
+        떠있음 = if (저장됨) null else S, 기록닫기 = if (저장됨) ({ 상태.바꿈 { it.copy(결과 = null) } }) else null) {}
 }
 
 /** 저장된 뒤 한 번 보여 주는 결과 화면 (10-01) — App.kt 가 부른다 */
@@ -430,14 +430,15 @@ fun 결과화면(상태: 앱상태, S: 운동세션) {
 
 /**
  * 저장된 기록 하나의 보고서 (시안 캘린더 [운동 보고서] → `S.결과={key}`) — 캘린더가 화면을 덮어 띄운다.
- * [확인] 을 누르거나 그 기록이 지워지면 [닫기]
+ * 10-08 홍겸 님: 아래 [확인] 줄 대신 운동 끝 보고서와 같은 떠 있는 ‹ › — ‹ = [닫기] (캘린더로) · › = 스테이터스 화면.
+ * 그 기록이 지워지면 [닫기]
  */
 @Composable
 fun 기록보고서(상태: 앱상태, 열쇠: String, 닫기: () -> Unit) {
     val rec = 상태.d.기록[열쇠]
     if (rec == null) { LaunchedEffect(열쇠) { 닫기() }; return }
     Box(Modifier.fillMaxSize().background(Local색.current.바탕).눌림 { }) {
-        보고틀(상태, rec, 열쇠, 날짜만(열쇠), null, 키 = 열쇠, 조절됨 = false) { 확인단추(닫기) }
+        보고틀(상태, rec, 열쇠, 날짜만(열쇠), null, 키 = 열쇠, 조절됨 = false, 기록닫기 = 닫기) {}
     }
 }
 
@@ -453,8 +454,10 @@ private sealed interface 보고시트 {
 private fun 보고틀(
     상태: 앱상태, rec: 날기록, 저장키: String?, 날: String, 총칸들: List<Int>?, 키: String, 조절됨: Boolean,
     떠있음: 운동세션? = null,
+    기록닫기: (() -> Unit)? = null,   // 10-08: 캘린더로 연 기록 보고서 — 있으면 아래 줄 대신 떠 있는 ‹ (이것) › (스테이터스)
     아래: @Composable () -> Unit,
 ) {
+    val 떠 = 떠있음 != null || 기록닫기 != null
     val c = Local색.current
     val d = 상태.d
     val ctx = LocalContext.current
@@ -556,17 +559,17 @@ private fun 보고틀(
                     넘김 = 넘김, 띠p = { 띠p.value }, 상자p = { 상자p.value }, 찍는중 = 찍기 != null,
                     on찍기 = { 무엇 -> if (찍기 == null && 폭 > 0) 찍기 = 무엇 }, on시트 = { 시트 = it }, on사진 = 사진고름,
                     // 10-06 v22 D 13-3 — 목록 끝이 떠 있는 ‹ › 에 가리지 않게 (단추 30 + 아래 12)
-                    아래여백 = if (떠있음 != null) 보고떠값.지름 + 보고떠값.옆 else 0.dp,
+                    아래여백 = if (떠) 보고떠값.지름 + 보고떠값.옆 else 0.dp,
                 )
             }
             // 저장된 보고서만 아래 [확인] 줄. 끝내기 전 보고서는 단추 셋을 없애고 떠 있는 ‹ › (10-06 v22 D 13-2)
-            if (떠있음 == null) Column(
+            if (!떠) Column(
                 Modifier.fillMaxWidth().background(c.면)
                     .drawBehind { drawRect(c.선, size = Size(size.width, 선굵기.보통.toPx())) }
                     .padding(horizontal = 간격.보통, vertical = 간격.좁게),
             ) { 아래() }
         }
-        if (떠있음 != null) 보고떠단추(상태, 떠있음)
+        if (떠있음 != null) 보고떠단추(상태, 떠있음) else if (기록닫기 != null) 기록떠단추(상태, 기록닫기)
 
         when (val s = 시트) {
             null -> {}
@@ -918,11 +921,6 @@ private fun 옆아니면아래(content: @Composable () -> Unit) {
 
 // ═════════════════════ 아래 단추 ═════════════════════
 
-@Composable
-private fun 확인단추(onClick: () -> Unit) {
-    버튼("확인", onClick, Modifier.fillMaxWidth(), 주요 = true, 작게 = true)
-}
-
 /**
  * 10-06 v22 D 13-3 · v23 ③ — 끝내기 전 보고서의 떠 있는 동그라미. 화면 기준이라 목록을 넘겨도 제자리 (이미지에는 안 나온다 — 찍는 복제본 밖).
  *  · 왼쪽 아래 ‹ = 운동으로 돌아가기 (저장은 그대로 — 다시 끝내면 같은 기록에 덮어쓴다)
@@ -939,6 +937,21 @@ private fun BoxScope.보고떠단추(상태: 앱상태, S: 운동세션) {
     //        이미 저장돼 있고, 탭을 누르면 App 이 전처럼 세션을 닫는다)
     떠동그라미(보고화살오른, "스테이터스 보기", Modifier.align(Alignment.BottomEnd).padding(end = 보고떠값.옆, bottom = 보고떠값.옆)) {
         지금이면 { 상태.스탯열기?.invoke() }
+    }
+}
+
+/**
+ * 10-08 홍겸 님 — 캘린더 [운동 보고서] 로 연 기록 보고서의 떠 있는 동그라미 (운동 끝 보고서와 같은 모양 · 같은 자리).
+ *  · 왼쪽 아래 ‹ = 보고서 닫기 (캘린더로)
+ *  · 오른쪽 아래 › = 스테이터스 화면 (운동 끝 보고서의 › 와 같은 [스탯열기] · 스테이터스의 ‹ 로 이 보고서에 돌아온다)
+ */
+@Composable
+private fun BoxScope.기록떠단추(상태: 앱상태, 닫기: () -> Unit) {
+    떠동그라미(보고화살왼, "보고서 닫기", Modifier.align(Alignment.BottomStart).padding(start = 보고떠값.옆, bottom = 보고떠값.옆)) {
+        발자취.적기("기록 보고서 닫기"); 닫기()
+    }
+    떠동그라미(보고화살오른, "스테이터스 보기", Modifier.align(Alignment.BottomEnd).padding(end = 보고떠값.옆, bottom = 보고떠값.옆)) {
+        발자취.적기("기록 보고서 · 스테이터스 보기"); 상태.스탯열기?.invoke()
     }
 }
 

@@ -83,6 +83,7 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.changedToDownIgnoreConsumed
+import androidx.compose.ui.input.pointer.changedToUpIgnoreConsumed
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.boundsInRoot
@@ -208,10 +209,18 @@ class 알림판 {
 
     /** 화면 어디든 손가락이 닿으면 App 이 부른다 ([누름기억]) */
     fun 누름(y: Float) { 누른y = y; 누른때 = SystemClock.uptimeMillis() }
+
+    /** 10-08 홍겸 님: 알림이 뜬 뒤 화면을 두 번 누르면(손을 뗄 때 셈) 토스트 · 띠를 바로 치운다 */
+    private var 뗀수 = 0
+    fun 뗌() {
+        if (목록.isEmpty()) { 뗀수 = 0; return }
+        if (++뗀수 >= 2) { 뗀수 = 0; 모두치움() }
+    }
     private fun 자리(): Float? = if (SystemClock.uptimeMillis() - 누른때 < 움직임.누름기억) 누른y else null
 
     /** 글만 잠깐 — 앞 토스트는 바로 치운다 */
     fun 토스트(글: String) {
+        뗀수 = 0
         목록 = 목록.filter { it.꼴 != 꼴.토스트 } + 알림(++번호, 꼴.토스트, 글, null, null, null, 1, 움직임.토스트, 자리())
     }
 
@@ -225,13 +234,16 @@ class 알림판 {
         val 개수 = (옛?.개수 ?: 0) + 1
         val 옛행동 = 옛?.행동
         val 합친: () -> Unit = if (옛행동 == null) 되돌리기 else ({ 되돌리기(); 옛행동() })
-        목록 = 목록.filter { it !== 옛 } + 알림(++번호, 꼴.띠, 글(개수), "되돌리기", 합친, 묶음, 개수, 움직임.되돌림띠, 자리() ?: 옛?.누른y)
+        // 10-08 홍겸 님: 되돌리기 띠는 누른 자리를 따라가지 않고 늘 같은 자리(탭줄 바로 위)에 — 화면마다 위 · 아래로 바뀌어 찾기 어려웠다
+        뗀수 = 0
+        목록 = 목록.filter { it !== 옛 } + 알림(++번호, 꼴.띠, 글(개수), "되돌리기", 합친, 묶음, 개수, 움직임.되돌림띠, null)
     }
 
     /** 단추 하나 붙은 띠 (업적 [보기] 등) — 되돌리기가 아닌 것. 같은 [묶음] 이면 바꿔 끼운다 */
     fun 띠(글: String, 단추: String, 행동: () -> Unit, 묶음: String? = null, 시간: Int = 움직임.업적띠) {
         val 남길 = if (묶음 == null) 목록 else 목록.filter { !(it.꼴 == 꼴.띠 && it.묶음 == 묶음) }
-        목록 = 남길 + 알림(++번호, 꼴.띠, 글, 단추, 행동, 묶음, 1, 시간, 자리())
+        뗀수 = 0
+        목록 = 남길 + 알림(++번호, 꼴.띠, 글, 단추, 행동, 묶음, 1, 시간, null)
     }
 
     fun 치움(id: Long) { 목록 = 목록.filter { it.id != id } }
@@ -246,6 +258,7 @@ fun Modifier.누름기억(판: 알림판): Modifier = this.pointerInput(판) {
         while (true) {
             val e = awaitPointerEvent(PointerEventPass.Initial)
             e.changes.firstOrNull { it.changedToDownIgnoreConsumed() }?.let { 판.누름(it.position.y) }
+            if (e.changes.any { it.changedToUpIgnoreConsumed() }) 판.뗌()
         }
     }
 }

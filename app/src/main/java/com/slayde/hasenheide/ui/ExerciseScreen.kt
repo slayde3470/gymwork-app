@@ -1,6 +1,23 @@
 package com.slayde.hasenheide.ui
 
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.composed
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Text
 import androidx.compose.ui.semantics.contentDescription
@@ -153,7 +170,7 @@ fun 종목화면(상태: 앱상태) {
             })
             당겨새로고침({ }, Modifier.weight(1f)) {
                 Column(
-                    Modifier.fillMaxSize().격자끌기틀(끌판, 넘김).verticalScroll(넘김)
+                    Modifier.fillMaxSize().이름칸밖누름().격자끌기틀(끌판, 넘김).verticalScroll(넘김)
                         .padding(start = 간격.보통, end = 간격.보통, top = 간격.보통, bottom = 종목치수.뜸자리),
                     verticalArrangement = Arrangement.spacedBy(간격.좁게),
                 ) {
@@ -170,7 +187,7 @@ fun 종목화면(상태: 앱상태) {
             val 편집 = if (열린.isEmpty()) null else d.종목표.firstOrNull { it.id == 열린 }
             if (열린.isNotEmpty() && 편집 == null) { LaunchedEffect(열린) { 새시트 = null } }
             else key(열린) {
-                새종목시트(상태, 닫기 = { 새시트 = null }, 저장 = { e ->
+                새종목시트(상태, 닫기 = { 새시트 = null }, 겹 = 1, 저장 = { e ->
                     if (편집 != null) 펼친 = e.id
                     if (고른칸 != "전체" && 고른칸 != e.칸) 고른칸 = e.칸
                 }, 편집 = 편집)
@@ -245,7 +262,8 @@ private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modif
     val t = x.종목
     val 플 = d.상자플랜(x)
     val 번 = if (t != null) 같은이름번호(d.종목표, t.id, t.이름) else 0
-    val 곁 = if (플.size > 1) "플랜 ${플.size}개" else if (플.isEmpty() && 플랜표.찾기(x.이름) != null) "플랜 가능" else ""
+    val 곁 = if (플.size > 1) "플랜 ${플.size}개" else ""   // 10-08 홍겸 님: '플랜 가능' 글은 없앴다
+    var 이름고침 by remember(x.열쇠, 펼) { mutableStateOf(false) }   // 10-08 홍겸 님: 펼친 상자에서 이름을 누르면 그 자리에서 고친다
     val 모양 = RoundedCornerShape(모서리.작게)
     val 수 = if (넣기 != null && 넣기.됨(x)) 넣기.수(x) else -1   // -1 = 체크 상자 없음
     val 들어감 = 수 > 0
@@ -262,10 +280,19 @@ private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modif
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.아주좁게),
                 ) {
                     Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
-                        이름맞춤(x.이름, Modifier.weight(1f, fill = false), 바탕크기 = 종목치수.이름글, 굵기 = FontWeight.Medium)
-                        if (번 > 0 || 플.isNotEmpty()) Row(Modifier.offset(x = 부품치수.딱지겹침), horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
-                            번호딱지(번)
-                            if (플.isNotEmpty()) 플랜딱지()
+                        if (펼 && t != null && 이름고침) 종목이름고침칸(상태, t, { 이름고침 = false }, 펼침, Modifier.weight(1f))
+                        else {
+                            if (펼 && t != null) Box(
+                                Modifier.weight(1f, fill = false).heightIn(min = 높이.아주낮게)
+                                    .semantics(mergeDescendants = true) { contentDescription = "${x.이름} 이름 고치기" }
+                                    .눌림 { 이름고침 = true },
+                                contentAlignment = Alignment.CenterStart,
+                            ) { 이름맞춤(x.이름, Modifier, 바탕크기 = 종목치수.이름글, 굵기 = FontWeight.Medium) }
+                            else 이름맞춤(x.이름, Modifier.weight(1f, fill = false), 바탕크기 = 종목치수.이름글, 굵기 = FontWeight.Medium)
+                            if (번 > 0 || 플.isNotEmpty()) Row(Modifier.offset(x = 부품치수.딱지겹침), horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
+                                번호딱지(번)
+                                if (플.isNotEmpty()) 플랜딱지()
+                            }
                         }
                     }
                     if (펼 && 곁.isNotEmpty()) 글(곁, 크기값 = 크기.작게, 색 = c.옅음)
@@ -281,7 +308,8 @@ private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modif
             }
             // 10-08 홍겸 님: [편집] 자리 = [삭제] (묻지 않고 지우고 되돌리기 띠 · U5-4)
             if (펼 && t != null) 버튼("삭제", { 종목삭제(상태, t) }, 낮게 = true, 글색 = c.나쁨)
-            if (넣기 != null && 수 >= 0) 넣기체크(x.이름, 수,
+            // 10-08 홍겸 님: 펼친 상자 머리에는 체크 상자를 두지 않는다 (접힌 줄에만)
+            if (!펼 && 넣기 != null && 수 >= 0) 넣기체크(x.이름, 수,
                 누름 = { if (넣기.수(x) > 0) 넣기.빼기(x) else 넣기.넣기(x) },
                 꾹 = { 넣기.넣기(x) })
         }
@@ -305,6 +333,88 @@ private fun 종목삭제(상태: 앱상태, t: 종목) {
 }
 
 /**
+ * 이름 고치는 칸 (10-08 홍겸 님) — 펼친 상자에서 이름을 누르면 그 자리에서 글 칸으로 바뀐다.
+ * 자판 [완료] · 칸 밖 누름([이름칸밖누름]) · 화면 나감 때 저장. 빈 이름 · 같은 이름은 그대로.
+ */
+@Composable
+private fun 종목이름고침칸(상태: 앱상태, t: 종목, 끝: () -> Unit, 펼침: (String) -> Unit, modifier: Modifier) {
+    val c = Local색.current
+    val 초점 = LocalFocusManager.current
+    val 요청 = remember { FocusRequester() }
+    var 글 by remember { mutableStateOf(TextFieldValue(t.이름, TextRange(0, t.이름.length))) }
+    var 받음 by remember { mutableStateOf(false) }
+    var 넣음 by remember { mutableStateOf(false) }
+    val 글최신 by rememberUpdatedState(글.text)
+    val t최신 by rememberUpdatedState(t)
+    val 펼침최신 by rememberUpdatedState(펼침)
+    fun 넣기() { if (넣음) return; 넣음 = true; 종목이름넣기(상태, t최신, 글최신, 펼침최신) }
+    LaunchedEffect(Unit) { try { 요청.requestFocus() } catch (_: Exception) { } }
+    DisposableEffect(Unit) { onDispose { 이름고침판.틀 = null; 넣기() } }   // 칸이 열린 채 시트가 닫히거나 탭이 바뀌어도 잃지 않는다
+    val 모양 = RoundedCornerShape(모서리.작게)
+    Row(
+        modifier.height(높이.아주낮게).clip(모양).background(c.면).border(선굵기.보통, c.강조, 모양)
+            .padding(horizontal = 간격.좁게).onGloballyPositioned { 이름고침판.틀 = it.boundsInRoot() },
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        BasicTextField(
+            value = 글,
+            onValueChange = { v -> 글 = v.copy(text = v.text.replace("\n", "")) },
+            singleLine = true,
+            textStyle = 글꼴.보통(종목치수.이름글, FontWeight.Medium).copy(color = c.글),
+            cursorBrush = SolidColor(c.강조),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = { 초점.clearFocus() }),
+            modifier = Modifier.fillMaxWidth().focusRequester(요청).semantics { contentDescription = "종목 이름" }
+                .onFocusChanged { f ->
+                    if (f.isFocused) 받음 = true
+                    else if (받음) { 받음 = false; 넣기(); 끝() }
+                },
+        )
+    }
+}
+
+/**
+ * 이름 바꿔 넣기 — 새 종목 시트 [편집] 과 같은 길(`종목고침`)이라 저장 · 계산은 새로 만들지 않았다.
+ * 빈 이름 · 같은 이름이면 아무 일 없다. 오류(플랜이 걸린 종목)는 토스트. 성공하면 토스트 "이름을 바꿨습니다 · ○○"
+ */
+private fun 종목이름넣기(상태: 앱상태, t: 종목, 새: String, 펼침: (String) -> Unit) {
+    val n = 새.trim()
+    val d = 상태.d
+    val 지금 = d.종목표.firstOrNull { it.id == t.id } ?: return
+    if (n.isEmpty() || n == 지금.이름) return
+    // 10-08: `이름바꿈()` 은 근육을 비우므로 쓰지 않는다 — 편집초기 값에서 이름만 바꾼다
+    val r = d.종목고침(d.편집초기(지금).copy(이름 = n))
+    r.오류?.let { 상태.알림.토스트(it); return }
+    val nd = r.d ?: return
+    val nt = r.종목 ?: return
+    상태.바꿈 { nd }
+    발자취.적기("종목 이름 바꿈 · ${지금.이름} → ${nt.이름}")
+    상태.알림.토스트("이름을 바꿨습니다 · ${nt.이름}")
+    // 옛 꼴 종목(id = 옛 이름)은 새 id 를 받는다 — 펼친 상자가 접히지 않게 새 id 로 다시 펼친다
+    if (nt.id != 지금.id) { 펼침(지금.id); 펼침(nt.id) }
+}
+
+/** 이름 고치는 칸의 자리 (화면 좌표) — [이름칸밖누름] 이 읽는다. 칸이 없으면 null */
+internal object 이름고침판 { var 틀: Rect? = null }
+
+/**
+ * 이름 고치는 칸이 열려 있을 때 그 칸 **밖**을 누르면 초점을 놓는다(= 저장). 누름은 가로채지 않는다.
+ * 목록을 넘기는 칸에 단다 — 칸 안을 누르면 아무 일 없다
+ */
+internal fun Modifier.이름칸밖누름(): Modifier = composed {
+    val 초점 = LocalFocusManager.current
+    val 내자리 = remember { arrayOf(Offset.Zero) }
+    this.onGloballyPositioned { 내자리[0] = it.positionInRoot() }
+        .pointerInput(Unit) {
+            awaitEachGesture {
+                val 눌림 = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                val 틀 = 이름고침판.틀
+                if (틀 != null && !틀.contains(눌림.position + 내자리[0])) 초점.clearFocus()
+            }
+        }
+}
+
+/**
  * 넣기 체크 상자 (종목 넣기 시트 · 시안 `.넣기체크` 20) — 들어간 개수만큼 ✓ (넷부터 ✓×n). 누르는 칸 28.
  * 누름 = 안 들어 있으면 넣기 · 들어 있으면 하나 빼기 / 꾹 = 하나 더 넣기
  */
@@ -314,7 +424,17 @@ private fun 넣기체크(이름: String, 수: Int, 누름: () -> Unit, 꾹: () -
     val 들어감 = 수 > 0
     val 상자 = RoundedCornerShape(넣기값.체크모서리)
     Box(
-        Modifier.heightIn(min = 높이.아주낮게).widthIn(min = 높이.아주낮게).clip(RoundedCornerShape(모서리.작게))
+        // 10-08 홍겸 님: ∨ 와의 눈에 보이는 간격을 35% 줄이고(12 → 7.8) 체크 상자를 오른쪽으로 4 옮긴다.
+        //  누르는 칸 28 은 그대로 — 차지하는 폭만 줄여, 같은 줄의 이름 칸이 그만큼 넓어진다 (∨ 가 오른쪽으로 간다)
+        Modifier.layout { m, cons ->
+            val p = m.measure(cons)
+            val 여백 = (높이.아주낮게 - 넣기값.체크).roundToPx() / 2                       // 누르는 칸 안 쪽 여백 (4)
+            val 옛간격 = 간격.좁게.roundToPx() + 여백                                     // ∨ ↔ 체크 상자 (12)
+            val 시작 = (옛간격 * (1f - 넣기값.체크간격줄임)).roundToInt() - 간격.좁게.roundToPx()   // 상자 왼쪽 끝 (줄 사이 8 기준)
+            val 폭 = p.width - 2 * 여백
+            val 쓸폭 = (시작 + 폭 - (넣기값.체크옮김.roundToPx() - 여백)).coerceAtLeast(0)
+            layout(쓸폭, p.height) { p.place(시작 - 여백, 0) }
+        }.heightIn(min = 높이.아주낮게).widthIn(min = 높이.아주낮게).clip(RoundedCornerShape(모서리.작게))
             .semantics(mergeDescendants = true) {
                 contentDescription = "$이름 · ${수}개 들어 있음 · ${if (들어감) "누르면 하나 빼기" else "누르면 넣기"}, 꾹 누르면 하나 더"
             }
@@ -345,8 +465,10 @@ private fun 종목고치기(상태: 앱상태, t: 종목, 플랜있음: Boolean)
     var v by remember { mutableStateOf(처음) }
     val 바뀜 = v.세트 != 처음.세트 || v.근육 != 처음.근육 || v.칸 != 처음.칸
     fun 저장() {
-        상태.d.저장검사(v)?.let { 상태.알림.토스트(it); return }
-        val r = 상태.d.종목고침(v)
+        // 10-08 홍겸 님: 이름은 머리에서 따로 고친다 — 저장은 지금 종목 이름을 그대로 (옛 이름으로 되돌리지 않게)
+        val 저 = v.copy(이름 = t.이름)
+        상태.d.저장검사(저)?.let { 상태.알림.토스트(it); return }
+        val r = 상태.d.종목고침(저)
         r.오류?.let { 상태.알림.토스트(it); return }
         val nd = r.d ?: return
         val nt = r.종목 ?: return
@@ -651,7 +773,7 @@ private fun 세트값칸(
 private fun 카테고리관리(상태: 앱상태, 닫기: () -> Unit) {
     val c = Local색.current
     var 새 by remember { mutableStateOf("") }
-    시트("카테고리", 닫기) {
+    시트("카테고리", 닫기, 겹 = 1) {   // 10-08 홍겸 님: 종목 탭(0) 위 한 겹
         글("루틴의 종목 고르기에도 그대로 나옵니다", 크기값 = 크기.조금작게, 색 = c.옅음)
         상태.d.카테고리.forEach { p ->
             val 수 = 상태.d.종목표.count { it.부위 == p }

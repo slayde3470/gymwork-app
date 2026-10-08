@@ -213,7 +213,9 @@ object 스탯화면글 {
 private object 스탯치수2 {
     val 줄높이 = 높이.낮게             // 스탯 한 줄 최소 높이 32 (10-08 홍겸 님: 촘촘하게)
     val 이름칸 = 64.dp                // 15sp 한글 4글자 폭 (한 글자 ≈ 15dp + 여유)
-    val 숫자칸 = 32.dp                // 15sp 굵게 세 자리(100) 폭 · 오른쪽 정렬
+    val 숫자칸 = 30.dp                // 15sp 굵게 세 자리(100) 폭 · 오른쪽 정렬 (10-08: 32 → 30)
+    val 숫자앞 = 0.dp                 // 10-08 홍겸 님: 이름 칸과 숫자 칸 사이 (옛 간격.좁게 8) — 이름 칸 4글자 뒤 여유만 남기고 붙인다 [11_UI지침에 올릴 값]
+    const val 막대배 = 1.35f          // 10-08 홍겸 님: 스탯 게이지 막대 높이 = 막대치수.높이(8) × 1.35 = 10.8 (공용 값은 그대로) [11_UI지침에 올릴 값]
     val 증감칸 = 48.dp                // 11sp 굵게 '▲ +12.5' 폭 · 오른쪽 정렬
     val 칭호표 = 높이.아주낮게         // 28
     val 보임칸 = 높이.높게             // 업적보임 폭 44
@@ -246,7 +248,12 @@ private object 스탯치수2 {
     val 범높이 = 8.dp
     const val 자람 = 945               // 스탯 막대 '더' 칸이 자라는 시간 (.7s × 올림배수 1.35)
     const val 자람늦춤 = 200
+
+    val 막대높이 get() = 막대치수.높이 * 막대배
 }
+
+/** 10-08 홍겸 님: 이 둘은 화면 목록에서만 뺀다 — 계산 · 기록(enum)은 그대로라 체력 점수는 안 바뀐다 */
+private val 줄에서뺀스탯 = setOf(스탯.나이성별, 스탯.성장)
 
 // ═══════════════════════════ 스탯 ═══════════════════════════
 
@@ -283,7 +290,7 @@ private fun 스탯판(상태: 앱상태) {
                         .padding(horizontal = 간격.좁게, vertical = 간격.아주좁게),
                     verticalArrangement = Arrangement.spacedBy(간격.아주좁게),
                 ) {
-                    들.filter { it.스탯 != 스탯.체력 }.forEach { s ->
+                    들.filter { it.스탯 != 스탯.체력 && it.스탯 !in 줄에서뺀스탯 }.forEach { s ->
                         val q = 끌어올림.getOrPut(s.스탯) { BringIntoViewRequester() }
                         스탯줄(s, 전[s.스탯.name], 전.isNotEmpty(), 고름 == s.스탯, Modifier.bringIntoViewRequester(q)) {
                             고름 = if (고름 == s.스탯) null else s.스탯
@@ -340,7 +347,7 @@ private fun 스탯줄(s: 스탯값, 앞: Double?, 전있음: Boolean, 고름: Bo
         스탯이름(s.스탯.이름, Modifier.width(스탯치수2.이름칸))
         Text(
             if (v != null) "${v.roundToInt()}" else "–",
-            Modifier.padding(start = 간격.좁게).width(스탯치수2.숫자칸),
+            Modifier.padding(start = 스탯치수2.숫자앞).width(스탯치수2.숫자칸),
             style = 글꼴.보통(크기.본문, FontWeight.Bold).copy(fontFeatureSettings = "tnum"),
             color = if (v != null) c.글 else c.옅음, maxLines = 1, softWrap = false, textAlign = TextAlign.End,
         )
@@ -354,7 +361,7 @@ private fun 스탯줄(s: 스탯값, 앞: Double?, 전있음: Boolean, 고름: Bo
 
 /**
  * 이름 칸 — 한글 4글자 폭(스탯치수2.이름칸)에 한 줄로. 넘치면 15 → 11 까지 0.5 씩 줄이고,
- * 그래도 넘치면(예: '나이 · 성별 대비') 11 로 두 줄. 줄 높이(32)에 두 줄 11 이 들어간다
+ * 그래도 넘치면 11 로 두 줄. 줄 높이(32)에 두 줄 11 이 들어간다
  */
 @Composable
 private fun 스탯이름(t: String, modifier: Modifier) {
@@ -384,7 +391,7 @@ internal fun 가운데줄바꿈(t: String): String {
 @Composable
 private fun 빈막대(modifier: Modifier) {
     val c = Local색.current
-    Box(modifier.height(막대치수.높이).clip(CircleShape).background(c.면2))
+    Box(modifier.height(스탯치수2.막대높이).clip(CircleShape).background(c.면2))
 }
 
 /** 시안 `빈게이지` — 빈 막대 + '현재 측정값 없음' */
@@ -392,7 +399,7 @@ private fun 빈막대(modifier: Modifier) {
 private fun 빈게이지() {
     val c = Local색.current
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.weight(1f).height(막대치수.높이).clip(CircleShape).background(c.면2))
+        Box(Modifier.weight(1f).height(스탯치수2.막대높이).clip(CircleShape).background(c.면2))
         글(스탯화면글.없음, Modifier.padding(start = 간격.아주좁게), 크기값 = 크기.작게, 색 = c.옅음)
     }
 }
@@ -408,7 +415,7 @@ private fun 스탯막대(v: Double, b: Double?, modifier: Modifier) {
     val 자람 = remember { Animatable(0f) }
     LaunchedEffect(Unit) { 자람.animateTo(1f, tween(스탯치수2.자람, delayMillis = 스탯치수2.자람늦춤, easing = 움직임.부드럽게)) }
     Box(
-        modifier.height(막대치수.높이).clip(CircleShape).background(c.면2).drawBehind {
+        modifier.height(스탯치수2.막대높이).clip(CircleShape).background(c.면2).drawBehind {
             drawRect(c.강조, size = Size(size.width * 밑, size.height))
             if (더 > 0.0005f) drawRect(c.오름, topLeft = Offset(size.width * 밑, 0f), size = Size(size.width * 더 * 자람.value, size.height))
         },

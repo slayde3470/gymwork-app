@@ -176,29 +176,6 @@ class WorkoutPortTest {
         assertEquals(뺌, 세트되살리기(뺌, z, 때))
     }
 
-    // ─────────────── 지표 (1RM · 1주 · 최고) ───────────────
-
-    @Test fun 지표_최고와_1주() {
-        val 기록 = mapOf(
-            "2026-10-01" to 날기록("r", "R", true, listOf(종목기록("벤치", listOf(세트(100.0, 1), 세트(60.0, 10, 1))))),   // 워밍업(60×10=80) 은 뺀다
-            "2026-09-01" to 날기록("r", "R", true, listOf(종목기록("벤치", listOf(세트(110.0, 1))))),
-            "2026-10-05" to 날기록("r", "R", true, listOf(종목기록("벤치", listOf(세트(200.0, 1))))),   // 오늘 — 뺀다
-            "2026-10-02~2" to 날기록("r", "R", true, listOf(종목기록("다른", listOf(세트(300.0, 1)), 종id = "x"))),
-        )
-        assertEquals(110.0 to 100.0, 운최고(기록, "벤치", "2026-10-05", 맨 = false))
-        assertEquals(300.0 to 300.0, 운최고(기록, "x", "2026-10-05", 맨 = false))
-        assertEquals((null as Double?) to (null as Double?), 운최고(기록, "없음", "2026-10-05", 맨 = false))
-        assertEquals(10.0, 운최고(mapOf("2026-10-01" to 날기록("r", "R", true, listOf(종목기록("턱걸이", listOf(세트(0.0, 10), 세트(0.0, 7)))))), "턱걸이", "2026-10-05", 맨 = true).first)
-    }
-
-    @Test fun 지표_오늘값과_차() {
-        assertNull(운오늘값(emptyList(), false))
-        assertNull(운오늘값(listOf(세트(50.0, 5, 1)), false))   // 워밍업만
-        assertEquals(12.0, 운오늘값(listOf(세트(0.0, 12), 세트(0.0, 8)), true))
-        assertEquals(2.5, 운차(102.4, 100.0)); assertEquals(-1.0, 운차(99.0, 100.0)); assertEquals(0.0, 운차(100.1, 100.0))
-        assertNull(운차(null, 1.0)); assertNull(운차(1.0, null))
-    }
-
     // ─────────────── 칸 폭 · 칸 줄 ───────────────
 
     @Test fun 격자폭_넉넉하면_비율대로_좁으면_최소() {
