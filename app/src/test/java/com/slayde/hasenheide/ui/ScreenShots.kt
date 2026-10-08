@@ -299,3 +299,15 @@ class Shot_s07b_exerciseAddSet : ShotBase() {
         val 들 = rule.onAllNodesWithText("+ 세트", useUnmergedTree = true); 들[0].performClick()
         바로찍("07b_종목_세트추가_순간", 200) }
 }
+
+
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+class Shot_s05b_addSheetOpen : ShotBase() {
+    @Test fun s05b_addSheetOpen() { 켜기(); 탭(2); 누름("상체 A"); 누름("운동 종목 추가", -1); 누름("스쿼트", -1); 찍("05b_루틴_넣기_펼침") }
+}
+
+
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+class Shot_s07c_exerciseOpenNoPlan : ShotBase() {
+    @Test fun s07c_exerciseOpenNoPlan() { 켜기(); 탭(3); 누름("스쿼트"); 찍("07c_종목_펼침_스쿼트") }
+}
