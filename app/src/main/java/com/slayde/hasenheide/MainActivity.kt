@@ -33,6 +33,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import com.slayde.hasenheide.ui.앱상태
 import com.slayde.hasenheide.data.세기더함
 import com.slayde.hasenheide.data.세기이름
+import com.slayde.hasenheide.data.남은초
 import com.slayde.hasenheide.ui.폰기능
 import com.slayde.hasenheide.ui.theme.하젠하이데테마
 import java.io.File
@@ -81,8 +82,37 @@ class MainActivity : ComponentActivity() {
             알림권한창.launch(Manifest.permission.POST_NOTIFICATIONS)
     }
 
+    /** 10-08: 떠 있는 동그라미 값 — 운동이 없거나 끝 화면이면 null (동그라미가 저절로 사라진다) */
+    private fun 동그라미값(): 떠있는동그라미.값? {
+        val S = 상태.d.세션 ?: return null
+        if (S.끝화면) return null
+        val h = S.휴식
+        return if (h != null && !h.물음) 떠있는동그라미.값(h.남은초(System.currentTimeMillis()), h.총초) else 떠있는동그라미.값(null, 0)
+    }
+
+    /** 운동 중 자동 작은 창(PiP) — 떠 있는 동그라미 권한이 있으면 PiP 대신 동그라미를 쓴다 */
+    private fun 작은창설정() {
+        if (Build.VERSION.SDK_INT < 31) return
+        val 켬 = 상태.d.세션 != null && 상태.d.세션?.끝화면 != true && !떠있는동그라미.됨(this)
+        try {
+            setPictureInPictureParams(PictureInPictureParams.Builder().setAspectRatio(Rational(16, 9)).setAutoEnterEnabled(켬).build())
+        } catch (_: Exception) { }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        떠있는동그라미.치움()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        // 10-08 홍겸 님: 운동 중에 앱을 벗어나면 다른 앱 위에 동그라미 (유튜브 작은 창과 같이 뜬다)
+        if (!isChangingConfigurations && !(Build.VERSION.SDK_INT >= 26 && isInPictureInPictureMode)) 떠있는동그라미.띄움(this) { 동그라미값() }
+    }
+
     override fun onResume() {
         super.onResume()
+        작은창설정()
         휴식알람.앞에있음 = true
         휴식알람.알림치움(this)
     }
@@ -106,6 +136,8 @@ class MainActivity : ComponentActivity() {
                 try { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(u))) } catch (e: Exception) { 알림글("이 링크를 열지 못했습니다") }
             },
             진동미리 = { 진동(상태.d.설정.진동세기, 상태.d.설정.진동시간) },
+            떠있기됨 = { 떠있는동그라미.됨(this) },
+            떠있기켜기 = { 떠있는동그라미.권한열기(this) },
             복사 = { 글 ->
                 val 판 = getSystemService(ClipboardManager::class.java)
                 판?.setPrimaryClip(ClipData.newPlainText("수정 메모", 글))
@@ -131,12 +163,7 @@ class MainActivity : ComponentActivity() {
             // 10-01: PiP 가 안 뜨던 것 — [추측] 안드로이드 12 이상 제스처 이동에서는 onUserLeaveHint 가
             //        늦게 오거나 안 와서 작은 창으로 못 들어간다. 운동 중이면 '자동으로 작은 창' 을 켜 둔다
             val 작은창켬 = 상태.d.세션 != null && 상태.d.세션?.끝화면 != true
-            LaunchedEffect(작은창켬) {
-                if (Build.VERSION.SDK_INT >= 31) try {
-                    setPictureInPictureParams(PictureInPictureParams.Builder()
-                        .setAspectRatio(Rational(16, 9)).setAutoEnterEnabled(작은창켬).build())
-                } catch (_: Exception) { }
-            }
+            LaunchedEffect(작은창켬) { 작은창설정() }
             하젠하이데테마 {
                 // 작은 창일 때도 앱은 그대로 살아 있어야 휴식 시계 · 알림이 돈다 → 앱 위에 작은 창 화면을 덮는다
                 CompositionLocalProvider(Local번호 provides 상태.d.설정.번호보기) {
@@ -157,6 +184,7 @@ class MainActivity : ComponentActivity() {
         super.onUserLeaveHint()
         val S = 상태.d.세션 ?: return
         if (S.끝화면 || Build.VERSION.SDK_INT < 26) return
+        if (떠있는동그라미.됨(this)) return   // 10-08: 동그라미를 쓰면 PiP 는 띄우지 않는다 (onStop 이 띄운다)
         try {
             enterPictureInPictureMode(PictureInPictureParams.Builder().setAspectRatio(Rational(16, 9)).build())
         } catch (_: Exception) { }

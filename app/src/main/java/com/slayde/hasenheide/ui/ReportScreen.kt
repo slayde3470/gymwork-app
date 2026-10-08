@@ -417,9 +417,9 @@ internal fun 마무리(상태: 앱상태, S: 운동세션, 저장됨: Boolean = 
     // 저장된 결과를 보다가 그 기록이 지워져도 세션 값으로 그린다 · 끝내기 전은 늘 세션 값 (빈 종목도 차례대로)
     val rec = remember(S, 저장키, d.기록) { (if (저장됨) 저장키?.let { d.기록[it] } else null) ?: 세션기록(S, System.currentTimeMillis()) }
     val 총칸들 = remember(S, 저장됨) { if (!저장됨) 세션총칸(S) else null }
-    보고틀(상태, rec, 저장키, 날, 총칸들, 키 = if (저장됨) 저장키 ?: "결과${S.시작시각}" else "세션${S.시작시각}", 조절됨 = S.조절됨, 떠있음 = if (저장됨) null else S) {
-        확인단추 { 상태.바꿈 { it.copy(결과 = null) } }
-    }
+    // 10-08 홍겸 님: 저장된 뒤 보는 결과 화면(오래 손대지 않아 저절로 끝난 운동 등)도 [확인] 대신 떠 있는 ‹ (닫기) › (스테이터스)
+    보고틀(상태, rec, 저장키, 날, 총칸들, 키 = if (저장됨) 저장키 ?: "결과${S.시작시각}" else "세션${S.시작시각}", 조절됨 = S.조절됨,
+        떠있음 = if (저장됨) null else S, 기록닫기 = if (저장됨) ({ 상태.바꿈 { it.copy(결과 = null) } }) else null) {}
 }
 
 /** 저장된 뒤 한 번 보여 주는 결과 화면 (10-01) — App.kt 가 부른다 */
@@ -920,11 +920,6 @@ private fun 옆아니면아래(content: @Composable () -> Unit) {
 }
 
 // ═════════════════════ 아래 단추 ═════════════════════
-
-@Composable
-private fun 확인단추(onClick: () -> Unit) {
-    버튼("확인", onClick, Modifier.fillMaxWidth(), 주요 = true, 작게 = true)
-}
 
 /**
  * 10-06 v22 D 13-3 · v23 ③ — 끝내기 전 보고서의 떠 있는 동그라미. 화면 기준이라 목록을 넘겨도 제자리 (이미지에는 안 나온다 — 찍는 복제본 밖).

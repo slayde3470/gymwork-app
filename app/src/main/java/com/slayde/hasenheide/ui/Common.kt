@@ -21,6 +21,7 @@ import com.slayde.hasenheide.ui.theme.움직임
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.text.drawText
@@ -763,14 +764,15 @@ fun Modifier.쪽겹(겹: Int, 모서리값: androidx.compose.ui.unit.Dp = 0.dp):
             val w = 부품치수.겹폭.toPx()
             val r = 모서리값.toPx()
             val 선 = 선굵기.보통.toPx()
-            for (i in 겹 downTo 1) {
+            // 뒤 장은 비운 왼쪽 자리에만 그린다 — 몸통 뒤에 칠해지면 바탕 없는 화면이 회색이 된다
+            clipRect(left = -w * 겹, top = 0f, right = 0f, bottom = size.height + r) { for (i in 겹 downTo 1) {
                 val x = -w * i
                 val 크기 = androidx.compose.ui.geometry.Size(size.width - x, size.height + r)
                 val 둥 = androidx.compose.ui.geometry.CornerRadius(r, r)
                 drawRoundRect(c.면2, androidx.compose.ui.geometry.Offset(x, 0f), 크기, 둥)
                 drawRoundRect(c.속선, androidx.compose.ui.geometry.Offset(x + 선 / 2, 선 / 2), androidx.compose.ui.geometry.Size(크기.width - 선, 크기.height - 선), 둥,
                     style = androidx.compose.ui.graphics.drawscope.Stroke(선))
-            }
+            } }
         }
     }
 }
