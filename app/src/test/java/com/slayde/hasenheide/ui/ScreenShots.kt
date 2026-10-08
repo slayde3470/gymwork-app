@@ -4,6 +4,10 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.performClick
@@ -80,7 +84,7 @@ abstract class ShotBase {
 
     protected lateinit var 상태: 앱상태
 
-    protected fun 켜기(바꾸기: (앱데이터) -> 앱데이터 = { it }) {
+    protected fun 켜기(업적둠: Boolean = false, 작은: Boolean = false, 바꾸기: (앱데이터) -> 앱데이터 = { it }) {
         val 파일 = File.createTempFile("hasenheide", ".json")
         저장소.쓰기(파일, 바꾸기(예시()))
         상태 = 앱상태(파일)
@@ -88,7 +92,8 @@ abstract class ShotBase {
         rule.mainClock.autoAdvance = false
         // 진짜 앱처럼 가장자리까지 그려야 Compose 가 '자판 없음'을 안다 (안 하면 자판이 떠 있다고 보고 탭줄을 숨긴다)
         rule.runOnUiThread { androidx.core.view.WindowCompat.setDecorFitsSystemWindows(rule.activity.window, false) }
-        rule.setContent { 하젠하이데테마(어둡게 = false) { 앱(상태, 폰) } }
+        rule.setContent { 하젠하이데테마(어둡게 = false) { if (작은) 작은창(상태) else 앱(상태, 폰) } }
+        if (업적둠) { 쉼(1500); return }
         쉼(1500); 상태.새업적치움(); 쉼(6000)
     }
 
@@ -107,6 +112,40 @@ abstract class ShotBase {
         check(n > 0) { "'$글' 없음" }
         들[if (몇째 < 0) n - 1 else 몇째].performClick()
         쉼()
+    }
+
+    /** 설명(contentDescription)으로 찾아 누름 */
+    protected fun 누름설명(글: String, 몇째: Int = 0, 일부: Boolean = false) {
+        val 들 = rule.onAllNodesWithContentDescription(글, substring = 일부, useUnmergedTree = true)
+        val n = 들.fetchSemanticsNodes().size
+        check(n > 0) { "설명 '$글' 없음" }
+        들[if (몇째 < 0) n - 1 else 몇째].performClick()
+        쉼()
+    }
+
+    /** 글자 칸에 쳐 넣기 — [설명] 이 있으면 그 칸, 없으면 첫 글 칸 */
+    protected fun 쳐넣기(글: String, 설명: String? = null) {
+        val 칸 = if (설명 != null) rule.onAllNodes(hasContentDescription(설명) and hasSetTextAction(), useUnmergedTree = true)[0]
+            else rule.onAllNodes(hasSetTextAction(), useUnmergedTree = true)[0]
+        칸.performClick(); 칸.performTextInput(글); 쉼()
+    }
+
+    /** [글] 이 보이는 자리에서 (dx, dy) px 떨어진 곳을 누름 */
+    protected fun 옆누름(글: String, dx: Float, dy: Float) {
+        val b = rule.onAllNodesWithText(글, useUnmergedTree = true)[0].fetchSemanticsNode().boundsInRoot
+        rule.onRoot().performTouchInput { click(Offset(b.left + dx, b.bottom + dy)) }
+        쉼()
+    }
+
+    /** 보기용 사진 파일 (filesDir/photos) — 단색 바탕에 원 */
+    protected fun 사진(이름: String, 바탕: Int, 원: Int): String {
+        val ctx = androidx.test.core.app.ApplicationProvider.getApplicationContext<android.content.Context>()
+        val 폴더 = File(ctx.filesDir, "photos").apply { mkdirs() }
+        val b = android.graphics.Bitmap.createBitmap(600, 800, android.graphics.Bitmap.Config.ARGB_8888)
+        val cv = android.graphics.Canvas(b); cv.drawColor(바탕)
+        cv.drawCircle(300f, 360f, 180f, android.graphics.Paint().apply { color = 원; isAntiAlias = true })
+        File(폴더, 이름).outputStream().use { b.compress(android.graphics.Bitmap.CompressFormat.JPEG, 85, it) }
+        return 이름
     }
 
     protected fun 바로찍(이름: String, ms: Long) { rule.mainClock.advanceTimeBy(ms); captureScreenRoboImage("screens/$이름.png") }
