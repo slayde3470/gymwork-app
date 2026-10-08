@@ -289,14 +289,14 @@ class Shot_s16b_addSetScroll : ShotBase() {
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class Shot_s16c_addSetFlash : ShotBase() {
     @Test fun s16c() { 켜기 { 세션넣기(it, 2) }
-        val 들 = rule.onAllNodesWithText("+ 세트", useUnmergedTree = true); 들[0].performClick()
+        val 들 = rule.onAllNodesWithText("+ 세트", substring = true, useUnmergedTree = true); 들[0].performClick()
         바로찍("16c_운동_세트추가_순간", 200) }
 }
 
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class Shot_s07b_exerciseAddSet : ShotBase() {
     @Test fun s07b() { 켜기(); 탭(3); 누름("벤치프레스")
-        val 들 = rule.onAllNodesWithText("+ 세트", useUnmergedTree = true); 들[0].performClick()
+        val 들 = rule.onAllNodesWithText("+ 세트", substring = true, useUnmergedTree = true); 들[0].performClick()
         바로찍("07b_종목_세트추가_순간", 200) }
 }
 
