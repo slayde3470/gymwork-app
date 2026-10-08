@@ -1177,7 +1177,7 @@ fun 플랜이름바꾸기(d: 앱데이터, id: String, 새이름: String): 앱�
         플랜들 = d.플랜들.map { if (it.id == id) it.copy(이름 = 이름) else it },
         // 플랜에서 넣은 줄(플랜id 가 같은 것)만 — 같은 이름의 일반 종목은 건드리지 않는다 (10-01 감시관)
         루틴들 = d.루틴들.map { r -> r.copy(종목 = r.종목.map { e -> if (e.플랜id == id) e.copy(이름 = 이름) else e }) },
-    )
+    ).그날운동도 { r -> r.copy(종목 = r.종목.map { e -> if (e.플랜id == id) e.copy(이름 = 이름) else e }) }
 }
 
 
@@ -1408,7 +1408,8 @@ fun 앱데이터.플랜고치기(id: String, g: 플랜고침값): Pair<앱데이
     return copy(
         플랜들 = 플랜들.map { if (it.id == id) 새 else it },
         루틴들 = 루틴들.map { r -> if (r.종목.none { it.플랜id == id }) r else r.copy(종목 = r.종목.map { e -> if (e.플랜id == id) e.copy(이름 = 새.이름) else e }) },
-    ).let { it.copy(루틴들 = it.루틴들.map { r -> it.플랜줄채움(r) }) } to null
+    ).그날운동도 { r -> r.copy(종목 = r.종목.map { e -> if (e.플랜id == id) e.copy(이름 = 새.이름) else e }) }
+        .let { it.copy(루틴들 = it.루틴들.map { r -> it.플랜줄채움(r) }) } to null
 }
 
 /**
@@ -1442,7 +1443,8 @@ fun 앱데이터.플랜지우기(id: String): Pair<앱데이터, 지운플랜>? 
             r.copy(종목 = r.종목.filter { it.플랜id != id }).묶음정리()
         }
     }
-    return copy(플랜들 = 플랜들.filterIndexed { j, _ -> j != i }, 루틴들 = 새루틴) to 지운플랜(플랜들[i], i, 줄들)
+    // 10-09: 그 날 운동의 그 플랜 줄도 뺀다 (되돌리기는 루틴 줄만 되살린다)
+    return copy(플랜들 = 플랜들.filterIndexed { j, _ -> j != i }, 루틴들 = 새루틴).그날운동도 { r -> r.copy(종목 = r.종목.filter { it.플랜id != id }) } to 지운플랜(플랜들[i], i, 줄들)
 }
 
 /**

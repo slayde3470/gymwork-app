@@ -127,6 +127,7 @@ fun 앱데이터.종목이름바꿈(옛: String, 새: String): 앱데이터 {
     return copy(
         종목표 = 종목표.map { if (it.이름 == 옛) it.copy(이름 = 새) else it },
         루틴들 = 루틴들.map { r -> r.copy(종목 = r.종목.map { if (it.이름 == 옛) it.copy(이름 = 새) else it }) },
+        그날운동 = 그날운동.map { r -> r.copy(종목 = r.종목.map { if (it.이름 == 옛) it.copy(이름 = 새) else it }).let { x -> x.copy(이름 = x.종목.map { it.이름 }.distinct().joinToString(" · ")) } },   // 10-09
         기록 = 기록.mapValues { (_, rec) -> rec.copy(종목들 = rec.종목들.map { if (it.이름 == 옛) it.copy(이름 = 새, 묶음 = it.묶음?.split("+")?.map { x -> if (x == 옛) 새 else x }?.sorted()?.joinToString("+")) else it }) },
         세션 = 세션?.let { S -> S.copy(종목들 = S.종목들.map { if (it.이름 == 옛) it.copy(이름 = 새) else it }) },
     )

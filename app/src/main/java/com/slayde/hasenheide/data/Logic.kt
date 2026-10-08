@@ -210,14 +210,36 @@ fun 앱데이터.그날운동바꿈(날: String, 오늘: String, f: (루틴) -> 
     val 옛 = 그날운동(날) ?: 루틴(id, "")   // 예정이 다른 루틴이면 새로 (지난번 것을 되살리지 않는다)
     val 새 = f(옛).let { it.copy(이름 = 그날운동이름(it), 휴식일 = false, 자동생성 = false) }
     val 남 = 그날운동.filter { it.id != id }
-    if (새.종목.isEmpty()) return copy(그날운동 = 남).let { if (it.예정[날] == id) it.예정지우기(날, 오늘) else it }
+    if (새.종목.isEmpty()) return copy(그날운동 = 남).let { if (it.예정[날] == id) it.그날예정되돌림(날, 오늘) else it }
     return copy(그날운동 = 남 + 새).그날만바꾸기(id, 날, 오늘)
+}
+
+/** 그 날 운동을 다 빼면 그 날은 원래 순서대로 깔릴 루틴으로 돌아간다 (빈 날이었으면 빈 날) — 다른 날은 건드리지 않는다 (10-09 감시관) */
+private fun 앱데이터.그날예정되돌림(날: String, 오늘: String): 앱데이터 {
+    val 풀림 = copy(예정 = 예정 - 날, 예정고정 = 예정고정 - 날)
+    val 원래 = 풀림.예정초기화(오늘).예정[날]?.takeIf { 풀림.루틴(it)?.자동생성 == true }
+    return if (원래 != null) 풀림.copy(예정 = 풀림.예정 + (날 to 원래)) else 풀림
+}
+
+/**
+ * 루틴 줄을 고치는 일(종목 이름 바꾸기 · 지우기 · 카테고리 지우기 · 플랜 이름 바꾸기 · 지우기)을 그 날 운동에도 똑같이 (10-09 감시관).
+ * 종목이 하나도 안 남은 그 날 운동은 치우고 그 날 예정도 푼다(다음 예정맞추기가 다시 깐다)
+ */
+internal fun 앱데이터.그날운동도(f: (루틴) -> 루틴): 앱데이터 {
+    if (그날운동.isEmpty()) return this
+    val 고친 = 그날운동.map { r -> f(r).let { it.copy(이름 = 그날운동이름(it)) } }
+    val 빈 = 고친.filter { it.종목.isEmpty() }.map { it.id }.toSet()
+    if (빈.isEmpty()) return copy(그날운동 = 고친)
+    val 빈날 = 예정.filterValues { it in 빈 }.keys
+    return copy(그날운동 = 고친.filter { it.id !in 빈 }, 예정 = 예정 - 빈날, 예정고정 = 예정고정 - 빈날)
 }
 
 /** 지난 날의 그 날 운동을 치운다 (기록에는 이름이 남는다). 하고 있는 운동 · 보여 줄 결과가 쓰는 것은 둔다 */
 private fun 앱데이터.그날운동치움(오늘: String): 앱데이터 {
     if (그날운동.isEmpty()) return this
-    val 남 = 그날운동.filter { it.id.removePrefix("날") >= 오늘 || it.id == 세션?.루틴id || it.id == 결과?.루틴id }
+    // 기록이 있는 날 것은 남긴다 — 기록 보기의 '3/5세트' 계획 수가 이것을 본다 (10-09 감시관)
+    val 쓴 = 기록.values.map { it.루틴id }.toSet()
+    val 남 = 그날운동.filter { it.id.removePrefix("날") >= 오늘 || it.id == 세션?.루틴id || it.id == 결과?.루틴id || it.id in 쓴 }
     return if (남.size == 그날운동.size) this else copy(그날운동 = 남)
 }
 
@@ -969,7 +991,7 @@ fun 앱데이터.카테고리지우기(p: String): 앱데이터 {
         카테고리 = 카테고리 - p,
         종목표 = 종목표.filter { it.부위 != p },
         루틴들 = 루틴들.map { r -> r.copy(종목 = r.종목.filter { it.이름 !in 이름들 }) },
-    )
+    ).그날운동도 { r -> r.copy(종목 = r.종목.filter { it.이름 !in 이름들 }) }
 }
 
 // ─────────────── 루틴 편집 ───────────────

@@ -71,6 +71,7 @@ import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupPositionProvider
 import androidx.compose.ui.window.PopupProperties
 import com.slayde.hasenheide.data.같은세트들
+import com.slayde.hasenheide.data.그날운동도
 import com.slayde.hasenheide.data.근육계산
 import com.slayde.hasenheide.data.근육자료
 import com.slayde.hasenheide.data.근육표
@@ -711,7 +712,7 @@ internal fun 앱데이터.종목고침(v: 새종목값, 지금: Long = System.cu
                 ) else it
             })
         },
-    )
+    ).let { d0 -> if (!바뀜) d0 else d0.그날운동도 { r -> r.copy(종목 = r.종목.map { if (맞음(it.종id, it.이름, it.플랜id)) it.copy(이름 = n, 종id = 새id) else it }) } }
     return 고침결과(nd, 새t)
 }
 
@@ -734,7 +735,9 @@ internal fun 앱데이터.종목지우기(id: String): 앱데이터 {
         루틴들 = 루틴들.map { r ->
             r.copy(종목 = r.종목.filter { !(it.종id == id || (it.종id == null && 첫 && !이름남음 && it.이름 == t.이름 && it.플랜id == null)) })
         },
-    )
+    ).그날운동도 { r ->   // 10-09: 그 날 운동에서도 뺀다
+        r.copy(종목 = r.종목.filter { !(it.종id == id || (it.종id == null && 첫 && !이름남음 && it.이름 == t.이름 && it.플랜id == null)) })
+    }
 }
 
 /**
