@@ -42,6 +42,7 @@ object 저장소 {
         o.put("종목표", JSONArray().also { a -> d.종목표.forEach { a.put(종목to(it)) } })
         o.put("카테고리", JSONArray().also { a -> d.카테고리.forEach { a.put(it) } })
         o.put("루틴들", JSONArray().also { a -> d.루틴들.forEach { a.put(루틴to(it)) } })
+        o.put("그날운동", JSONArray().also { a -> d.그날운동.forEach { a.put(루틴to(it)) } })   // 10-09
         o.put("기록", JSONObject().also { m -> d.기록.forEach { (k, v) -> m.put(k, 날기록to(v)) } })
         o.put("예정", JSONObject().also { m -> d.예정.forEach { (k, v) -> m.put(k, v) } })
         o.put("일정", JSONObject().also { m -> d.일정.forEach { (k, v) -> m.put(k, JSONArray().also { a -> v.forEach { a.put(it) } }) } })
@@ -216,6 +217,7 @@ object 저장소 {
             }.id겹침풀기(),
             카테고리 = if (o.has("카테고리")) 목록(o.optJSONArray("카테고리")) { a, i -> a.getString(i) } else 앱데이터.기본카테고리,
             루틴들 = 목록(o.optJSONArray("루틴들")) { a, i -> 루틴from(a.getJSONObject(i)) },
+            그날운동 = 목록(o.optJSONArray("그날운동")) { a, i -> 루틴from(a.getJSONObject(i)).copy(자동생성 = false) },
             기록 = 사전(o.optJSONObject("기록")) { m, k -> 날기록from(m.getJSONObject(k)) },
             예정 = 사전(o.optJSONObject("예정")) { m, k -> m.getString(k) },
             일정 = 사전(o.optJSONObject("일정")) { m, k -> 목록(m.optJSONArray(k)) { a, i -> a.getString(i) } },

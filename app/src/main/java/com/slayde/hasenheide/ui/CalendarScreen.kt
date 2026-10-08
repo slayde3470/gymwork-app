@@ -69,6 +69,10 @@ import com.slayde.hasenheide.data.대비결과
 import com.slayde.hasenheide.data.두대비
 import com.slayde.hasenheide.data.루틴
 import com.slayde.hasenheide.data.그날만바꾸기
+import com.slayde.hasenheide.data.그날운동
+import com.slayde.hasenheide.data.그날운동바꿈
+import com.slayde.hasenheide.data.루틴줄
+import com.slayde.hasenheide.data.열쇠
 import com.slayde.hasenheide.data.꽂기
 import com.slayde.hasenheide.data.목표
 import com.slayde.hasenheide.data.무게글
@@ -213,7 +217,7 @@ internal fun 캘판배치(n: Int, 펼침: Boolean): 캘판배치값 {
 
 /** 지난 기록 → 결과 화면에 넘길 운동세션 (끝난 모양). 달성 · 볼륨 · 시간이 기록과 같게 */
 internal fun 앱데이터.캘기록세션(rec: 날기록, 날: String): 운동세션 {
-    val 짝 = 루틴들.firstOrNull { it.id == rec.루틴id }
+    val 짝 = 루틴(rec.루틴id)
     val 초 = rec.걸린초.coerceAtLeast(0) * 1000L
     // 끝 = 기록의 끝 시각 (결과 화면이 이것으로 '방금 그 기록' 을 빼고 견준다). 시간 = 걸린초 (마무리에 머문 시간은 빠진 값)
     val 끝 = if (rec.끝시각 > 0) rec.끝시각
@@ -273,7 +277,7 @@ private object 캘기억 {
 }
 
 // 10-08 홍겸 님: [변경] 단추와 그 시트(변경 · 휴식)를 없앴다 — 루틴 시트는 [운동 계획 만들기/바꾸기] 가 연다
-private enum class 캘시트 { 루틴, 달 }
+private enum class 캘시트 { 루틴, 종목, 달 }   // 10-09: 종목 = 그 날만 쓰는 운동에 종목 골라 넣기
 
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -333,7 +337,7 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
         발자취.적기("${캘날글(k)} 예정 지움")
         상태.알림.되돌림("캘린더예정", { n -> if (n > 1) "예정 ${n}개를 지웠습니다" else "${캘날글(k)} $이름 예정을 지웠습니다" }) {
             상태.바꿈 { dd2 ->
-                if (dd2.예정.containsKey(k) || dd2.캘기록있음(k) || dd2.루틴들.none { it.id == rid }) dd2
+                if (dd2.예정.containsKey(k) || dd2.캘기록있음(k) || dd2.루틴(rid) == null) dd2
                 else dd2.copy(예정 = dd2.예정 + (k to rid), 예정고정 = if (전고정 == null) dd2.예정고정 - k else dd2.예정고정 + (k to 전고정))
             }
         }
@@ -414,6 +418,12 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
             캘시트.루틴 -> {
                 var 이날만 by remember { mutableStateOf(true) }
                 시트("${캘날글(k)} 운동 계획", { 열린 = null }) {
+                    // 10-09 홍겸 님: 루틴 대신 종목을 골라 그 날만 쓰는 운동으로 (루틴 목록에는 안 생긴다)
+                    val 그날 = d.그날운동(k)
+                    고르기줄("종목 골라 넣기", 그날?.let { "${it.종목.size}종목 · 그 날만" } ?: "그 날만 쓰는 운동") { 열린 = 캘시트.종목 }
+                    Box(Modifier.height(간격.좁게))
+                    이름표("루틴 고르기")
+                    Box(Modifier.height(간격.아주좁게))
                     칩줄(listOf("이 날만", "이 날부터 순서대로"), if (이날만) "이 날만" else "이 날부터 순서대로", { 이날만 = it == "이 날만" })
                     Box(Modifier.height(간격.좁게))
                     d.루틴들.forEach { r ->
@@ -427,6 +437,29 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
                     }
                     if (d.루틴들.isEmpty()) 고르기줄("루틴 만들러 가기") { 열린 = null; 루틴으로() }
                 }
+            }
+            캘시트.종목 -> {
+                // 10-09 홍겸 님: 그 날만 쓰는 운동 — 루틴 상세의 넣기 시트와 같은 시트. 넣는 대로 그 날 예정이 된다
+                val 지금 = { 상태.d.그날운동(k)?.종목.orEmpty() }
+                종목넣기시트(
+                    상태, "${캘날글(k)} 운동에 넣기", 겹 = 1,
+                    개수 = { 키 -> 지금().count { it.플랜id == null && it.열쇠 == 키 } },
+                    넣기 = { 키 -> 상태.바꿈 { dd -> dd.그날운동바꿈(k, 상태.오늘) { x -> x.copy(종목 = x.종목 + dd.루틴줄(키)) } } },
+                    빼기 = { 키 -> 상태.바꿈 { dd -> dd.그날운동바꿈(k, 상태.오늘) { x ->
+                        val j = x.종목.indexOfLast { it.플랜id == null && it.열쇠 == 키 }
+                        if (j < 0) x else x.copy(종목 = x.종목.filterIndexed { i, _ -> i != j })
+                    } } },
+                    닫기 = { 열린 = null },
+                    플랜개수 = { pid -> 지금().count { it.플랜id == pid } },
+                    플랜넣기 = { pid -> 상태.바꿈 { dd ->
+                        val p = dd.플랜들.firstOrNull { it.id == pid }
+                        if (p == null) dd else dd.그날운동바꿈(k, 상태.오늘) { x -> x.copy(종목 = x.종목 + 플랜줄(dd, p)) }
+                    } },
+                    플랜빼기 = { pid -> 상태.바꿈 { dd -> dd.그날운동바꿈(k, 상태.오늘) { x ->
+                        val j = x.종목.indexOfLast { it.플랜id == pid }
+                        if (j < 0) x else x.copy(종목 = x.종목.filterIndexed { i, _ -> i != j })
+                    } } },
+                )
             }
             캘시트.달 -> 달고르기(보는달, 이번달, { 보는달 = it; 열린 = null }, { 열린 = null })
             null -> {}
@@ -700,7 +733,7 @@ private fun Modifier.semanticsDesc(글: String): Modifier = this.semantics { con
 private fun 기록머리(d: 앱데이터, rec: 날기록, 켬: Boolean, 선위: Boolean, 지움모드: Boolean, on고름: () -> Unit) {
     val c = Local색.current
     val 량 = 운동량(rec)
-    val 짝 = d.루틴들.firstOrNull { it.id == rec.루틴id }
+    val 짝 = d.루틴(rec.루틴id)
     val 계획 = 짝?.let { r -> if (r.휴식일) null else 총세트(r) }
     // 달성이면 '13세트'(알약이 이미 다 했다고 말한다) · 미달성이면 '10/13세트'
     val 세트글 = if (!rec.달성 && 계획 != null && 계획 > 량.세트) "${량.세트}/${계획}세트" else "${량.세트}세트"
@@ -835,11 +868,11 @@ private fun 판단추(
         } else if (록.isNotEmpty()) {
             val 끝 = 록.last().second
             버튼("운동 보고서", { 상태.d.캘기록목록(k).lastOrNull()?.let { (kk, rr) -> 보고서(kk, rr) } }, Modifier.weight(1f).번호("캘3"), 작게 = true)
-            val 다시 = if (k == 오늘) d.루틴들.firstOrNull { it.id == 끝.루틴id }?.takeIf { !it.휴식일 } else null
+            val 다시 = if (k == 오늘) d.루틴(끝.루틴id)?.takeIf { !it.휴식일 } else null
             if (다시 != null) 버튼("한 번 더 운동하기", {
                 // 측정일이면 플랜 줄 앞에 워밍업 (20 B-3 · 조절해시작과 같은 함수). 저장하면 그 날 '~2' 기록으로 따로 남는다
                 val dd = 상태.d
-                val rr = dd.루틴들.firstOrNull { it.id == 다시.id }
+                val rr = dd.루틴(다시.id)
                 시작(rr?.let { 운동시작(dd.측정워밍업붙임(dd.플랜줄채움(it)), System.currentTimeMillis()) })
             }, Modifier.weight(판단추폭.넓게), 주요 = true, 작게 = true, 줄임 = true)
             // 10-08 홍겸 님: '기록 삭제' 로 줄이고 폭을 줄인다 — 줄어든 만큼 [한 번 더 운동하기] 가 넓어진다. 누르면 지움 모드
