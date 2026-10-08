@@ -271,7 +271,7 @@ fun 새종목시트(
  * 생김새: 큰 상자 = [카드](2 강조 테두리 · 모서리 16 · 안 여백 14) · 줄 32 · 칩 28 · [확인] 40 (카드 안 버튼 · U4-5)
  */
 @Composable
-private fun 근육팝(v: 새종목값, 고침: ((새종목값) -> 새종목값) -> Unit, 토스트: (String) -> Unit, 카테고리: List<String>) {
+internal fun 근육팝(v: 새종목값, 고침: ((새종목값) -> 새종목값) -> Unit, 토스트: (String) -> Unit, 카테고리: List<String>) {
     val c = Local색.current
     val k = v.팝 ?: return
     // 목록 = 지금 묶음(누른 부위의 묶음 · 카테고리를 고르면 그 칸의 묶음) — 없으면 누른 부위의 묶음 · 첫 묶음

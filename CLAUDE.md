@@ -20,9 +20,8 @@
 4. **저장·계산(`data/`)을 고쳤을 때만** 커밋 전에 `watchdog` 으로 검사한다. 화면(`ui/`)만 고쳤으면 부르지 않는다 (3절)
 5. `git commit` → **`git fetch origin main` 으로 먼저 맞춘 뒤** `git push origin main`
    ⚠ 다른 대화가 먼저 올려 두었을 수 있다. 덮어쓰지 말고 합친다 (10-01에 실제로 겹쳤다)
-6. 빌드 확인 — 로그인 없이 API 로 본다:
-   `curl -sS "https://api.github.com/repos/slayde3470/gymwork-app/actions/runs?per_page=1"`
-   실패하면 `.../actions/runs/<id>/jobs` 로 단계별로. **APK 링크를 함께 보고한다**
+6. 빌드 확인 — **`tools/기다리기.sh main <커밋 7자리>`** (20초마다 보고 끝나면 바로 결과 · 실패면 오류 줄까지). **APK 링크를 함께 보고한다**
+   ⚠ `sleep 400` 처럼 정해진 시간 기다리지 않는다 (10-08: 1~2분에 끝난 판을 7분씩 기다렸다)
 
 push 하면 Actions 가 `gradle testDebugUnitTest` → `assembleDebug` → Release 까지 약 2분.
 APK 고정 주소: `github.com/slayde3470/gymwork-app/releases/latest/download/hasenheide.apk`
@@ -34,6 +33,21 @@ APK 고정 주소: `github.com/slayde3470/gymwork-app/releases/latest/download/h
   (한글 클래스 이름이 POSIX 로케일에서 깨진다)
 - Maven Central 403 (CI 에서는 열림) → jar 이 필요하면 GitHub 릴리스에서
 - `.github/workflows/` 도 push 로 고칠 수 있다
+
+### 1-1. 화면 사진 — 폰 없이 진짜 화면 보기 (10-08)
+
+가지 `screens/now` 에서 Robolectric 이 **지금 코드를 그대로 그려** `app/screens/*.png` 로 올린다 (main · APK 와 상관없음).
+1. `git checkout screens/now && git merge main` → `app/src/test/찍을것.txt` 에 **바꾼 화면만** 한 줄 (예 `Shot_s16*` · 비우면 전부 6분)
+2. push → `tools/기다리기.sh screens/now <커밋>` → `git pull` → 사진을 `Read` 로 본다. 실패는 `app/screens/_로그.txt`
+3. 같은 판에 계산 시험(`*Test`)도 돈다 → **check 가지를 따로 돌리지 않는다**
+- 새 화면 상태가 필요하면 `ScreenShots.kt` 에 `Shot_` 클래스 하나 (클래스마다 새 앱 · 예시 자료)
+- 화면 모음 아티팩트 `claude.ai/artifact/V6pHUDvuLeJZYwTWzFqTgK` — 홍겸 님이 번호로 고칠 곳을 말한다
+
+### 1-2. 쓸데없이 기다리지 않기 (10-08 홍겸 님 — 한 묶음 1시간 40분 중 1시간이 기다림)
+- 기다림은 `tools/기다리기.sh` 로만. 끝나는 즉시 다음 일
+- **이미 있는 기능을 다시 해 달라는 요청이면 코드(grep)로 확인하고 바로 말한다.** 새 시험 · 사진으로 증명하지 않는다 (10-08 '+ 세트 스크롤' 확인에 35분)
+- 사진은 바꾼 화면만 · 확인 판은 한 번에 하나(사진 판 = 컴파일 + 시험 + 사진)
+- push 전에 새로 쓴 API 의 import 를 한 번 `grep` 한다 (10-08 import 빠짐 2개 → 한 판 더)
 
 ---
 
