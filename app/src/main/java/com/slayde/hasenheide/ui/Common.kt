@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import com.slayde.hasenheide.ui.theme.움직임
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.text.drawText
@@ -749,6 +750,32 @@ private fun 분초입력(키: String, 값글: String, 넣기: (String) -> Unit, 
 // ─────────────── 시트 · 띠 ───────────────
 
 /**
+ * 쪽 겹침 (10-08 홍겸 님) — 화면 단계가 깊어질수록 왼쪽에 책장이 [겹] 장 겹쳐 보인다.
+ * 루틴 → 루틴 상세(1) → 종목 넣기(2) → 새 종목(3) · 종목 탭 → 새 종목 · 카테고리(1).
+ * 왼쪽을 [겹] × 겹폭 만큼 비우고, 그 자리에 뒤 장들의 왼쪽 끝을 (면2 바탕 · 속선 테두리) 그린다.
+ * [모서리] = 그 화면/시트의 위 모서리 (화면 = 0 · 시트 = 16)
+ */
+fun Modifier.쪽겹(겹: Int, 모서리값: androidx.compose.ui.unit.Dp = 0.dp): Modifier {
+    if (겹 <= 0) return this
+    return composed {
+        val c = Local색.current
+        this.padding(start = 부품치수.겹폭 * 겹).drawBehind {
+            val w = 부품치수.겹폭.toPx()
+            val r = 모서리값.toPx()
+            val 선 = 선굵기.보통.toPx()
+            for (i in 겹 downTo 1) {
+                val x = -w * i
+                val 크기 = androidx.compose.ui.geometry.Size(size.width - x, size.height + r)
+                val 둥 = androidx.compose.ui.geometry.CornerRadius(r, r)
+                drawRoundRect(c.면2, androidx.compose.ui.geometry.Offset(x, 0f), 크기, 둥)
+                drawRoundRect(c.속선, androidx.compose.ui.geometry.Offset(x + 선 / 2, 선 / 2), androidx.compose.ui.geometry.Size(크기.width - 선, 크기.height - 선), 둥,
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(선))
+            }
+        }
+    }
+}
+
+/**
  * 아래에서 올라오는 판 — '고르는 일'에만 쓴다 (1-1: 팝업은 고르기뿐)
  *  · 10-05 (시안 v21 ⑥): 맨 위 가운데 손잡이 막대 36 × 4 (속선) — 모든 시트에 저절로 붙는다.
  *    손잡이 · 제목 줄을 잡고 아래로 80 넘게 끌어 놓으면 닫힌다(✕ 와 같다), 덜 끌면 제자리로
@@ -762,6 +789,10 @@ fun 시트(
     닫기글: String? = null,
     /** 10-07: 위끝 고정 시트의 위끝 비율 (새 종목 시트 = 5%) */
     위끝: Float = 부품치수.시트위끝,
+    /** 10-08: 화면 단계 — 1 이상이면 왼쪽에 [겹] 장만큼 책장처럼 겹쳐 그린다 ([쪽겹]) */
+    겹: Int = 0,
+    /** 10-08: 띠 아닌 시트의 제목 줄을 글 대신 이것으로 (달 고르기 ‹ 2026 ›). null = [제목] 글 */
+    제목칸: (@Composable RowScope.() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val c = Local색.current
@@ -792,6 +823,7 @@ fun 시트(
                     .fillMaxWidth()
                     .then(if (위끝고정) Modifier.fillMaxHeight(1f - 위끝) else Modifier.heightIn(max = 620.dp))
                     .graphicsLayer { translationY = 끌림 }
+                    .쪽겹(겹, 모서리.크게)
                     .clip(RoundedCornerShape(topStart = 모서리.크게, topEnd = 모서리.크게))
                     .background(c.면)
                     .눌림 { }
@@ -817,13 +849,14 @@ fun 시트(
                     if (위끝고정) {
                         // 10-06 ⑨ (U4-8): 머리 = 띠 — 캘린더 년월 띠와 같은 값(강조 · 강조글 · 40 · 18 굵게) · 오른쪽 [닫기].
                         //  손잡이 막대는 띠 안 맨 위(위끝에서 4)에 얹는다 (시안 `.시트 .머리>.시트손잡이`). 띠는 속 위에 붙어 있다
-                        Box(Modifier.fillMaxWidth()) {
+                        // 10-08 홍겸 님: 손잡이를 내린 만큼(띠위더) 띠 위를 늘리고 제목도 그만큼 내린다
+                        Box(Modifier.fillMaxWidth().background(c.강조).padding(top = 부품치수.띠위더)) {
                             머리띠(제목, 오른쪽 = {
                                 if (닫기글 != null) 띠칩(닫기글, { 닫기() })   // U4-8 띠 위 단추 = 캘린더 스탯 칩 모양
                                 else 아이콘버튼(아이콘.닫기, "닫기", { 닫기() }, 칠함 = false, 색 = c.강조글, 크기칸 = 높이.낮게)
                             })
                             Box(
-                                Modifier.align(Alignment.TopCenter).padding(top = 부품치수.손잡이위)
+                                Modifier.align(Alignment.TopCenter).offset(y = -부품치수.띠위더).padding(top = 부품치수.손잡이위)
                                     .size(부품치수.손잡이폭, 부품치수.손잡이두께).clip(RoundedCornerShape(부품치수.손잡이모서리)).background(c.속선),
                             )
                         }
@@ -834,7 +867,8 @@ fun 시트(
                                 .size(부품치수.손잡이폭, 부품치수.손잡이두께).clip(RoundedCornerShape(부품치수.손잡이모서리)).background(c.속선),
                         )
                         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                            제목글(제목, Modifier.weight(1f), 크기값 = 크기.크게)
+                            if (제목칸 != null) Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, content = 제목칸)
+                            else 제목글(제목, Modifier.weight(1f), 크기값 = 크기.크게)
                             아이콘버튼(아이콘.닫기, "닫기", { 닫기() }, 크기칸 = 높이.낮게)
                         }
                     }
