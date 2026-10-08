@@ -362,7 +362,7 @@ private fun 스탯이름(t: String, modifier: Modifier) {
     var 글자 by remember(t) { mutableStateOf(크기.본문) }
     var 두줄 by remember(t) { mutableStateOf(false) }
     Text(
-        t, modifier, style = 글꼴.보통(글자, FontWeight.Medium), color = c.글,
+        if (두줄) 가운데줄바꿈(t) else t, modifier, style = 글꼴.보통(글자, FontWeight.Medium), color = c.글,
         maxLines = if (두줄) 2 else 1, softWrap = 두줄, overflow = TextOverflow.Clip,
         onTextLayout = { r ->
             if (!두줄 && r.hasVisualOverflow) {
@@ -371,6 +371,13 @@ private fun 스탯이름(t: String, modifier: Modifier) {
             }
         },
     )
+}
+
+/** 두 줄일 때 가운데에 가까운 띄어쓰기에서 줄을 바꾼다 — 낱말 가운데서 끊기지 않게 ('나이 · 성별 대비' → '나이 ·' / '성별 대비') */
+internal fun 가운데줄바꿈(t: String): String {
+    val 틈 = t.indices.filter { t[it] == ' ' }
+    val i = 틈.minByOrNull { kotlin.math.abs(it * 2 - t.length) } ?: return t
+    return t.substring(0, i) + "\n" + t.substring(i + 1)
 }
 
 /** 값이 없는 줄의 빈 막대 — 스탯막대(U3-8)와 같은 높이 · 바탕 · 모양 */
