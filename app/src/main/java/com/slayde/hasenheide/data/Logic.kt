@@ -207,18 +207,22 @@ internal fun 그날운동이름(r: 루틴): String = r.종목.map { it.이름 }.
 fun 앱데이터.그날운동바꿈(날: String, 오늘: String, f: (루틴) -> 루틴): 앱데이터 {
     if (날 < 오늘 || 기록.containsKey(날)) return this
     val id = 그날운동id(날)
-    val 옛 = 그날운동(날) ?: 루틴(id, "")   // 예정이 다른 루틴이면 새로 (지난번 것을 되살리지 않는다)
+    // 예정이 다른 루틴이면 새로 (지난번 것을 되살리지 않는다) — 그때 그 날 예정을 기억해 둔다 (다 빼면 되돌린다 · 10-09 감시관)
+    val 옛 = 그날운동(날) ?: 루틴(id, "", 원래예정 = 예정[날] ?: "", 원래고정 = 예정고정[날])
     val 새 = f(옛).let { it.copy(이름 = 그날운동이름(it), 휴식일 = false, 자동생성 = false) }
     val 남 = 그날운동.filter { it.id != id }
-    if (새.종목.isEmpty()) return copy(그날운동 = 남).let { if (it.예정[날] == id) it.그날예정되돌림(날, 오늘) else it }
+    if (새.종목.isEmpty()) return copy(그날운동 = 남).let { if (it.예정[날] == id) it.그날예정되돌림(날, 새) else it }
     return copy(그날운동 = 남 + 새).그날만바꾸기(id, 날, 오늘)
 }
 
-/** 그 날 운동을 다 빼면 그 날은 원래 순서대로 깔릴 루틴으로 돌아간다 (빈 날이었으면 빈 날) — 다른 날은 건드리지 않는다 (10-09 감시관) */
-private fun 앱데이터.그날예정되돌림(날: String, 오늘: String): 앱데이터 {
-    val 풀림 = copy(예정 = 예정 - 날, 예정고정 = 예정고정 - 날)
-    val 원래 = 풀림.예정초기화(오늘).예정[날]?.takeIf { 풀림.루틴(it)?.자동생성 == true }
-    return if (원래 != null) 풀림.copy(예정 = 풀림.예정 + (날 to 원래)) else 풀림
+/** 그 날 운동을 다 빼면 그 날은 종목을 넣기 전 예정으로 돌아간다 (기억해 둔 [루틴.원래예정] · 그 루틴이 지워졌으면 빈 날) — 다른 날은 건드리지 않는다 (10-09 감시관) */
+private fun 앱데이터.그날예정되돌림(날: String, r: 루틴): 앱데이터 {
+    val 원래 = r.원래예정?.takeIf { it.isNotEmpty() && 루틴(it) != null }
+    val 고정 = r.원래고정
+    return copy(
+        예정 = if (원래 != null) 예정 + (날 to 원래) else 예정 - 날,
+        예정고정 = if (고정 != null) 예정고정 + (날 to 고정) else 예정고정 - 날,
+    )
 }
 
 /**
@@ -228,10 +232,13 @@ private fun 앱데이터.그날예정되돌림(날: String, 오늘: String): 앱
 internal fun 앱데이터.그날운동도(f: (루틴) -> 루틴): 앱데이터 {
     if (그날운동.isEmpty()) return this
     val 고친 = 그날운동.map { r -> f(r).let { it.copy(이름 = 그날운동이름(it)) } }
-    val 빈 = 고친.filter { it.종목.isEmpty() }.map { it.id }.toSet()
+    val 빈 = 고친.filter { it.종목.isEmpty() }
     if (빈.isEmpty()) return copy(그날운동 = 고친)
-    val 빈날 = 예정.filterValues { it in 빈 }.keys
-    return copy(그날운동 = 고친.filter { it.id !in 빈 }, 예정 = 예정 - 빈날, 예정고정 = 예정고정 - 빈날)
+    // 빈 것: 그 날 예정은 넣기 전으로 되돌리고, 하고 있는 운동 · 기록이 쓰는 것은 남긴다(계획 세트 수 · 10-09 감시관)
+    val 쓴 = 기록.values.map { it.루틴id }.toSet() + listOfNotNull(세션?.루틴id, 결과?.루틴id)
+    var d = copy(그날운동 = 고친.filter { it.종목.isNotEmpty() || it.id in 쓴 })
+    빈.forEach { r -> val 날 = r.id.removePrefix("날"); if (d.예정[날] == r.id) d = d.그날예정되돌림(날, r) }
+    return d
 }
 
 /** 지난 날의 그 날 운동을 치운다 (기록에는 이름이 남는다). 하고 있는 운동 · 보여 줄 결과가 쓰는 것은 둔다 */

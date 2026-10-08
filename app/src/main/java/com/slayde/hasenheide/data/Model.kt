@@ -84,6 +84,9 @@ data class 루틴(
     val 종목: List<루틴종목> = emptyList(),
     /** 캘린더에 순서대로 저절로 깔까 (09-25 메모). 새 루틴은 꺼져 있다. 옛 루틴은 켜진 채로 옮긴다 */
     val 자동생성: Boolean = false,
+    /** 10-09 그 날 운동만 — 종목을 넣기 전 그 날 예정(루틴 id · "" = 빈 날)과 예정고정(null = 없음). 다 빼면 이것으로 되돌린다 */
+    val 원래예정: String? = null,
+    val 원래고정: String? = null,
 )
 
 /**

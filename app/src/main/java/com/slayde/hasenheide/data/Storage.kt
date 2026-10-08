@@ -101,6 +101,7 @@ object 저장소 {
         .also { if (e.종id != null) it.put("종id", e.종id) }
 
     private fun 루틴to(r: 루틴) = JSONObject().put("id", r.id).put("이름", r.이름).put("휴식일", r.휴식일).put("자동생성", r.자동생성)
+        .also { o -> r.원래예정?.let { o.put("원래예정", it) }; r.원래고정?.let { o.put("원래고정", it) } }   // 10-09 그 날 운동
         .put("종목", JSONArray().also { a -> r.종목.forEach { a.put(루틴종목to(it)) } })
 
     // 종류는 본운동(0) 이 아닐 때만 적는다 — 옛 파일과 모양이 같아 읽는 쪽이 안 깨진다
@@ -355,6 +356,8 @@ object 저장소 {
         목록(o.optJSONArray("종목")) { a, i -> 루틴종목from(a.getJSONObject(i)) },
         // 스키마 5 까지는 모든 루틴이 캘린더에 깔렸다 → 옛 루틴은 켜진 채로 옮긴다 (달력이 갑자기 비지 않게)
         자동생성 = o.optBoolean("자동생성", true),
+        원래예정 = if (o.has("원래예정")) o.optString("원래예정") else null,
+        원래고정 = if (o.has("원래고정")) o.optString("원래고정") else null,
     )
 
     /**
