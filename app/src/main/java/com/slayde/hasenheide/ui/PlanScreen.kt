@@ -49,7 +49,6 @@ import com.slayde.hasenheide.data.속도출처글
 import com.slayde.hasenheide.data.숫
 import com.slayde.hasenheide.data.자리옮김
 import com.slayde.hasenheide.data.진행값글
-import com.slayde.hasenheide.data.처방글
 import com.slayde.hasenheide.data.처방변화글
 import com.slayde.hasenheide.data.플랜
 import com.slayde.hasenheide.data.플랜고치기
@@ -380,14 +379,18 @@ private fun 방식속(m: 훈련방식, 이걸로: () -> Unit) {
 // ═══════════════════ 종목 탭에 보이는 플랜 카드 ═══════════════════
 
 /**
- * 플랜 카드 하나 (시안 `플랜카드` — 종목 탭 펼친 칸 맨 위 · 플랜마다 하나).
- *  [이름 ……… 14/96회] · 게이지(지금 − 시작 ÷ 목표 − 시작) · [시작 61kg | 지금 70kg | 목표 120kg] ·
- *  '측정 · 15회차 5세트 · 62kg × 10회' (다음 회차 처방 · 없으면 '목표 달성') · '다음 측정 16회차 · 속도 기본표' · [변경][지우기]
+ * 플랜 카드 하나 (시안 `플랜카드` — 종목 탭 펼친 칸 · 플랜마다 하나).
+ *  10-09 홍겸 님: 카드 머리의 종목 이름 · 회차 처방 줄을 없앴다. 차례 = 게이지(지금 − 시작 ÷ 목표 − 시작) · [시작 61kg | 지금 70kg | 목표 120kg] ·
+ *  '다음 측정 16회차 · 속도 기본표'(다음 회차 처방이 없으면 '목표 달성') · [근육칸] · [변경][지우기]
+ *  · '0/139회' 는 펼친 상자 머리 줄(접기 단추 왼쪽)로 옮겼다 — 플랜이 둘 이상이면 머리에 못 쓰므로 [횟수보임] 으로 카드 맨 위 오른쪽에 둔다
  *  · [변경] = 플랜 고치기 시트 ([플랜고치기자리] 가 그린다) · [지우기] = 바로 지우고 [되돌리기] 띠 (동작방식 D3-4)
- * EX(종목 화면)가 플랜마다 부른다. [끌기] = 이름 줄에 붙일 꾹 눌러 끌기
+ * EX(종목 화면)가 플랜마다 부른다. [끌기] = 게이지 줄에 붙일 꾹 눌러 끌기 (이름 줄이 없어져 옮겼다) · [근육칸] = 다음 측정 줄 아래에 끼울 것
  */
 @Composable
-fun 플랜카드(상태: 앱상태, p: 플랜, modifier: Modifier = Modifier, 끌기: Modifier = Modifier) {
+fun 플랜카드(
+    상태: 앱상태, p: 플랜, modifier: Modifier = Modifier, 끌기: Modifier = Modifier,
+    횟수보임: Boolean = false, 근육칸: (@Composable () -> Unit)? = null,
+) {
     val c = Local색.current
     val d = 상태.d
     val t = p.표
@@ -397,31 +400,41 @@ fun 플랜카드(상태: 앱상태, p: 플랜, modifier: Modifier = Modifier, �
     val 측 = 표.firstOrNull { it.회 > p.한회 && it.측정일 }
     val 현 = p.현재진행값(d.몸, d.향상기록들)
     카드(modifier.번호("종플")) {
-        Row(끌기.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            글(p.이름, Modifier.weight(1f), 굵기 = FontWeight.Bold)
-            글("${p.한회}/${끝}회", 크기값 = 크기.아주작게, 색 = c.옅음)
-        }
-        Box(Modifier.height(간격.좁게))
-        진행막대(p.달성비(d.몸, d.향상기록들).toFloat(), Modifier.fillMaxWidth())
-        Row(Modifier.fillMaxWidth().padding(top = 간격.아주좁게)) {
-            글("시작 ${진행값글(t, p.시작진행값)}", 크기값 = 크기.아주작게, 색 = c.흐림)
-            글("지금 ${진행값글(t, 현)}", Modifier.weight(1f), 크기값 = 크기.아주작게, 색 = c.흐림, 가운데 = true)
-            글("목표 ${진행값글(t, p.목표진행값)}", 크기값 = 크기.아주작게, 색 = c.흐림)
+        Column(끌기.fillMaxWidth()) {
+            if (횟수보임) Row(Modifier.fillMaxWidth().padding(bottom = 간격.좁게)) {
+                Box(Modifier.weight(1f))
+                글("${p.한회}/${끝}회", 크기값 = 크기.아주작게, 색 = c.옅음)
+            }
+            진행막대(p.달성비(d.몸, d.향상기록들).toFloat(), Modifier.fillMaxWidth())
+            Row(Modifier.fillMaxWidth().padding(top = 간격.아주좁게)) {
+                글("시작 ${진행값글(t, p.시작진행값)}", 크기값 = 크기.아주작게, 색 = c.흐림)
+                글("지금 ${진행값글(t, 현)}", Modifier.weight(1f), 크기값 = 크기.아주작게, 색 = c.흐림, 가운데 = true)
+                글("목표 ${진행값글(t, p.목표진행값)}", 크기값 = 크기.아주작게, 색 = c.흐림)
+            }
         }
         Box(Modifier.height(간격.아주좁게))
+        // 10-09 홍겸 님: '1회차 4세트 · 51kg × 10회' 같은 회차 처방 줄은 없앴다 (다음 측정 줄만). 목표를 다 이룬 알림은 처방이 아니라 그대로 둔다
         if (다 == null) 맞춤글(if (t == null) "계산할 수 없는 종목입니다" else "목표 달성", 최대 = 크기.조금작게)
-        else {
-            val 목 = 회처방(p, 다.목표값, d.설정.무게폭, d.몸, 다.측정일, 다.주)
-            처방줄("${if (다.측정일) "측정 · " else ""}${다.회}회차 ${처방글(목)}", 여러줄 = 목.size > 1)
-        }
         맞춤글("${if (측 != null) "다음 측정 ${측.회}회차 · " else ""}속도 ${t?.let { 속도출처글(d.향상기록들, it.이름) } ?: "기본표"}",
             Modifier.padding(top = 간격.아주좁게), 색 = c.옅음)
+        if (근육칸 != null) {
+            Box(Modifier.height(간격.좁게))
+            근육칸()
+        }
         Box(Modifier.height(간격.좁게))
         Row(horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
             버튼("변경", { 플랜고침.value = p.id }, Modifier.weight(1f), 낮게 = true)
             버튼("지우기", { 플랜지움(상태, p.id) }, 낮게 = true, 글색 = c.나쁨)
         }
     }
+}
+
+/** 플랜의 '한회/끝회' 글 (예 `0/139회`) — 종목 탭 펼친 상자 머리 줄이 쓴다 (카드 안과 같은 표) */
+@Composable
+fun 플랜횟수글(상태: 앱상태, p: 플랜): String {
+    val d = 상태.d
+    val 끝 = remember(p, d.몸, d.향상기록들) { p.회표(d.몸, d.향상기록들).lastOrNull()?.회 ?: p.한회 }
+    return "${p.한회}/${끝}회"
 }
 
 /** 플랜을 지우고 [되돌리기] 띠 — 여러 개 지우면 한 띠로 합쳐 새것부터 전부 되돌린다 (Parts.kt 알림판) */
@@ -440,7 +453,13 @@ internal fun 플랜지움(상태: 앱상태, id: String) {
  * (동작방식 D3-9 · 11 지침 U5-5 — 끄는 것 0.35 · 놓을 자리 3dp 선). EX 가 종목 칸 안으로 옮기면 [플랜카드] 를 바로 부른다
  */
 @Composable
-fun 플랜종목칸(상태: 앱상태, 걸러: (플랜) -> Boolean = { true }, 아래여백: Boolean = true) {   // 10-05 검수: 종목 칸 안에서는 그 종목 플랜만 (꾹 끌기 되살림)
+fun 플랜종목칸(
+    상태: 앱상태, 걸러: (플랜) -> Boolean = { true }, 아래여백: Boolean = true,
+    /** 10-09 홍겸 님: 플랜이 하나면 '0/139회' 는 머리 줄에 있으니 카드에 안 쓴다. 둘 이상이면 카드마다 맨 위에 쓴다 */
+    횟수보임: Boolean = false,
+    /** 첫 카드의 다음 측정 줄 아래에 끼울 근육 그림 2장 */
+    근육칸: (@Composable () -> Unit)? = null,
+) {   // 10-05 검수: 종목 칸 안에서는 그 종목 플랜만 (꾹 끌기 되살림)
     val d = 상태.d
     val 보임 = d.플랜들.filter(걸러)
     if (보임.isEmpty()) return
@@ -467,7 +486,7 @@ fun 플랜종목칸(상태: 앱상태, 걸러: (플랜) -> Boolean = { true }, �
                             if (선 == 2) drawRect(선색, topLeft = Offset(0f, size.height - h), size = Size(size.width, h))
                         },
                 ) {
-                    플랜카드(상태, p, 끌기 = Modifier.pointerInput(p.id) {
+                    플랜카드(상태, p, 횟수보임 = 횟수보임, 근육칸 = if (i == 0) 근육칸 else null, 끌기 = Modifier.pointerInput(p.id) {
                         detectDragGesturesAfterLongPress(
                             onDragStart = {
                                 진동.performHapticFeedback(HapticFeedbackType.LongPress)
