@@ -67,12 +67,10 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.onPlaced
@@ -97,15 +95,12 @@ import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.slayde.hasenheide.data.날기록
-import com.slayde.hasenheide.data.날더하기
-import com.slayde.hasenheide.data.날짜만
 import com.slayde.hasenheide.data.다음으로
 import com.slayde.hasenheide.data.다음회
 import com.slayde.hasenheide.data.저장전
@@ -127,7 +122,6 @@ import com.slayde.hasenheide.data.식구
 import com.slayde.hasenheide.data.앱데이터
 import com.slayde.hasenheide.data.열쇠
 import com.slayde.hasenheide.data.운동세션
-import com.slayde.hasenheide.data.일RM
 import com.slayde.hasenheide.data.자리로
 import com.slayde.hasenheide.data.종목넣기
 import com.slayde.hasenheide.data.종목되돌리기
@@ -136,7 +130,6 @@ import com.slayde.hasenheide.data.종목옮기기
 import com.slayde.hasenheide.data.지난주
 import com.slayde.hasenheide.data.값고치기
 import com.slayde.hasenheide.data.같은이름번호
-import com.slayde.hasenheide.data.기록세트
 import com.slayde.hasenheide.data.끝냄
 import com.slayde.hasenheide.data.남은초
 import com.slayde.hasenheide.data.넣은것빼기
@@ -306,8 +299,10 @@ private object 운치수 {
     val 나선물결 = 28.dp            // 10-08 안 찬 쪽 나선 — 한 물결 길이
     const val 나선높이 = 0.3f        // 나선 높이 = 칸 높이 × 이만큼 (위아래로)
     val 나선굵기 = 1.5.dp
+    val 칸높이 = 높이.아주낮게        // 아래 종목 칸 높이 — [＋] 상자는 이 높이의 정사각형 (10-08 홍겸 님) [11_UI지침에 올릴 값]
+    const val 더그림배 = 0.6f        // [＋] 그림 크기 = 옛 크기(제목 22) × 0.6 (40% 작게) [11_UI지침에 올릴 값]
     val 칸앞비움 = 32.dp            // 보는 칸을 맨 앞으로 넘길 때 ‹ 자리 (28 + 틈 4 · v21 ③)
-    val 끌기오른끝 = 76.dp          // 끄는 손이 이 안에 들면 오른쪽으로 넘긴다 ([＋] 44 + 32)
+    val 끌기오른끝 = 칸높이 + 32.dp   // 끄는 손이 이 안에 들면 오른쪽으로 넘긴다 ([＋] 28 + 32)
     val 뺌동그라미 = 16.dp          // 보는 칸 ✕ (v21 ①)
     val 뺌그림 = 14.dp
     val 시계오른 = 20.dp            // 5gd1 타이머 왼쪽으로 20
@@ -331,39 +326,37 @@ private object 운치수 {
 
 // ═════════════════════ 맨 위 띠 ═════════════════════
 
-/** 시안 `.운머리.띠.두줄` — 강조 바탕. 첫 줄 ‹ · 이름 · 그림 · 시계 / 둘째 줄 지표 (높이 28 고정) */
+/**
+ * 시안 `.운머리.띠` — 강조 바탕. ‹ · 이름 · [그림] · 시계 한 줄만 (10-08 홍겸 님: 지표 줄 `1RM · 1주 · 최고 · 달성 · 볼륨` 을 뺐다).
+ * 이름이 두 줄이 되어도 ‹ · 그림 · 시계는 세로 가운데에 선다
+ */
 @Composable
 private fun 운머리(상태: 앱상태, S: 운동세션, 본: Int, e: 세션종목, 지금: Long, 그림보기: (() -> Unit)?, 나가기: () -> Unit) {
     val c = Local색.current
     // 10-06 v22 검수: 보고서에서 ‹ 로 돌아왔으면 저장 전 플랜 회차 · 기록으로 (다음 회차 · 측정일로 보이지 않게)
     val d = 상태.d.let { x -> remember(x) { x.저장전 } }
-    Column(
+    Row(
         Modifier.fillMaxWidth().background(c.강조).번호("운0")
-            .padding(horizontal = 간격.보통, vertical = 부품치수.띠세로여백),
-        verticalArrangement = Arrangement.spacedBy(간격.아주좁게),
+            .padding(horizontal = 간격.보통, vertical = 부품치수.띠세로여백)
+            .heightIn(min = 높이.낮게),   // 10-08 홍겸 님: 한 줄이어도 위아래 여백이 같게 (이름이 길면 늘어난다)
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.좁게),
     ) {
-        Row(
-            Modifier.fillMaxWidth().heightIn(min = 높이.낮게).padding(top = 간격.아주좁게),
-            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.좁게),
-        ) {
-            Box(
-                Modifier.height(높이.낮게).widthIn(min = 높이.아주낮게).눌림(나가기).semantics { contentDescription = "나가기" },
-                contentAlignment = Alignment.Center,
-            ) { Text("‹", style = 글꼴.보통(크기.크게, FontWeight.Bold), color = c.강조글) }
-            운이름(d, S, 본, e, 상태.오늘, Modifier.weight(1f))
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
-                if (그림보기 != null) Box(
-                    Modifier.clip(RoundedCornerShape(모서리.작게)).background(c.강조글).눌림(그림보기)
-                        .padding(horizontal = 간격.좁게, vertical = 간격.아주좁게),
-                ) { Text("그림", style = 글꼴.보통(크기.버튼, FontWeight.Bold), color = c.강조, maxLines = 1) }
-                Text(
-                    분초(((S.끝시각 ?: 지금) - S.시작시각 - S.멈춘).coerceAtLeast(0L).div(1000).toInt()),
-                    Modifier.padding(end = 운치수.시계오른),
-                    style = 글꼴.보통(크기.크게, FontWeight.Bold).copy(fontFeatureSettings = "tnum"), color = c.강조글, maxLines = 1,
-                )
-            }
+        Box(
+            Modifier.height(높이.낮게).widthIn(min = 높이.아주낮게).눌림(나가기).semantics { contentDescription = "나가기" },
+            contentAlignment = Alignment.Center,
+        ) { Text("‹", style = 글꼴.보통(크기.크게, FontWeight.Bold), color = c.강조글) }
+        운이름(d, S, 본, e, 상태.오늘, Modifier.weight(1f))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
+            if (그림보기 != null) Box(
+                Modifier.clip(RoundedCornerShape(모서리.작게)).background(c.강조글).눌림(그림보기)
+                    .padding(horizontal = 간격.좁게, vertical = 간격.아주좁게),
+            ) { Text("그림", style = 글꼴.보통(크기.버튼, FontWeight.Bold), color = c.강조, maxLines = 1) }
+            Text(
+                분초(((S.끝시각 ?: 지금) - S.시작시각 - S.멈춘).coerceAtLeast(0L).div(1000).toInt()),
+                Modifier.padding(end = 운치수.시계오른),
+                style = 글꼴.보통(크기.크게, FontWeight.Bold).copy(fontFeatureSettings = "tnum"), color = c.강조글, maxLines = 1,
+            )
         }
-        운수치(d, S, e, 상태.오늘)
     }
 }
 
@@ -420,71 +413,6 @@ private fun 띠딱지(글: String, 꼴: TextStyle, 숫자: Boolean) {
             .padding(horizontal = 간격.아주좁게),
         contentAlignment = Alignment.Center,
     ) { Text(글, style = 꼴, color = c.강조글, maxLines = 1, softWrap = false) }
-}
-
-/**
- * 지표 한 줄 (시안 `.운수치` · ✎ zx75 · 3ehg) — 높이 28 고정(값이 바뀌어도 띠가 안 움직인다).
- * 1RM(맨몸은 최고 횟수) · [1주 ▲] · [최고 ▲] · 달성 · 볼륨/목표. 넘치면 목표를 감추고, 그래도 넘치면 줄여 넣는다
- */
-@Composable
-private fun 운수치(d: 앱데이터, S: 운동세션, e: 세션종목, 오늘: String) {
-    val 맨 = 플랜표.찾기(e.이름)?.맨몸인가 == true
-    val 오 = 운오늘값(e.찬것(), 맨)
-    val (최고, 주) = remember(d.기록, e.열쇠, 오늘, 맨) { 운최고(d.기록, e.열쇠, 오늘, 맨) }
-    val 달 = if (e.총칸() > 0) (e.찬것().size * 100.0 / e.총칸()).roundToInt() else 0
-    val 볼 = 볼륨(e.찬것())
-    val 목 = 볼륨((0 until e.총칸()).map { S.세트값(e, it) })
-    val 줄: @Composable (Boolean) -> Unit = { 목표 -> 수치줄(맨, 오, 주, 최고, 달, 볼, 목, 목표) }
-    SubcomposeLayout(Modifier.fillMaxWidth().height(높이.아주낮게)) { cons ->
-        val 무한 = Constraints(maxHeight = cons.maxHeight)
-        var 재 = subcompose("다") { 줄(true) }.map { it.measure(무한) }
-        if ((재.maxOfOrNull { it.width } ?: 0) > cons.maxWidth) 재 = subcompose("목표없이") { 줄(false) }.map { it.measure(무한) }
-        val 폭 = 재.maxOfOrNull { it.width } ?: 0
-        val 배 = if (폭 > cons.maxWidth && 폭 > 0) cons.maxWidth.toFloat() / 폭 else 1f
-        layout(cons.maxWidth, cons.maxHeight) {
-            재.forEach { p ->
-                val y = (cons.maxHeight - p.height) / 2
-                if (배 < 1f) p.placeWithLayer(0, y) { scaleX = 배; scaleY = 배; transformOrigin = TransformOrigin(0f, 0.5f) }
-                else p.place(0, y)
-            }
-        }
-    }
-}
-
-@Composable
-private fun 수치줄(맨: Boolean, 오: Double?, 주: Double?, 최고: Double?, 달: Int, 볼: Double, 목: Double, 목표보임: Boolean) {
-    val c = Local색.current
-    val 작 = 글꼴.보통(크기.작게).copy(fontFeatureSettings = "tnum")
-    val 굵 = SpanStyle(fontSize = 크기.본문, fontWeight = FontWeight.Bold)
-    fun 값(앞: String, b: String, 뒤: String = "") = buildAnnotatedString { append(앞); withStyle(굵) { append(b) }; append(뒤) }
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
-        val 단위 = if (맨) "회" else "kg"
-        Text(값(if (맨) "최고 " else "1RM ", if (오 == null) "—" else 무게글(Math.round(오 * 2) / 2.0) + 단위), style = 작, color = c.강조글, maxLines = 1, softWrap = false)
-        비교칩("1주", 운차(오, 주))
-        비교칩("최고", 운차(오, 최고))
-        Text("·", Modifier.padding(horizontal = 간격.아주좁게), style = 작, color = c.강조글)
-        Text(값("달성 ", "$달%"), style = 작, color = c.강조글, maxLines = 1, softWrap = false)
-        Text("·", Modifier.padding(horizontal = 간격.아주좁게), style = 작, color = c.강조글)
-        Text(값("볼륨 ", 콤마(볼), (if (목표보임) "/${콤마(목)}" else "") + "kg"), style = 작, color = c.강조글, maxLines = 1, softWrap = false)
-    }
-}
-
-/** [1주 ▲2.5] — 흰 칩 · 강조 글. 오르면 ▲ 오름 색, 내리면 ▼ 내림 색, 같으면 '유지', 견줄 것이 없으면 '—' (단위 없음 · v9) */
-@Composable
-private fun 비교칩(이름: String, 차: Double?) {
-    val c = Local색.current
-    val 모양 = RoundedCornerShape(모서리.작게)
-    Row(
-        Modifier.height(높이.아주낮게).clip(모양).background(c.강조글).border(선굵기.보통, c.강조글, 모양).padding(horizontal = 간격.아주좁게),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        val 꼴 = 글꼴.보통(크기.작게, FontWeight.Bold).copy(fontFeatureSettings = "tnum")
-        Text(if (차 == null) "$이름 —" else if (차 == 0.0) "$이름 유지" else 이름, style = 꼴, color = c.강조, maxLines = 1, softWrap = false)
-        if (차 != null && 차 != 0.0) Text(
-            (if (차 > 0) "▲" else "▼") + 무게글(abs(차)), Modifier.padding(start = 간격.아주좁게),
-            style = 꼴, color = if (차 > 0) c.오름 else c.내림, maxLines = 1, softWrap = false,
-        )
-    }
 }
 
 // ═════════════════════ 세트 목록 ═════════════════════
@@ -781,6 +709,9 @@ private fun 쉼게이지(남은비율: Float, 시간: String, 문구: String, mo
     val c = Local색.current
     val 비율 by animateFloatAsState(남은비율.coerceIn(0f, 1f), tween(운치수.게이지틱, easing = LinearEasing), label = "쉼게이지")
     val 모양 = RoundedCornerShape(모서리.작게)
+    // 10-08 홍겸 님: [건너뛰기] 도 세트 완료 단추(운단추)와 같이 누르면 오목하게 작아진다 — 같은 눌림배율 · 배율 · 눌림손
+    val 손 = remember { MutableInteractionSource() }
+    val 배 = 눌림배율(손)
     val 속: @Composable (Color) -> Unit = { 색 ->
         Row(
             Modifier.fillMaxSize().padding(horizontal = 간격.아주좁게),
@@ -799,7 +730,7 @@ private fun 쉼게이지(남은비율: Float, 시간: String, 문구: String, mo
         }
     }
     Box(
-        modifier.height(높이.낮게).clip(모양).background(c.면).눌림(onClick).semantics { contentDescription = "휴식 $시간 $문구" },
+        modifier.height(높이.낮게).배율(배).clip(모양).background(c.면).눌림손(손, onClick).semantics { contentDescription = "휴식 $시간 $문구" },
     ) {
         속(c.강조)
         Box(
@@ -904,10 +835,10 @@ private fun 칸줄(
         처음 = false
     }
     Box(Modifier.fillMaxWidth().clipToBounds().padding(top = 간격.좁게)) {
-    화살줄(넘김, Modifier.fillMaxWidth(), 오른쪽비움 = 높이.높게 + 간격.아주좁게) {
+    화살줄(넘김, Modifier.fillMaxWidth(), 오른쪽비움 = 운치수.칸높이 + 간격.아주좁게) {
         var 폭px by remember { mutableStateOf(0f) }
         Box(Modifier.fillMaxWidth().onSizeChanged { 폭px = it.width.toFloat() }) {
-            val 더px = with(밀도) { 높이.높게.toPx() }
+            val 더px = with(밀도) { 운치수.칸높이.toPx() }
             Row(
                 Modifier.fillMaxWidth().가로끌기줄(판, 넘김, 운치수.끌기오른끝).horizontalScroll(넘김),
                 horizontalArrangement = Arrangement.spacedBy(간격.아주좁게),
@@ -919,13 +850,13 @@ private fun 칸줄(
                             .가로끌기(판, i).눌림 { 발자취.적기("${x.이름} 칸 고름"); 고름(i) }
                             .semantics { contentDescription = "${x.이름} ${x.찬것().size}/${x.총칸()}세트" })
                 }
-                Spacer(Modifier.width(높이.높게))   // [＋] 자리
+                Spacer(Modifier.width(운치수.칸높이))   // [＋] 자리 (정사각형)
             }
             // 붙박이 [＋] — 칸이 적으면 마지막 칸 바로 뒤, 넘치면 오른쪽 끝에 붙는다 (시안 position:sticky · v14)
             Box(Modifier.matchParentSize()) {
                 Box(
                     Modifier.offset { IntOffset(더칸자리(내용끝, 넘김.value.toFloat(), 폭px, 더px).roundToInt(), 0) }
-                        .width(높이.높게).fillMaxHeight()
+                        .size(운치수.칸높이)   // 10-08: 정사각형 — 높이 = 종목 칸 높이
                         .drawBehind {   // 왼쪽 4 — 밑으로 들어가는 칸을 가른다 (box-shadow −4 면2)
                             val w = 간격.아주좁게.toPx()
                             drawRect(c.면2, topLeft = Offset(-w, 0f), size = Size(w, size.height))
@@ -939,7 +870,12 @@ private fun 칸줄(
                         }
                         .눌림 { 발자취.적기("운동 중 종목 넣기 열기"); 넣기() }.semantics { contentDescription = "종목 넣기" },
                     contentAlignment = Alignment.Center,
-                ) { Text("＋", style = 글꼴.보통(크기.제목, FontWeight.Bold), color = c.강조) }
+                ) {
+                    // 10-08 홍겸 님: ＋ 는 40% 작게 · 상자 한가운데 (줄 높이 = 글자 크기, 가운데 맞춤)
+                    val 그림크기 = 크기.제목 * 운치수.더그림배
+                    Text("＋", style = 글꼴.보통(그림크기, FontWeight.Bold).copy(lineHeight = 그림크기,
+                        lineHeightStyle = LineHeightStyle(LineHeightStyle.Alignment.Center, LineHeightStyle.Trim.None)), color = c.강조, maxLines = 1)
+                }
                 // 보는 칸 ✕ — 칸 오른쪽 위 꼭짓점이 가운데. [＋] 위에 그린다. 칸이 [＋] 밑으로 들어가면 · 끄는 동안은 감춘다
                 val 뺌px = with(밀도) { 높이.아주낮게.toPx() }
                 val 칸끝 = (칸자리[본]?.second ?: -1f) - 넘김.value
@@ -993,7 +929,7 @@ private fun 운칸(d: 앱데이터, x: 세션종목, 지금칸: Boolean, 끝: Bo
     val 찬색 = (if (다) c.좋음 else c.강조).copy(alpha = 운치수.채움투명)
     val 선색 = c.속선
     Box(
-        modifier.height(높이.아주낮게).alpha(if (끝) 운치수.끝칸흐림 else 1f)
+        modifier.height(운치수.칸높이).alpha(if (끝) 운치수.끝칸흐림 else 1f)
             .clip(모양).background(c.면).점멸바탕(지금칸, 모양)
             .drawBehind {
                 val w = size.width * 채움
@@ -1307,39 +1243,6 @@ internal fun 세트되살리기(S: 운동세션, z: 지운세트, 지금: Long):
     } else if (z.휴식 != null && z.휴식.끝시각 > 지금) t.copy(휴식 = z.휴식.copy(종목 = j)) else t
     return t
 }
-
-/** 오늘 이 종목의 값 — 맨몸은 최고 횟수, 아니면 최고 추정 1RM. 워밍업은 뺀다. 한 세트도 없으면 null (시안 `오`) */
-internal fun 운오늘값(세트들: List<세트>, 맨: Boolean): Double? {
-    val l = 기록세트(세트들)
-    if (l.isEmpty()) return null
-    return if (맨) l.maxOf { it.r.toDouble() } else l.maxOf { 일RM(it.w, it.r) }
-}
-
-/**
- * 지난 기록 중 최고 · 1주(7일 전 ~ 전날) 최고 (시안 `운최고`) — 오늘 앞 기록만. 같은 종목은 열쇠(종id · 옛 기록은 이름)로.
- * 결과 = (최고, 1주) · 없으면 null
- */
-internal fun 운최고(기록: Map<String, 날기록>, 열쇠: String, 오늘: String, 맨: Boolean): Pair<Double?, Double?> {
-    val 주앞 = 날더하기(오늘, -7)
-    var 최고: Double? = null
-    var 주: Double? = null
-    for ((키, r) in 기록) {
-        val 날 = 날짜만(키)
-        if (날 >= 오늘) continue
-        for (x in r.종목들) {
-            if (x.열쇠 != 열쇠) continue
-            for (s in 기록세트(x.세트들)) {
-                val v = if (맨) s.r.toDouble() else 일RM(s.w, s.r)
-                if (최고 == null || v > 최고) 최고 = v
-                if (날 >= 주앞 && (주 == null || v > 주)) 주 = v
-            }
-        }
-    }
-    return 최고 to 주
-}
-
-/** 오늘 − 지난 값, 0.5 단위로 반올림 (시안 `Math.round((오-기)*2)/2`). 어느 쪽이든 없으면 null */
-internal fun 운차(오: Double?, 기: Double?): Double? = if (오 == null || 기 == null) null else Math.round((오 - 기) * 2) / 2.0
 
 /** CSS 격자 `minmax(최소, fr)` 칸 폭 — 남는 폭을 fr 비율로 나누되, 최소보다 작아지는 칸은 최소로 묶고 나머지를 다시 나눈다 */
 internal fun 격자폭(남는: Float, 최소: List<Float>, fr: List<Float>): List<Float> {
