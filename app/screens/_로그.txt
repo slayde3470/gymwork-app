@@ -1,0 +1,13 @@
+Shot_s01e_monthPick > t FAILED
+    java.lang.IllegalStateException at ScreenShots2.kt:23
+> Task :app:testDebugUnitTest FAILED
+* Exception is:
+org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':app:testDebugUnitTest'.
+	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+Caused by: org.gradle.api.internal.exceptions.MarkedVerificationException: There were failing tests. See the report at: file:///home/runner/work/gymwork-app/gymwork-app/app/build/reports/tests/testDebugUnitTest/index.html
+	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+BUILD FAILED in 12m 50s
+    <failure message="java.lang.IllegalStateException: '2026년' 없음" type="java.lang.IllegalStateException">java.lang.IllegalStateException: '2026년' 없음
+	at com.slayde.hasenheide.ui.ShotBase.누름(ScreenShots.kt:112)
+	at com.slayde.hasenheide.ui.ShotBase.누름$default(ScreenShots.kt:109)
+	at com.slayde.hasenheide.ui.Shot_s01e_monthPick.t(ScreenShots2.kt:23)
