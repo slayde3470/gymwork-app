@@ -24,18 +24,13 @@ class Shot_s01e_monthPick : ShotBase() {
 }
 
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-class Shot_s01g_change : ShotBase() {
-    @Test fun t() { 켜기(); 누름("변경"); 찍("01g_캘린더_예정변경시트"); 누름("다른 루틴으로"); 찍("01h_캘린더_루틴고르기") }
+class Shot_s01g_reset : ShotBase() {
+    @Test fun t() { 켜기(); 누름("초기화"); 찍("01g_캘린더_초기화뒤"); 누름("운동 계획 만들기"); 찍("01h_캘린더_운동계획시트") }
 }
 
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-class Shot_s01i_rest : ShotBase() {
-    @Test fun t() { 켜기(); 누름("변경"); 누름("은 휴식", 일부 = true); 찍("01i_캘린더_휴식시트") }
-}
-
-@GraphicsMode(GraphicsMode.Mode.NATIVE)
-class Shot_s01j_move : ShotBase() {
-    @Test fun t() { 켜기(); 누름("변경"); 누름("다른 날로 옮기기"); 찍("01j_캘린더_다른날로옮기기") }
+class Shot_s01i_future : ShotBase() {
+    @Test fun t() { 켜기(); 누름(오늘.plusDays(1).dayOfMonth.toString(), -1); 찍("01i_캘린더_내일예정") }
 }
 
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
