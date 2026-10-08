@@ -88,12 +88,7 @@ class Shot_s04d_restRoutine : ShotBase() {
 // ───────── 종목 ─────────
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class Shot_s06b_category : ShotBase() {
-    @Test fun t() { 켜기(); 탭(3); 누름설명("카테고리 관리"); 찍("06b_종목_카테고리관리"); 누름설명("부위 더하기"); 찍("06c_카테고리_부위더하기") }
-}
-
-@GraphicsMode(GraphicsMode.Mode.NATIVE)
-class Shot_s06d_categoryDelete : ShotBase() {
-    @Test fun t() { 켜기(); 탭(3); 누름설명("카테고리 관리"); 누름설명("부위 지우기"); 찍("06d_카테고리_부위지우기") }
+    @Test fun t() { 켜기(); 탭(3); 누름설명("카테고리 관리"); 찍("06b_종목_카테고리관리") }
 }
 
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -182,8 +177,8 @@ class Shot_s13b_profileLinks : ShotBase() {
 }
 
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-class Shot_s13d_profileLinkWrite : ShotBase() {
-    @Test fun t() { 켜기(); 탭(8); 누름설명("SNS 링크 적기"); 찍("13d_프로필_링크적기") }
+class Shot_s13d_profileLinkWriteRe : ShotBase() {
+    @Test fun t() { 켜기(); 탭(8); 누름설명("닉네임"); 찍("13d0_프로필_닉네임고치기"); 누름설명("SNS 링크 적기"); 찍("13d_프로필_링크적기") }
 }
 
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -294,8 +289,8 @@ class Shot_s18c_reportBig : 보고서Base() {
 }
 
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-class Shot_s18d_reportRoutine : 보고서Base() {
-    @Test fun t() { 보고서켜기(); 누름설명("상체 A 상세"); 찍("18d_보고서_루틴상세") }
+class Shot_s18d_reportRoutineRe : 보고서Base() {
+    @Test fun t() { 보고서켜기(); 누름설명("상체 A 루틴 상세"); 찍("18d_보고서_루틴상세") }
 }
 
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
