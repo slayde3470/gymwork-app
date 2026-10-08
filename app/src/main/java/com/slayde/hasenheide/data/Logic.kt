@@ -122,7 +122,7 @@ fun 시간글(초: Int): String {
 }
 fun 총세트(r: 루틴?): Int = if (r == null || r.휴식일) 0 else r.종목.sumOf { it.세트 }
 
-fun 앱데이터.루틴(id: String?): 루틴? = 루틴들.firstOrNull { it.id == id }
+fun 앱데이터.루틴(id: String?): 루틴? = 루틴들.firstOrNull { it.id == id } ?: 그날운동.firstOrNull { it.id == id }   // 10-09: 그 날만 쓰는 운동도
 fun 앱데이터.예정루틴(k: String): 루틴? = 루틴(예정[k])
 
 // ─────────────── 예정표 — 2회차까지 미리 깔기 (2-2) ───────────────
@@ -188,7 +188,38 @@ private fun 앱데이터.예정초기화0(오늘: String): 앱데이터 {
  *  · 빠진 날이 전부 휴식일이면 쉰 것으로 치고 그 다음 차례부터
  *  · 빠진 날이 없고 앞으로의 예정도 있으면 그대로 둔다 (옮겨 둔 것을 지키기 위해)
  */
-fun 앱데이터.예정맞추기(오늘: String): 앱데이터 = 놓친날담기(오늘).예정맞추기0(오늘)
+fun 앱데이터.예정맞추기(오늘: String): 앱데이터 = 놓친날담기(오늘).예정맞추기0(오늘).그날운동치움(오늘)
+
+// ─────────────── 그 날만 쓰는 운동 (10-09 홍겸 님 · 캘린더 [종목 골라 넣기]) ───────────────
+
+fun 그날운동id(날: String): String = "날$날"
+
+/** 그 날에 붙은 그 날 운동 — 예정이 다른 루틴으로 바뀌었으면 null */
+fun 앱데이터.그날운동(날: String): 루틴? = 그날운동id(날).let { id -> if (예정[날] == id) 그날운동.firstOrNull { it.id == id } else null }
+
+/** 이름 = 종목 이름들 (캘린더 칸 · 날 판에 그대로 보인다) */
+internal fun 그날운동이름(r: 루틴): String = r.종목.map { it.이름 }.distinct().joinToString(" · ").ifEmpty { "종목 운동" }
+
+/**
+ * 그 날 운동의 종목을 고친다 — 없으면 만들고, 그 날 예정으로 붙인다(그 날만 · 앞뒤 순서는 그대로).
+ * 종목이 하나도 안 남으면 그 날 예정을 비운다. 지난 날 · 기록 있는 날은 그대로
+ */
+fun 앱데이터.그날운동바꿈(날: String, 오늘: String, f: (루틴) -> 루틴): 앱데이터 {
+    if (날 < 오늘 || 기록.containsKey(날)) return this
+    val id = 그날운동id(날)
+    val 옛 = 그날운동(날) ?: 루틴(id, "")   // 예정이 다른 루틴이면 새로 (지난번 것을 되살리지 않는다)
+    val 새 = f(옛).let { it.copy(이름 = 그날운동이름(it), 휴식일 = false, 자동생성 = false) }
+    val 남 = 그날운동.filter { it.id != id }
+    if (새.종목.isEmpty()) return copy(그날운동 = 남).let { if (it.예정[날] == id) it.예정지우기(날, 오늘) else it }
+    return copy(그날운동 = 남 + 새).그날만바꾸기(id, 날, 오늘)
+}
+
+/** 지난 날의 그 날 운동을 치운다 (기록에는 이름이 남는다). 하고 있는 운동 · 보여 줄 결과가 쓰는 것은 둔다 */
+private fun 앱데이터.그날운동치움(오늘: String): 앱데이터 {
+    if (그날운동.isEmpty()) return this
+    val 남 = 그날운동.filter { it.id.removePrefix("날") >= 오늘 || it.id == 세션?.루틴id || it.id == 결과?.루틴id }
+    return if (남.size == 그날운동.size) this else copy(그날운동 = 남)
+}
 
 private fun 앱데이터.예정맞추기0(오늘: String): 앱데이터 {
     val 줄 = 순번

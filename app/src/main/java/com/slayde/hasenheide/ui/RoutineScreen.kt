@@ -4,11 +4,15 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.awaitTouchSlopOrCancellation
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.gestures.drag
 import androidx.compose.foundation.gestures.scrollBy
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -66,6 +70,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
@@ -133,11 +138,11 @@ import kotlin.math.roundToInt
  * 루틴 화면 (시안 v8 R · v10 · v18 D · v19 A/C · v20 · v21) — `루틴탭` · `루틴상세띠` · `루틴상세` · `루틴종목상자`.
  *
  *  · 목록 — 머리 띠 '루틴' · 카드 한 줄에 하나 (10-08 홍겸 님: 2열은 없앴다) · 떠 있는 [+ 휴식일](왼쪽 아래) [+ 루틴 추가하기](오른쪽 아래)
- *    카드 = [번호(자동) / 수동][이름 / 요약(N종목 · N세트 · 예상)][↑][↓][휴지통]. 맨 위 ↑ · 맨 아래 ↓ 는 그리지 않는다. 누름 = 열기 · 꾹 끌기 = 순서
+ *    카드 = [번호(자동) / 수동][이름 / 요약(N종목 · N세트 · 예상)][휴지통][손잡이 ⋮⋮ (10-09 — ↑↓ 를 대신)]. 누름 = 열기 · 꾹 끌기 = 순서
  *  · 상세 (10-06 v22 · v23) — 「루틴」 띠 · 그 아래 줄 [‹ 뒤로][이름 칸 + 연필] (지우기는 목록 카드 휴지통 · 빈 새 루틴은 [뒤로] 때 치움)
  *    · 종목 상자는 한 줄에 하나 (10-08) · 왼쪽 아래 떠 있는 [자동 ◯] · 오른쪽 아래 떠 있는 [+ 운동 종목 추가]
- *  · 종목 상자 — 머리 [번호][이름][N세트] … [↑][↓][▾][휴지통]. 펼치면 세트 줄 [번호][− 무게 ＋][− 횟수 ＋][− 휴식 ＋][휴지통] · [+ 세트]
- *  · 플랜 상자 — 머리 [번호][이름[플랜]][N세트 · N회차] … [↑][↓][휴지통] + 게이지 %. 줄을 누르면 플랜 고치기 (PS 몫 · 부르기만)
+ *  · 종목 상자 — 머리 [번호][이름][N세트] … [▾][휴지통][손잡이]. 펼치면 세트 줄 [번호][− 무게 ＋][− 횟수 ＋][− 휴식 ＋][휴지통] · [+ 세트]
+ *  · 플랜 상자 — 머리 [번호][이름[플랜]][N세트 · N회차] … [휴지통][손잡이] + 게이지 %. 줄을 누르면 플랜 고치기 (PS 몫 · 부르기만)
  *  · 당겨서 새로고침은 띠 아래에서만 (v19 A ②)
  */
 @Suppress("UNUSED_PARAMETER")
@@ -231,17 +236,6 @@ private fun 루틴목록화면(상태: 앱상태, 열기: (String) -> Unit) {
         }
         발자취.적기("루틴 순서 바꿈")
     }
-    // 10-08 홍겸 님: [↑][↓] 단추 = 한 칸 앞 · 뒤로 (놓기와 같은 길)
-    fun 한칸(i: Int, 아래로: Boolean) {
-        val 대상 = if (아래로) i + 1 else i - 1
-        val 수 = 상태.d.루틴들.size
-        if (i !in 0 until 수 || 대상 !in 0 until 수) return
-        상태.바꿈 { dd ->
-            val l = dd.루틴들.toMutableList()
-            if (목옮김(l, i, 대상, 아래로)) dd.copy(루틴들 = l).예정초기화(상태.오늘) else dd
-        }
-        발자취.적기("루틴 순서 바꿈")
-    }
     끌기자동넘김(끌, 넘김)
     Box(Modifier.fillMaxSize().onGloballyPositioned { 끌.틀 = it.boundsInRoot() }) {
         Column(Modifier.fillMaxSize()) {
@@ -253,17 +247,13 @@ private fun 루틴목록화면(상태: 앱상태, 열기: (String) -> Unit) {
                     verticalArrangement = Arrangement.spacedBy(간격.좁게),
                 ) {
                     val 번째 = 자동번호(d.루틴들)
-                    val 개수 = d.루틴들.size
                     // 10-08 홍겸 님: 다시 한 줄에 루틴 하나 (2열은 없앴다)
                     d.루틴들.forEachIndexed { i, r ->
                         key(r.id) {
                             루틴카드(상태, r, 번째[r.id], i, 끌, Modifier,
                                 놓을표 = if (끌.원 != null) 끌.표시(i, 넘김.value) else -1,
-                                앞켬 = i > 0, 뒤켬 = i < 개수 - 1,
                                 on열기 = { 발자취.적기("루틴 열기 · ${r.이름}"); 열기(r.id) },
                                 on지우기 = { 루틴지우기(상태, r.id) },
-                                on앞으로 = { 한칸(i, false) },
-                                on뒤로 = { 한칸(i, true) },
                                 on끌기시작 = { 손 ->
                                     진동.performHapticFeedback(HapticFeedbackType.LongPress)
                                     끌.시작(i, r.이름, 손.y, 넘김.value, 상태.d.루틴들.size)
@@ -293,12 +283,12 @@ private fun 루틴더하기(상태: 앱상태, 휴식일: Boolean, 열기: (Stri
 
 /**
  * 루틴 카드 (시안 `.루틴카드`) — 한 줄 전체 폭 · 속선 1 테 · 자동이면 왼쪽 4 강조 띠.
- * 왼쪽 [번호 / 수동] · 가운데 두 줄(이름 / 한 줄 요약) · 오른쪽 [↑][↓][휴지통(10-07)] (10-08 홍겸 님: 번호는 박스 앞 · 순서 단추)
+ * 왼쪽 [번호 / 수동] · 가운데 두 줄(이름 / 한 줄 요약) · 오른쪽 [휴지통(10-07)][손잡이(10-09)] (10-08 홍겸 님: 번호는 박스 앞)
  */
 @Composable
 private fun 루틴카드(
-    상태: 앱상태, r: 루틴, 번째: Int?, i: Int, 끌: 세로끌기, modifier: Modifier, 놓을표: Int, 앞켬: Boolean, 뒤켬: Boolean,
-    on열기: () -> Unit, on지우기: () -> Unit, on앞으로: () -> Unit, on뒤로: () -> Unit,
+    상태: 앱상태, r: 루틴, 번째: Int?, i: Int, 끌: 세로끌기, modifier: Modifier, 놓을표: Int,
+    on열기: () -> Unit, on지우기: () -> Unit,
     on끌기시작: (Offset) -> Unit, on끌기끝: () -> Unit,
 ) {
     val c = Local색.current
@@ -331,7 +321,7 @@ private fun 루틴카드(
             // 자동 · 수동 모두 같은 왼쪽 여백 (띠 4 + 12) — 번호 · 이름 시작이 카드마다 가지런하게
             .padding(start = 간격.보통 + 루틴값.자동띠, end = 간격.아주좁게, top = 간격.아주좁게, bottom = 간격.아주좁게),
     ) {
-        // 10-08 홍겸 님: 한 줄에 하나 — 왼쪽 [번호 / 수동] · 가운데 두 줄(이름 / 정보) · 오른쪽 [↑][↓][휴지통]
+        // 10-08 홍겸 님: 한 줄에 하나 — 왼쪽 [번호 / 수동] · 가운데 두 줄(이름 / 정보) · 오른쪽 [휴지통][손잡이]
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
             // 번호 칸은 폭을 고정 — 자동이면 차례 번호(강조 18 굵게), 수동이면 '수동'
             Box(Modifier.width(루틴값.카드번호폭), contentAlignment = Alignment.CenterStart) {
@@ -349,34 +339,57 @@ private fun 루틴카드(
                     최대 = 크기.작게, 색 = c.흐림,
                 )
             }
-            순서단추(true, r.이름, 앞켬, on앞으로)
-            순서단추(false, r.이름, 뒤켬, on뒤로)
             // 10-07 홍겸 님: 루틴 지우기는 카드 오른쪽 휴지통 (상세의 [취소] 대신). 한 번 누르면 지우고 [되돌리기] 알림
             아이콘버튼(아이콘.지우기, "${r.이름} 지우기", on지우기, 칠함 = false, 색 = c.옅음, 크기칸 = 높이.낮게)
+            // 10-09 홍겸 님: [↑][↓] 대신 맨 오른쪽 손잡이 — 잡으면 꾹 누르지 않아도 바로 끌린다
+            끌기손잡이(끌, r.이름, { 시작(it) }, { 끝() })
         }
     }
 }
 
 /**
- * 순서 단추 [↑] [↓] — 한 칸 앞 · 뒤로 (10-08 홍겸 님). 누르는 칸 28 · 그림 16 · 옅음.
- * 10-08 홍겸 님: 맨 위의 ↑ · 맨 아래의 ↓ 는 그리지 않는다 (↓ 가 제자리에 있게 빈 칸 28 만 둔다).
- * 루틴 카드 · 루틴 안 종목 상자가 같이 쓴다
+ * 끌기 손잡이 ⋮⋮ (10-09 홍겸 님 — [↑][↓] 순서 단추를 대신한다). 줄 맨 오른쪽 · 휴지통 오른쪽. 누르는 칸 32 · 점 여섯 개(16) · 옅음.
+ * 잡고 조금(터치 슬롭) 움직이면 꾹 누르지 않아도 바로 끌린다. 그냥 누르면 아무 일도 없다(줄이 열리지 않게 누름을 먹는다).
+ * 끄는 동안 모양(투명도 · 놓을 자리 선)은 줄의 꾹 눌러 끌기와 같다 — 같은 [세로끌기] 를 쓴다.
+ * 줄의 꾹 눌러 끌기가 이미 시작됐으면(가만히 0.4초 잡은 경우) 손잡이는 끼어들지 않는다.
+ * 루틴 카드 · 루틴 안 종목 상자 · 플랜 상자가 같이 쓴다. [시작] 은 손가락의 화면 자리(x · y)
  */
 @Composable
-private fun 순서단추(위: Boolean, 이름: String, 켬: Boolean, on누름: () -> Unit) {
+private fun 끌기손잡이(끌: 세로끌기, 이름: String, 시작: (Offset) -> Unit, 놓기: () -> Unit) {
     val c = Local색.current
-    if (!켬) { Spacer(Modifier.size(높이.아주낮게)); return }
-    val 손 = remember { MutableInteractionSource() }
-    val 배 = 눌림배율(손)
+    val 시작최신 by rememberUpdatedState(시작)
+    val 놓기최신 by rememberUpdatedState(놓기)
+    var 틀 by remember { mutableStateOf(Rect.Zero) }
+    val 틀최신 by rememberUpdatedState(틀)
     Box(
-        Modifier.size(높이.아주낮게).배율(배).clip(RoundedCornerShape(모서리.작게))
-            .눌림손(손, on누름),
+        Modifier.size(높이.낮게)
+            .onGloballyPositioned { if (끌.원 == null) 틀 = it.boundsInRoot() }
+            .semantics { contentDescription = "$이름 끌어서 순서 바꾸기" }
+            .pointerInput(끌) {
+                awaitEachGesture {
+                    val 처음 = awaitFirstDown(requireUnconsumed = false)
+                    처음.consume()   // 손잡이를 눌러도 줄이 열리지 않게
+                    val 넘음 = awaitTouchSlopOrCancellation(처음.id) { ch, _ -> ch.consume() } ?: return@awaitEachGesture
+                    if (끌.원 != null) return@awaitEachGesture
+                    시작최신(Offset(틀최신.left + 넘음.position.x, 틀최신.top + 넘음.position.y))
+                    val 끝까지 = drag(넘음.id) { ch ->
+                        val 양 = ch.positionChange()
+                        ch.consume(); 끌.y += 양.y; 끌.x = 끌.x?.plus(양.x)
+                    }
+                    if (끝까지) 놓기최신() else 끌.끝()
+                }
+            },
         contentAlignment = Alignment.Center,
     ) {
-        Icon(
-            if (위) 아이콘.위로 else 아이콘.아래로, "$이름 ${if (위) "앞으로" else "뒤로"} 옮기기",
-            Modifier.size(루틴값.순서그림), tint = c.옅음,
-        )
+        val 색 = c.옅음
+        Canvas(Modifier.size(루틴값.손잡이그림)) {
+            // 2열 × 3줄 점 — 16 칸 안에서 가로 5.5 · 10.5, 세로 3.5 · 8 · 12.5
+            val 반 = 루틴값.손잡이점.toPx()
+            val 칸 = size.width / 16f
+            for (x in floatArrayOf(5.5f, 10.5f)) for (y in floatArrayOf(3.5f, 8f, 12.5f)) {
+                drawCircle(색, 반, Offset(x * 칸, y * 칸))
+            }
+        }
     }
 }
 
@@ -403,7 +416,7 @@ private fun 루틴상세화면(상태: 앱상태, r: 루틴, 닫기: () -> Unit)
     fun 줄고침(j: Int, f: (루틴종목) -> 루틴종목) = 상태.바꿈 { dd ->
         dd.루틴바꿈(rid) { x -> if (j in x.종목.indices) x.copy(종목 = x.종목.mapIndexed { k, y -> if (k == j) f(y) else y }) else x }
     }
-    // 끌어 놓기 · [↑][↓] 가 같은 길 — 슈퍼세트 묶음은 종목옮기기가 통째로 옮긴다. 아무것도 안 바뀌면(묶음 안 이웃 등) 쓰지 않는다
+    // 끌어 놓기 길 — 슈퍼세트 묶음은 종목옮기기가 통째로 옮긴다. 아무것도 안 바뀌면(묶음 안 이웃 등) 쓰지 않는다
     fun 옮기기(원: Int, 대상: Int, 뒤에: Boolean) {
         val 지금 = 상태.d.루틴(rid) ?: return
         if (원 !in 지금.종목.indices || 대상 !in 지금.종목.indices || 원 == 대상) return
@@ -453,7 +466,7 @@ private fun 루틴상세화면(상태: 앱상태, r: 루틴, 닫기: () -> Unit)
                         } else if (r.종목.isEmpty()) {
                             넣기빈칸("종목을 넣어 주세요")
                         } else {
-                            // 10-08 홍겸 님: 한 줄에 종목 하나 (2열 격자는 없앴다) — [번호][이름][N세트] … [↑][↓][펼침][휴지통]
+                            // 10-08 홍겸 님: 한 줄에 종목 하나 (2열 격자는 없앴다) — [번호][이름][N세트] … [펼침][휴지통][손잡이]
                             val 수 = r.종목.size
                             @Composable
                             fun 상자(j: Int) {
@@ -462,24 +475,21 @@ private fun 루틴상세화면(상태: 앱상태, r: 루틴, 닫기: () -> Unit)
                                 val 자리줄 = Modifier
                                     .onGloballyPositioned { if (끌.원 == null) 끌.자리[j] = it.boundsInRoot() }
                                     .alpha(if (끌.원 == j) 움직임.끌림투명 else 1f)
-                                val 끌기길 = 끌기손(끌, rid, j, { 놓기() }) { 손 ->
+                                // 줄 꾹 눌러 끌기 · 오른쪽 손잡이가 같은 시작을 쓴다 (10-09)
+                                val 끌시작: (Offset) -> Unit = { 손 ->
                                     손댐()
                                     진동.performHapticFeedback(HapticFeedbackType.LongPress)
                                     끌.시작(j, e.이름, 손.y, 넘김.value, 상태.d.루틴(rid)?.종목?.size ?: 0)
                                 }
+                                val 끌기길 = 끌기손(끌, rid, j, { 놓기() }, 끌시작)
+                                val 손잡이: @Composable () -> Unit = { 끌기손잡이(끌, e.이름, 끌시작) { 놓기() } }
                                 val p = e.플랜id?.let { pid -> d.플랜들.firstOrNull { it.id == pid } }
-                                if (e.플랜id != null) 플랜상자(상태, e, p, j + 1, 자리줄, 표시, 끌기길,
-                                    위켬 = j > 0, 아래켬 = j < 수 - 1,
+                                if (e.플랜id != null) 플랜상자(상태, e, p, j + 1, 자리줄, 표시, 끌기길, 손잡이,
                                     on고치기 = { 손댐(); if (p != null) { 발자취.적기("루틴에서 플랜 고치기 · ${p.이름}"); 플랜고침.value = p.id } },
-                                    on빼기 = { 종목뺌(j) },
-                                    on위 = { 손댐(); 옮기기(j, j - 1, false) },
-                                    on아래 = { 손댐(); 옮기기(j, j + 1, true) })
-                                else 종목상자(상태, e, j + 1, j in 펼침, 자리줄, 표시, 끌기길,
-                                        위켬 = j > 0, 아래켬 = j < 수 - 1,
+                                    on빼기 = { 종목뺌(j) })
+                                else 종목상자(상태, e, j + 1, j in 펼침, 자리줄, 표시, 끌기길, 손잡이,
                                         on펼침 = { 손댐(); 펼침바꿈 { s -> if (j in s) s - j else s + j } },
                                         on빼기 = { 종목뺌(j) },
-                                        on위 = { 손댐(); 옮기기(j, j - 1, false) },
-                                        on아래 = { 손댐(); 옮기기(j, j + 1, true) },
                                         on고침 = { f -> 줄고침(j, f) },
                                         on세트지움 = { k ->
                                             손댐()
@@ -759,14 +769,13 @@ private fun 빼기단추(이름: String, on누름: () -> Unit) {
 
 /**
  * 보통 종목 상자 (시안 `루틴종목상자` · v18 D ① 접힘 · h627 세트 줄 · 9kht 높이 28) — 10-08 한 줄에 하나, 늘 한 줄 전체.
- * 머리 [번호][이름(+같은 이름 번호, 넘치면 …)][흐린 N세트] … [↑][↓][펼침 ▾][휴지통]. 머리 줄 누름 = 펼치기 · 접기, 꾹 = 끌기.
+ * 머리 [번호][이름(+같은 이름 번호, 넘치면 …)][흐린 N세트] … [펼침 ▾][휴지통][손잡이 ⋮⋮]. 머리 줄 누름 = 펼치기 · 접기, 꾹 = 끌기, 손잡이 = 바로 끌기.
  * 펼침 = 머리 아래 [세트 | 무게 kg | 횟수 | 휴식] + 세트 줄 + [+ 세트]
  */
 @Composable
 private fun 종목상자(
-    상태: 앱상태, e: 루틴종목, 번호: Int, 펼침: Boolean, modifier: Modifier, 표시: Int, 끌기길: Modifier,
-    위켬: Boolean, 아래켬: Boolean,
-    on펼침: () -> Unit, on빼기: () -> Unit, on위: () -> Unit, on아래: () -> Unit,
+    상태: 앱상태, e: 루틴종목, 번호: Int, 펼침: Boolean, modifier: Modifier, 표시: Int, 끌기길: Modifier, 손잡이: @Composable () -> Unit,
+    on펼침: () -> Unit, on빼기: () -> Unit,
     on고침: ((루틴종목) -> 루틴종목) -> Unit, on세트지움: (Int) -> Unit,
 ) {
     val c = Local색.current
@@ -787,10 +796,9 @@ private fun 종목상자(
                 Text("${e.세트}세트", style = 글꼴.보통(크기.조금작게).copy(fontFeatureSettings = "tnum"), color = c.흐림, maxLines = 1, softWrap = false)
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
-                순서단추(true, e.이름, 위켬, on위)
-                순서단추(false, e.이름, 아래켬, on아래)
                 펼침단추(펼침, on펼침)
                 빼기단추(e.이름, on빼기)
+                손잡이()
             }
         }
         if (펼침) {
@@ -924,14 +932,13 @@ private fun 톡단추(그림: androidx.compose.ui.graphics.vector.ImageVector, �
 }
 
 /**
- * 플랜 상자 (시안 c1gz · v19 C ⑤) — 10-08 한 줄 전체. 머리 [번호][이름[플랜]][흐린 N세트 · N회차] … [↑][↓][휴지통] + 아래 줄 [게이지 %].
+ * 플랜 상자 (시안 c1gz · v19 C ⑤) — 10-08 한 줄 전체. 머리 [번호][이름[플랜]][흐린 N세트 · N회차] … [휴지통][손잡이] + 아래 줄 [게이지 %].
  * 플랜 상자는 펼치지 않는다. 무게 · 횟수는 플랜이 정한다 — 손으로 고치지 않는다. 줄을 누르면 플랜 고치기 (플랜이 없어졌으면 누를 수 없다)
  */
 @Composable
 private fun 플랜상자(
-    상태: 앱상태, e: 루틴종목, p: 플랜?, 번호: Int, modifier: Modifier, 표시: Int, 끌기길: Modifier,
-    위켬: Boolean, 아래켬: Boolean,
-    on고치기: () -> Unit, on빼기: () -> Unit, on위: () -> Unit, on아래: () -> Unit,
+    상태: 앱상태, e: 루틴종목, p: 플랜?, 번호: Int, modifier: Modifier, 표시: Int, 끌기길: Modifier, 손잡이: @Composable () -> Unit,
+    on고치기: () -> Unit, on빼기: () -> Unit,
 ) {
     val c = Local색.current
     val d = 상태.d
@@ -954,9 +961,8 @@ private fun 플랜상자(
                 루플랜글("${세트수}세트 · ${if (회 != null) "${회.회}회차" else "목표 달성"}")
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
-                순서단추(true, e.이름, 위켬, on위)
-                순서단추(false, e.이름, 아래켬, on아래)
                 빼기단추(e.이름, on빼기)
+                손잡이()
             }
         }
         Row(
@@ -1094,7 +1100,9 @@ internal fun Modifier.루톡(판: 루톡판): Modifier =
 internal object 루틴값 {
     val 뜸그림 = 16.dp          // 떠 있는 [+ 종목 추가] 그림 (U3-6 글 옆 16 · 버튼과 같다)
     val 뜸그림틈 = 6.dp         // 그림 ↔ 글 (공용 버튼과 같은 값)
-    val 순서그림 = 16.dp        // [↑][↓] 순서 단추 그림 (글 옆 16 · 누르는 칸은 28)
+    // 10-09 홍겸 님: [↑][↓] 를 없애고 끌기 손잡이 ⋮⋮ [11_UI지침에 올릴 값] — 누르는 칸은 높이.낮게(32) · 그림 16 · 점 반지름 1.5
+    val 손잡이그림 = 16.dp
+    val 손잡이점 = 1.5.dp
     val 카드번호폭 = 24.dp      // 목록 카드 맨 앞 번호 · '수동' 칸 (폭 고정 → 이름 시작이 가지런)
     val 상자번호폭 = 20.dp      // 상세 종목 상자 머리의 번호 칸 (두 자리까지)
     val 자동띠 = 4.dp           // .루틴카드.자동 border-left 4

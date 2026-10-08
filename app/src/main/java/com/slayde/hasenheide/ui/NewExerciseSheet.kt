@@ -6,7 +6,6 @@ import android.graphics.Matrix
 import android.graphics.Region
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.tween
@@ -89,7 +88,6 @@ import com.slayde.hasenheide.data.종목세트
 import com.slayde.hasenheide.data.종목세트최대
 import com.slayde.hasenheide.data.칸
 import com.slayde.hasenheide.ui.theme.Local색
-import com.slayde.hasenheide.ui.theme.그림칸
 import com.slayde.hasenheide.ui.theme.간격
 import com.slayde.hasenheide.ui.theme.근육팝치수
 import com.slayde.hasenheide.ui.theme.글꼴
@@ -445,8 +443,9 @@ private fun 새세트값칸(
 }
 
 /**
- * 카테고리 칩 → 운동 목표 부위 (그림 앞 · 뒤) — 시안 `새부위고르기`.
- * 10-06 ⑧⑪ 홍겸 님: 그림은 운동 화면 그림 칸과 같은 규격(높이 124 · 둥근 판). 카테고리를 고르기 전엔 전신, 고르면 상체 · 하체 확대.
+ * 카테고리 칩 → 운동 목표 부위 — 시안 `새부위고르기`.
+ * 10-09 홍겸 님: 그림은 [근육두장](MuscleCards.kt) — 왼쪽 반신 그림 + 오른쪽 확대 자리(그림 준비 중). 근육이 하나도 없으면 가운데 전신 한 칸.
+ * (10-06 ⑧⑪ 의 '카테고리를 고르면 상체 · 하체 확대' 는 근육 점수로 반신을 고르는 새 규칙으로 바뀌었다)
  * 주동근 칩 · 역할 칩 · 요약 상자는 뺐다 — 그림의 근육을 누르면 [근육팝] (v22 ⑧ · 시안의 아래 칩 줄은 앱에서 이미 뺐다 · ⑪ 유지)
  */
 @Composable
@@ -457,33 +456,7 @@ private fun 새부위고르기(상태: 앱상태, v: 새종목값, 고침: ((새
     val 누름 = { 키들: List<String> -> 고침 { cur -> if (키들.isEmpty()) cur.팝빈열기() else cur.팝열기(키들) } }
     이름표("운동 목표 부위", Modifier.padding(top = 간격.좁게, start = 간격.아주좁게))
     Box(Modifier.height(간격.아주좁게))
-    val 단계 = remember(v.근육) { 새몸단계(v.근육) }
-    val (앞상자, 뒤상자) = 근육계산.부위상자(v.칸)
-    Row(Modifier.fillMaxWidth().height(그림칸.높이), horizontalArrangement = Arrangement.spacedBy(그림칸.사이)) {
-        새몸칸(단계, d.설정.색표, 앞상자, false, 누름, Modifier.weight(1f))
-        새몸칸(단계, d.설정.색표, 뒤상자, true, 누름, Modifier.weight(1f))
-    }
-}
-
-/**
- * 근육 그림 한 장 (앞 또는 뒤) — 운동 화면 `그림판` 과 같은 둥근 판 + 몸그림(MuscleView) 그대로.
- * 근육 조각을 누르면 그 부위를 [누름]. 누른 자리 판정은 그림과 같은 칸(안쪽 여백 뒤)에서 한다
- */
-@Composable
-private fun 새몸칸(단계: Map<String, Double>, 색표: String, 자르기: FloatArray, 뒤: Boolean, 누름: (List<String>) -> Unit, modifier: Modifier) {
-    val c = Local색.current
-    val 누름최신 by rememberUpdatedState(누름)
-    val 자르기최신 by rememberUpdatedState(자르기)
-    val 모양 = RoundedCornerShape(그림칸.모서리)
-    Box(modifier.fillMaxHeight().clip(모양).background(c.면).border(선굵기.보통, c.선, 모양)) {
-        Box(
-            Modifier.fillMaxSize().padding(간격.아주좁게).pointerInput(뒤) {
-                detectTapGestures { o ->
-                    누름최신(그림누른부위(o.x, o.y, size.width.toFloat(), size.height.toFloat(), 자르기최신, 뒤) ?: emptyList())
-                }
-            },
-        ) { 몸그림(단계, 색표, 자르기, Modifier.fillMaxSize()) }
-    }
+    근육두장(v.근육, d.설정.색표, 누름)
 }
 
 /** 세부 부위 조각의 누르는 영역 — 그림 좌표 × 10 (Region 은 정수). 부위 = 조각의 근육 + 그 조각이 대신 그리는 세부 부위 */
@@ -500,11 +473,12 @@ private val 누름영역: List<Triple<Boolean, List<String>, Region>> by lazy {
 }
 
 /** 누른 자리(칸 px) → 그 조각의 세부 부위들(첫째 = 조각의 근육). 몸그림과 같은 맞춤(가운데 · 비율 유지 · `근육계산.그림좌표`) */
-private fun 그림누른부위(x: Float, y: Float, w: Float, h: Float, 자르기: FloatArray, 뒤: Boolean): List<String>? {
+internal fun 그림누른부위(x: Float, y: Float, w: Float, h: Float, 자르기: FloatArray, 뒤: Boolean?): List<String>? {
     val (gx, gy) = 근육계산.그림좌표(x, y, w, h, 자르기) ?: return null
     val ix = (gx * 10f).toInt()
     val iy = (gy * 10f).toInt()
-    return 누름영역.lastOrNull { it.first == 뒤 && it.third.contains(ix, iy) }?.second
+    // 10-09 홍겸 님: [뒤] null = 앞 · 뒤 둘 다 (전신 한 칸 — MuscleCards.kt). 앞 · 뒤 조각은 서로 다른 자리라 겹치지 않는다
+    return 누름영역.lastOrNull { (뒤 == null || it.first == 뒤) && it.third.contains(ix, iy) }?.second
 }
 
 // ═════════════════════ 순수 계산 (시험: test/…/ui/ExerciseTest.kt) ═════════════════════

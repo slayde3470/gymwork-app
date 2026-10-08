@@ -131,12 +131,14 @@ class PortTest {
             업적순서 = listOf("1-2", "1-1"),
             업적숨김 = setOf("1-2"),
             인증샷 = listOf(인증사진("c1.jpg", 300L, 0L), 인증사진("c0.jpg", 100L, 200L)),
+            그날운동 = listOf(루틴("날2026-10-12", "벤치프레스 · 풀업", 종목 = listOf(루틴종목("벤치프레스"), 루틴종목("풀업")))),   // 10-09
         )
         val 글 = 저장소.글로(d)
         assertTrue(글.contains("\"스키마\": 15"))
         val e = 저장소.글에서(글)
         assertEquals(d.종목표, e.종목표)
         assertEquals(d.루틴들, e.루틴들)
+        assertEquals(d.그날운동, e.그날운동)
         assertEquals(d.기록, e.기록)
         assertEquals(d.세션, e.세션)
         assertEquals(d.설정, e.설정)
