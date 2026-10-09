@@ -387,7 +387,7 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
                     Modifier.graphicsLayer {
                         translationX = 밀기.value * size.width * 움직임.달밀기
                         alpha = 1f - abs(밀기.value) * 움직임.달흐림
-                    }.padding(start = 간격.아주좁게, end = 간격.아주좁게, top = 간격.아주좁게, bottom = 간격.아주좁게),
+                    }.padding(start = 간격.보통, end = 간격.보통, top = 간격.아주좁게, bottom = 간격.아주좁게),   // 10-09: 좌우 12 (띠와 같은 선)
                 ) {
                     요일줄()
                     달력(d, 오늘, 보는달, 고른날, Modifier.번호("캘2"),
@@ -478,7 +478,9 @@ private object 캘지움띠 { val 목록 = mutableListOf<캘지움값>() }
 private fun 년월띠(달: YearMonth, 이전: () -> Unit, 다음: () -> Unit, 달고르기: () -> Unit) {
     val c = Local색.current
     Box(
-        Modifier.fillMaxWidth().heightIn(min = 높이.보통).background(c.강조)
+        // 10-09 홍겸 님: 띠도 좌우 여백 12 · 모서리 8 (운동 보고서처럼)
+        Modifier.padding(start = 간격.보통, end = 간격.보통, top = 간격.보통).fillMaxWidth().heightIn(min = 높이.보통)
+            .clip(RoundedCornerShape(모서리.작게)).background(c.강조)
             .padding(horizontal = 간격.보통, vertical = 부품치수.띠세로여백).번호("캘0"),
     ) {
         Row(Modifier.align(Alignment.Center), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
@@ -643,7 +645,8 @@ private fun 날판(
     Column(modifier.fillMaxWidth().번호("캘1")) {
         // ── 띠 — 오른쪽 끝: 다른 달을 볼 때만 [오늘] (10-08: [변경] · [루틴 넣기] 는 없앴다 — 아래 단추 줄이 한다) ──
         Row(
-            Modifier.fillMaxWidth().heightIn(min = 높이.보통).background(c.강조).padding(horizontal = 간격.보통, vertical = 부품치수.띠세로여백),
+            Modifier.padding(horizontal = 간격.보통).fillMaxWidth().heightIn(min = 높이.보통)   // 10-09: 좌우 여백 12 · 모서리 8
+                .clip(RoundedCornerShape(모서리.작게)).background(c.강조).padding(horizontal = 간격.보통, vertical = 부품치수.띠세로여백),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.좁게),
         ) {
             띠글("${캘날글(k)} (${캘요일글(k)})${if (k == 오늘) " · 오늘" else ""}", Modifier.weight(1f))

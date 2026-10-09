@@ -140,12 +140,14 @@ import kotlin.math.roundToInt
  * 강조 바탕 · 강조글 · 높이 40 이상 · 여백 6/12 · 18 굵게 (11 지침 U4-8).
  * [회색] = 설정 화면 띠 (시안 `.띠.설정띠` — 바탕 = 선 색, 글 = 글 색).
  * [왼쪽] · [오른쪽] 은 띠 양끝에 붙는 단추 자리 (띠칩 · 아이콘버튼). 글은 언제나 띠 한가운데
+ * 10-09 홍겸 님: 운동 보고서처럼 띠도 화면 양끝까지 닿지 않는다 — 좌우 12(아래 상자들과 같은 선) · 위 [위여백] · 모서리 8 (U3-2)
  */
 @Composable
 fun 머리띠(
     제목: String,
     modifier: Modifier = Modifier,
     회색: Boolean = false,
+    위여백: Dp = 간격.보통,
     왼쪽: (@Composable RowScope.() -> Unit)? = null,
     오른쪽: (@Composable RowScope.() -> Unit)? = null,
 ) {
@@ -153,8 +155,10 @@ fun 머리띠(
     val 글색 = if (회색) c.글 else c.강조글
     Box(
         modifier
+            .padding(start = 간격.보통, end = 간격.보통, top = 위여백)
             .fillMaxWidth()
             .heightIn(min = 높이.보통)
+            .clip(RoundedCornerShape(모서리.작게))
             .background(if (회색) c.선 else c.강조)
             .padding(horizontal = 간격.보통, vertical = 부품치수.띠세로여백),
         contentAlignment = Alignment.Center,

@@ -63,6 +63,9 @@ import com.slayde.hasenheide.data.스탯표
 import com.slayde.hasenheide.ui.theme.Local색
 import com.slayde.hasenheide.ui.theme.크기
 import com.slayde.hasenheide.ui.theme.간격
+import com.slayde.hasenheide.ui.theme.모서리
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import com.slayde.hasenheide.ui.theme.글꼴
 import com.slayde.hasenheide.ui.theme.부품치수
 import com.slayde.hasenheide.ui.theme.선굵기
@@ -397,7 +400,9 @@ private fun 운동중띠(S: com.slayde.hasenheide.data.운동세션, 돌아가�
     val h = S.휴식
     val 곁 = if (h != null && !h.물음) "휴식 ${분초(h.남은초(지금))}" else 시분초(S.흐른초(지금))
     Row(
-        Modifier.fillMaxWidth().background(c.강조).눌림(돌아가기).padding(horizontal = 16.dp, vertical = 8.dp),
+        // 10-09 홍겸 님: 띠도 좌우 여백 12 · 모서리 8
+        Modifier.padding(start = 간격.보통, end = 간격.보통, bottom = 간격.아주좁게).fillMaxWidth()
+            .clip(RoundedCornerShape(모서리.작게)).background(c.강조).눌림(돌아가기).padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         글("운동 중 · ${S.루틴이름} · $곁", Modifier.weight(1f), 크기값 = 크기.버튼, 색 = c.강조글, 굵기 = FontWeight.Bold)

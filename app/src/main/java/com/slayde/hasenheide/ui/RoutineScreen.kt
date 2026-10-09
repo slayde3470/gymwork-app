@@ -658,7 +658,9 @@ private fun 루틴상세띠(
     val 초점 = LocalFocusManager.current
     val 칸초점 = remember { FocusRequester() }
     Row(
-        Modifier.fillMaxWidth().heightIn(min = 높이.보통).background(c.강조)
+        // 10-09 홍겸 님: 띠도 좌우 여백 12 · 모서리 8 · 위 「루틴」 띠와 8 띄움
+        Modifier.padding(start = 간격.보통, end = 간격.보통, top = 간격.좁게).fillMaxWidth().heightIn(min = 높이.보통)
+            .clip(RoundedCornerShape(모서리.작게)).background(c.강조)
             .padding(horizontal = 간격.보통, vertical = 부품치수.띠세로여백),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(간격.좁게),

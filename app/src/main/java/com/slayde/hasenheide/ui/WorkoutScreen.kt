@@ -355,7 +355,9 @@ private fun 운머리(상태: 앱상태, S: 운동세션, 본: Int, e: 세션종
     val 총볼 = S.종목들.sumOf { 볼륨(it.찬것()) }
     val 총목 = S.종목들.sumOf { x -> 볼륨((0 until x.총칸()).map { S.세트값(x, it) }) }
     Column(
-        Modifier.fillMaxWidth().background(c.강조).번호("운0")
+        // 10-09 홍겸 님: 띠도 좌우 여백 12 · 모서리 8 (운동 보고서처럼)
+        Modifier.padding(start = 간격.보통, end = 간격.보통, top = 간격.보통).fillMaxWidth()
+            .clip(RoundedCornerShape(모서리.작게)).background(c.강조).번호("운0")
             .padding(horizontal = 간격.보통, vertical = 부품치수.띠세로여백),
     ) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
