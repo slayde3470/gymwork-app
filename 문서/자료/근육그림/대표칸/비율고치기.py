@@ -4,6 +4,7 @@ from scipy import ndimage
 HEAD_W, HEAD_H = 0.95, 0.95*0.90
 SH, WA, HIP = 1.05, 0.95, 1.06
 DIP = 0.07
+MED = 0.09
 TOP, CHIN, C, BODY0 = 31, 225, 384, 200
 HX0, HX1 = 300, 469
 def segs(row):
@@ -19,7 +20,7 @@ def lerp(y,y0,y1,a,b):
     if y>=y1: return b
     return a+(b-a)*(y-y0)/(y1-y0)
 def torso_f(y):
-    return torso_base(y)*(1+DIP*np.exp(-((y-720)/55.0)**2))
+    return torso_base(y)*(1+DIP*np.exp(-((y-720)/55.0)**2)+MED*np.exp(-((y-662)/28.0)**2))
 def torso_base(y):
     if y<260: return lerp(y,BODY0,260,HEAD_W,1.0)
     if y<499: return lerp(y,260,300,1.0,SH)
