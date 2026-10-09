@@ -133,7 +133,8 @@ object 떠있는동그라미 {
                 c.drawArc(고리칸, 0f, 360f, false, 붓)
                 붓.alpha = 255
                 val 비 = if (v.쉼총초 > 0) (남.toFloat() / v.쉼총초).coerceIn(0f, 1f) else 1f
-                c.drawArc(고리칸, -90f, 360f * 비, false, 붓)
+                // 10-09 홍겸 님: 시계 방향으로 줄어든다 — 끝은 12시에 두고 시작점이 시계 방향으로 따라간다
+                c.drawArc(고리칸, -90f + 360f * (1f - 비), 360f * 비, false, 붓)
                 val 글 = "%d:%02d".format(남 / 60, 남 % 60)
                 c.drawText(글, cx, cy - (글붓.descent() + 글붓.ascent()) / 2, 글붓)
                 c.restore()
@@ -183,10 +184,10 @@ object 떠있는동그라미 {
 
 /** 떠 있는 동그라미 치수 (dp · ms) [11_UI지침에 올릴 값] */
 private object 동그라미치수 {
-    const val 칸 = 72f        // 창 크기 (퍼지는 고리 자리 포함)
-    const val 반지름 = 26f    // 동그라미
+    const val 칸 = 83f        // 창 크기 (퍼지는 고리 자리 포함) · 10-09 홍겸 님 15% 키움 (72 →)
+    const val 반지름 = 30f    // 동그라미 · 10-09 15% 키움 (26 →)
     const val 고리 = 3f       // 고리 굵기
-    const val 글 = 15f        // 남은 시간 글자 (sp 처럼 쓴다)
+    const val 글 = 17f        // 남은 시간 글자 (sp 처럼 쓴다) · 10-09 15% 키움 (15 →)
     const val 옆 = 12f        // 처음 자리 — 오른쪽에서
     const val 처음위 = 160f   // 처음 자리 — 위에서
     const val 한바퀴 = 1600L  // 퍼지는 고리 한 번
