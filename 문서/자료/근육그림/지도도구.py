@@ -6,6 +6,8 @@
 쓰는 법 (이 파일이 있는 폴더에서):
   python3 지도도구.py 색표                 근육 나무(muscle-catalog.json) → 색표.json 만들기 (근육이 늘면 다시)
   python3 지도도구.py 그리기 [이름…]       경계/이름.json → 지도/이름.png + 확인/이름.jpg (이름 없으면 전부)
+  python3 지도도구.py 가져오기 이름 파일   손질 도구에서 저장한 지도(.png 또는 png 가 든 .json)를 검사해 손질/이름.png 로 들이고 다시 그림
+                                          손질/ 에 판이 있으면 그리기는 경계 대신 그 판을 지도로 쓴다
   python3 지도도구.py 정리                 경계 파일을 한 조각 = 한 줄로 다시 씀
   python3 지도도구.py 검사 지도.png 그림.png [출력.png]
                                           다른 데서 칠해 온 지도를 검사하고 겹쳐 본다
@@ -20,6 +22,7 @@
   - 몸 바깥(투명한 곳)은 자동으로 잘린다 → 몸 윤곽 쪽 점은 대충 밖으로 넉넉히 찍어도 된다
   - "쪽": "L" = 사람의 왼쪽(앞모습에서는 그림 오른쪽, 뒷모습에서는 그림 왼쪽), "R" = 사람의 오른쪽. 확대 그림은 쓰지 않는다
   - "양쪽": true + 맨 위 "축": x → 그 세로축으로 거울 조각을 한 벌 더 만든다(쪽 L ↔ R). 좌우가 다르면 따로 적는다
+  - 맨 위 "붙이기": px → 경계를 그림의 근육 사이 골로 옮길 때 살펴보는 폭(기본 = 그림 너비 ÷ 80, 0 = 안 함)
   - "짐작": "까닭" 을 적으면 그리기 결과와 설명.md 의 '짐작한 곳'에 모인다
 """
 import sys, os, json, colorsys, glob
@@ -212,6 +215,58 @@ def 검사(mapimg, body, colors):
                   for v, c in zip(vals, cnt) if "#%06x" % v in colors}
 
 
+def 붙이기(lab, rgba, body, band):
+    """경계를 그림의 근육 사이 골(어두운 홈)로 옮긴다.
+    ① 칸마다 경계에서 band px 안쪽만 '확실한 곳'으로 남기고 ② 경계 띠는 골이 높은 지형으로 보고
+    물 채우기(watershed)로 다시 나눈다 → 경계가 가까운 골을 따라간다. 골이 없는 곳은 원래 자리 근처에 남는다.
+    근육 아닌 곳(머리 · 손 · 무릎 …)도 한 칸으로 같이 나눈다."""
+    from skimage.segmentation import watershed
+    L = cv2.cvtColor(rgba[..., :3], cv2.COLOR_RGB2GRAY).astype(np.float32)
+    L = np.where(body, L, L[body].mean())
+    L = cv2.GaussianBlur(L, (0, 0), 2.0)                          # 피부 잔결은 지운다
+    k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (15, 15))
+    crease = cv2.morphologyEx(L, cv2.MORPH_BLACKHAT, k)          # 좁고 어두운 골일수록 큼
+    crease = np.clip(crease / (np.percentile(crease[body], 99) + 1e-6), 0, 1)
+    # 원래 경계 가까이를 조금 높여 둔다 → 뚜렷한 골이 없으면 원래 자리에 남는다
+    edge = np.zeros(lab.shape, np.uint8)
+    edge[:, 1:] |= (lab[:, 1:] != lab[:, :-1])
+    edge[1:, :] |= (lab[1:, :] != lab[:-1, :])
+    d = cv2.distanceTransform(1 - edge, cv2.DIST_L2, 5)
+    elev = crease + 0.35 * np.exp(-(d / (band * 0.6)) ** 2)
+    work = np.where(body, lab, -1).astype(np.int32) + 1          # 0 = 몸 밖, 1 = 근육 아님, 2… = 근육
+    markers = np.zeros_like(work)
+    for v in np.unique(work):
+        if v == 0:
+            continue
+        m = (work == v).astype(np.uint8)
+        n, cc = cv2.connectedComponents(m)
+        for c in range(1, n):                                     # 조각마다 따로 줄인다(얇은 조각도 살게)
+            piece = (cc == c).astype(np.uint8)
+            if v == 1 and piece.sum() < 0.002 * body.sum():
+                continue                                          # 조각 사이 작은 틈은 '근육 아님'으로 치지 않는다
+            for r in (band, band // 2, 2):
+                e = cv2.erode(piece, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * r + 1, 2 * r + 1)))
+                if e.any():
+                    break
+            if not e.any():
+                dt = cv2.distanceTransform(piece, cv2.DIST_L2, 5)
+                e = (dt == dt.max()).astype(np.uint8) * piece
+            markers[e > 0] = v
+    out = watershed(elev, markers, mask=body)
+    # 들쭉날쭉한 계단을 한 번 고르게(칸별 흐림 → 가장 큰 칸)
+    vals = [v for v in np.unique(out) if v > 0]
+    best = np.full(out.shape, -1.0, np.float32)
+    res = out.copy()
+    for v in vals:
+        p = cv2.GaussianBlur((out == v).astype(np.float32), (0, 0), 1.6)
+        upd = p > best
+        res[upd] = v
+        best[upd] = p[upd]
+    res = np.where(markers > 0, markers, res)                 # 확실한 곳은 그대로(얇은 칸이 지워지지 않게)
+    res = np.where(body, res, 0)
+    return res - 1                                                # 원래 번호로(−1 = 몸 밖, 0 = 근육 아님)
+
+
 def 그리기(names):
     colors, by_key = 색표읽기()
     os.makedirs(os.path.join(HERE, "지도"), exist_ok=True)
@@ -225,7 +280,16 @@ def 그리기(names):
         rgba = np.array(Image.open(os.path.join(HERE, spec["그림"])).convert("RGBA"))
         body = 몸마스크(rgba)
         lab, keys, errs = 라벨맵(spec, body.shape, by_key)
-        mapimg = 지도저장(lab, keys, by_key, body, os.path.join(HERE, "지도", name + ".png"))
+        band = spec.get("붙이기", round(body.shape[1] / 80))   # 0 이면 붙이지 않음
+        if band:
+            lab = np.maximum(붙이기(lab, rgba, body, band), 0)
+        hand = os.path.join(HERE, "손질", name + ".png")
+        if os.path.exists(hand):                     # 손으로 고친 판이 있으면 그것이 지도다
+            mapimg = np.array(Image.open(hand).convert("RGBA"))
+            Image.fromarray(mapimg).save(os.path.join(HERE, "지도", name + ".png"), optimize=True)
+            errs.append("손질/ 의 손으로 고친 판을 씀 (경계 파일은 쓰지 않음)")
+        else:
+            mapimg = 지도저장(lab, keys, by_key, body, os.path.join(HERE, "지도", name + ".png"))
         msgs, counts = 검사(mapimg, body, colors)
         guesses = [f"{p['근육']}{'(양쪽)' if p.get('양쪽') else SIDE_KO[p.get('쪽', '')]}: {p['짐작']}" for p in spec["조각"] if p.get("짐작")]
         # 좌우 그림인데 쪽이 빠진 조각 / 확대 그림인데 쪽을 쓴 조각
@@ -251,6 +315,31 @@ def 경계저장(spec, path):
     open(path, "w", encoding="utf-8").write("\n".join(lines) + "\n")
 
 
+def 가져오기(name, src):
+    """손질 도구에서 저장한 지도(PNG 파일, 또는 png 데이터 주소가 든 JSON)를 손질/이름.png 로 들인다."""
+    import base64, io
+    if src.endswith(".json"):
+        d = json.load(open(src, encoding="utf-8"))
+        d = d.get("data", d)
+        raw = base64.b64decode(d["png"].split(",", 1)[1])
+        im = Image.open(io.BytesIO(raw))
+    else:
+        im = Image.open(src)
+    mapimg = np.array(im.convert("RGBA"))
+    spec = json.load(open(os.path.join(HERE, "경계", name + ".json"), encoding="utf-8"))
+    rgba = np.array(Image.open(os.path.join(HERE, spec["그림"])).convert("RGBA"))
+    if mapimg.shape != rgba.shape:
+        sys.exit(f"⚠ 크기가 다름 — 들이지 않음")
+    colors, _ = 색표읽기()
+    msgs, counts = 검사(mapimg, 몸마스크(rgba), colors)
+    if any(m.startswith("⚠") for m in msgs):
+        sys.exit("\n".join(msgs) + "\n⚠ 들이지 않음")
+    os.makedirs(os.path.join(HERE, "손질"), exist_ok=True)
+    Image.fromarray(mapimg).save(os.path.join(HERE, "손질", name + ".png"), optimize=True)
+    print(f"손질/{name}.png 들임 — 근육 {len(counts)}칸")
+    그리기([name])
+
+
 def 검사명령(map_path, img_path, out_path=None):
     colors, _ = 색표읽기()
     mapimg = np.array(Image.open(map_path).convert("RGBA"))
@@ -271,6 +360,8 @@ if __name__ == "__main__":
         색표만들기()
     elif cmd == "그리기":
         그리기(sys.argv[2:])
+    elif cmd == "가져오기" and len(sys.argv) >= 4:
+        가져오기(sys.argv[2], sys.argv[3])
     elif cmd == "정리":
         for f in sys.argv[2:] or sorted(glob.glob(os.path.join(HERE, "경계", "*.json"))):
             경계저장(json.load(open(f, encoding="utf-8")), f)
