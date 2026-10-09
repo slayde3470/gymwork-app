@@ -27,12 +27,14 @@ jobs:
         continue-on-error: true
         run: |
           set -o pipefail
-          # 찍을 화면 — app/src/test/찍을것.txt 한 줄 (예: Shot_s16* · 비우면 전부). 계산 시험(*Test)도 같은 판에 돈다
+          # 찍을 화면 — app/src/test/찍을것.txt 줄마다 하나 (예: Shot_s16* · 비우면 전부). 계산 시험(*Test)도 같은 판에 돈다
           # 10-09: 주석 · 빈 줄만 있으면 grep 이 '실패'로 끝나 이 단계가 0초에 멈추던 것 → || true (그래야 아래 줄이 '전부'로 바꾼다)
-          PICK=$(grep -v -e '^#' -e '^[[:space:]]*$' app/src/test/찍을것.txt 2>/dev/null | tr -d ' \r' | head -1 || true)
-          [ -z "$PICK" ] && PICK='Shot_*'
-          echo "찍을 것: $PICK"
-          gradle testDebugUnitTest --tests '*Test' --tests "com.slayde.hasenheide.ui.$PICK" --no-daemon --stacktrace 2>&1 | tee 로그.txt
+          # 10-09: 여러 줄이면 줄마다 하나씩 (전에는 첫 줄만 찍었다)
+          PICKS=$(grep -v -e '^#' -e '^[[:space:]]*$' app/src/test/찍을것.txt 2>/dev/null | tr -d ' \r' || true)
+          [ -z "$PICKS" ] && PICKS='Shot_*'
+          echo "찍을 것: $PICKS"
+          ARGS=""; for P in $PICKS; do ARGS="$ARGS --tests com.slayde.hasenheide.ui.$P"; done
+          gradle testDebugUnitTest --tests '*Test' $ARGS --no-daemon --stacktrace 2>&1 | tee 로그.txt
       - name: 올리기
         run: |
           mkdir -p app/screens
