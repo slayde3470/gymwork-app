@@ -28,7 +28,8 @@ jobs:
         run: |
           set -o pipefail
           # 찍을 화면 — app/src/test/찍을것.txt 한 줄 (예: Shot_s16* · 비우면 전부). 계산 시험(*Test)도 같은 판에 돈다
-          PICK=$(grep -v '^#' app/src/test/찍을것.txt 2>/dev/null | tr -d ' \r' | head -1)
+          # 10-09: 주석 · 빈 줄만 있으면 grep 이 '실패'로 끝나 이 단계가 0초에 멈추던 것 → || true (그래야 아래 줄이 '전부'로 바꾼다)
+          PICK=$(grep -v -e '^#' -e '^[[:space:]]*$' app/src/test/찍을것.txt 2>/dev/null | tr -d ' \r' | head -1 || true)
           [ -z "$PICK" ] && PICK='Shot_*'
           echo "찍을 것: $PICK"
           gradle testDebugUnitTest --tests '*Test' --tests "com.slayde.hasenheide.ui.$PICK" --no-daemon --stacktrace 2>&1 | tee 로그.txt
