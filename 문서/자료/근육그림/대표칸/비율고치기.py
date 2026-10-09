@@ -19,8 +19,9 @@ def lerp(y,y0,y1,a,b):
     if y<=y0: return a
     if y>=y1: return b
     return a+(b-a)*(y-y0)/(y1-y0)
+EXTRA={}
 def torso_f(y):
-    return torso_base(y)*(1+DIP*np.exp(-((y-720)/55.0)**2)+MED*np.exp(-((y-662)/28.0)**2))
+    return EXTRA.get(y,1.0)*torso_base(y)*(1+DIP*np.exp(-((y-720)/55.0)**2)+MED*np.exp(-((y-662)/28.0)**2))
 def torso_base(y):
     if y<260: return lerp(y,BODY0,260,HEAD_W,1.0)
     if y<499: return lerp(y,260,300,1.0,SH)
@@ -29,7 +30,9 @@ def torso_base(y):
     if y<740: return lerp(y,650,740,WA,HIP)
     if y<780: return HIP
     return lerp(y,780,850,HIP,1.0)
-def run(src,dst):
+def run(src,dst,extra=None):
+    global EXTRA
+    EXTRA=extra or {}
     im=Image.open(src).convert('RGB'); a=np.asarray(im).astype(float)
     m=ndimage.binary_fill_holes(np.asarray(im.convert('L'))<240)
     H,W=m.shape; out=np.full_like(a,255.0); xs=np.arange(W)
