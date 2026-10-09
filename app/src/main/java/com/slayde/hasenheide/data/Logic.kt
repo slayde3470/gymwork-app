@@ -207,17 +207,46 @@ internal fun 그날운동이름(r: 루틴): String = r.종목.map { it.이름 }.
 fun 앱데이터.그날운동바꿈(날: String, 오늘: String, f: (루틴) -> 루틴): 앱데이터 {
     if (날 < 오늘 || 기록.containsKey(날)) return this
     val id = 그날운동id(날)
-    val 옛 = 그날운동(날) ?: 루틴(id, "")   // 예정이 다른 루틴이면 새로 (지난번 것을 되살리지 않는다)
+    // 예정이 다른 루틴이면 새로 (지난번 것을 되살리지 않는다) — 그때 그 날 예정을 기억해 둔다 (다 빼면 되돌린다 · 10-09 감시관)
+    val 옛 = 그날운동(날) ?: 루틴(id, "", 원래예정 = 예정[날] ?: "", 원래고정 = 예정고정[날])
     val 새 = f(옛).let { it.copy(이름 = 그날운동이름(it), 휴식일 = false, 자동생성 = false) }
     val 남 = 그날운동.filter { it.id != id }
-    if (새.종목.isEmpty()) return copy(그날운동 = 남).let { if (it.예정[날] == id) it.예정지우기(날, 오늘) else it }
+    if (새.종목.isEmpty()) return copy(그날운동 = 남).let { if (it.예정[날] == id) it.그날예정되돌림(날, 새) else it }
     return copy(그날운동 = 남 + 새).그날만바꾸기(id, 날, 오늘)
+}
+
+/** 그 날 운동을 다 빼면 그 날은 종목을 넣기 전 예정으로 돌아간다 (기억해 둔 [루틴.원래예정] · 그 루틴이 지워졌으면 빈 날) — 다른 날은 건드리지 않는다 (10-09 감시관) */
+private fun 앱데이터.그날예정되돌림(날: String, r: 루틴): 앱데이터 {
+    val 원래 = r.원래예정?.takeIf { it.isNotEmpty() && 루틴(it) != null }
+    val 고정 = r.원래고정
+    return copy(
+        예정 = if (원래 != null) 예정 + (날 to 원래) else 예정 - 날,
+        예정고정 = if (고정 != null) 예정고정 + (날 to 고정) else 예정고정 - 날,
+    )
+}
+
+/**
+ * 루틴 줄을 고치는 일(종목 이름 바꾸기 · 지우기 · 카테고리 지우기 · 플랜 이름 바꾸기 · 지우기)을 그 날 운동에도 똑같이 (10-09 감시관).
+ * 종목이 하나도 안 남은 그 날 운동은 치우고 그 날 예정도 푼다(다음 예정맞추기가 다시 깐다)
+ */
+internal fun 앱데이터.그날운동도(f: (루틴) -> 루틴): 앱데이터 {
+    if (그날운동.isEmpty()) return this
+    val 고친 = 그날운동.map { r -> f(r).let { it.copy(이름 = 그날운동이름(it)) } }
+    val 빈 = 고친.filter { it.종목.isEmpty() }
+    if (빈.isEmpty()) return copy(그날운동 = 고친)
+    // 빈 것: 그 날 예정은 넣기 전으로 되돌리고, 하고 있는 운동 · 기록이 쓰는 것은 남긴다(계획 세트 수 · 10-09 감시관)
+    val 쓴 = 기록.values.map { it.루틴id }.toSet() + listOfNotNull(세션?.루틴id, 결과?.루틴id)
+    var d = copy(그날운동 = 고친.filter { it.종목.isNotEmpty() || it.id in 쓴 })
+    빈.forEach { r -> val 날 = r.id.removePrefix("날"); if (d.예정[날] == r.id) d = d.그날예정되돌림(날, r) }
+    return d
 }
 
 /** 지난 날의 그 날 운동을 치운다 (기록에는 이름이 남는다). 하고 있는 운동 · 보여 줄 결과가 쓰는 것은 둔다 */
 private fun 앱데이터.그날운동치움(오늘: String): 앱데이터 {
     if (그날운동.isEmpty()) return this
-    val 남 = 그날운동.filter { it.id.removePrefix("날") >= 오늘 || it.id == 세션?.루틴id || it.id == 결과?.루틴id }
+    // 기록이 있는 날 것은 남긴다 — 기록 보기의 '3/5세트' 계획 수가 이것을 본다 (10-09 감시관)
+    val 쓴 = 기록.values.map { it.루틴id }.toSet()
+    val 남 = 그날운동.filter { it.id.removePrefix("날") >= 오늘 || it.id == 세션?.루틴id || it.id == 결과?.루틴id || it.id in 쓴 }
     return if (남.size == 그날운동.size) this else copy(그날운동 = 남)
 }
 
@@ -969,7 +998,7 @@ fun 앱데이터.카테고리지우기(p: String): 앱데이터 {
         카테고리 = 카테고리 - p,
         종목표 = 종목표.filter { it.부위 != p },
         루틴들 = 루틴들.map { r -> r.copy(종목 = r.종목.filter { it.이름 !in 이름들 }) },
-    )
+    ).그날운동도 { r -> r.copy(종목 = r.종목.filter { it.이름 !in 이름들 }) }
 }
 
 // ─────────────── 루틴 편집 ───────────────
