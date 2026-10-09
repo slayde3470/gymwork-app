@@ -119,11 +119,10 @@ class ExerciseTest {
         assertTrue(v.고름)
         assertTrue("P" in v.근육.values)
         assertTrue(v.근육.values.all { it == "P" || it == "Y" })   // 보조 S 는 Y 로
-        // 사전 칸 '맨몸' 은 앱 카테고리에 없다 → 비움 → 저장하려면 골라야
+        // 10-09 홍겸 님: 사전 칸 '맨몸' 은 앱 카테고리로 (종목사전.앱칸) — 크런치 = 복근
         val 크런치 = d.새초기().사전고름(d, "크런치")
-        assertNull(크런치.칸)
-        assertEquals("반드시 카테고리를 지정해야 합니다", d.저장검사(크런치))
-        assertNull(d.저장검사(크런치.칸고름("복근")))   // 크런치는 사전 근육(복근 주동)이 있다
+        assertEquals("복근", 크런치.칸)
+        assertNull(d.저장검사(크런치))
     }
 
     @Test fun 새_손으로고른칸은사전이비우지않음() {
@@ -286,8 +285,8 @@ class ExerciseTest {
         assertEquals("가슴", 종목사전.이름으로("팔굽혀펴기")?.칸)
         assertEquals("가슴", d.새초기().사전고름(d, "팔굽혀펴기").칸)
         assertEquals("가슴", d.새초기().copy(이름 = "푸쉬업", 찾는중 = true).확인(d).first.칸)
-        assertEquals("맨몸", 종목사전.이름으로("맨몸 스쿼트")?.칸)      // 다른 맨몸 종목은 그대로
-        assertNull(d.새초기().사전고름(d, "맨몸 스쿼트").칸)
+        assertEquals("맨몸", 종목사전.이름으로("맨몸 스쿼트")?.칸)      // 사전 칸은 그대로
+        assertEquals("하체", d.새초기().사전고름(d, "맨몸 스쿼트").칸)   // 10-09: 앱 카테고리로
     }
 
     @Test fun 새_근육두줄() {
