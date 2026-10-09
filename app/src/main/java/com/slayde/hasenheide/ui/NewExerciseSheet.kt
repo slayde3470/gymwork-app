@@ -226,7 +226,7 @@ fun 새종목시트(
                     ) {
                         글(x.이름, Modifier.weight(1f), 굵기 = FontWeight.Bold, 색 = if (있) c.옅음 else c.글)
                         Box(Modifier.width(간격.좁게))
-                        글(if (있) "이미 있음" else x.칸, 크기값 = 크기.작게, 색 = c.옅음)
+                        글(if (있) "이미 있음" else 종목사전.앱칸(x), 크기값 = 크기.작게, 색 = c.옅음)
                     }
                     구분선()
                 }
@@ -257,7 +257,7 @@ fun 새종목시트(
             Box(Modifier.height(간격.보통))
             버튼("저장", { 저장하기() }, Modifier.fillMaxWidth(), 주요 = true)
             // 10-06 홍겸 님: 그림 어디를 눌러도 같은 팝업 — 위 카테고리(지금 값 선택) · 아래 근육 목록 (고르면 바로 그림에 · [확인] · 바깥 · 뒤로가기로 닫힘)
-            if (v.팝 != null) 근육팝(v, { f -> v = f(v) }, { 상태.알림.토스트(it) }, d.카테고리)
+            if (v.팝 != null) 근육팝(v, { f -> v = f(v) }, d.설정.색표, d.카테고리)
         }
     }
 }
@@ -267,12 +267,14 @@ fun 새종목시트(
  * 위 = 카테고리 칩(그 종목의 지금 칸이 선택됨 · 새 종목이라 칸이 없으면 아무것도 선택 안 됨 · 고르면 그림이 그 칸으로 확대)
  * 아래 = 고를 수 있는 근육 목록 — 줄마다 [주동근][협응근][빼기] 중 하나(지금 값이 눌림). 누른 부위 줄 = 강조옅음 바탕 · 강조 굵은 글(빈 곳을 눌렀으면 없음).
  * 고르면 바로 그림에 반영되고 팝업은 그대로 — [확인] · 바깥 누름 · 뒤로가기로 닫힌다.
- * 이미 주동근인 부위의 [협응근]은 막힘(흐림 · 누르면 토스트).
+ * 10-09 홍겸 님: 이미 주동근인 부위의 [협응근] · 이미 협응근인 부위의 [주동근]은 **흐리게만** 보이고 누를 수 있다 — 누르면 그 역할로 옮겨 간다(한 부위는 한 역할만).
+ * 10-09 홍겸 님: 고르는 동안 근육 그림이 가려지지 않게 상자 **맨 위**에 근육 그림 2장을 두고(고르면 바로 칠이 바뀐다 · 그림을 눌러도 그 부위 줄로),
+ * 카테고리 칩 · 근육 목록 · [확인] 은 그 아래에 둔다.
  * 화면 전체를 덮는 투명한 막(바깥 = 닫힘, 시트까지 닫지 않는다) 위, 가운데에 상자를 둔다
  * 생김새: 큰 상자 = [카드](2 강조 테두리 · 모서리 16 · 안 여백 14) · 줄 32 · 칩 28 · [확인] 40 (카드 안 버튼 · U4-5)
  */
 @Composable
-internal fun 근육팝(v: 새종목값, 고침: ((새종목값) -> 새종목값) -> Unit, 토스트: (String) -> Unit, 카테고리: List<String>) {
+internal fun 근육팝(v: 새종목값, 고침: ((새종목값) -> 새종목값) -> Unit, 색표: String, 카테고리: List<String>) {
     val c = Local색.current
     val k = v.팝 ?: return
     // 목록 = 지금 묶음(누른 부위의 묶음 · 카테고리를 고르면 그 칸의 묶음) — 없으면 누른 부위의 묶음 · 첫 묶음
@@ -288,8 +290,13 @@ internal fun 근육팝(v: 새종목값, 고침: ((새종목값) -> 새종목값)
                 contentAlignment = Alignment.Center,
             ) {
                 카드(Modifier.눌림 { }) {   // 팝업 안 빈 곳 — 바깥 막으로 번지지 않게
-                    칩줄(카테고리, v.칸, { p -> 고침 { it.칸고름(p) } })
-                    Column(Modifier.padding(top = 간격.좁게).heightIn(max = 새시트치수.팝목록최대).verticalScroll(rememberScrollState())) {
+                    // 근육 그림 2장 (맨 위) — 아래에서 역할을 고르면 바로 칠이 바뀐다. 그림을 누르면 그 부위 줄이 강조된다 (빈 곳 = 강조 없음)
+                    근육두장(v.근육, 색표, { 키들 -> 고침 { cur -> if (키들.isEmpty()) cur.팝빈열기() else cur.팝열기(키들) } })
+                    Box(Modifier.padding(top = 간격.좁게)) {
+                        칩줄(카테고리, v.칸, { p -> 고침 { it.칸고름(p) } })
+                    }
+                    // 좁은 화면에서는 목록이 남는 자리만큼만 (weight · fill = false) — 그림이 위에 더해져도 [확인] 이 밀려나지 않는다
+                    Column(Modifier.padding(top = 간격.좁게).weight(1f, fill = false).heightIn(max = 새시트치수.팝목록최대).verticalScroll(rememberScrollState())) {
                         묶.second.forEach { p ->
                             key(p) {
                                 val 누른 = p == k
@@ -305,11 +312,7 @@ internal fun 근육팝(v: 새종목값, 고침: ((새종목값) -> 새종목값)
                                     글(근이름(p), Modifier.weight(1f), 색 = if (누른) c.강조 else c.글,
                                         굵기 = if (누른) FontWeight.Bold else FontWeight.Medium)
                                     팝역할들.forEach { (r, 이름) ->
-                                        val 막힘 = 팝막힘(v.근육, p, r)
-                                        팝칩(이름, 지금 == r, 막힘) {
-                                            if (막힘) 토스트(주동근막힘글)
-                                            else 고침 { it.팝역할(p, r) }
-                                        }
+                                        팝칩(이름, 지금 == r, 팝흐림(v.근육, p, r)) { 고침 { it.팝역할(p, r) } }   // 흐려도 누를 수 있다
                                     }
                                 }
                             }
@@ -322,14 +325,14 @@ internal fun 근육팝(v: 새종목값, 고침: ((새종목값) -> 새종목값)
     }
 }
 
-/** 팝업 칩 하나 — 칩줄과 같은 생김새(켬 = 강조 칠 · 끔 = 속선만 · 글 13 Medium)에 높이 28 · 최소 폭 56 · 막힘 흐림 */
+/** 팝업 칩 하나 — 칩줄과 같은 생김새(켬 = 강조 칠 · 끔 = 속선만 · 글 13 Medium)에 높이 28 · 최소 폭 56 · [흐림] 이면 옅게 (그래도 누를 수 있다) */
 @Composable
-private fun 팝칩(글자: String, 켬: Boolean, 막힘: Boolean, 누름: () -> Unit) {
+private fun 팝칩(글자: String, 켬: Boolean, 흐림: Boolean, 누름: () -> Unit) {
     val c = Local색.current
     val 바탕 = 색움직(if (켬) c.강조 else c.면, "팝칩")
     val 테두리 = 색움직(if (켬) c.강조 else c.속선, "팝칩테두리")
     Box(
-        Modifier.height(높이.아주낮게).widthIn(min = 근육팝치수.칩폭).alpha(if (막힘) 근육팝치수.막힘투명 else 1f)
+        Modifier.height(높이.아주낮게).widthIn(min = 근육팝치수.칩폭).alpha(if (흐림) 근육팝치수.막힘투명 else 1f)
             .clip(CircleShape).background(바탕).border(선굵기.보통, 테두리, CircleShape)
             .눌림(누름).padding(horizontal = 간격.좁게),
         contentAlignment = Alignment.Center,
@@ -490,8 +493,6 @@ internal val 새몸단계값 = mapOf("P" to 20.0, "Y" to 5.0)
 internal val 세트최대글 = "${종목세트최대}세트까지"
 /** 주동근 없이 [저장] 을 눌렀을 때 — 저장하지 않는다 (10-06 ⑪ 홍겸 님 문구 그대로 · v22 ⑩ 막음) */
 internal const val 근육설정안내 = "근육 사진을 눌러서 목표 근육을 설정하세요"
-/** 이미 주동근인 부위에 [협응근] (시안 v20 ⑤ 문구 그대로) */
-internal const val 주동근막힘글 = "이미 주동근으로 선택되어있습니다."
 /** 팝업이 떠 있지만 누른 근육 부위는 없다 (그림의 빈 곳을 눌렀다) — [새종목값.팝] 의 값 */
 internal const val 팝없음 = ""
 /** 팝업의 [빼기] 값 (근육 맵에 없음) */
@@ -567,7 +568,7 @@ internal fun 앱데이터.편집초기(t: 종목): 새종목값 {
 /** 사전 종목을 들인다 — 이름 · 칸(카테고리에 없으면 비움, 손으로 고른 칸은 둠) · 근육(P · Y 둘) (시안 `사전적용`) */
 internal fun 새종목값.사전적용(x: 사전종목, 카테고리: List<String>): 새종목값 {
     val n = copy(
-        이름 = x.이름, 칸 = if (x.칸 in 카테고리) x.칸 else if (칸직접) 칸 else null,
+        이름 = x.이름, 칸 = 종목사전.앱칸(x).let { k -> if (k in 카테고리) k else if (칸직접) 칸 else null },   // 10-09: 맨몸 → 앱 카테고리
         근육 = 종목사전.둘역할(종목사전.사전근육(x)), 사전 = x.이름, 정한 = x.이름, 팝 = null,
     )
     return n.copy(묶음 = n.기본묶음())
@@ -634,12 +635,16 @@ internal fun 새종목값.팝빈열기(): 새종목값 = copy(팝 = 팝없음)
 
 internal fun 새종목값.팝닫기(): 새종목값 = copy(팝 = null)
 
-/** 팝업의 [협응근] 이 막혔나 — 이미 주동근인 부위 */
-internal fun 팝막힘(m: Map<String, String>, 부위: String, 역할: String): Boolean = 역할 == "Y" && m[부위] == "P"
+/**
+ * 팝업 칩이 흐린가 (10-09 홍겸 님) — 그 부위에 이미 **다른** 역할이 있다: 주동근 부위의 [협응근] · 협응근 부위의 [주동근].
+ * 흐리게만 보이고 막지 않는다 — 누르면 그 역할로 옮겨 간다 ([팝역할]). 전에는 주동근 부위의 [협응근]이 막혀 있었다
+ */
+internal fun 팝흐림(m: Map<String, String>, 부위: String, 역할: String): Boolean =
+    (역할 == "Y" && m[부위] == "P") || (역할 == "P" && m[부위] == "Y")
 
-/** 팝업 칩 — 그 부위의 역할을 [역할](P · Y · [팝빼기]) 로. 막힌 것(주동근 → 협응근)은 그대로 */
+/** 팝업 칩 — 그 부위의 역할을 [역할](P · Y · [팝빼기]) 로. 한 부위는 한 역할만이라 다른 역할이 있으면 그것을 바꿔 넣는다 (주동 ↔ 협응) */
 internal fun 새종목값.팝역할(부위: String, 역할: String): 새종목값 {
-    if (부위 !in 종목사전.세부키 || 팝막힘(근육, 부위, 역할)) return this
+    if (부위 !in 종목사전.세부키) return this
     val m = LinkedHashMap(근육)
     if (역할 == "P" || 역할 == "Y") m[부위] = 역할 else m.remove(부위)
     return copy(근육 = m)

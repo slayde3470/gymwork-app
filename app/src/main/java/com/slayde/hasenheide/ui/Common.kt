@@ -852,15 +852,16 @@ fun 시트(
                         // 10-06 ⑨ (U4-8): 머리 = 띠 — 캘린더 년월 띠와 같은 값(강조 · 강조글 · 40 · 18 굵게) · 오른쪽 [닫기].
                         //  손잡이 막대는 띠 안 맨 위(위끝에서 4)에 얹는다 (시안 `.시트 .머리>.시트손잡이`). 띠는 속 위에 붙어 있다
                         // 10-08 홍겸 님: 손잡이를 내린 만큼(띠위더) 띠 위를 늘리고 제목도 그만큼 내린다
-                        Box(Modifier.fillMaxWidth().background(c.강조).padding(top = 부품치수.띠위더)) {
-                            머리띠(제목, 오른쪽 = {
+                        // 10-09 홍겸 님: 띠도 좌우 여백 12 (머리띠) — 손잡이 막대는 띠 위 판(면)에 둔다 (띠 없는 시트와 같은 자리)
+                        Column(Modifier.fillMaxWidth()) {
+                            Box(
+                                Modifier.padding(top = 부품치수.손잡이위, bottom = 간격.좁게).align(Alignment.CenterHorizontally)
+                                    .size(부품치수.손잡이폭, 부품치수.손잡이두께).clip(RoundedCornerShape(부품치수.손잡이모서리)).background(c.속선),
+                            )
+                            머리띠(제목, 위여백 = 0.dp, 오른쪽 = {
                                 if (닫기글 != null) 띠칩(닫기글, { 닫기() })   // U4-8 띠 위 단추 = 캘린더 스탯 칩 모양
                                 else 아이콘버튼(아이콘.닫기, "닫기", { 닫기() }, 칠함 = false, 색 = c.강조글, 크기칸 = 높이.낮게)
                             })
-                            Box(
-                                Modifier.align(Alignment.TopCenter).offset(y = -부품치수.띠위더).padding(top = 부품치수.손잡이위)
-                                    .size(부품치수.손잡이폭, 부품치수.손잡이두께).clip(RoundedCornerShape(부품치수.손잡이모서리)).background(c.속선),
-                            )
                         }
                     } else {
                         // 손잡이 막대 36 × 4 — 위끝에서 4. 막대 아래 8 을 더해 제목 줄은 전과 같은 자리(위 16)

@@ -79,6 +79,7 @@ object 저장소 {
         o.put("업적순서", JSONArray().also { a -> d.업적순서.forEach { a.put(it) } })
         o.put("업적숨김", JSONArray().also { a -> d.업적숨김.sorted().forEach { a.put(it) } })
         o.put("인증샷", JSONArray().also { a -> d.인증샷.forEach { x -> a.put(JSONArray().put(x.파일).put(x.때).put(x.고정)) } })
+        o.put("사전채움", d.사전채움)   // 10-09 — 옛 파일에는 없다 → 0 (앱을 켤 때 한 번 채운다)
         return o.toString(1)
     }
 
@@ -258,6 +259,7 @@ object 저장소 {
                 + 사전(o.optJSONObject("업적숨김")) { m, k -> m.optBoolean(k, false) }.filterValues { it }.keys,   // 시안 꼴 {번호: true} 도
             인증샷 = 목록(o.optJSONArray("인증샷")) { a, i -> a.optJSONArray(i)?.let { x -> 인증사진(x.optString(0, ""), x.optLong(1, 0L), x.optLong(2, 0L).coerceAtLeast(0L)) } }
                 .filterNotNull().filter { it.파일.isNotBlank() }.let { 인증순(it).take(인증최대) },
+            사전채움 = o.optInt("사전채움", 0).coerceAtLeast(0),
         ).플랜줄정리()   // 10-01: 지운 플랜의 줄 · 슈퍼세트로 묶인 플랜 줄을 풀어 둔다
     }
 

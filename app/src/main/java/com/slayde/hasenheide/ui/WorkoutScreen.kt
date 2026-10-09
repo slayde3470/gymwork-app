@@ -355,7 +355,9 @@ private fun 운머리(상태: 앱상태, S: 운동세션, 본: Int, e: 세션종
     val 총볼 = S.종목들.sumOf { 볼륨(it.찬것()) }
     val 총목 = S.종목들.sumOf { x -> 볼륨((0 until x.총칸()).map { S.세트값(x, it) }) }
     Column(
-        Modifier.fillMaxWidth().background(c.강조).번호("운0")
+        // 10-09 홍겸 님: 띠도 좌우 여백 12 · 모서리 8 (운동 보고서처럼)
+        Modifier.padding(start = 간격.보통, end = 간격.보통, top = 간격.보통).fillMaxWidth()
+            .clip(RoundedCornerShape(모서리.작게)).background(c.강조).번호("운0")
             .padding(horizontal = 간격.보통, vertical = 부품치수.띠세로여백),
     ) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
@@ -546,12 +548,14 @@ private fun 세트목록(
                 )
             }
             // 10-09 홍겸 님: [+ 세트] = 세트 줄들 바로 아래 줄, 세트 번호 동그라미 자리에 (번호 동그라미 × 0.95) 동그라미 + ＋
+            // 10-09 홍겸 님: [+ 세트] 를 다시 줄 가운데로
             Row(
                 Modifier.fillMaxWidth().padding(vertical = 간격.아주좁게 * 운치수.세트줄간격비)
                     .onPlaced { 자.단추아래 = it.positionInParent().y.roundToInt() + it.size.height },
                 verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
             ) {
-                Box(Modifier.width(폭[0]), contentAlignment = Alignment.Center) {
+                Box(contentAlignment = Alignment.Center) {
                     Box(
                         Modifier.size(운치수.번호 * 운치수.더동그라미비).clip(CircleShape)
                             .background(c.면).border(선굵기.굵게, c.강조, CircleShape)
@@ -1071,8 +1075,8 @@ private fun 단추줄(S: 운동세션, 본: Int, 이전: () -> Unit, 다음: () 
             }
             운단추(Modifier.width(폭[2]), onClick = 끝내기) {
                 Text(
-                    "오늘 운동\n끝내기", style = 글꼴.보통(크기.버튼, FontWeight.Bold), color = c.나쁨,
-                    textAlign = TextAlign.Center, maxLines = 2, softWrap = false,
+                    "운동 마치기", style = 글꼴.보통(크기.버튼, FontWeight.Bold), color = c.나쁨,   // 10-09 홍겸 님: '오늘 운동 끝내기' → '운동 마치기'
+                    textAlign = TextAlign.Center, maxLines = 2,
                 )
             }
             운단추(Modifier.width(폭[3]), 쓸수있음 = 본 < n - 1, 설명 = "다음 종목", onClick = 다음) {
@@ -1127,7 +1131,7 @@ private fun 빈운동(상태: 앱상태) {
         Column(Modifier.fillMaxSize().padding(간격.보통), verticalArrangement = Arrangement.spacedBy(간격.좁게)) {
             글("종목이 없습니다", 색 = c.흐림)
             버튼("종목 넣기", { 넣기열림 = true }, Modifier.fillMaxWidth(), 작게 = true)
-            버튼("오늘 운동 끝내기", { 상태.바꿈 { dd -> dd.세션?.let { dd.copy(세션 = it.끝냄(System.currentTimeMillis())) } ?: dd } },
+            버튼("운동 마치기", { 상태.바꿈 { dd -> dd.세션?.let { dd.copy(세션 = it.끝냄(System.currentTimeMillis())) } ?: dd } },
                 Modifier.fillMaxWidth(), 작게 = true, 글색 = c.나쁨)
         }
         if (넣기열림) 종목넣기시트(
@@ -1163,7 +1167,7 @@ internal data class 운결과(val 세션: 운동세션, val 본: Int, val 건너
 
 /** 큰 주 단추 (v21 ④) — 문구 차례: 마무리 > 다음 종목 > 건너뛰기 > 세트 완료하기 */
 internal enum class 운주(val 글: String) {
-    마무리("운동 마무리"), 다음종목("다음 종목으로 넘어가기"), 건너뛰기("건너뛰기"), 완료("세트 완료하기")
+    마무리("운동 마무리"), 다음종목("다음으로 넘어가기")   /* 10-09 홍겸 님: 한 줄로 */, 건너뛰기("건너뛰기"), 완료("세트 완료하기")
 }
 
 internal fun 운주상태(S: 운동세션, 본: Int): 운주 {

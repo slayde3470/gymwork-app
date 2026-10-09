@@ -50,6 +50,7 @@ import com.slayde.hasenheide.data.오래된운동정리
 import com.slayde.hasenheide.data.보고끝
 import com.slayde.hasenheide.data.업적판정법
 import com.slayde.hasenheide.data.저장소
+import com.slayde.hasenheide.data.사전채움
 import com.slayde.hasenheide.data.세기이름
 import com.slayde.hasenheide.data.세기더함
 import com.slayde.hasenheide.data.세기0
@@ -62,6 +63,9 @@ import com.slayde.hasenheide.data.스탯표
 import com.slayde.hasenheide.ui.theme.Local색
 import com.slayde.hasenheide.ui.theme.크기
 import com.slayde.hasenheide.ui.theme.간격
+import com.slayde.hasenheide.ui.theme.모서리
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import com.slayde.hasenheide.ui.theme.글꼴
 import com.slayde.hasenheide.ui.theme.부품치수
 import com.slayde.hasenheide.ui.theme.선굵기
@@ -86,12 +90,19 @@ import java.util.concurrent.Executors
  * 바꿀 때마다 폰 안의 파일에 조용히 저장한다 (저장은 뒤에서 — 화면이 멈추지 않게).
  */
 class 앱상태(private val 파일: File) {
-    var d by mutableStateOf(저장소.읽기(파일))
+    private val 읽은 = 저장소.읽기(파일)
+    var d by mutableStateOf(읽은.사전채움())   // 10-09: 사전 종목을 한 번 채운다
         private set
     var 오늘 by mutableStateOf(LocalDate.now().toString())
         private set
 
     private val 일꾼 = Executors.newSingleThreadExecutor()
+
+    init {
+        // 10-09 감시관: 채웠으면 바로 파일에 — 아무것도 안 바꾸고 끄면 다음에 또 채우던 것
+        // 빈 데이터(처음 · 못 읽은 파일)는 덮어쓰지 않는다 — 못 읽은 원본 자리를 켜자마자 바꾸지 않게
+        if (d !== 읽은 && 읽은 != 앱데이터()) { val 찍은것 = d; 일꾼.execute { try { 저장소.쓰기(파일, 찍은것) } catch (_: Exception) { } } }
+    }
 
     /**
      * 토스트 · 알림 띠 (10-05 · Parts.kt [알림판]) — 앱 어디서나 `상태.알림.토스트("…")` ·
@@ -190,7 +201,7 @@ class 앱상태(private val 파일: File) {
     fun 백업글(): String = 저장소.글로(d.copy(메모 = emptyList()))
     fun 백업넣기(글: String): Boolean = try {
         val 새 = 저장소.백업글에서(글) ?: throw IllegalArgumentException("백업 아님")   // 10-05: 백업이 아닌 JSON 은 받지 않는다 (아래 catch → false)
-        바꿈 { 옛 -> if (새.메모.isEmpty()) 새.copy(메모 = 옛.메모) else 새 }; true
+        바꿈 { 옛 -> (if (새.메모.isEmpty()) 새.copy(메모 = 옛.메모) else 새).사전채움() }; true
     } catch (_: Exception) { false }
 }
 
@@ -389,7 +400,9 @@ private fun 운동중띠(S: com.slayde.hasenheide.data.운동세션, 돌아가�
     val h = S.휴식
     val 곁 = if (h != null && !h.물음) "휴식 ${분초(h.남은초(지금))}" else 시분초(S.흐른초(지금))
     Row(
-        Modifier.fillMaxWidth().background(c.강조).눌림(돌아가기).padding(horizontal = 16.dp, vertical = 8.dp),
+        // 10-09 홍겸 님: 띠도 좌우 여백 12 · 모서리 8
+        Modifier.padding(start = 간격.보통, end = 간격.보통, bottom = 간격.아주좁게).fillMaxWidth()
+            .clip(RoundedCornerShape(모서리.작게)).background(c.강조).눌림(돌아가기).padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         글("운동 중 · ${S.루틴이름} · $곁", Modifier.weight(1f), 크기값 = 크기.버튼, 색 = c.강조글, 굵기 = FontWeight.Bold)

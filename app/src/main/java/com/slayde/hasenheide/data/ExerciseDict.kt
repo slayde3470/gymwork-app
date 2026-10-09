@@ -171,6 +171,48 @@ object 종목사전 {
     /** 역할의 세기 — 겹칠 때 센 쪽 (시안 `역순`) */
     private val 역순 = mapOf("P" to 3, "S" to 2, "Y" to 1)
 
+    // ─────────────── 앱 카테고리 · 장비 (10-09 홍겸 님) ───────────────
+
+    /**
+     * 사전의 칸은 시안 카테고리(… · **맨몸**)를 그대로 옮긴 것인데, 앱 카테고리에는 '맨몸'이 없고 '복근'이 있다
+     * → 맨몸 27개가 들어갈 칸이 없었다(딥스 등). 주로 쓰는 근육으로 앱 카테고리를 정한다.
+     */
+    private val 맨몸칸: Map<String, String> = mapOf(
+        "노르딕 햄스트링 컬" to "하체", "벤치 딥스" to "팔", "인클라인 푸시업" to "가슴", "디클라인 푸시업" to "가슴",
+        "다이아몬드 푸시업" to "가슴", "파이크 푸시업" to "어깨", "딥스" to "가슴", "인버티드 로우" to "등",
+        "맨몸 스쿼트" to "하체", "점프 스쿼트" to "하체", "피스톨 스쿼트" to "하체", "글루트 브릿지" to "하체",
+        "플랭크" to "복근", "사이드 플랭크" to "복근", "크런치" to "복근", "리버스 크런치" to "복근", "싯업" to "복근",
+        "행잉 레그 레이즈" to "복근", "라잉 레그 레이즈" to "복근", "바이시클 크런치" to "복근", "러시안 트위스트" to "복근",
+        "앱 롤아웃" to "복근", "마운틴 클라이머" to "복근", "버피" to "하체", "데드 버그" to "복근", "할로우 바디 홀드" to "복근",
+        "슈퍼맨" to "등",
+    )
+
+    /** 앱이 이미 다르게 정해 둔 것 — 데드리프트 = 등 (스탯명세 8-10 · Names.kt · 업적 1-53 판정과 같게. 10-09 감시관) */
+    private val 앱칸고침: Map<String, String> = mapOf("데드리프트" to "등")
+
+    /** 앱 카테고리 (가슴 · 등 · 하체 · 어깨 · 팔 · 복근) — 사전 칸이 '맨몸' 이면 [맨몸칸] */
+    fun 앱칸(x: 사전종목): String = 앱칸고침[x.이름] ?: 맨몸칸[x.이름] ?: x.칸
+
+    private val 맨몸들 = setOf("턱걸이", "친업", "백 익스텐션", "팔굽혀펴기")
+    private val 케이블들 = setOf("랫풀다운", "클로즈그립 랫풀다운", "언더그립 랫풀다운", "스트레이트 암 풀다운", "트라이셉스 푸시다운", "로프 푸시다운", "페이스 풀")
+    private val 머신들 = setOf("펙 덱 플라이", "리버스 펙 덱 플라이", "레그 프레스", "레그 익스텐션", "라잉 레그 컬", "시티드 레그 컬", "핵 스쿼트", "스탠딩 카프 레이즈", "시티드 카프 레이즈")
+    private val 덤벨들 = setOf("고블릿 스쿼트", "불가리안 스플릿 스쿼트", "워킹 런지", "리버스 런지", "사이드 런지", "아놀드 프레스",
+        "사이드 레터럴 레이즈", "리어 델트 레이즈", "해머 컬", "컨센트레이션 컬", "스파이더 컬", "리스트 컬", "오버헤드 트라이셉스 익스텐션", "체스트 서포티드 로우")
+
+    /** 사전 종목의 장비 — 바벨 · 덤벨 · 머신 · 케이블 · 스미스 · 맨몸 (기본 무게를 정하려고 · 이름추천.장비목록 과 같은 말) */
+    fun 장비(x: 사전종목): String {
+        val n = x.이름
+        return when {
+            x.칸 == "맨몸" || n in 맨몸들 -> "맨몸"
+            n.contains("덤벨") -> "덤벨"
+            n.contains("스미스") -> "스미스"
+            n.contains("케이블") || n in 케이블들 -> "케이블"
+            n.contains("머신") || n in 머신들 -> "머신"
+            n in 덤벨들 -> "덤벨"
+            else -> "바벨"
+        }
+    }
+
     /** 이름이 사전 이름과 똑같은 것 (다른 이름은 보지 않는다) */
     fun 이름으로(이름: String): 사전종목? = 목록.firstOrNull { it.이름 == 이름 }
 
@@ -200,17 +242,39 @@ object 종목사전 {
     fun 다듬(t: String?): String = (t ?: "").lowercase().replace(빈칸, "")
 
     /** 글 안에서 q 가 맞는 첫 자리 (q 의 초성 낱자는 그 자리 글자의 초성과 맞으면 된다). 없으면 -1 */
-    fun 초성자리(글: String, q: String): Int {
+    fun 초성자리(글: String, q: String): Int = 비슷자리(글, q, 0)
+
+    /**
+     * 10-09 홍겸 님: 헷갈리기 쉬운 모음(ㅐ·ㅔ · ㅒ·ㅖ · ㅙ·ㅞ·ㅚ)은 같은 것으로 — '팩' → 펙 덱 플라이 · '래터럴' → 레터럴.
+     * 중성 번호(0~20): ㅐ 1 · ㅔ 5 · ㅒ 3 · ㅖ 7 · ㅙ 10 · ㅚ 11 · ㅞ 15
+     */
+    private val 모음묶음 = mapOf(5 to 1, 7 to 3, 15 to 10, 11 to 10)
+    private fun 모음꼴(c: Char): Char {
+        val n = c.code - 0xAC00
+        if (n !in 0 until 11172) return c
+        val 중 = (n % 588) / 28
+        val 새 = 모음묶음[중] ?: return c
+        return (0xAC00 + (n / 588) * 588 + 새 * 28 + n % 28).toChar()
+    }
+    private fun 글자맞음(x: Char, y: Char, 모음: Boolean): Boolean =
+        x == y || (y in 초성표 && 초성(x) == y) || (모음 && 모음꼴(x) == 모음꼴(y))
+
+    /**
+     * 비슷하게 맞는 첫 자리 — [틀림] 0 = 똑같이(초성 낱자 포함) · 1 = 비슷한 모음도 · 2 = 그에 더해 한 글자 틀려도(3글자 이상 칠 때).
+     * 없으면 -1
+     */
+    fun 비슷자리(글: String, q: String, 틀림: Int): Int {
         val a = 다듬(글)
         if (q.isEmpty()) return -1
+        val 모음 = 틀림 >= 1
+        val 봐줌 = if (틀림 >= 2 && q.length >= 3) 1 else 0
         var i = 0
         while (i + q.length <= a.length) {
-            var 맞 = true
+            var 다름 = 0
             for (j in q.indices) {
-                val x = a[i + j]; val y = q[j]
-                if (!(x == y || (y in 초성표 && 초성(x) == y))) { 맞 = false; break }
+                if (!글자맞음(a[i + j], q[j], 모음)) { 다름++; if (다름 > 봐줌) break }
             }
-            if (맞) return i
+            if (다름 <= 봐줌) return i
             i++
         }
         return -1
@@ -235,29 +299,33 @@ object 종목사전 {
     /**
      * 초성 검색 — 'ㅂㅊㅍ' → 벤치프레스 · '벤ㅊ' · '프레스' 처럼 섞어도 · 띄어쓰기 무시 · 부분 일치.
      * 점수: 앞에서 맞으면 0 · 가운데 2, 다른 이름으로 맞으면 +1. 점수 → 이름 길이 → 가나다 순. 최대 [최대] 개.
+     * 10-09: 똑같이 맞는 것이 없을 때만 비슷한 것 — 헷갈리는 모음(+4) · 그래도 없으면 한 글자 틀림(+8, 3글자 이상).
      * [종목표] 를 주면 사전에 없는 직접 만든 종목도 (같은 이름이면 먼저 만든 것 하나만) — 칸은 종목의 부위.
      */
     fun 찾기(q: String, 종목표: List<종목> = emptyList(), 최대: Int = 8): List<사전종목> {
         val 꼴 = 검색꼴(q)
         if (꼴.isEmpty()) return emptyList()
-        fun 점수(이름들: List<String>): Int {
+        fun 점수(이름들: List<String>, 틀림: Int): Int {
             var best = -1
             이름들.forEachIndexed { n, 글 ->
                 for (qq in 꼴) {
-                    val i = 초성자리(글, qq)
+                    val i = 비슷자리(글, qq, 틀림)
                     if (i < 0) continue
-                    val 점 = (if (i == 0) 0 else 2) + (if (n > 0) 1 else 0)
+                    val 점 = (if (i == 0) 0 else 2) + (if (n > 0) 1 else 0) + 틀림 * 4
                     if (best < 0 || 점 < best) best = 점
                 }
             }
             return best
         }
         val 결 = mutableListOf<Pair<사전종목, Int>>()
-        for (x in 목록) { val 점 = 점수(listOf(x.이름) + x.별); if (점 >= 0) 결.add(x to 점) }
-        for (t in 종목표) {
-            if (목록.any { it.이름 == t.이름 } || 종목표.first { it.이름 == t.이름 } !== t) continue
-            val 점 = 점수(listOf(t.이름))
-            if (점 >= 0) 결.add(사전종목(t.이름, t.부위) to 점)
+        for (틀림 in 0..2) {
+            for (x in 목록) { val 점 = 점수(listOf(x.이름) + x.별, 틀림); if (점 >= 0) 결.add(x to 점) }
+            for (t in 종목표) {
+                if (목록.any { it.이름 == t.이름 } || 종목표.first { it.이름 == t.이름 } !== t) continue
+                val 점 = 점수(listOf(t.이름), 틀림)
+                if (점 >= 0) 결.add(사전종목(t.이름, t.부위) to 점)
+            }
+            if (결.isNotEmpty()) break
         }
         return 결.sortedWith(compareBy<Pair<사전종목, Int>> { it.second }.thenBy { it.first.이름.length }
             .thenComparator { a, b -> 가나다.compare(a.first.이름, b.first.이름) })

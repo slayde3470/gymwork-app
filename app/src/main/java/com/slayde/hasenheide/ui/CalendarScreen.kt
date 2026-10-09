@@ -387,7 +387,7 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
                     Modifier.graphicsLayer {
                         translationX = 밀기.value * size.width * 움직임.달밀기
                         alpha = 1f - abs(밀기.value) * 움직임.달흐림
-                    }.padding(start = 간격.아주좁게, end = 간격.아주좁게, top = 간격.아주좁게, bottom = 간격.아주좁게),
+                    }.padding(start = 간격.보통, end = 간격.보통, top = 간격.아주좁게, bottom = 간격.아주좁게),   // 10-09: 좌우 12 (띠와 같은 선)
                 ) {
                     요일줄()
                     달력(d, 오늘, 보는달, 고른날, Modifier.번호("캘2"),
@@ -414,23 +414,19 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
 
         val k = 시트날
         when (열린) {
-            // 시안 '루틴고르기' — [이 날만][이 날부터 순서대로] · 루틴마다 예상 시간 · 지금 루틴 ✓
+            // 시안 '루틴고르기' — 루틴마다 예상 시간 · 지금 루틴 ✓ (10-09 [이 날만][이 날부터 순서대로] 삭제)
             캘시트.루틴 -> {
-                var 이날만 by remember { mutableStateOf(true) }
+                // 10-09 홍겸 님: '루틴 고르기' [이 날만][이 날부터 순서대로] 삭제 — 순서대로는 루틴 탭 자동 설정이 맡는다. 고르면 그 날만
                 시트("${캘날글(k)} 운동 계획", { 열린 = null }) {
                     // 10-09 홍겸 님: 루틴 대신 종목을 골라 그 날만 쓰는 운동으로 (루틴 목록에는 안 생긴다)
                     val 그날 = d.그날운동(k)
                     고르기줄("종목 골라 넣기", 그날?.let { "${it.종목.size}종목 · 그 날만" } ?: "그 날만 쓰는 운동") { 열린 = 캘시트.종목 }
                     Box(Modifier.height(간격.좁게))
-                    이름표("루틴 고르기")
-                    Box(Modifier.height(간격.아주좁게))
-                    칩줄(listOf("이 날만", "이 날부터 순서대로"), if (이날만) "이 날만" else "이 날부터 순서대로", { 이날만 = it == "이 날만" })
-                    Box(Modifier.height(간격.좁게))
                     d.루틴들.forEach { r ->
                         val 곁 = (if (r.휴식일) "휴식" else "예상 ${시간글(예상초(d.플랜줄채움(r)))}") + if (r.자동생성) "" else " · 수동"
                         고르기줄(r.이름, 곁, 오른쪽 = if (d.예정[k] == r.id) 아이콘.체크 else null) {
                             열린 = null
-                            상태.바꿈 { if (이날만) it.그날만바꾸기(r.id, k, 상태.오늘) else it.꽂기(r.id, k, 상태.오늘) }
+                            상태.바꿈 { it.그날만바꾸기(r.id, k, 상태.오늘) }
                             발자취.적기("${캘날글(k)} → ${r.이름}")
                             상태.알림.토스트("${캘날글(k)} ${r.이름}")
                         }
@@ -482,7 +478,9 @@ private object 캘지움띠 { val 목록 = mutableListOf<캘지움값>() }
 private fun 년월띠(달: YearMonth, 이전: () -> Unit, 다음: () -> Unit, 달고르기: () -> Unit) {
     val c = Local색.current
     Box(
-        Modifier.fillMaxWidth().heightIn(min = 높이.보통).background(c.강조)
+        // 10-09 홍겸 님: 띠도 좌우 여백 12 · 모서리 8 (운동 보고서처럼)
+        Modifier.padding(start = 간격.보통, end = 간격.보통, top = 간격.보통).fillMaxWidth().heightIn(min = 높이.보통)
+            .clip(RoundedCornerShape(모서리.작게)).background(c.강조)
             .padding(horizontal = 간격.보통, vertical = 부품치수.띠세로여백).번호("캘0"),
     ) {
         Row(Modifier.align(Alignment.Center), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
@@ -647,7 +645,8 @@ private fun 날판(
     Column(modifier.fillMaxWidth().번호("캘1")) {
         // ── 띠 — 오른쪽 끝: 다른 달을 볼 때만 [오늘] (10-08: [변경] · [루틴 넣기] 는 없앴다 — 아래 단추 줄이 한다) ──
         Row(
-            Modifier.fillMaxWidth().heightIn(min = 높이.보통).background(c.강조).padding(horizontal = 간격.보통, vertical = 부품치수.띠세로여백),
+            Modifier.padding(horizontal = 간격.보통).fillMaxWidth().heightIn(min = 높이.보통)   // 10-09: 좌우 여백 12 · 모서리 8
+                .clip(RoundedCornerShape(모서리.작게)).background(c.강조).padding(horizontal = 간격.보통, vertical = 부품치수.띠세로여백),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.좁게),
         ) {
             띠글("${캘날글(k)} (${캘요일글(k)})${if (k == 오늘) " · 오늘" else ""}", Modifier.weight(1f))
