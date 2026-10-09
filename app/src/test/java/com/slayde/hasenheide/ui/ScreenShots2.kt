@@ -30,7 +30,8 @@ class Shot_s01g_reset : ShotBase() {
 
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class Shot_s01j_dayExercises : ShotBase() {
-    @Test fun t() { 켜기(); 누름("초기화"); 누름("운동 계획 만들기"); 찍("01j_캘린더_운동계획_종목고르기")
+    @Test fun t() { 켜기 { d -> d.copy(예정 = d.예정 - 오늘.toString(), 예정고정 = d.예정고정 + (오늘.toString() to "")) }
+        누름("운동 계획 만들기"); 찍("01j_캘린더_운동계획_종목고르기")
         누름("종목 골라 넣기"); 누름("스쿼트", -1); 찍("01j2_캘린더_그날운동_넣기"); 누름("확인", -1); 찍("01j3_캘린더_그날운동_붙음") }
 }
 
@@ -94,7 +95,7 @@ class Shot_s06b_category : ShotBase() {
 
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class Shot_s07d_musclePopup : ShotBase() {
-    @Test fun t() { 켜기(); 탭(3); 누름("벤치프레스"); 누름설명("벤치프레스 근육 고르기"); 찍("07d_종목_주동근협응근_팝업") }
+    @Test fun t() { 켜기(); 탭(3); 누름("벤치프레스"); 누름설명("근육 고르기", 일부 = true); 찍("07d_종목_주동근협응근_팝업") }
 }
 
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
