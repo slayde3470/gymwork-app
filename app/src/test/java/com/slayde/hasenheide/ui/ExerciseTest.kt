@@ -289,6 +289,17 @@ class ExerciseTest {
         assertEquals("하체", d.새초기().사전고름(d, "맨몸 스쿼트").칸)   // 10-09: 앱 카테고리로
     }
 
+    /** 10-09 홍겸 님: 새 종목 세트는 이름의 장비 무게 (덤벨 2 · 바벨 20 · 머신 10) · 손댄 세트는 그대로 */
+    @Test fun 새종목_장비무게() {
+        val d = 앱데이터()
+        assertEquals(2.0, d.새초기().사전고름(d, "덤벨 컬").세트[0].w)
+        assertEquals(20.0, d.새초기().사전고름(d, "벤치프레스").세트[0].w)
+        assertEquals(10.0, d.새초기().사전고름(d, "펙 덱 플라이").세트[0].w)
+        assertEquals(20.0, d.새초기().copy(이름 = "나만의 운동", 찾는중 = true).확인(d).first.세트[0].w)
+        val 손댐 = d.새초기().copy(세트 = listOf(com.slayde.hasenheide.data.종목세트(35.0, 8, 60)))
+        assertEquals(35.0, 손댐.사전고름(d, "덤벨 컬").세트[0].w)
+    }
+
     @Test fun 새_근육두줄() {
         assertEquals("—" to "—", 근육두줄(emptyMap()))
         val (주, 협) = 근육두줄(mapOf("lats" to "P", "biceps" to "Y"))
