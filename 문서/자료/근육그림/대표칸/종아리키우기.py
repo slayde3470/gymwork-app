@@ -3,8 +3,8 @@ import sys, numpy as np
 from PIL import Image; from scipy import ndimage
 src,dst=sys.argv[1],sys.argv[2]; AMT=float(sys.argv[3]); YC=float(sys.argv[4]); SIG=float(sys.argv[5])
 a=np.asarray(Image.open(src).convert('RGB')).astype(float); out=a.copy()
-m=ndimage.binary_fill_holes(np.asarray(Image.open(src).convert('L'))<240)
-W=a.shape[1]; xs=np.arange(W); C=384
+m=ndimage.binary_fill_holes(np.asarray(Image.open(src).convert('L'))<235)
+W=a.shape[1]; xs=np.arange(W); C=W//2
 def segs(row):
     x=np.where(row)[0]
     if len(x)==0: return []
