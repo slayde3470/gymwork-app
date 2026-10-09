@@ -27,7 +27,18 @@ def 뽑기(shot_path, name):
         m = th > 35
     n, lb, st, _ = cv2.connectedComponentsWithStats(m.astype(np.uint8), connectivity=8)
     line = np.isin(lb, [i for i in range(1, n) if st[i, cv2.CC_STAT_AREA] >= 12])
-    body_o = np.array(Image.open(os.path.join(HERE, "..", "그림", name + ".png")).convert("RGBA"))[..., 3] >= 128
+    orig = np.array(Image.open(os.path.join(HERE, "..", "그림", name + ".png")).convert("RGBA")).astype(np.float32)
+    body_o = orig[..., 3] >= 128
+    os.makedirs(os.path.join(HERE, "손선"), exist_ok=True)
+    if shot.shape[:2] == body_o.shape:
+        # 원래 그림과 같은 크기: 그 그림 위에 바로 그은 것이면(선 밖의 회색이 그대로면) 맞출 것 없이 그대로 쓴다
+        a = orig[..., 3:] / 255
+        gray = (orig[..., :3] * a + 255 * (1 - a)).mean(-1)
+        rest = cv2.dilate(m.astype(np.uint8), np.ones((9, 9), np.uint8)) == 0
+        if np.abs(shot.mean(-1) - gray)[rest].mean() < 6:
+            Image.fromarray((line * 255).astype(np.uint8)).save(os.path.join(HERE, "손선", name + ".png"))
+            print(f"손선/{name}.png — 선 {int(line.sum())}px · 같은 그림 위에 그은 선(그대로 씀)")
+            return
     body_s = (shot.min(-1) < 235) | line
     body_s = cv2.morphologyEx(body_s.astype(np.uint8), cv2.MORPH_CLOSE, np.ones((5, 5), np.uint8)) > 0
 
@@ -48,7 +59,6 @@ def 뽑기(shot_path, name):
                 if best is None or iou > best[0]:
                     best = (iou, M)
     out = cv2.warpAffine(line.astype(np.float32), best[1], (W, H), flags=cv2.INTER_LINEAR) > 0.12
-    os.makedirs(os.path.join(HERE, "손선"), exist_ok=True)
     Image.fromarray((out * 255).astype(np.uint8)).save(os.path.join(HERE, "손선", name + ".png"))
     print(f"손선/{name}.png — 선 {int(out.sum())}px · 겹침 {best[0]:.3f} · 배율 {best[1][0, 0]:.3f}")
 

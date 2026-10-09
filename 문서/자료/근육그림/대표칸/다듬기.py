@@ -4,6 +4,8 @@
 
 순서: ① 1차 지도(../지도)를 15칸으로 묶는다 → ② 고칠곳.json 의 고침을 차례로 적용
       → ③ 손선/이름.png 이 있으면(홍겸 님이 그어 준 선 — 손선뽑기.py) 그 선으로 나뉜 조각마다 한 칸으로 정한다 → ④ 경계를 매끈한 곡선으로
+      손선칸.json 에 적힌 그림(홍겸 님이 선 안에 번호로 칸을 적어 준 확대 그림)은 ① ② 없이 선 안의 그 조각들만 칠하고 나머지는 비운다 → ④
+      손선칸.json 에 적힌 그림(홍겸 님이 선 안에 번호로 칸을 적어 준 확대 그림)은 ① ② 없이 선 안의 그 조각들만 칠하고 나머지는 비운다 → ④
 결과: 지도/ (칸 하나에 단색 하나) · 확인/ (경계선 · 이름표) · 보기/ (명암을 살려 색을 입힌 모습)
 
 고칠곳.json — 그림마다 고침 목록. 좌표는 그림 픽셀(x, y). 점을 지나는 부드러운 곡선으로 닫힌 모양을 만든다.
@@ -169,6 +171,35 @@ def 손선나누기(cells, body, line, name):
     return out
 
 
+def 손선칸나누기(body, line, seeds):
+    """홍겸 님이 선 안에 번호를 적어 준 그림: 번호가 적힌 조각(손선칸.json 의 점이 든 조각)만 그 칸으로 칠하고 나머지는 비운다."""
+    # 선 안에 적은 번호 글씨(작은 덩어리)는 선이 아니다
+    n, lb, st, _ = cv2.connectedComponentsWithStats(line.astype(np.uint8), connectivity=8)
+    글씨 = [i for i in range(1, n) if max(st[i, cv2.CC_STAT_WIDTH], st[i, cv2.CC_STAT_HEIGHT]) < 130]
+    line = cv2.morphologyEx((line & ~np.isin(lb, 글씨)).astype(np.uint8), cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))) > 0
+    n, lb = cv2.connectedComponents((body & ~line).astype(np.uint8), connectivity=4)
+    names = [s["칸"] for s in seeds]
+    칸 = {}
+    for i, s in enumerate(seeds):
+        for x, y in s["점"]:
+            if lb[y, x] == 0 or 칸.get(lb[y, x], i) != i:
+                sys.exit(f"⚠ 손선칸.json: {s['칸']} 의 점 ({x}, {y}) 이 선 위 · 몸 밖이거나 다른 칸과 같은 조각에 있다")
+            칸[lb[y, x]] = i
+    area = np.bincount(lb.ravel(), minlength=n)
+    lab = np.zeros(body.shape, np.int32)                       # 0 = 선 · 작은 자투리, 1 = 빈 곳, 2… = 칸
+    for c in range(1, n):
+        if c in 칸:
+            lab[lb == c] = 칸[c] + 2
+        elif area[c] >= 1500:
+            lab[lb == c] = 1
+    # 선과 자투리는 가장 가까운 조각으로 넘긴다 → 경계가 그어 준 선의 한가운데에 온다
+    vals = [v for v in range(1, len(names) + 2) if (lab == v).any()]
+    d = np.stack([cv2.distanceTransform((lab != v).astype(np.uint8), cv2.DIST_L2, 5) for v in vals])
+    lab = np.where(body & (lab == 0), np.array(vals)[d.argmin(0)], lab)
+    print("  손선 칸:", ", ".join(f"{nm} {int((lab == i + 2).sum())}" for i, nm in enumerate(names)))
+    return {(nm, ""): lab == i + 2 for i, nm in enumerate(names)}
+
+
 def 매끈하게(cells, body):
     """칸마다 흐리게 한 뒤 가장 센 칸을 고른다(빈 곳도 한 칸으로 친다). UP 배로 키운 그림에서 계산해 선을 잘게 쪼갠다."""
     keys = [k for k in cells if cells[k].any()]
@@ -220,17 +251,24 @@ def 다듬기(names):
     고칠곳 = json.load(open(os.path.join(HERE, "고칠곳.json"), encoding="utf-8"))
     for d in ("지도", "확인", "보기"):
         os.makedirs(os.path.join(HERE, d), exist_ok=True)
-    for f in sorted(glob.glob(os.path.join(HERE, "..", "지도", "*.png"))):
-        name = os.path.basename(f)[:-4]
+    손선칸 = json.load(open(os.path.join(HERE, "손선칸.json"), encoding="utf-8"))
+    손선칸.pop("설명", None)
+    일차 = {os.path.basename(f)[:-4] for f in glob.glob(os.path.join(HERE, "..", "지도", "*.png"))}
+    for name in sorted(일차 | set(손선칸)):
         if names and name not in names and name[:2] not in names:
             continue
         rgba = np.array(Image.open(os.path.join(HERE, "..", "그림", name + ".png")).convert("RGBA"))
         body = 도구.몸마스크(rgba)
-        cells = 칸읽기(np.array(Image.open(f).convert("RGBA")), colors, of)
-        cells = 고치기(cells, 고칠곳.get(name, []), body, name)
         hand = os.path.join(HERE, "손선", name + ".png")
-        if os.path.exists(hand):
-            cells = 손선나누기(cells, body, np.array(Image.open(hand).convert("L")) > 127, name)
+        if name in 손선칸:                                      # 번호를 적어 준 그림: 선 안의 조각만 칠한다
+            cells = 손선칸나누기(body, np.array(Image.open(hand).convert("L")) > 127, 손선칸[name])
+            고침 = f"손선 칸 {len(손선칸[name])}가지"
+        else:
+            cells = 칸읽기(np.array(Image.open(os.path.join(HERE, "..", "지도", name + ".png")).convert("RGBA")), colors, of)
+            cells = 고치기(cells, 고칠곳.get(name, []), body, name)
+            if os.path.exists(hand):
+                cells = 손선나누기(cells, body, np.array(Image.open(hand).convert("L")) > 127, name)
+            고침 = f"고침 {len(고칠곳.get(name, []))}개"
         cells = 매끈하게(cells, body)
         out = np.zeros(rgba.shape, np.uint8)
         for (nm, side), sel in cells.items():
@@ -240,7 +278,7 @@ def 다듬기(names):
         msgs, counts = 도구.검사(out, body, 이름표)
         도구.겹쳐보기(rgba, out, 이름표, os.path.join(HERE, "확인", name + ".jpg"), title=name + " — 15칸")
         색입히기(rgba, cells).save(os.path.join(HERE, "보기", name + ".jpg"), quality=90)
-        print(f"■ {name}: {len(counts)}칸 · 고침 {len(고칠곳.get(name, []))}개", *msgs, sep="\n  ")
+        print(f"■ {name}: {len(counts)}칸 · {고침}", *msgs, sep="\n  ")
 
 
 if __name__ == "__main__":
