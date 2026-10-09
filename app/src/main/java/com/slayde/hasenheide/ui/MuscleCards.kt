@@ -2,7 +2,6 @@ package com.slayde.hasenheide.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,16 +13,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import com.slayde.hasenheide.data.근육표
 import com.slayde.hasenheide.data.종목사전
 import com.slayde.hasenheide.ui.theme.Local색
 import com.slayde.hasenheide.ui.theme.그림칸
@@ -34,30 +29,30 @@ import com.slayde.hasenheide.ui.theme.크기
 /*
  * 근육 그림 2장 (10-09 홍겸 님 — 새 규칙) — 종목 탭 펼친 상자 · 종목 넣기 시트의 펼친 상자 · 새 종목 시트의 '운동 목표 부위'가 같이 쓴다.
  *  · 왼쪽 = 반신 그림 (상반신 전면 · 상반신 후면 · 하반신 전면 · 하반신 후면 중 근육이 가장 많이 걸린 것)
- *  · 오른쪽 = 확대 그림 자리 — 확대 그림은 아직 없어서 빈 칸에 필요한 그림 이름만 적어 둔다
+ *  · 오른쪽 = 확대 그림 (10-09 새 그림 — 복근만은 그림이 없어 빈 칸에 이름)
  *  · 근육이 하나도 없으면 가운데 한 칸에 전신 앞 · 뒤만
  * 반신 · 확대 고르기 표는 이 파일 한곳에만 둔다 (시험: test/…/ui/MuscleCardsTest.kt)
  */
 
-/** 반신 그림 네 가지 — [상자] = 자르기 상자(data/Muscle.kt `근육표`) · [뒤] = 뒷모습 */
-internal enum class 반신(val 글: String, val 상자: FloatArray, val 뒤: Boolean) {
-    상전("상반신 전면", 근육표.앞위, false),
-    상후("상반신 후면", 근육표.뒤위, true),
-    하전("하반신 전면", 근육표.앞아래, false),
-    하후("하반신 후면", 근육표.뒤아래, true),
+/** 반신 그림 네 가지 — 새 전신 그림(01 앞 · 02 뒤)을 자른 것 (10-09 새 그림) */
+internal enum class 반신(val 글: String, val 보기: List<그림보기>) {
+    상전("상반신 전면", 그림보기들.상전),
+    상후("상반신 후면", 그림보기들.상후),
+    하전("하반신 전면", 그림보기들.하전),
+    하후("하반신 후면", 그림보기들.하후),
 }
 
-/** 확대 그림 (아직 없음) — [이름] 은 칸 첫 줄 · [각도] 가 있으면 둘째 줄 앞에 '45° · ' */
-internal enum class 확대(val 이름: String, val 각도: Boolean, val 둘째: String) {
-    가슴("가슴 확대", true, "그림 준비 중"),
-    팔어깨("팔~어깨 확대", true, "그림 준비 중"),
-    등("등 확대", false, "그림 준비 중"),
-    하체("굽힌 허벅지·종아리 확대", true, "그림 준비 중"),
-    복근("복근 확대", false, "규칙 없음"),   // 복근만 있을 때의 확대는 홍겸 님 규칙이 아직 없다 (10-09 보고: 확인 필요)
+/** 확대 그림 — [번호] = 새 그림 번호 (10-09: 가슴 07 정면 · 팔~어깨 04 · 등 06 · 굽힌 다리 05). 복근은 그림이 없어 빈 칸에 글 */
+internal enum class 확대(val 이름: String, val 번호: String?) {
+    가슴("가슴 확대", "07"),
+    팔어깨("팔~어깨 확대", "04"),
+    등("등 확대", "06"),
+    하체("굽힌 허벅지·종아리 확대", "05"),
+    복근("복근 확대", null),   // 복근만 있을 때의 확대는 홍겸 님 규칙 · 그림이 아직 없다
     ;
 
-    /** 둘째 줄 글 — 예 '45° · 그림 준비 중' */
-    fun 둘째줄(): String = if (각도) "45° · $둘째" else 둘째
+    /** 빈 칸 둘째 줄 글 (그림이 없을 때만) */
+    fun 둘째줄(): String = if (번호 == null) "규칙 없음" else ""
 }
 
 /** 고른 결과 — [반신] 이 null 이면 근육이 없다(전신 한 칸). [확대] 는 [반신] 이 있을 때만 */
@@ -121,40 +116,34 @@ internal fun 근육두장(근육: Map<String, String>, 색표: String, 누름: (
         if (반 == null) {
             // 근육이 없다 — 가운데 한 칸(두 칸 중 하나와 같은 폭)에 전신 앞 · 뒤
             Box(Modifier.weight(0.5f))
-            근육그림칸(단계, 색표, null, null, 누름, Modifier.weight(1f))
+            근육그림칸(단계, 색표, 그림보기들.전신, 누름, Modifier.weight(1f))
             Box(Modifier.weight(0.5f))
         } else {
-            근육그림칸(단계, 색표, 반.상자, 반.뒤, 누름, Modifier.weight(1f), 설명 = "${반.글} 근육 고르기")
-            빈확대칸(고름.확대, 누름, Modifier.weight(1f))
+            근육그림칸(단계, 색표, 반.보기, 누름, Modifier.weight(1f), 설명 = "${반.글} 근육 고르기")
+            val 확 = 고름.확대
+            val 확보기 = remember(확) { 확?.번호?.let { listOf(그림보기(it)) } }
+            if (확 != null && 확보기 != null) 근육그림칸(단계, 색표, 확보기, 누름, Modifier.weight(1f), 설명 = "${확.이름} 근육 고르기")
+            else 빈확대칸(확, 누름, Modifier.weight(1f))
         }
     }
 }
 
 /**
- * 근육 그림 한 칸 — 둥근 판 + 몸그림. [자르기] null = 앞 · 뒤 전신.
- * 누른 자리 판정은 새 종목 시트의 [그림누른부위] 를 그대로 쓴다 ([뒤] null = 앞 · 뒤 둘 다 찾는다)
+ * 근육 그림 한 칸 — 둥근 판 + 새몸그림. 누르면 누른 칸의 세부 부위들 (빈 곳 · 목은 빈 목록 — 그래도 팝업은 뜬다)
  */
 @Composable
 private fun 근육그림칸(
-    단계: Map<String, Double>, 색표: String, 자르기: FloatArray?, 뒤: Boolean?, 누름: (List<String>) -> Unit, modifier: Modifier,
+    단계: Map<String, Double>, 색표: String, 보기: List<그림보기>, 누름: (List<String>) -> Unit, modifier: Modifier,
     설명: String = "근육 고르기",
 ) {
     val c = Local색.current
-    val 누름최신 by rememberUpdatedState(누름)
     val 모양 = RoundedCornerShape(그림칸.모서리)
-    val 판 = 자르기 ?: floatArrayOf(0f, 0f, 근육표.그림폭, 근육표.그림높이)
     Box(modifier.fillMaxHeight().clip(모양).background(c.면).border(선굵기.보통, c.선, 모양).semantics { contentDescription = 설명 }) {
-        Box(
-            Modifier.fillMaxSize().padding(간격.아주좁게).pointerInput(뒤, 자르기) {
-                detectTapGestures { o ->
-                    누름최신(그림누른부위(o.x, o.y, size.width.toFloat(), size.height.toFloat(), 판, 뒤) ?: emptyList())
-                }
-            },
-        ) { 몸그림(단계, 색표, 자르기, Modifier.fillMaxSize()) }
+        새몸그림(단계, 색표, 보기, Modifier.fillMaxSize().padding(간격.아주좁게), 누름)
     }
 }
 
-/** 확대 그림 자리 — 그림이 아직 없어 같은 크기 · 테의 빈 칸에 필요한 그림 이름만 (가운데 · 작고 흐린 글 두 줄). 눌러도 근육 고르기가 열린다 */
+/** 확대 그림이 없는 자리(복근) — 같은 크기 · 테의 빈 칸에 이름만 (가운데 · 작고 흐린 글 두 줄). 눌러도 근육 고르기가 열린다 */
 @Composable
 private fun 빈확대칸(확대: 확대?, 누름: (List<String>) -> Unit, modifier: Modifier) {
     val c = Local색.current

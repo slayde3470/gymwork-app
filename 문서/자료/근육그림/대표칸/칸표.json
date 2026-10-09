@@ -1,0 +1,20 @@
+{
+ "설명": "사람들이 주로 노리는 근육 15칸 (2026-10-09 홍겸 님과 정함). 목은 흉쇄유돌근만이 아니라 목 앞 · 옆 전체. 대표 = 지도에 칠하는 색의 근육 id(../색표.json). 근육 = 이 칸에 들어가는 근육 나무 id — 그 아래 가지도 모두 들어간다.",
+ "칸": [
+  {"이름": "목",       "대표": "scm",              "근육": ["scm", "scalenes", "splenius", "levator_scapulae"], "메모": "목 앞 · 옆 전체. 목 뒤는 승모 칸(승모근이 덮고 있다)"},
+  {"이름": "어깨",     "대표": "deltoid",          "근육": ["deltoid", "rotator_cuff"], "메모": "삼각근 앞 · 옆 · 뒤. 어깨뼈 위 극하근 자리도 여기로 메움(빈칸 방지 — Claude 판단)"},
+  {"이름": "가슴",     "대표": "pectoralis_major", "근육": ["pectoralis_major", "pectoralis_minor"]},
+  {"이름": "광배",     "대표": "lats",             "근육": ["lats", "teres_major"]},
+  {"이름": "승모",     "대표": "traps",            "근육": ["traps"]},
+  {"이름": "허리",     "대표": "lower_back",       "근육": ["lower_back", "multifidus", "quadratus_lumborum"], "메모": "척추기립근 — 데드리프트 · 백익스텐션"},
+  {"이름": "이두",     "대표": "upper_arm_front",  "근육": ["upper_arm_front"], "메모": "이두 + 상완근"},
+  {"이름": "삼두",     "대표": "upper_arm_back",   "근육": ["upper_arm_back"]},
+  {"이름": "전완",     "대표": "forearm",          "근육": ["forearm"], "메모": "전완 앞 · 뒤 + 상완요골근"},
+  {"이름": "복부",     "대표": "abs",              "근육": ["abs", "obliques", "transversus_abdominis", "serratus"], "메모": "복근 위 · 아래 + 옆구리. 갈비 옆 전거근 자리도 여기로 메움(빈칸 방지 — Claude 판단)"},
+  {"이름": "엉덩이",   "대표": "glutes",           "근육": ["glutes"]},
+  {"이름": "대퇴사두", "대표": "quads",            "근육": ["quads", "sartorius"], "메모": "허벅지 앞 전체 (봉공근 자리 포함)"},
+  {"이름": "햄스트링", "대표": "hamstrings",       "근육": ["hamstrings"]},
+  {"이름": "내전근",   "대표": "adductors",        "근육": ["adductors"], "메모": "이너타이 머신"},
+  {"이름": "종아리",   "대표": "calves",           "근육": ["calves", "shin"], "메모": "종아리 + 정강이(전경골근)"}
+ ]
+}

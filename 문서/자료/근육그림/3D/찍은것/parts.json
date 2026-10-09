@@ -1,0 +1,2901 @@
+[
+{
+"번호": 1,
+"색": [
+0,
+0,
+42
+],
+"이름": "abductor_pollicis_longus",
+"쪽": "left",
+"부분": "",
+"무리": "Forearms",
+"근육": true
+},
+{
+"번호": 2,
+"색": [
+0,
+0,
+85
+],
+"이름": "abductor_pollicis_longus",
+"쪽": "right",
+"부분": "",
+"무리": "Forearms",
+"근육": true
+},
+{
+"번호": 3,
+"색": [
+0,
+0,
+127
+],
+"이름": "adductor_brevis",
+"쪽": "left",
+"부분": "",
+"무리": "Adductors",
+"근육": true
+},
+{
+"번호": 4,
+"색": [
+0,
+0,
+170
+],
+"이름": "adductor_brevis",
+"쪽": "right",
+"부분": "",
+"무리": "Adductors",
+"근육": true
+},
+{
+"번호": 5,
+"색": [
+0,
+0,
+212
+],
+"이름": "adductor_longus",
+"쪽": "left",
+"부분": "",
+"무리": "Adductors",
+"근육": true
+},
+{
+"번호": 6,
+"색": [
+0,
+0,
+255
+],
+"이름": "adductor_longus",
+"쪽": "right",
+"부분": "",
+"무리": "Adductors",
+"근육": true
+},
+{
+"번호": 7,
+"색": [
+0,
+42,
+0
+],
+"이름": "adductor_magnus",
+"쪽": "left",
+"부분": "",
+"무리": "Adductors",
+"근육": true
+},
+{
+"번호": 8,
+"색": [
+0,
+42,
+42
+],
+"이름": "adductor_magnus",
+"쪽": "right",
+"부분": "",
+"무리": "Adductors",
+"근육": true
+},
+{
+"번호": 9,
+"색": [
+0,
+42,
+85
+],
+"이름": "anconeus_muscle",
+"쪽": "left",
+"부분": "",
+"무리": "Forearms",
+"근육": true
+},
+{
+"번호": 10,
+"색": [
+0,
+42,
+127
+],
+"이름": "anconeus_muscle",
+"쪽": "right",
+"부분": "",
+"무리": "Forearms",
+"근육": true
+},
+{
+"번호": 11,
+"색": [
+0,
+42,
+170
+],
+"이름": "biceps_brachii_long",
+"쪽": "left",
+"부분": "",
+"무리": "Biceps",
+"근육": true
+},
+{
+"번호": 12,
+"색": [
+0,
+42,
+212
+],
+"이름": "biceps_brachii_long",
+"쪽": "right",
+"부분": "",
+"무리": "Biceps",
+"근육": true
+},
+{
+"번호": 13,
+"색": [
+0,
+42,
+255
+],
+"이름": "biceps_brachii_short",
+"쪽": "left",
+"부분": "",
+"무리": "Biceps",
+"근육": true
+},
+{
+"번호": 14,
+"색": [
+0,
+85,
+0
+],
+"이름": "biceps_brachii_short",
+"쪽": "right",
+"부분": "",
+"무리": "Biceps",
+"근육": true
+},
+{
+"번호": 15,
+"색": [
+0,
+85,
+42
+],
+"이름": "biceps_femoris_long",
+"쪽": "left",
+"부분": "",
+"무리": "Hamstrings",
+"근육": true
+},
+{
+"번호": 16,
+"색": [
+0,
+85,
+85
+],
+"이름": "biceps_femoris_long",
+"쪽": "right",
+"부분": "",
+"무리": "Hamstrings",
+"근육": true
+},
+{
+"번호": 17,
+"색": [
+0,
+85,
+127
+],
+"이름": "biceps_femoris_short",
+"쪽": "left",
+"부분": "",
+"무리": "Hamstrings",
+"근육": true
+},
+{
+"번호": 18,
+"색": [
+0,
+85,
+170
+],
+"이름": "biceps_femoris_short",
+"쪽": "right",
+"부분": "",
+"무리": "Hamstrings",
+"근육": true
+},
+{
+"번호": 19,
+"색": [
+0,
+85,
+212
+],
+"이름": "brachialis",
+"쪽": "left",
+"부분": "",
+"무리": "Upper arms",
+"근육": true
+},
+{
+"번호": 20,
+"색": [
+0,
+85,
+255
+],
+"이름": "brachialis",
+"쪽": "right",
+"부분": "",
+"무리": "Upper arms",
+"근육": true
+},
+{
+"번호": 21,
+"색": [
+0,
+127,
+0
+],
+"이름": "brachioradialis_muscle",
+"쪽": "left",
+"부분": "",
+"무리": "Forearms",
+"근육": true
+},
+{
+"번호": 22,
+"색": [
+0,
+127,
+42
+],
+"이름": "brachioradialis_muscle",
+"쪽": "right",
+"부분": "",
+"무리": "Forearms",
+"근육": true
+},
+{
+"번호": 23,
+"색": [
+0,
+127,
+85
+],
+"이름": "connective_tissue",
+"쪽": "",
+"부분": "",
+"무리": "",
+"근육": false
+},
+{
+"번호": 24,
+"색": [
+0,
+127,
+127
+],
+"이름": "coracobrachialis",
+"쪽": "left",
+"부분": "",
+"무리": "Upper arms",
+"근육": true
+},
+{
+"번호": 25,
+"색": [
+0,
+127,
+170
+],
+"이름": "coracobrachialis",
+"쪽": "right",
+"부분": "",
+"무리": "Upper arms",
+"근육": true
+},
+{
+"번호": 26,
+"색": [
+0,
+127,
+212
+],
+"이름": "deep_head_of_pronator_teres",
+"쪽": "left",
+"부분": "",
+"무리": "Forearms",
+"근육": true
+},
+{
+"번호": 27,
+"색": [
+0,
+127,
+255
+],
+"이름": "deep_head_of_pronator_teres",
+"쪽": "right",
+"부분": "",
+"무리": "Forearms",
+"근육": true
+},
+{
+"번호": 28,
+"색": [
+0,
+170,
+0
+],
+"이름": "deltoid_anterior",
+"쪽": "left",
+"부분": "",
+"무리": "Deltoids",
+"근육": true
+},
+{
+"번호": 29,
+"색": [
+0,
+170,
+42
+],
+"이름": "deltoid_anterior",
+"쪽": "right",
+"부분": "",
+"무리": "Deltoids",
+"근육": true
+},
+{
+"번호": 30,
+"색": [
+0,
+170,
+85
+],
+"이름": "deltoid_lateral",
+"쪽": "left",
+"부분": "",
+"무리": "Deltoids",
+"근육": true
+},
+{
+"번호": 31,
+"색": [
+0,
+170,
+127
+],
+"이름": "deltoid_lateral",
+"쪽": "right",
+"부분": "",
+"무리": "Deltoids",
+"근육": true
+},
+{
+"번호": 32,
+"색": [
+0,
+170,
+170
+],
+"이름": "deltoid_posterior",
+"쪽": "left",
+"부분": "",
+"무리": "Deltoids",
+"근육": true
+},
+{
+"번호": 33,
+"색": [
+0,
+170,
+212
+],
+"이름": "deltoid_posterior",
+"쪽": "right",
+"부분": "",
+"무리": "Deltoids",
+"근육": true
+},
+{
+"번호": 34,
+"색": [
+0,
+170,
+255
+],
+"이름": "extensor_carpi_radialis_brevis",
+"쪽": "left",
+"부분": "",
+"무리": "Forearms",
+"근육": true
+},
+{
+"번호": 35,
+"색": [
+0,
+212,
+0
+],
+"이름": "extensor_carpi_radialis_brevis",
+"쪽": "right",
+"부분": "",
+"무리": "Forearms",
+"근육": true
+},
+{
+"번호": 36,
+"색": [
+0,
+212,
+42
+],
+"이름": "extensor_carpi_radialis_longus",
+"쪽": "left",
+"부분": "",
+"무리": "Forearms",
+"근육": true
+},
+{
+"번호": 37,
+"색": [
+0,
+212,
+85
+],
+"이름": "extensor_carpi_radialis_longus",
+"쪽": "right",
+"부분": "",
+"무리": "Forearms",
+"근육": true
+},
+{
+"번호": 38,
+"색": [
+0,
+212,
+127
+],
+"이름": "extensor_digiti_minimi",
+"쪽": "left",
+"부분": "",
+"무리": "Forearms",
+"근육": true
+},
+{
+"번호": 39,
+"색": [
+0,
+212,
+170
+],
+"이름": "extensor_digiti_minimi",
+"쪽": "right",
+"부분": "",
+"무리": "Forearms",
+"근육": true
+},
+{
+"번호": 40,
+"색": [
+0,
+212,
+212
+],
+"이름": "extensor_digitorum",
+"쪽": "left",
+"부분": "",
+"무리": "Forearms",
+"근육": true
+},
+{
+"번호": 41,
+"색": [
+0,
+212,
+255
+],
+"이름": "extensor_digitorum_longus",
+"쪽": "left",
+"부분": "",
+"무리": "Lower legs",
+"근육": true
+},
+{
+"번호": 42,
+"색": [
+0,
+255,
+0
+],
+"이름": "extensor_digitorum_longus",
+"쪽": "right",
+"부분": "",
+"무리": "Lower legs",
+"근육": true
+},
+{
+"번호": 43,
+"색": [
+0,
+255,
+42
+],
+"이름": "extensor_digitorum",
+"쪽": "right",
+"부분": "",
+"무리": "Forearms",
+"근육": true
+},
+{
+"번호": 44,
+"색": [
+0,
+255,
+85
+],
+"이름": "extensor_hallucis_longus",
+"쪽": "left",
+"부분": "",
+"무리": "Lower legs",
+"근육": true
+},
+{
+"번호": 45,
+"색": [
+0,
+255,
+127
+],
+"이름": "extensor_hallucis_longus",
+"쪽": "right",
+"부분": "",
+"무리": "Lower legs",
+"근육": true
+},
+{
+"번호": 46,
+"색": [
+0,
+255,
+170
+],
+"이름": "extensor_indicis",
+"쪽": "left",
+"부분": "",
+"무리": "Forearms",
+"근육": true
+},
+{
+"번호": 47,
+"색": [
+0,
+255,
+212
+],
+"이름": "extensor_indicis",
+"쪽": "right",
+"부분": "",
+"무리": "Forearms",
+"근육": true
+},
+{
+"번호": 48,
+"색": [
+0,
+255,
+255
+],
+"이름": "extensor_pollicis_brevis",
+"쪽": "left",
+"부분": "",
+"무리": "Forearms",
+"근육": true
+},
+{
+"번호": 49,
+"색": [
+42,
+0,
+0
+],
+"이름": "extensor_pollicis_brevis",
+"쪽": "right",
+"부분": "",
+"무리": "Forearms",
+"근육": true
+},
+{
+"번호": 50,
+"색": [
+42,
+0,
+42
+],
+"이름": "extensor_pollicis_longus",
+"쪽": "left",
+"부분": "",
+"무리": "Forearms",
+"근육": true
+},
+{
+"번호": 51,
+"색": [
+42,
+0,
+85
+],
+"이름": "extensor_pollicis_longus",
+"쪽": "right",
+"부분": "",
+"무리": "Forearms",
+"근육": true
+},
+{
+"번호": 52,
+"색": [
+42,
+0,
+127
+],
+"이름": "external_oblique",
+"쪽": "left",
+"부분": "",
+"무리": "Obliques",
+"근육": true
+},
+{
+"번호": 53,
+"색": [
+42,
+0,
+170
+],
+"이름": "external_oblique",
+"쪽": "right",
+"부분": "",
+"무리": "Obliques",
+"근육": true
+},
+{
+"번호": 54,
+"색": [
+42,
+0,
+212
+],
+"이름": "fibularis_brevis",
+"쪽": "left",
+"부분": "",
+"무리": "Lower legs",
+"근육": true
+},
+{
+"번호": 55,
+"색": [
+42,
+0,
+255
+],
+"이름": "fibularis_brevis",
+"쪽": "right",
+"부분": "",
+"무리": "Lower legs",
+"근육": true
+},
+{
+"번호": 56,
+"색": [
+42,
+42,
+0
+],
+"이름": "fibularis_longus",
+"쪽": "left",
+"부분": "",
+"무리": "Lower legs",
+"근육": true
+},
+{
+"번호": 57,
+"색": [
+42,
+42,
+42
+],
+"이름": "fibularis_longus",
+"쪽": "right",
+"부분": "",
+"무리": "Lower legs",
+"근육": true
+},
+{
+"번호": 58,
+"색": [
+42,
+42,
+85
+],
+"이름": "fibularis_tertius",
+"쪽": "left",
+"부분": "",
+"무리": "Lower legs",
+"근육": true
+},
+{
+"번호": 59,
+"색": [
+42,
+42,
+127
+],
+"이름": "fibularis_tertius",
+"쪽": "right",
+"부분": "",
+"무리": "Lower legs",
+"근육": true
+},
+{
+"번호": 60,
+"색": [
+42,
+42,
+170
+],
+"이름": "flexor_carpi_radialis",
+"쪽": "left",
+"부분": "",
+"무리": "Forearms",
+"근육": true
+},
+{
+"번호": 61,
+"색": [
+42,
+42,
+212
+],
+"이름": "flexor_carpi_radialis",
+"쪽": "right",
+"부분": "",
+"무리": "Forearms",
+"근육": true
+},
+{
+"번호": 62,
+"색": [
+42,
+42,
+255
+],
+"이름": "flexor_digitorum_longus",
+"쪽": "left",
+"부분": "",
+"무리": "Lower legs",
+"근육": true
+},
+{
+"번호": 63,
+"색": [
+42,
+85,
+0
+],
+"이름": "flexor_digitorum_longus",
+"쪽": "right",
+"부분": "",
+"무리": "Lower legs",
+"근육": true
+},
+{
+"번호": 64,
+"색": [
+42,
+85,
+42
+],
+"이름": "flexor_digitorum_profundus",
+"쪽": "left",
+"부분": "",
+"무리": "Forearms",
+"근육": true
+},
+{
+"번호": 65,
+"색": [
+42,
+85,
+85
+],
+"이름": "flexor_digitorum_profundus",
+"쪽": "right",
+"부분": "",
+"무리": "Forearms",
+"근육": true
+},
+{
+"번호": 66,
+"색": [
+42,
+85,
+127
+],
+"이름": "flexor_hallucis_longus",
+"쪽": "left",
+"부분": "",
+"무리": "Lower legs",
+"근육": true
+},
+{
+"번호": 67,
+"색": [
+42,
+85,
+170
+],
+"이름": "flexor_hallucis_longus",
+"쪽": "right",
+"부분": "",
+"무리": "Lower legs",
+"근육": true
+},
+{
+"번호": 68,
+"색": [
+42,
+85,
+212
+],
+"이름": "flexor_pollicis_longus",
+"쪽": "left",
+"부분": "",
+"무리": "Forearms",
+"근육": true
+},
+{
+"번호": 69,
+"색": [
+42,
+85,
+255
+],
+"이름": "flexor_pollicis_longus",
+"쪽": "right",
+"부분": "",
+"무리": "Forearms",
+"근육": true
+},
+{
+"번호": 70,
+"색": [
+42,
+127,
+0
+],
+"이름": "gastrocnemius_lateral",
+"쪽": "left",
+"부분": "",
+"무리": "Calves",
+"근육": true
+},
+{
+"번호": 71,
+"색": [
+42,
+127,
+42
+],
+"이름": "gastrocnemius_lateral",
+"쪽": "right",
+"부분": "",
+"무리": "Calves",
+"근육": true
+},
+{
+"번호": 72,
+"색": [
+42,
+127,
+85
+],
+"이름": "gastrocnemius_medial",
+"쪽": "left",
+"부분": "",
+"무리": "Calves",
+"근육": true
+},
+{
+"번호": 73,
+"색": [
+42,
+127,
+127
+],
+"이름": "gastrocnemius_medial",
+"쪽": "right",
+"부분": "",
+"무리": "Calves",
+"근육": true
+},
+{
+"번호": 74,
+"색": [
+42,
+127,
+170
+],
+"이름": "gemellus_inferior",
+"쪽": "left",
+"부분": "",
+"무리": "Hip rotators",
+"근육": true
+},
+{
+"번호": 75,
+"색": [
+42,
+127,
+212
+],
+"이름": "gemellus_inferior",
+"쪽": "right",
+"부분": "",
+"무리": "Hip rotators",
+"근육": true
+},
+{
+"번호": 76,
+"색": [
+42,
+127,
+255
+],
+"이름": "gemellus_superior",
+"쪽": "left",
+"부분": "",
+"무리": "Hip rotators",
+"근육": true
+},
+{
+"번호": 77,
+"색": [
+42,
+170,
+0
+],
+"이름": "gemellus_superior",
+"쪽": "right",
+"부분": "",
+"무리": "Hip rotators",
+"근육": true
+},
+{
+"번호": 78,
+"색": [
+42,
+170,
+42
+],
+"이름": "gluteus_maximus",
+"쪽": "left",
+"부분": "",
+"무리": "Glutes",
+"근육": true
+},
+{
+"번호": 79,
+"색": [
+42,
+170,
+85
+],
+"이름": "gluteus_maximus",
+"쪽": "right",
+"부분": "",
+"무리": "Glutes",
+"근육": true
+},
+{
+"번호": 80,
+"색": [
+42,
+170,
+127
+],
+"이름": "gluteus_medius",
+"쪽": "left",
+"부분": "",
+"무리": "Glutes",
+"근육": true
+},
+{
+"번호": 81,
+"색": [
+42,
+170,
+170
+],
+"이름": "gluteus_medius",
+"쪽": "right",
+"부분": "",
+"무리": "Glutes",
+"근육": true
+},
+{
+"번호": 82,
+"색": [
+42,
+170,
+212
+],
+"이름": "gluteus_minimus",
+"쪽": "left",
+"부분": "",
+"무리": "Glutes",
+"근육": true
+},
+{
+"번호": 83,
+"색": [
+42,
+170,
+255
+],
+"이름": "gluteus_minimus",
+"쪽": "right",
+"부분": "",
+"무리": "Glutes",
+"근육": true
+},
+{
+"번호": 84,
+"색": [
+42,
+212,
+0
+],
+"이름": "gracilis",
+"쪽": "left",
+"부분": "",
+"무리": "Adductors",
+"근육": true
+},
+{
+"번호": 85,
+"색": [
+42,
+212,
+42
+],
+"이름": "gracilis",
+"쪽": "right",
+"부분": "",
+"무리": "Adductors",
+"근육": true
+},
+{
+"번호": 86,
+"색": [
+42,
+212,
+85
+],
+"이름": "head_hands_feet",
+"쪽": "",
+"부분": "",
+"무리": "",
+"근육": false
+},
+{
+"번호": 87,
+"색": [
+42,
+212,
+127
+],
+"이름": "humeral_head_of_extensor_carpi_ulnaris",
+"쪽": "left",
+"부분": "",
+"무리": "Forearms",
+"근육": true
+},
+{
+"번호": 88,
+"색": [
+42,
+212,
+170
+],
+"이름": "humeral_head_of_extensor_carpi_ulnaris",
+"쪽": "right",
+"부분": "",
+"무리": "Forearms",
+"근육": true
+},
+{
+"번호": 89,
+"색": [
+42,
+212,
+212
+],
+"이름": "humeral_head_of_flexor_carpi_ulnaris",
+"쪽": "left",
+"부분": "",
+"무리": "Forearms",
+"근육": true
+},
+{
+"번호": 90,
+"색": [
+42,
+212,
+255
+],
+"이름": "humeral_head_of_flexor_carpi_ulnaris",
+"쪽": "right",
+"부분": "",
+"무리": "Forearms",
+"근육": true
+},
+{
+"번호": 91,
+"색": [
+42,
+255,
+0
+],
+"이름": "humero_ulnar_head_of_flexor_digitorum_superficialis",
+"쪽": "left",
+"부분": "",
+"무리": "Forearms",
+"근육": true
+},
+{
+"번호": 92,
+"색": [
+42,
+255,
+42
+],
+"이름": "humero_ulnar_head_of_flexor_digitorum_superficialis",
+"쪽": "right",
+"부분": "",
+"무리": "Forearms",
+"근육": true
+},
+{
+"번호": 93,
+"색": [
+42,
+255,
+85
+],
+"이름": "iliacus",
+"쪽": "left",
+"부분": "",
+"무리": "Hip flexors",
+"근육": true
+},
+{
+"번호": 94,
+"색": [
+42,
+255,
+127
+],
+"이름": "iliacus",
+"쪽": "right",
+"부분": "",
+"무리": "Hip flexors",
+"근육": true
+},
+{
+"번호": 95,
+"색": [
+42,
+255,
+170
+],
+"이름": "iliocostalis_lumborum",
+"쪽": "left",
+"부분": "",
+"무리": "Spinal extensors",
+"근육": true
+},
+{
+"번호": 96,
+"색": [
+42,
+255,
+212
+],
+"이름": "iliocostalis_lumborum",
+"쪽": "right",
+"부분": "",
+"무리": "Spinal extensors",
+"근육": true
+},
+{
+"번호": 97,
+"색": [
+42,
+255,
+255
+],
+"이름": "iliocostalis_thoracis",
+"쪽": "left",
+"부분": "",
+"무리": "Spinal extensors",
+"근육": true
+},
+{
+"번호": 98,
+"색": [
+85,
+0,
+0
+],
+"이름": "iliocostalis_thoracis",
+"쪽": "right",
+"부분": "",
+"무리": "Spinal extensors",
+"근육": true
+},
+{
+"번호": 99,
+"색": [
+85,
+0,
+42
+],
+"이름": "infraspinatus",
+"쪽": "left",
+"부분": "",
+"무리": "Rotator cuff",
+"근육": true
+},
+{
+"번호": 100,
+"색": [
+85,
+0,
+85
+],
+"이름": "infraspinatus",
+"쪽": "right",
+"부분": "",
+"무리": "Rotator cuff",
+"근육": true
+},
+{
+"번호": 101,
+"색": [
+85,
+0,
+127
+],
+"이름": "internal_oblique",
+"쪽": "left",
+"부분": "",
+"무리": "Obliques",
+"근육": true
+},
+{
+"번호": 102,
+"색": [
+85,
+0,
+170
+],
+"이름": "internal_oblique",
+"쪽": "right",
+"부분": "",
+"무리": "Obliques",
+"근육": true
+},
+{
+"번호": 103,
+"색": [
+85,
+0,
+212
+],
+"이름": "latissimus_dorsi",
+"쪽": "left",
+"부분": "",
+"무리": "Lats",
+"근육": true
+},
+{
+"번호": 104,
+"색": [
+85,
+0,
+255
+],
+"이름": "latissimus_dorsi",
+"쪽": "right",
+"부분": "",
+"무리": "Lats",
+"근육": true
+},
+{
+"번호": 105,
+"색": [
+85,
+42,
+0
+],
+"이름": "levator_scapulae",
+"쪽": "left",
+"부분": "",
+"무리": "Upper back",
+"근육": true
+},
+{
+"번호": 106,
+"색": [
+85,
+42,
+42
+],
+"이름": "levator_scapulae",
+"쪽": "right",
+"부분": "",
+"무리": "Upper back",
+"근육": true
+},
+{
+"번호": 107,
+"색": [
+85,
+42,
+85
+],
+"이름": "longissimus_thoracis",
+"쪽": "left",
+"부분": "",
+"무리": "Spinal extensors",
+"근육": true
+},
+{
+"번호": 108,
+"색": [
+85,
+42,
+127
+],
+"이름": "longissimus_thoracis",
+"쪽": "right",
+"부분": "",
+"무리": "Spinal extensors",
+"근육": true
+},
+{
+"번호": 109,
+"색": [
+85,
+42,
+170
+],
+"이름": "multifidus_lumborum",
+"쪽": "left",
+"부분": "",
+"무리": "Spinal extensors",
+"근육": true
+},
+{
+"번호": 110,
+"색": [
+85,
+42,
+212
+],
+"이름": "multifidus_lumborum",
+"쪽": "right",
+"부분": "",
+"무리": "Spinal extensors",
+"근육": true
+},
+{
+"번호": 111,
+"색": [
+85,
+42,
+255
+],
+"이름": "obturator_externus",
+"쪽": "left",
+"부분": "",
+"무리": "Hip rotators",
+"근육": true
+},
+{
+"번호": 112,
+"색": [
+85,
+85,
+0
+],
+"이름": "obturator_externus",
+"쪽": "right",
+"부분": "",
+"무리": "Hip rotators",
+"근육": true
+},
+{
+"번호": 113,
+"색": [
+85,
+85,
+42
+],
+"이름": "obturator_internus",
+"쪽": "left",
+"부분": "",
+"무리": "Hip rotators",
+"근육": true
+},
+{
+"번호": 114,
+"색": [
+85,
+85,
+85
+],
+"이름": "obturator_internus",
+"쪽": "right",
+"부분": "",
+"무리": "Hip rotators",
+"근육": true
+},
+{
+"번호": 115,
+"색": [
+85,
+85,
+127
+],
+"이름": "palmaris_longus_muscle",
+"쪽": "left",
+"부분": "",
+"무리": "Forearms",
+"근육": true
+},
+{
+"번호": 116,
+"색": [
+85,
+85,
+170
+],
+"이름": "palmaris_longus_muscle",
+"쪽": "right",
+"부분": "",
+"무리": "Forearms",
+"근육": true
+},
+{
+"번호": 117,
+"색": [
+85,
+85,
+212
+],
+"이름": "pectineus",
+"쪽": "left",
+"부분": "",
+"무리": "Adductors",
+"근육": true
+},
+{
+"번호": 118,
+"색": [
+85,
+85,
+255
+],
+"이름": "pectineus",
+"쪽": "right",
+"부분": "",
+"무리": "Adductors",
+"근육": true
+},
+{
+"번호": 119,
+"색": [
+85,
+127,
+0
+],
+"이름": "pectoralis_major_abdominal",
+"쪽": "left",
+"부분": "",
+"무리": "Chest",
+"근육": true
+},
+{
+"번호": 120,
+"색": [
+85,
+127,
+42
+],
+"이름": "pectoralis_major_abdominal",
+"쪽": "right",
+"부분": "",
+"무리": "Chest",
+"근육": true
+},
+{
+"번호": 121,
+"색": [
+85,
+127,
+85
+],
+"이름": "pectoralis_major_clavicular",
+"쪽": "left",
+"부분": "",
+"무리": "Chest",
+"근육": true
+},
+{
+"번호": 122,
+"색": [
+85,
+127,
+127
+],
+"이름": "pectoralis_major_clavicular",
+"쪽": "right",
+"부분": "",
+"무리": "Chest",
+"근육": true
+},
+{
+"번호": 123,
+"색": [
+85,
+127,
+170
+],
+"이름": "pectoralis_major_sternocostal",
+"쪽": "left",
+"부분": "",
+"무리": "Chest",
+"근육": true
+},
+{
+"번호": 124,
+"색": [
+85,
+127,
+212
+],
+"이름": "pectoralis_major_sternocostal",
+"쪽": "right",
+"부분": "",
+"무리": "Chest",
+"근육": true
+},
+{
+"번호": 125,
+"색": [
+85,
+127,
+255
+],
+"이름": "pectoralis_minor",
+"쪽": "left",
+"부분": "",
+"무리": "Chest",
+"근육": true
+},
+{
+"번호": 126,
+"색": [
+85,
+170,
+0
+],
+"이름": "pectoralis_minor",
+"쪽": "right",
+"부분": "",
+"무리": "Chest",
+"근육": true
+},
+{
+"번호": 127,
+"색": [
+85,
+170,
+42
+],
+"이름": "piriformis",
+"쪽": "left",
+"부분": "",
+"무리": "Hip rotators",
+"근육": true
+},
+{
+"번호": 128,
+"색": [
+85,
+170,
+85
+],
+"이름": "piriformis",
+"쪽": "right",
+"부분": "",
+"무리": "Hip rotators",
+"근육": true
+},
+{
+"번호": 129,
+"색": [
+85,
+170,
+127
+],
+"이름": "plantaris",
+"쪽": "left",
+"부분": "",
+"무리": "Calves",
+"근육": true
+},
+{
+"번호": 130,
+"색": [
+85,
+170,
+170
+],
+"이름": "plantaris",
+"쪽": "right",
+"부분": "",
+"무리": "Calves",
+"근육": true
+},
+{
+"번호": 131,
+"색": [
+85,
+170,
+212
+],
+"이름": "popliteus",
+"쪽": "left",
+"부분": "",
+"무리": "Lower legs",
+"근육": true
+},
+{
+"번호": 132,
+"색": [
+85,
+170,
+255
+],
+"이름": "popliteus",
+"쪽": "right",
+"부분": "",
+"무리": "Lower legs",
+"근육": true
+},
+{
+"번호": 133,
+"색": [
+85,
+212,
+0
+],
+"이름": "pronator_quadratus",
+"쪽": "left",
+"부분": "",
+"무리": "Forearms",
+"근육": true
+},
+{
+"번호": 134,
+"색": [
+85,
+212,
+42
+],
+"이름": "pronator_quadratus",
+"쪽": "right",
+"부분": "",
+"무리": "Forearms",
+"근육": true
+},
+{
+"번호": 135,
+"색": [
+85,
+212,
+85
+],
+"이름": "psoas_major",
+"쪽": "left",
+"부분": "",
+"무리": "Hip flexors",
+"근육": true
+},
+{
+"번호": 136,
+"색": [
+85,
+212,
+127
+],
+"이름": "psoas_major",
+"쪽": "right",
+"부분": "",
+"무리": "Hip flexors",
+"근육": true
+},
+{
+"번호": 137,
+"색": [
+85,
+212,
+170
+],
+"이름": "quadratus_femoris",
+"쪽": "left",
+"부분": "",
+"무리": "Hip rotators",
+"근육": true
+},
+{
+"번호": 138,
+"색": [
+85,
+212,
+212
+],
+"이름": "quadratus_femoris",
+"쪽": "right",
+"부분": "",
+"무리": "Hip rotators",
+"근육": true
+},
+{
+"번호": 139,
+"색": [
+85,
+212,
+255
+],
+"이름": "quadratus_lumborum",
+"쪽": "left",
+"부분": "",
+"무리": "Lower back",
+"근육": true
+},
+{
+"번호": 140,
+"색": [
+85,
+255,
+0
+],
+"이름": "quadratus_lumborum",
+"쪽": "right",
+"부분": "",
+"무리": "Lower back",
+"근육": true
+},
+{
+"번호": 141,
+"색": [
+85,
+255,
+42
+],
+"이름": "radial_head_of_flexor_digitorum_superficialis",
+"쪽": "left",
+"부분": "",
+"무리": "Forearms",
+"근육": true
+},
+{
+"번호": 142,
+"색": [
+85,
+255,
+85
+],
+"이름": "radial_head_of_flexor_digitorum_superficialis",
+"쪽": "right",
+"부분": "",
+"무리": "Forearms",
+"근육": true
+},
+{
+"번호": 143,
+"색": [
+85,
+255,
+127
+],
+"이름": "rectus_abdominis",
+"쪽": "left",
+"부분": "upper",
+"무리": "Abdominals",
+"근육": true
+},
+{
+"번호": 144,
+"색": [
+85,
+255,
+170
+],
+"이름": "rectus_abdominis",
+"쪽": "left",
+"부분": "lower",
+"무리": "Abdominals",
+"근육": true
+},
+{
+"번호": 145,
+"색": [
+85,
+255,
+212
+],
+"이름": "rectus_abdominis",
+"쪽": "right",
+"부분": "upper",
+"무리": "Abdominals",
+"근육": true
+},
+{
+"번호": 146,
+"색": [
+85,
+255,
+255
+],
+"이름": "rectus_abdominis",
+"쪽": "right",
+"부분": "lower",
+"무리": "Abdominals",
+"근육": true
+},
+{
+"번호": 147,
+"색": [
+127,
+0,
+0
+],
+"이름": "rectus_femoris",
+"쪽": "left",
+"부분": "",
+"무리": "Quadriceps",
+"근육": true
+},
+{
+"번호": 148,
+"색": [
+127,
+0,
+42
+],
+"이름": "rectus_femoris",
+"쪽": "right",
+"부분": "",
+"무리": "Quadriceps",
+"근육": true
+},
+{
+"번호": 149,
+"색": [
+127,
+0,
+85
+],
+"이름": "rhomboid_major",
+"쪽": "left",
+"부분": "",
+"무리": "Upper back",
+"근육": true
+},
+{
+"번호": 150,
+"색": [
+127,
+0,
+127
+],
+"이름": "rhomboid_major",
+"쪽": "right",
+"부분": "",
+"무리": "Upper back",
+"근육": true
+},
+{
+"번호": 151,
+"색": [
+127,
+0,
+170
+],
+"이름": "rhomboid_minor",
+"쪽": "left",
+"부분": "",
+"무리": "Upper back",
+"근육": true
+},
+{
+"번호": 152,
+"색": [
+127,
+0,
+212
+],
+"이름": "rhomboid_minor",
+"쪽": "right",
+"부분": "",
+"무리": "Upper back",
+"근육": true
+},
+{
+"번호": 153,
+"색": [
+127,
+0,
+255
+],
+"이름": "sartorius",
+"쪽": "left",
+"부분": "",
+"무리": "Sartorius",
+"근육": true
+},
+{
+"번호": 154,
+"색": [
+127,
+42,
+0
+],
+"이름": "sartorius",
+"쪽": "right",
+"부분": "",
+"무리": "Sartorius",
+"근육": true
+},
+{
+"번호": 155,
+"색": [
+127,
+42,
+42
+],
+"이름": "scalenus_anterior",
+"쪽": "left",
+"부분": "",
+"무리": "Neck",
+"근육": true
+},
+{
+"번호": 156,
+"색": [
+127,
+42,
+85
+],
+"이름": "scalenus_anterior",
+"쪽": "right",
+"부분": "",
+"무리": "Neck",
+"근육": true
+},
+{
+"번호": 157,
+"색": [
+127,
+42,
+127
+],
+"이름": "scalenus_medius",
+"쪽": "left",
+"부분": "",
+"무리": "Neck",
+"근육": true
+},
+{
+"번호": 158,
+"색": [
+127,
+42,
+170
+],
+"이름": "scalenus_medius",
+"쪽": "right",
+"부분": "",
+"무리": "Neck",
+"근육": true
+},
+{
+"번호": 159,
+"색": [
+127,
+42,
+212
+],
+"이름": "scalenus_posterior",
+"쪽": "left",
+"부분": "",
+"무리": "Neck",
+"근육": true
+},
+{
+"번호": 160,
+"색": [
+127,
+42,
+255
+],
+"이름": "scalenus_posterior",
+"쪽": "right",
+"부분": "",
+"무리": "Neck",
+"근육": true
+},
+{
+"번호": 161,
+"색": [
+127,
+85,
+0
+],
+"이름": "semimembranosus",
+"쪽": "left",
+"부분": "",
+"무리": "Hamstrings",
+"근육": true
+},
+{
+"번호": 162,
+"색": [
+127,
+85,
+42
+],
+"이름": "semimembranosus",
+"쪽": "right",
+"부분": "",
+"무리": "Hamstrings",
+"근육": true
+},
+{
+"번호": 163,
+"색": [
+127,
+85,
+85
+],
+"이름": "semitendinosus",
+"쪽": "left",
+"부분": "",
+"무리": "Hamstrings",
+"근육": true
+},
+{
+"번호": 164,
+"색": [
+127,
+85,
+127
+],
+"이름": "semitendinosus",
+"쪽": "right",
+"부분": "",
+"무리": "Hamstrings",
+"근육": true
+},
+{
+"번호": 165,
+"색": [
+127,
+85,
+170
+],
+"이름": "serratus_anterior",
+"쪽": "left",
+"부분": "",
+"무리": "Serratus",
+"근육": true
+},
+{
+"번호": 166,
+"색": [
+127,
+85,
+212
+],
+"이름": "serratus_anterior",
+"쪽": "right",
+"부분": "",
+"무리": "Serratus",
+"근육": true
+},
+{
+"번호": 167,
+"색": [
+127,
+85,
+255
+],
+"이름": "serratus_posterior_inferior",
+"쪽": "left",
+"부분": "",
+"무리": "Upper back",
+"근육": true
+},
+{
+"번호": 168,
+"색": [
+127,
+127,
+0
+],
+"이름": "serratus_posterior_inferior",
+"쪽": "right",
+"부분": "",
+"무리": "Upper back",
+"근육": true
+},
+{
+"번호": 169,
+"색": [
+127,
+127,
+42
+],
+"이름": "serratus_posterior_superior",
+"쪽": "left",
+"부분": "",
+"무리": "Upper back",
+"근육": true
+},
+{
+"번호": 170,
+"색": [
+127,
+127,
+85
+],
+"이름": "serratus_posterior_superior",
+"쪽": "right",
+"부분": "",
+"무리": "Upper back",
+"근육": true
+},
+{
+"번호": 171,
+"색": [
+127,
+127,
+127
+],
+"이름": "skeleton",
+"쪽": "",
+"부분": "",
+"무리": "",
+"근육": false
+},
+{
+"번호": 172,
+"색": [
+127,
+127,
+170
+],
+"이름": "soleus",
+"쪽": "left",
+"부분": "",
+"무리": "Calves",
+"근육": true
+},
+{
+"번호": 173,
+"색": [
+127,
+127,
+212
+],
+"이름": "soleus",
+"쪽": "right",
+"부분": "",
+"무리": "Calves",
+"근육": true
+},
+{
+"번호": 174,
+"색": [
+127,
+127,
+255
+],
+"이름": "spinalis_thoracis",
+"쪽": "left",
+"부분": "",
+"무리": "Spinal extensors",
+"근육": true
+},
+{
+"번호": 175,
+"색": [
+127,
+170,
+0
+],
+"이름": "spinalis_thoracis",
+"쪽": "right",
+"부분": "",
+"무리": "Spinal extensors",
+"근육": true
+},
+{
+"번호": 176,
+"색": [
+127,
+170,
+42
+],
+"이름": "splenius_capitis",
+"쪽": "left",
+"부분": "",
+"무리": "Neck",
+"근육": true
+},
+{
+"번호": 177,
+"색": [
+127,
+170,
+85
+],
+"이름": "splenius_capitis",
+"쪽": "right",
+"부분": "",
+"무리": "Neck",
+"근육": true
+},
+{
+"번호": 178,
+"색": [
+127,
+170,
+127
+],
+"이름": "splenius_colli",
+"쪽": "left",
+"부분": "",
+"무리": "Neck",
+"근육": true
+},
+{
+"번호": 179,
+"색": [
+127,
+170,
+170
+],
+"이름": "splenius_colli",
+"쪽": "right",
+"부분": "",
+"무리": "Neck",
+"근육": true
+},
+{
+"번호": 180,
+"색": [
+127,
+170,
+212
+],
+"이름": "sternocleidomastoid",
+"쪽": "left",
+"부분": "",
+"무리": "Neck",
+"근육": true
+},
+{
+"번호": 181,
+"색": [
+127,
+170,
+255
+],
+"이름": "sternocleidomastoid",
+"쪽": "right",
+"부분": "",
+"무리": "Neck",
+"근육": true
+},
+{
+"번호": 182,
+"색": [
+127,
+212,
+0
+],
+"이름": "subscapularis",
+"쪽": "left",
+"부분": "",
+"무리": "Rotator cuff",
+"근육": true
+},
+{
+"번호": 183,
+"색": [
+127,
+212,
+42
+],
+"이름": "subscapularis",
+"쪽": "right",
+"부분": "",
+"무리": "Rotator cuff",
+"근육": true
+},
+{
+"번호": 184,
+"색": [
+127,
+212,
+85
+],
+"이름": "superficial_head_of_pronator_teres",
+"쪽": "left",
+"부분": "",
+"무리": "Forearms",
+"근육": true
+},
+{
+"번호": 185,
+"색": [
+127,
+212,
+127
+],
+"이름": "superficial_head_of_pronator_teres",
+"쪽": "right",
+"부분": "",
+"무리": "Forearms",
+"근육": true
+},
+{
+"번호": 186,
+"색": [
+127,
+212,
+170
+],
+"이름": "supinator",
+"쪽": "left",
+"부분": "",
+"무리": "Forearms",
+"근육": true
+},
+{
+"번호": 187,
+"색": [
+127,
+212,
+212
+],
+"이름": "supinator",
+"쪽": "right",
+"부분": "",
+"무리": "Forearms",
+"근육": true
+},
+{
+"번호": 188,
+"색": [
+127,
+212,
+255
+],
+"이름": "supraspinatus",
+"쪽": "left",
+"부분": "",
+"무리": "Rotator cuff",
+"근육": true
+},
+{
+"번호": 189,
+"색": [
+127,
+255,
+0
+],
+"이름": "supraspinatus",
+"쪽": "right",
+"부분": "",
+"무리": "Rotator cuff",
+"근육": true
+},
+{
+"번호": 190,
+"색": [
+127,
+255,
+42
+],
+"이름": "tensor_fasciae_latae",
+"쪽": "left",
+"부분": "",
+"무리": "Hip flexors",
+"근육": true
+},
+{
+"번호": 191,
+"색": [
+127,
+255,
+85
+],
+"이름": "tensor_fasciae_latae",
+"쪽": "right",
+"부분": "",
+"무리": "Hip flexors",
+"근육": true
+},
+{
+"번호": 192,
+"색": [
+127,
+255,
+127
+],
+"이름": "teres_major",
+"쪽": "left",
+"부분": "",
+"무리": "Teres major",
+"근육": true
+},
+{
+"번호": 193,
+"색": [
+127,
+255,
+170
+],
+"이름": "teres_major",
+"쪽": "right",
+"부분": "",
+"무리": "Teres major",
+"근육": true
+},
+{
+"번호": 194,
+"색": [
+127,
+255,
+212
+],
+"이름": "teres_minor",
+"쪽": "left",
+"부분": "",
+"무리": "Rotator cuff",
+"근육": true
+},
+{
+"번호": 195,
+"색": [
+127,
+255,
+255
+],
+"이름": "teres_minor",
+"쪽": "right",
+"부분": "",
+"무리": "Rotator cuff",
+"근육": true
+},
+{
+"번호": 196,
+"색": [
+170,
+0,
+0
+],
+"이름": "tibialis_anterior",
+"쪽": "left",
+"부분": "",
+"무리": "Lower legs",
+"근육": true
+},
+{
+"번호": 197,
+"색": [
+170,
+0,
+42
+],
+"이름": "tibialis_anterior",
+"쪽": "right",
+"부분": "",
+"무리": "Lower legs",
+"근육": true
+},
+{
+"번호": 198,
+"색": [
+170,
+0,
+85
+],
+"이름": "tibialis_posterior",
+"쪽": "left",
+"부분": "",
+"무리": "Lower legs",
+"근육": true
+},
+{
+"번호": 199,
+"색": [
+170,
+0,
+127
+],
+"이름": "tibialis_posterior",
+"쪽": "right",
+"부분": "",
+"무리": "Lower legs",
+"근육": true
+},
+{
+"번호": 200,
+"색": [
+170,
+0,
+170
+],
+"이름": "transversus_abdominis",
+"쪽": "left",
+"부분": "",
+"무리": "Abdominals",
+"근육": true
+},
+{
+"번호": 201,
+"색": [
+170,
+0,
+212
+],
+"이름": "transversus_abdominis",
+"쪽": "right",
+"부분": "",
+"무리": "Abdominals",
+"근육": true
+},
+{
+"번호": 202,
+"색": [
+170,
+0,
+255
+],
+"이름": "trapezius_lower",
+"쪽": "left",
+"부분": "",
+"무리": "Trapezius",
+"근육": true
+},
+{
+"번호": 203,
+"색": [
+170,
+42,
+0
+],
+"이름": "trapezius_lower",
+"쪽": "right",
+"부분": "",
+"무리": "Trapezius",
+"근육": true
+},
+{
+"번호": 204,
+"색": [
+170,
+42,
+42
+],
+"이름": "trapezius_middle",
+"쪽": "left",
+"부분": "",
+"무리": "Trapezius",
+"근육": true
+},
+{
+"번호": 205,
+"색": [
+170,
+42,
+85
+],
+"이름": "trapezius_middle",
+"쪽": "right",
+"부분": "",
+"무리": "Trapezius",
+"근육": true
+},
+{
+"번호": 206,
+"색": [
+170,
+42,
+127
+],
+"이름": "trapezius_upper",
+"쪽": "left",
+"부분": "",
+"무리": "Trapezius",
+"근육": true
+},
+{
+"번호": 207,
+"색": [
+170,
+42,
+170
+],
+"이름": "trapezius_upper",
+"쪽": "right",
+"부분": "",
+"무리": "Trapezius",
+"근육": true
+},
+{
+"번호": 208,
+"색": [
+170,
+42,
+212
+],
+"이름": "triceps_lateral",
+"쪽": "left",
+"부분": "",
+"무리": "Triceps",
+"근육": true
+},
+{
+"번호": 209,
+"색": [
+170,
+42,
+255
+],
+"이름": "triceps_lateral",
+"쪽": "right",
+"부분": "",
+"무리": "Triceps",
+"근육": true
+},
+{
+"번호": 210,
+"색": [
+170,
+85,
+0
+],
+"이름": "triceps_long",
+"쪽": "left",
+"부분": "",
+"무리": "Triceps",
+"근육": true
+},
+{
+"번호": 211,
+"색": [
+170,
+85,
+42
+],
+"이름": "triceps_long",
+"쪽": "right",
+"부분": "",
+"무리": "Triceps",
+"근육": true
+},
+{
+"번호": 212,
+"색": [
+170,
+85,
+85
+],
+"이름": "triceps_medial",
+"쪽": "left",
+"부분": "",
+"무리": "Triceps",
+"근육": true
+},
+{
+"번호": 213,
+"색": [
+170,
+85,
+127
+],
+"이름": "triceps_medial",
+"쪽": "right",
+"부분": "",
+"무리": "Triceps",
+"근육": true
+},
+{
+"번호": 214,
+"색": [
+170,
+85,
+170
+],
+"이름": "ulnar_head_of_extensor_carpi_ulnaris",
+"쪽": "left",
+"부분": "",
+"무리": "Forearms",
+"근육": true
+},
+{
+"번호": 215,
+"색": [
+170,
+85,
+212
+],
+"이름": "ulnar_head_of_extensor_carpi_ulnaris",
+"쪽": "right",
+"부분": "",
+"무리": "Forearms",
+"근육": true
+},
+{
+"번호": 216,
+"색": [
+170,
+85,
+255
+],
+"이름": "ulnar_head_of_flexor_carpi_ulnaris",
+"쪽": "left",
+"부분": "",
+"무리": "Forearms",
+"근육": true
+},
+{
+"번호": 217,
+"색": [
+170,
+127,
+0
+],
+"이름": "ulnar_head_of_flexor_carpi_ulnaris",
+"쪽": "right",
+"부분": "",
+"무리": "Forearms",
+"근육": true
+},
+{
+"번호": 218,
+"색": [
+170,
+127,
+42
+],
+"이름": "vastus_intermedius",
+"쪽": "left",
+"부분": "",
+"무리": "Quadriceps",
+"근육": true
+},
+{
+"번호": 219,
+"색": [
+170,
+127,
+85
+],
+"이름": "vastus_intermedius",
+"쪽": "right",
+"부분": "",
+"무리": "Quadriceps",
+"근육": true
+},
+{
+"번호": 220,
+"색": [
+170,
+127,
+127
+],
+"이름": "vastus_lateralis",
+"쪽": "left",
+"부분": "",
+"무리": "Quadriceps",
+"근육": true
+},
+{
+"번호": 221,
+"색": [
+170,
+127,
+170
+],
+"이름": "vastus_lateralis",
+"쪽": "right",
+"부분": "",
+"무리": "Quadriceps",
+"근육": true
+},
+{
+"번호": 222,
+"색": [
+170,
+127,
+212
+],
+"이름": "vastus_medialis",
+"쪽": "left",
+"부분": "",
+"무리": "Quadriceps",
+"근육": true
+},
+{
+"번호": 223,
+"색": [
+170,
+127,
+255
+],
+"이름": "vastus_medialis",
+"쪽": "right",
+"부분": "",
+"무리": "Quadriceps",
+"근육": true
+}
+]

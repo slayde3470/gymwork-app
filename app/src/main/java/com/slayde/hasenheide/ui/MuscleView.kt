@@ -13,14 +13,12 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.EnterExitState
 import androidx.compose.animation.ExperimentalAnimationApi
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -43,7 +41,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableLongStateOf
@@ -55,18 +52,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.vector.PathParser
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -76,7 +65,6 @@ import com.slayde.hasenheide.data.근육계산
 import com.slayde.hasenheide.data.근육단계
 import com.slayde.hasenheide.data.저장전
 import com.slayde.hasenheide.data.근육입력들
-import com.slayde.hasenheide.data.근육자료
 import com.slayde.hasenheide.data.근육표
 import com.slayde.hasenheide.data.운동세션
 import com.slayde.hasenheide.data.종목
@@ -97,7 +85,6 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 import kotlin.math.max
-import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.random.Random
 
@@ -111,55 +98,13 @@ import kotlin.random.Random
 
 // ─────────────── 근육 그림 ───────────────
 
-/** 조각마다 Path — 처음 한 번만 만든다. 뒷모습은 오른쪽으로 240 옮겨 둔다 */
-private val 근육길: List<Path> by lazy {
-    근육자료.조각.map { p ->
-        PathParser().parsePathString(p.d).toPath().also { if (p.뒤) it.translate(Offset(근육표.뒤옮김, 0f)) }
-    }
-}
-
-/** 0xRRGGBB → 색 */
-private fun 색으로(rgb: Int): Color = Color(red = (rgb shr 16) and 0xFF, green = (rgb shr 8) and 0xFF, blue = rgb and 0xFF)
-
 /**
- * 몸 그림 — 단계(잎 id → 0~20)로 조각을 칠한다. 색이 바뀌면 0.6초 동안 옮겨 간다.
- * [자르기] = [x, y, 폭, 높이] (그림 좌표) — 주면 그 부분만 크게. 없으면 앞 · 뒤 전신
+ * 운동 중 '지금 종목 확대' (10-09 새 그림) — 그 종목 근육으로 [근육두장고름] 이 고른 확대 그림.
+ * 확대 그림이 없으면(복근만) 반신, 근육을 모르면 전신
  */
-@Composable
-fun 몸그림(단계: Map<String, Double>, 색표이름: String, 자르기: FloatArray?, modifier: Modifier = Modifier) {
-    val c = Local색.current
-    val 값들 = remember(단계) { 근육계산.조각값(단계) }
-    val 조각 = 근육자료.조각
-    val 기본 = c.근육
-    // 조각마다 색 — 근육 조각만. 조각 수는 늘 같으므로 자리가 흔들리지 않는다
-    val 색들: List<State<Color>?> = 조각.mapIndexed { i, p ->
-        if (p.종류 != 'm') null
-        else animateColorAsState(근육계산.단계색(값들[i], 색표이름)?.let { 색으로(it) } ?: 기본, tween(움직임.근육색), label = "근육")
-    }
-    val 길 = 근육길
-    val 바탕색 = c.피부; val 결색 = c.결; val 테두리 = c.면
-    Canvas(modifier.clipToBounds()) {
-        val vx = 자르기?.get(0) ?: 0f
-        val vy = 자르기?.get(1) ?: 0f
-        val vw = 자르기?.get(2) ?: 근육표.그림폭
-        val vh = 자르기?.get(3) ?: 근육표.그림높이
-        // viewBox 를 칸에 맞춘다 — 가운데 · 비율 유지 (SVG xMidYMid meet 와 같다)
-        val s = min(size.width / vw, size.height / vh)
-        val tx = (size.width - vw * s) / 2f - vx * s
-        val ty = (size.height - vh * s) / 2f - vy * s
-        withTransform({ translate(tx, ty); scale(s, s, pivot = Offset.Zero) }) {
-            조각.forEachIndexed { i, p ->
-                when (p.종류) {
-                    'b' -> drawPath(길[i], 바탕색)
-                    'x' -> drawPath(길[i], 결색, alpha = 그림칸.결진하기, style = Stroke(width = 그림칸.결선))
-                    else -> {
-                        drawPath(길[i], 색들[i]?.value ?: 기본)
-                        drawPath(길[i], 테두리, style = Stroke(width = 그림칸.근육선, join = StrokeJoin.Round))
-                    }
-                }
-            }
-        }
-    }
+internal fun 종목확대보기(이름: String, 부위: String?): List<그림보기> {
+    val 고름 = 근육두장고름(근육계산.종목근육(이름, 부위))
+    return 고름.확대?.번호?.let { listOf(그림보기(it)) } ?: 고름.반신?.보기 ?: 그림보기들.전신
 }
 
 // ─────────────── 종목 사진 — filesDir/photos ───────────────
@@ -365,8 +310,8 @@ private fun 그림판(p: 판, 단계: Map<String, Double>, 색표이름: String,
     val 모양 = RoundedCornerShape(그림칸.모서리)
     Box(Modifier.fillMaxSize().clip(모양).background(c.면).border(1.dp, c.선, 모양)) {
         when (p.종류) {
-            "전신" -> 몸그림(단계, 색표이름, null, Modifier.fillMaxSize().padding(간격.아주좁게))
-            "확대" -> 몸그림(단계, 색표이름, remember(p.종목, 부위) { 근육계산.확대상자(p.종목, 부위) }, Modifier.fillMaxSize().padding(간격.아주좁게))
+            "전신" -> 새몸그림(단계, 색표이름, 그림보기들.전신, Modifier.fillMaxSize().padding(간격.아주좁게))
+            "확대" -> 새몸그림(단계, 색표이름, remember(p.종목, 부위) { 종목확대보기(p.종목, 부위) }, Modifier.fillMaxSize().padding(간격.아주좁게))
             "사진" -> 사진그림(p.사진 ?: "", 그림칸.높이 * 2, Modifier.fillMaxSize(), "${p.종목} 사진")
             else -> 글("사진 없음", Modifier.align(Alignment.Center), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)   // 설명 글은 한 줄
         }

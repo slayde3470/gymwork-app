@@ -82,12 +82,13 @@ class MuscleCardsTest {
         assertEquals(확대.가슴, r.확대)
     }
 
-    @Test fun 확대_이름과_둘째_줄() {
+    @Test fun 확대_그림_번호() {
+        // 10-09 새 그림: 가슴 07 정면 · 팔~어깨 04 · 등 06 · 굽힌 다리 05 · 복근은 그림 없음
+        assertEquals("07", 확대.가슴.번호)
+        assertEquals("04", 확대.팔어깨.번호)
+        assertEquals("06", 확대.등.번호)
+        assertEquals("05", 확대.하체.번호)
+        assertNull(확대.복근.번호)
         assertEquals("가슴 확대", 확대.가슴.이름)
-        assertEquals("45° · 그림 준비 중", 확대.가슴.둘째줄())
-        assertEquals("팔~어깨 확대", 확대.팔어깨.이름)
-        assertEquals("굽힌 허벅지·종아리 확대", 확대.하체.이름)
-        assertEquals("등 확대", 확대.등.이름)
-        assertEquals("그림 준비 중", 확대.등.둘째줄())
     }
 }
