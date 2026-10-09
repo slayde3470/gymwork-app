@@ -15,7 +15,7 @@
   · 색표.json · 대표칸/칸표.json
 
 쓰는 것 — 손으로 고치지 않는다
-  · app/src/main/assets/muscle/NN.webp      그림 (확대 그림은 768 로 줄임)
+  · app/src/main/assets/muscle/NN.webp      그림 (전신 높이 1032 · 확대 640 · 밝기만 남긴 회색)
   · app/src/main/assets/muscle/NN_map.png   칸 번호 판 (회색 한 장 · 값 = 칸번호(1~15) × 16 + 쪽(0 · L 1 · R 2) · 0 = 빈 곳)
   · app/src/main/java/com/slayde/hasenheide/ui/MusclePicData.kt   그림 이름 · 크기 · 칸 이름 · 칸에 든 근육
 """
@@ -31,7 +31,9 @@ from PIL import Image
 코드 = os.path.join(뿌리, "app", "src", "main", "java", "com", "slayde", "hasenheide", "ui", "MusclePicData.kt")
 
 그림들 = ["01_전신앞", "02_전신뒤", "04_팔어깨확대", "05_굽힌다리확대", "06_등확대", "07_가슴정면"]
-확대긴변 = 768
+전신높이 = 1032   # 768×1376 → 579×1032 (폰 칸 높이 124dp 의 반신 자르기에도 넉넉)
+확대긴변 = 640
+밝기기준 = 92     # 몸 밝기의 이 백분위를 1.0 으로 (대표칸/다듬기.py 색입히기와 같다) — 앱은 여기에 색표 색을 곱한다
 쪽번호 = {"": 0, "L": 1, "R": 2}
 
 # 칸 값을 정하는 근육 — 칸표.json 의 '근육'(자리를 메우려고 넣은 것 포함)과 다른 것만 [홍겸 님 확인 대기]
@@ -45,6 +47,7 @@ def main():
     대표 = {k["대표"]: i + 1 for i, k in enumerate(칸)}
     os.makedirs(자원, exist_ok=True)
     줄 = []
+    판들 = {}
     for 이름 in 그림들:
         번호 = 이름[:2]
         im = Image.open(os.path.join(재료, "그림", 이름 + ".png")).convert("RGBA")
@@ -55,11 +58,18 @@ def main():
             sel = (지[..., 3] > 0) & np.all(지[..., :3] == c, axis=-1)
             판[sel] = 대표[e["근육"]] * 16 + 쪽번호[e["쪽"]]
         판 = Image.fromarray(판, "L")
-        if max(im.size) > 확대긴변 and im.size[0] == im.size[1]:
-            im = im.resize((확대긴변, 확대긴변), Image.LANCZOS)
-            판 = 판.resize((확대긴변, 확대긴변), Image.NEAREST)
+        # 회색 한 가지로 — 밝기만 남기고 기준 백분위를 1.0 으로
+        a = np.array(im).astype(np.float32)
+        L = a[..., :3].mean(-1)
+        L = np.clip(L / np.percentile(L[a[..., 3] >= 128], 밝기기준), 0, 1) * 255
+        a[..., 0] = a[..., 1] = a[..., 2] = L
+        im = Image.fromarray(a.astype(np.uint8), "RGBA")
+        크기 = (확대긴변, 확대긴변) if im.size[0] == im.size[1] else (round(im.size[0] * 전신높이 / im.size[1]), 전신높이)
+        im = im.resize(크기, Image.LANCZOS)
+        판 = 판.resize(크기, Image.NEAREST)
         im.save(os.path.join(자원, 번호 + ".webp"), "WEBP", quality=82, method=6)
         판.save(os.path.join(자원, 번호 + "_map.png"), optimize=True)
+        판들[번호] = (np.array(판), np.array(im)[..., 3])
         줄.append(f'        그림("{번호}", "{이름[3:]}", {im.size[0]}, {im.size[1]}),')
         print(f"■ {이름}: {im.size} · webp {os.path.getsize(os.path.join(자원, 번호 + '.webp')) // 1024}KB")
 
@@ -73,6 +83,20 @@ def main():
                 근육.append(m)
         ids = ", ".join(f'"{m}"' for m in 근육)
         칸줄.append(f'        칸("{k["이름"]}", listOf({ids})),   // {i + 1}')
+
+    # 반신 자르기 상자 — 전신 앞 · 뒤 지도에서 잰다 (위 = 목 ~ 복부 · 팔 포함 / 아래 = 엉덩이 ~ 발끝) · 여백 12
+    def 상자(칸번호들, 발까지):
+        x0 = y0 = 10 ** 9; x1 = y1 = -1
+        for k in ("01", "02"):
+            m, a = 판들[k]
+            ys, xs = np.nonzero(np.isin(m // 16, 칸번호들))
+            x0, y0, x1, y1 = min(x0, xs.min()), min(y0, ys.min()), max(x1, xs.max()), max(y1, ys.max())
+            if 발까지:
+                y1 = max(y1, np.nonzero(a > 128)[0].max())
+        x0, y0, x1, y1 = x0 - 12, y0 - 12, x1 + 12, y1 + 12
+        return f"floatArrayOf({x0}f, {y0}f, {x1 - x0}f, {y1 - y0}f)"
+    위 = 상자(list(range(1, 11)), False)
+    아래 = 상자(list(range(11, 16)), True)
 
     kt = f"""package com.slayde.hasenheide.ui
 
@@ -88,6 +112,10 @@ object 근육그림표 {{
     val 그림들 = listOf(
 {chr(10).join(줄)}
     )
+
+    /** 반신 자르기 상자 [x, y, 폭, 높이] (전신 그림 픽셀 · 앞 · 뒤 같은 자리) */
+    val 위상자 = {위}
+    val 아래상자 = {아래}
 
     /** 칸번호 - 1 순서 */
     val 칸들 = listOf(
