@@ -226,7 +226,7 @@ fun 새종목시트(
                     ) {
                         글(x.이름, Modifier.weight(1f), 굵기 = FontWeight.Bold, 색 = if (있) c.옅음 else c.글)
                         Box(Modifier.width(간격.좁게))
-                        글(if (있) "이미 있음" else x.칸, 크기값 = 크기.작게, 색 = c.옅음)
+                        글(if (있) "이미 있음" else 종목사전.앱칸(x), 크기값 = 크기.작게, 색 = c.옅음)
                     }
                     구분선()
                 }
@@ -568,7 +568,7 @@ internal fun 앱데이터.편집초기(t: 종목): 새종목값 {
 /** 사전 종목을 들인다 — 이름 · 칸(카테고리에 없으면 비움, 손으로 고른 칸은 둠) · 근육(P · Y 둘) (시안 `사전적용`) */
 internal fun 새종목값.사전적용(x: 사전종목, 카테고리: List<String>): 새종목값 {
     val n = copy(
-        이름 = x.이름, 칸 = if (x.칸 in 카테고리) x.칸 else if (칸직접) 칸 else null,
+        이름 = x.이름, 칸 = 종목사전.앱칸(x).let { k -> if (k in 카테고리) k else if (칸직접) 칸 else null },   // 10-09: 맨몸 → 앱 카테고리
         근육 = 종목사전.둘역할(종목사전.사전근육(x)), 사전 = x.이름, 정한 = x.이름, 팝 = null,
     )
     return n.copy(묶음 = n.기본묶음())

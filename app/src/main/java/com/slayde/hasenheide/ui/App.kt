@@ -50,6 +50,7 @@ import com.slayde.hasenheide.data.오래된운동정리
 import com.slayde.hasenheide.data.보고끝
 import com.slayde.hasenheide.data.업적판정법
 import com.slayde.hasenheide.data.저장소
+import com.slayde.hasenheide.data.사전채움
 import com.slayde.hasenheide.data.세기이름
 import com.slayde.hasenheide.data.세기더함
 import com.slayde.hasenheide.data.세기0
@@ -86,7 +87,7 @@ import java.util.concurrent.Executors
  * 바꿀 때마다 폰 안의 파일에 조용히 저장한다 (저장은 뒤에서 — 화면이 멈추지 않게).
  */
 class 앱상태(private val 파일: File) {
-    var d by mutableStateOf(저장소.읽기(파일))
+    var d by mutableStateOf(저장소.읽기(파일).사전채움())   // 10-09: 사전 종목을 한 번 채운다
         private set
     var 오늘 by mutableStateOf(LocalDate.now().toString())
         private set
@@ -190,7 +191,7 @@ class 앱상태(private val 파일: File) {
     fun 백업글(): String = 저장소.글로(d.copy(메모 = emptyList()))
     fun 백업넣기(글: String): Boolean = try {
         val 새 = 저장소.백업글에서(글) ?: throw IllegalArgumentException("백업 아님")   // 10-05: 백업이 아닌 JSON 은 받지 않는다 (아래 catch → false)
-        바꿈 { 옛 -> if (새.메모.isEmpty()) 새.copy(메모 = 옛.메모) else 새 }; true
+        바꿈 { 옛 -> (if (새.메모.isEmpty()) 새.copy(메모 = 옛.메모) else 새).사전채움() }; true
     } catch (_: Exception) { false }
 }
 
