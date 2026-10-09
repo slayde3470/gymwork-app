@@ -47,7 +47,10 @@ class SeedTest {
         assertEquals(List(5) { 종목세트(5.0, 10, 60) }, 세팅("덤벨 컬"))
         assertEquals(0.0, 세팅("딥스")[0].w)
         assertEquals("가슴", d.종목찾기("벤치프레스")?.부위)
-        assertTrue(d.종목찾기("벤치프레스")!!.근육.isNotEmpty())
+        // 근육은 비워 둔다 → 내장 규칙(보조 0.5) 그대로
+        assertTrue(d.종목표.all { it.근육.isEmpty() })
+        // 데드리프트는 앱이 정해 둔 대로 등 (스탯 8-10)
+        assertEquals("등", d.종목찾기("데드리프트")?.부위)
     }
 
     /** 플랜 종목 8개는 모두 사전에 있다 → 채우면 '기타' 칸이 생기지 않는다 */
@@ -78,6 +81,21 @@ class SeedTest {
         val d = 앱데이터(종목표 = listOf(종목("펙덱", "가슴", "머신"), 종목("랫 풀다운", "등"))).사전채움()
         assertFalse(d.종목표.any { it.이름 == "펙 덱 플라이" })
         assertFalse(d.종목표.any { it.이름 == "랫풀다운" })
+    }
+
+    /** 이름을 바꾼 옛 종목(id = 사전 이름)이 있어도 사전 종목을 넣고, id 는 겹치지 않는다 */
+    @Test fun 이름바꾼_옛종목() {
+        val d = 앱데이터(종목표 = listOf(종목("내 벤치", "가슴", id = "벤치프레스"))).사전채움()
+        val 벤치 = d.종목표.first { it.이름 == "벤치프레스" }
+        assertTrue(벤치.id != "벤치프레스")
+        assertEquals(d.종목표.map { it.id }.distinct().size, d.종목표.size)
+        assertEquals(List(5) { 종목세트(20.0, 10, 60) }, d.종목기본세트(벤치.id))
+    }
+
+    /** 종목표에 없는 옛 세팅 열쇠가 남아 있어도 새로 넣는 종목은 5 × 10 · 1분 */
+    @Test fun 남은옛세팅은_덮음() {
+        val d = 앱데이터(종목설정 = mapOf("벤치프레스" to listOf(종목세트(99.0, 1, 30)))).사전채움()
+        assertEquals(List(5) { 종목세트(20.0, 10, 60) }, d.종목기본세트("벤치프레스"))
     }
 
     @Test fun 지운카테고리는_되돌림() {

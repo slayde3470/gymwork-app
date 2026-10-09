@@ -87,12 +87,18 @@ import java.util.concurrent.Executors
  * 바꿀 때마다 폰 안의 파일에 조용히 저장한다 (저장은 뒤에서 — 화면이 멈추지 않게).
  */
 class 앱상태(private val 파일: File) {
-    var d by mutableStateOf(저장소.읽기(파일).사전채움())   // 10-09: 사전 종목을 한 번 채운다
+    private val 읽은 = 저장소.읽기(파일)
+    var d by mutableStateOf(읽은.사전채움())   // 10-09: 사전 종목을 한 번 채운다
         private set
     var 오늘 by mutableStateOf(LocalDate.now().toString())
         private set
 
     private val 일꾼 = Executors.newSingleThreadExecutor()
+
+    init {
+        // 10-09 감시관: 채웠으면 바로 파일에 — 아무것도 안 바꾸고 끄면 다음에 또 채우던 것
+        if (d !== 읽은) { val 찍은것 = d; 일꾼.execute { try { 저장소.쓰기(파일, 찍은것) } catch (_: Exception) { } } }
+    }
 
     /**
      * 토스트 · 알림 띠 (10-05 · Parts.kt [알림판]) — 앱 어디서나 `상태.알림.토스트("…")` ·
