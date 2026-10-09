@@ -143,7 +143,7 @@ internal fun 새몸그림(
         val 목표 = 근육계산.단계색(k, 색표이름)?.let { lerp(c.근육, 색으로(it), 그림칸.물들임) } ?: c.근육
         animateColorAsState(목표, tween(움직임.근육색), label = "근육칸")
     }
-    val 바탕필터 = remember(c.피부) { ColorFilter.tint(c.피부, BlendMode.Multiply) }
+    val 바탕필터 = remember(c.피부) { ColorFilter.tint(c.피부, BlendMode.Modulate) }
     val 누름최신 by rememberUpdatedState(누름)
     val 누름판 = if (누름 == null) Modifier else Modifier.pointerInput(보기들, 장들) {
         detectTapGestures { o ->
@@ -162,7 +162,7 @@ internal fun 새몸그림(
                     clipRect(b[0], b[1], b[0] + b[2], b[1] + b[3]) {
                         drawImage(g.바탕, colorFilter = 바탕필터)
                         g.조각.forEach { k ->
-                            drawImage(k.그림, Offset(k.x.toFloat(), k.y.toFloat()), colorFilter = ColorFilter.tint(색들[k.칸].value, BlendMode.Multiply))
+                            drawImage(k.그림, Offset(k.x.toFloat(), k.y.toFloat()), colorFilter = ColorFilter.tint(색들[k.칸].value, BlendMode.Modulate))
                         }
                     }
                 }
