@@ -1,0 +1,24 @@
+Shot_s01j_dayExercises > t FAILED
+    java.lang.IllegalStateException at ScreenShots2.kt:35
+Shot_s07b_exerciseAddSet > s07b FAILED
+Shot_s07g_exerciseDelete > t FAILED
+    java.lang.IllegalStateException at ScreenShots2.kt:108
+> Task :app:testDebugUnitTest FAILED
+* Exception is:
+org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':app:testDebugUnitTest'.
+	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+Caused by: org.gradle.api.internal.exceptions.MarkedVerificationException: There were failing tests. See the report at: file:///home/runner/work/gymwork-app/gymwork-app/app/build/reports/tests/testDebugUnitTest/index.html
+	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+BUILD FAILED in 12m 27s
+    <failure message="java.lang.IllegalStateException: 설명 '풀업 · ' 없음" type="java.lang.IllegalStateException">java.lang.IllegalStateException: 설명 '풀업 · ' 없음
+	at com.slayde.hasenheide.ui.ShotBase.누름설명(ScreenShots.kt:121)
+	at com.slayde.hasenheide.ui.ShotBase.누름설명$default(ScreenShots.kt:118)
+	at com.slayde.hasenheide.ui.Shot_s01j_dayExercises.t(ScreenShots2.kt:35)
+    <failure message="java.lang.AssertionError: Failed to inject touch input.&#10;Can't retrieve node at index '0' of 'Text + EditableText contains '+ 세트' (ignoreCase: false) as substring'&#10;There are no existing nodes for that selector.&#10;" type="java.lang.AssertionError">java.lang.AssertionError: Failed to inject touch input.
+Can't retrieve node at index '0' of 'Text + EditableText contains '+ 세트' (ignoreCase: false) as substring'
+There are no existing nodes for that selector.
+
+    <failure message="java.lang.IllegalStateException: '삭제' 없음" type="java.lang.IllegalStateException">java.lang.IllegalStateException: '삭제' 없음
+	at com.slayde.hasenheide.ui.ShotBase.누름(ScreenShots.kt:112)
+	at com.slayde.hasenheide.ui.ShotBase.누름$default(ScreenShots.kt:109)
+	at com.slayde.hasenheide.ui.Shot_s07g_exerciseDelete.t(ScreenShots2.kt:108)
