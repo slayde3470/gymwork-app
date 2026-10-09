@@ -1275,6 +1275,12 @@ internal data class 지운세트(
     /** 지운 줄에서 쉬던 휴식 (종목 번호는 실제 번호) */
     val 휴식: 휴식중?,
     val 세션시작: Long,
+    /** 10-10: 지운 칸의 루틴 번호(더한 칸이면 null) · 번호표 칸이 있었나 · 지우기 전 계획 세트 (되돌리면 계획도 돌아온다) */
+    val 원번호: Int? = null,
+    val 원있음: Boolean = false,
+    val 계획: Int = 0,
+    /** 같은 종목을 두 번 넣었을 때 몇 번째 것이었나 (그 사이 순서가 바뀌어도 같은 줄에 되돌리려고) */
+    val 몇째: Int = 0,
 )
 
 /**
@@ -1288,18 +1294,14 @@ internal fun 운세트지우기(S: 운동세션, j: Int, k: Int): Pair<운동세
     if (k < 0 || k >= e.총칸() || e.총칸() <= 1) return null
     val 쉰 = 쉬는종목(S)
     val 지운쉼 = S.휴식?.takeIf { 쉰 == j && it.k == k }?.copy(종목 = j)
-    var t = S.세트삭제(j, k)
-    t.휴식?.let { h ->
-        var h2 = h
-        if (쉬는종목(t) == j && h.k > k) h2 = h2.copy(k = h.k - 1)
-        if (h2.다음i == j && (h2.다음s ?: -1) > k) h2 = h2.copy(다음s = h2.다음s!! - 1)
-        t = t.copy(휴식 = h2)
-    }
-    if (t.i == j && S.i == j && S.s == k) t = t.자리로(j, k).copy(끝화면 = t.끝화면, 끝시각 = t.끝시각)
+    // 휴식 번호 · 슈퍼세트 자리 · 지금 세트 자리는 데이터 `세트삭제` 가 맞춘다 (10-10 — 화면과 데이터가 따로 맞추던 것을 한곳으로)
+    val t = S.세트삭제(j, k)
     val z = 지운세트(
         j, e.열쇠, k, e.기록.칸(k), e.예정값.칸(k), e.휴식들.칸(k),
         k in e.기록.indices, k in e.예정값.indices, k in e.휴식들.indices, e.세트,
         S.i, S.s, S.무게, S.횟수, t.i, t.s, 지운쉼, S.시작시각,
+        원번호 = e.원번호.칸(k), 원있음 = k in e.원번호.indices, 계획 = e.계획세트,
+        몇째 = S.종목들.take(j).count { it.열쇠 == e.열쇠 },
     )
     return t to z
 }
@@ -1307,14 +1309,21 @@ internal fun 운세트지우기(S: 운동세션, j: Int, k: Int): Pair<운동세
 /** 지운 세트 되돌리기 — 그 자리에 다시 끼운다. 다른 운동이면 그대로. 그 사이 순서가 바뀌었으면 같은 종목(열쇠)을 찾아 끼운다 */
 internal fun 세트되살리기(S: 운동세션, z: 지운세트, 지금: Long): 운동세션 {
     if (z.세션시작 != S.시작시각) return S
-    val j = if (S.종목들.getOrNull(z.j)?.열쇠 == z.열쇠) z.j else S.종목들.indexOfFirst { it.열쇠 == z.열쇠 }
+    val 같은 = S.종목들.indices.filter { S.종목들[it].열쇠 == z.열쇠 }
+    val j = if (S.종목들.getOrNull(z.j)?.열쇠 == z.열쇠) z.j else 같은.getOrNull(z.몇째) ?: 같은.firstOrNull() ?: -1
     if (j < 0) return S
     val e = S.종목들[j]
+    // 10-10: 지울 때 그 칸이 목록에 없었어도(기록이 짧았어도) 뒤 칸들은 한 칸씩 밀려 있다 → 빈 칸을 끼워 같이 밀어 준다
+    //   (전에는 안 끼워서 체크 기록이 한 줄 위로 어긋났다)
     fun <T> List<T?>.끼움(있음: Boolean, v: T?): List<T?> =
-        if (!있음) this else toMutableList().also { m -> while (m.size < z.k) m.add(null); m.add(min(z.k, m.size), v) }
+        if (!있음 && size <= z.k) this else toMutableList().also { m -> while (m.size < z.k) m.add(null); m.add(min(z.k, m.size), if (있음) v else null) }
+    val 새세트 = e.세트 + (z.세트수 - max(1, z.세트수 - 1))
+    val 새기록 = e.기록.끼움(z.기록있음, z.기록)
     val 새e = e.copy(
-        기록 = e.기록.끼움(z.기록있음, z.기록), 예정값 = e.예정값.끼움(z.예정있음, z.예정), 휴식들 = e.휴식들.끼움(z.휴있음, z.휴),
-        세트 = e.세트 + (z.세트수 - max(1, z.세트수 - 1)),
+        기록 = 새기록, 예정값 = e.예정값.끼움(z.예정있음, z.예정), 휴식들 = e.휴식들.끼움(z.휴있음, z.휴),
+        원번호 = if (e.원번호.isEmpty()) e.원번호 else e.원번호.끼움(z.원있음, z.원번호),
+        세트 = 새세트,
+        계획세트 = if (e.계획세트 < z.계획) min(z.계획, max(새세트, 새기록.size)) else e.계획세트,   // 지울 때 줄어든 계획을 돌려 놓는다
     )
     var t = S.copy(종목들 = S.종목들.mapIndexed { x, y -> if (x == j) 새e else y })
     t = when {
@@ -1329,6 +1338,12 @@ internal fun 세트되살리기(S: 운동세션, z: 지운세트, 지금: Long):
         if (h2.다음i == j && (h2.다음s ?: -1) >= z.k) h2 = h2.copy(다음s = h2.다음s!! + 1)
         t.copy(휴식 = h2)
     } else if (z.휴식 != null && z.휴식.끝시각 > 지금) t.copy(휴식 = z.휴식.copy(종목 = j)) else t
+    // 10-10: 그 사이 다른 줄을 체크 · 풀어 지금 자리가 우연히 같아 보였어도, 지금 세트가 이미 한 줄을 가리키면 첫 빈 줄로 (22 버그 #9 의 되돌리기 쪽)
+    val ce = t.종목들.getOrNull(t.i)
+    if (ce != null && !t.끝화면 && t.휴식 == null && !ce.마감 && ce.덜한가() && t.s < ce.총칸() && ce.기록.칸(t.s) != null) {
+        val 빈 = 첫빈칸(ce)
+        if (빈 >= 0) t = t.copy(s = 빈, 무게 = (ce.예정값.칸(빈) ?: 세트(ce.무게, ce.횟수)).w, 횟수 = (ce.예정값.칸(빈) ?: 세트(ce.무게, ce.횟수)).r)
+    }
     return t
 }
 

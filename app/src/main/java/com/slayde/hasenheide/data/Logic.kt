@@ -486,7 +486,11 @@ fun 운동세션.정식(): List<세션종목> = 종목들.filter { !it.임시 }
 // 10-02 감시관: 측정일 워밍업 세트는 달성(목표 세트 · 한 세트)에서 뺀다 — 워밍업을 건너뛰어도 '미달성' 이 되지 않게
 fun 세션종목.웜칸수(): Int = 예정값.count { it?.종류 == 세트종류.워밍업 }
 fun 운동세션.목표세트(): Int = 정식().sumOf { (it.계획세트 - it.웜칸수()).coerceAtLeast(0) }
-fun 운동세션.한세트수(): Int = 정식().sumOf { e -> e.찬것().count { it.종류 != 세트종류.워밍업 } }
+/**
+ * 한 세트 수 — **종목마다 계획한 만큼까지만** 센다 (10-10 · 22 버그 #2).
+ * 전에는 루틴 전체 합이라 한 종목에 세트를 더 하면 손도 안 댄 종목의 모자란 몫을 메워 '달성' 이 됐다
+ */
+fun 운동세션.한세트수(): Int = 정식().sumOf { e -> min(e.찬것().count { it.종류 != 세트종류.워밍업 }, (e.계획세트 - e.웜칸수()).coerceAtLeast(0)) }
 /** 체크한 세트 전부(워밍업 포함) — 기록을 남길지 · 결과 화면 '세트' 수 · 화면 맞추기 열쇠. 워밍업을 빼는 것은 달성 계산뿐이다 (10-02 감시관) */
 fun 운동세션.찬세트수(): Int = 정식().sumOf { it.찬것().size }
 fun 운동세션.오늘볼륨(): Double = 정식().sumOf { 볼륨(it.찬것()) }
@@ -597,7 +601,8 @@ fun 운동시작(r: 루틴, 지금: Long): 운동세션? {
         val 첫 = it.목표(0)
         세션종목(it.이름, it.세트, it.세트, 첫.w, 첫.r, it.휴식,
             예정값 = if (it.세트값.isEmpty()) emptyList() else List(it.세트) { k -> it.목표(k) },
-            휴식들 = List(it.세트) { k -> it.휴식(k) }, 슈퍼 = it.슈퍼, 플랜id = it.플랜id, 종id = it.종id)
+            휴식들 = List(it.세트) { k -> it.휴식(k) }, 슈퍼 = it.슈퍼, 플랜id = it.플랜id, 종id = it.종id,
+            원번호 = List(it.세트) { k -> k })
     }
     return 운동세션(r.id, r.이름, 지금, 0, 0, 들[0].무게, 들[0].횟수, 들)
 }
@@ -647,7 +652,8 @@ fun 운동세션.체크(j: Int, k: Int, 지금: Long): 운동세션 {
     if (첫빈 != null) {
         // 입력 중이던 '지금 세트' 값을 먼저 그 줄에 적어 둔다 — 줄이 움직여도 값이 따라가게
         if (T.i == j && T.s < e0.총칸() && e0.기록.칸(T.s) == null) T = T.종목바꿈(j) { it.copy(예정값 = it.예정값.칸바꿈(T.s, 세트(T.무게, T.횟수))) }
-        T = T.종목바꿈(j) { it.copy(기록 = it.기록.당김(첫빈, k), 예정값 = it.예정값.당김(첫빈, k), 휴식들 = it.휴식들.당김(첫빈, k)) }
+        T = T.종목바꿈(j) { it.copy(기록 = it.기록.당김(첫빈, k), 예정값 = it.예정값.당김(첫빈, k), 휴식들 = it.휴식들.당김(첫빈, k),
+            원번호 = if (it.원번호.isEmpty()) it.원번호 else it.원번호.당김(첫빈, k)) }
         kk = 첫빈
     }
     // 당겼으면 그 칸 값을 새로 올려야 한다 (지금 세트 자리와 번호가 같아도 값은 옮겨 온 줄의 것)
@@ -690,7 +696,9 @@ private fun 운동세션.지금체크(지금: Long): 운동세션 {
                 if (뒤처진.isNotEmpty()) return S.copy(휴식 = null).자리로(다음, 다음칸)
                 // 한 바퀴 끝 — 휴식은 마지막 종목의 그 바퀴 세트 줄에서
                 val 끝 = 식구.last()
-                val 바퀴 = max(0, 수.getValue(끝) - 1)
+                // 10-10: 그 바퀴에 한 줄 = 끝 종목에서 **마지막으로 체크한 줄**. 전에는 '한 세트 수 − 1' 이라
+                //   앞줄 체크를 풀거나 지우면 쉬는 띠가 안 한(빈) 줄에 떴다
+                val 바퀴 = max(0, S.종목들[끝].기록.indexOfLast { it != null })
                 val 쉴 = S.종목들[끝].세트휴식(바퀴)
                 S = S.다음칸으로(다음빈칸(S.지금종목, k))
                 return S.copy(휴식 = 휴식중(바퀴, 지금 + 쉴 * 1000L, false, 다음, 다음칸, 총초 = 쉴, 종목 = 끝))
@@ -763,17 +771,52 @@ fun 운동세션.세트추가(j: Int = i): 운동세션 {
         val 베낄 = if (끝 >= 0) 세트값(x, 끝, jj == i) else 세트(x.무게, x.횟수)
         val 쉴 = if (끝 >= 0) x.세트휴식(끝) else x.휴식
         val 새 = x.총칸()
-        x.copy(세트 = 새 + 1, 예정값 = x.예정값.칸바꿈(새, 베낄), 휴식들 = x.휴식들.칸바꿈(새, 쉴))
+        x.copy(세트 = 새 + 1, 예정값 = x.예정값.칸바꿈(새, 베낄), 휴식들 = x.휴식들.칸바꿈(새, 쉴),
+            원번호 = if (x.원번호.isEmpty()) x.원번호 else x.원번호.칸바꿈(새, null))   // 더한 칸은 루틴에 없던 세트
     })
 }
 
+/**
+ * 세트 지우기 (10-10 — 22 버그 #5 · #7 · #9 · #10 · #11 · #12 · #13 을 한곳에서).
+ *  · 없는 번호 · 하나뿐인 종목이면 아무것도 안 한다
+ *  · **계획 세트도 따라 준다** — 오늘 안 하겠다고 지운 줄이 '못 한 세트' 로 남아 달성이 영영 안 되던 것.
+ *    (운동 중 더한 줄을 지울 때는 계획이 그대로다: 계획 = min(계획, 남은 줄 수))
+ *  · 지운 줄에서 쉬던 중이면 휴식을 치우고, 아래 줄이면 휴식의 줄 번호 · 슈퍼세트가 돌아갈 자리를 한 칸 당긴다
+ *  · 지금 세트였으면 → 올라온 줄이 아니라 **첫 빈 줄**로 (올라온 줄이 이미 한 줄일 수 있다)
+ */
 fun 운동세션.세트삭제(j: Int, k: Int): 운동세션 {
+    val 전 = 종목들.getOrNull(j) ?: return this
+    if (k < 0 || k >= 전.총칸() || 전.총칸() <= 1) return this
+    val 새칸 = 전.총칸() - 1
     var S = 종목바꿈(j) { e ->
         fun <T> List<T?>.뺌(): List<T?> = if (k in indices) toMutableList().also { it.removeAt(k) } else this
-        e.copy(기록 = e.기록.뺌(), 휴식들 = e.휴식들.뺌(), 예정값 = e.예정값.뺌(), 세트 = max(1, e.세트 - 1))
+        e.copy(기록 = e.기록.뺌(), 휴식들 = e.휴식들.뺌(), 예정값 = e.예정값.뺌(), 원번호 = e.원번호.뺌(),
+            세트 = 새칸, 계획세트 = min(e.계획세트, 새칸))
     }
-    if (S.휴식자리(j, k)) S = S.copy(휴식 = null)
-    return if (j == S.i && S.s > k) S.copy(s = S.s - 1) else S
+    val h = S.휴식
+    if (h != null) {
+        val 쉼종목 = S.휴식종목(h)
+        S = if (쉼종목 == j && h.k == k) S.copy(휴식 = null)
+        else {
+            var h2 = h
+            if (쉼종목 == j && h.k > k) h2 = h2.copy(k = h.k - 1)
+            val 다 = h2.다음s
+            if (h2.다음i == j && 다 != null) {
+                val e2 = S.종목들[j]
+                h2 = h2.copy(다음s = if (다 > k) 다 - 1 else if (다 == k) 다음빈칸(e2, k - 1) else 다)
+            }
+            S.copy(휴식 = h2)
+        }
+    }
+    if (j == S.i) {
+        val e2 = S.종목들[j]
+        if (S.s > k) S = S.copy(s = S.s - 1)
+        else if (S.s == k) {
+            val ns = 다음빈칸(e2, k - 1).let { n -> if (n < e2.총칸()) n else (0 until e2.총칸()).firstOrNull { e2.기록.칸(it) == null } ?: n }
+            S = S.자리값(j, ns)
+        }
+    }
+    return S
 }
 fun 운동세션.세트삭제(k: Int): 운동세션 = 세트삭제(i, k)
 
@@ -929,6 +972,9 @@ fun 루틴.볼륨올리기(s: 설정값): 루틴 {
     })
 }
 
+/** 루틴의 k 번째 세트가 지금 몇 번째 칸인가 — 지웠으면 null. 번호표가 없는 옛 줄은 칸 번호 그대로 */
+private fun 세션종목.원칸(k: Int): Int? = if (원번호.isEmpty()) k else 원번호.indexOf(k).takeIf { it >= 0 }
+
 /**
  * 운동 중 바꾼 값을 다음 루틴에 (기능명세 5-5, 09-22 홍겸 님)
  *  ① 세트 수 · 오늘만 끼운 종목 → 넘어가지 않는다 (루틴 세트 수 그대로)
@@ -946,8 +992,12 @@ fun 루틴.오늘반영(S: 운동세션): 루틴 {
         val n = 쓴.getOrDefault(열, 0); 쓴[열] = n + 1
         val e = 정식.filter { 종목열쇠(it.종id, it.이름) == 열 }.getOrNull(n) ?: return@map re
         var 바뀜 = false
-        val 목 = (0 until re.세트).map { k -> e.기록.칸(k)?.also { if (it != re.목표(k)) 바뀜 = true } ?: re.목표(k) }
-        val 휴 = (0 until re.세트).map { k -> if (e.기록.칸(k) != null) e.세트휴식(k).also { if (it != re.휴식(k)) 바뀜 = true } else re.휴식(k) }
+        // 10-10 (22 버그 #3 · #8): 루틴의 k 번째 세트는 지금 **그 세트였던 칸**에서 가져온다 (지우거나 순서 없이 체크해 칸이 밀려도)
+        val 목 = (0 until re.세트).map { k -> e.원칸(k)?.let { q -> e.기록.칸(q) }?.also { if (it != re.목표(k)) 바뀜 = true } ?: re.목표(k) }
+        val 휴 = (0 until re.세트).map { k ->
+            val q = e.원칸(k)
+            if (q != null && e.기록.칸(q) != null) e.세트휴식(q).also { if (it != re.휴식(k)) 바뀜 = true } else re.휴식(k)
+        }
         if (!바뀜) re
         else re.copy(무게 = 목.firstOrNull()?.w ?: re.무게, 횟수 = 목.firstOrNull()?.r ?: re.횟수, 휴식 = 휴.firstOrNull() ?: re.휴식,
             세트값 = 목, 휴식값 = 휴)

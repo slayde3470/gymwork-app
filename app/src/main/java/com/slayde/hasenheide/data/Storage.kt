@@ -177,7 +177,8 @@ object 저장소 {
                     .put("휴식들", JSONArray().also { h -> e.휴식들.forEach { h.put(it ?: JSONObject.NULL) } })
                     .put("임시", e.임시).put("마감", e.마감).also { if (e.슈퍼 != null) it.put("슈퍼", e.슈퍼) }
                     .also { if (e.플랜id != null) it.put("플랜id", e.플랜id) }
-                    .also { if (e.종id != null) it.put("종id", e.종id) })
+                    .also { if (e.종id != null) it.put("종id", e.종id) }
+                    .also { if (e.원번호.isNotEmpty()) it.put("원번호", JSONArray().also { a2 -> e.원번호.forEach { n -> a2.put(n ?: JSONObject.NULL) } }) })
             }
         })
         .also { o ->
@@ -476,6 +477,7 @@ object 저장소 {
                     목록(e.optJSONArray("휴식들")) { h, j -> if (h.isNull(j)) null else h.getInt(j) },
                     e.optBoolean("임시"), e.optBoolean("마감"), 글또는널(e, "슈퍼"),
                     플랜id = 글또는널(e, "플랜id"), 종id = 글또는널(e, "종id"),
+                    원번호 = 목록(e.optJSONArray("원번호")) { n, j -> if (n.isNull(j)) null else n.getInt(j) },
                 )
             }
         },
