@@ -32,7 +32,7 @@ class Shot_s01g_reset : ShotBase() {
 class Shot_s01j_dayExercises : ShotBase() {
     @Test fun t() { 켜기 { d -> d.copy(예정 = d.예정 - 오늘.toString(), 예정고정 = d.예정고정 + (오늘.toString() to "")) }
         누름("운동 계획 만들기"); 찍("01j_캘린더_운동계획_종목고르기")
-        누름("종목 골라 넣기"); 누름("스쿼트", -1); 찍("01j2_캘린더_그날운동_넣기"); 누름("확인", -1); 찍("01j3_캘린더_그날운동_붙음") }
+        누름("종목 골라 넣기"); 누름설명("스쿼트 · ", 일부 = true); 누름설명("풀업 · ", 일부 = true); 찍("01j2_캘린더_그날운동_넣기"); 누름("확인", -1); 찍("01j3_캘린더_그날운동_붙음") }
 }
 
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
