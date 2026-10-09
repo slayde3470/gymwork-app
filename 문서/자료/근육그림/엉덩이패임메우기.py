@@ -26,7 +26,7 @@ for i,y in enumerate(rows):
     sx=np.interp(xs,dst_k,src_k)
     for c in range(3): out[y,:,c]=np.interp(sx,xs,a[y,:,c])
     for s_,e,n in ((-1,eL,nL),(1,eR,nR)):
-        x0,x1=(e+2,int(n)+14) if s_<0 else (int(n)-14,e-2)
+        x0,x1=(e+1,int(n)+18) if s_<0 else (int(n)-18,e-1)
         M[y,min(x0,x1):max(x0,x1)+1]=w
 body=(g<249).astype(float); body=ndimage.binary_erosion(body,iterations=2).astype(float)
 bw=ndimage.gaussian_filter(body,9)+1e-6
