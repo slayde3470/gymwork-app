@@ -2,6 +2,16 @@ package com.slayde.hasenheide.ui
 
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.detectTapGestures
+import android.os.SystemClock
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.onLongClick
+import kotlinx.coroutines.delay
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.rememberUpdatedState
@@ -69,10 +79,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.graphics.graphicsLayer
@@ -200,12 +207,16 @@ fun 종목화면(상태: 앱상태) {
                         Box(Modifier.fillMaxWidth().heightIn(min = 판높이).onGloballyPositioned { 구멍틀[0] = it; 구멍재기() }) {
                             Column(
                                 Modifier.fillMaxWidth()
-                                    .padding(start = 간격.보통, end = 간격.보통, top = 간격.보통, bottom = 종목치수.뜸자리),
+                                    .padding(start = 간격.보통, end = 간격.보통, top = 간격.보통, bottom = if (펼친 != null) 간격.보통 else 종목치수.뜸자리),
                                 verticalArrangement = Arrangement.spacedBy(간격.좁게),
                             ) {
                                 칩줄(listOf("전체") + 판.칸들, 판.고름, { 고른칸 = it })
                                 종목묶음들(상태, 판, 끌판, 펼친, { k -> 펼친 = if (펼친 == k) null else k },
                                     펼침틀 = { 구멍틀[1] = it; 구멍재기() })
+                                // 10-09 홍겸 님: 펼쳤을 때는 [새 종목 만들기] 가 따라다니지 않고 목록 맨 끝에 놓인다 (가림막 아래라 어둡다 · 누르면 접힌다)
+                                if (펼친 != null) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                                    버튼("+ 새 종목 만들기", { if (새시트 == null) 새시트 = "" }, 주요 = true)
+                                }
                             }
                             val h = 구멍
                             if (펼친 != null && h != null) 펼침가림막(h, 접기, Modifier.matchParentSize())
@@ -216,10 +227,9 @@ fun 종목화면(상태: 앱상태) {
         }
         격자끌기이름표(끌판)
         // 10-07 홍겸 님: [+ 새 종목 만들기] 오른쪽 아래 고정 · 파란 상자 흰 글 (루틴 화면 떠 있는 단추와 같은 모양)
-        //  10-09 홍겸 님: 펼쳤을 때는 이 단추도 어둡게 — 누르면 접힌다 (새 종목은 열지 않는다)
-        Box(Modifier.align(Alignment.BottomEnd).padding(간격.보통)) {
-            버튼("+ 새 종목 만들기", { if (새시트 == null) 새시트 = "" }, Modifier.가림덮음(펼친 != null), 주요 = true)
-            if (펼친 != null) Box(Modifier.matchParentSize().눌림(접기))
+        //  10-09 홍겸 님: 펼쳤을 때는 떠 있지 않고 목록 맨 끝으로 간다 (위 스크롤 칸 안 · 가림막 아래라 어둡고 누르면 접힌다)
+        if (펼친 == null) Box(Modifier.align(Alignment.BottomEnd).padding(간격.보통)) {
+            버튼("+ 새 종목 만들기", { if (새시트 == null) 새시트 = "" }, 주요 = true)
         }
         if (카테고리시트) 카테고리관리(상태) { 카테고리시트 = false }
         새시트?.let { 열린 ->
@@ -256,7 +266,8 @@ internal fun 종목묶음들(
     펼침틀: ((LayoutCoordinates) -> Unit)? = null,
 ) {
     val c = Local색.current
-    if (판.묶음.isEmpty()) 글("없음", 크기값 = 크기.조금작게, 색 = c.옅음)
+    // 10-09 홍겸 님: [루틴] 없음 → 안내 글 (두 줄 이상이 될 수 있어 줄 = 3)
+    if (판.묶음.isEmpty()) 글("현재 만들어진 운동이 없습니다. 새 종목 추가하기 버튼을 눌러 운동을 추가해주세요.", 크기값 = 크기.조금작게, 색 = c.옅음, 줄 = 3)
     판.묶음.forEach { (칸이름, l) ->
         key(칸이름) {
             Column(verticalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
@@ -309,6 +320,12 @@ private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modif
     val 번 = if (t != null) 같은이름번호(d.종목표, t.id, t.이름) else 0
     val 곁 = if (플.size > 1) "플랜 ${플.size}개" else ""   // 10-08 홍겸 님: '플랜 가능' 글은 없앴다
     var 이름고침 by remember(x.열쇠, 펼) { mutableStateOf(false) }   // 10-08 홍겸 님: 펼친 상자에서 이름을 누르면 그 자리에서 고친다
+    // 10-09 홍겸 님: [저장] 을 누르면 속이 줄어들며(펼침 시간) 접힌다 — 상자가 접힌 꼴로 바뀌면 이 상자는 새로 그려져 움직임이 끊기므로, 속을 먼저 접고 그 뒤에 접는다
+    var 접는중 by remember(x.열쇠, 펼) { mutableStateOf(false) }
+    val 펼최신 by rememberUpdatedState(펼)
+    LaunchedEffect(접는중) {
+        if (접는중) { delay(움직임.펼침.toLong()); if (펼최신) 펼침(x.열쇠) }
+    }
     val 모양 = RoundedCornerShape(모서리.작게)
     val 수 = if (넣기 != null && 넣기.됨(x)) 넣기.수(x) else -1   // -1 = 체크 상자 없음
     val 들어감 = 수 > 0
@@ -345,7 +362,7 @@ private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modif
                     if (펼 && 곁.isNotEmpty()) 글(곁, 크기값 = 크기.작게, 색 = c.옅음)
                     // 10-09 홍겸 님: '0/139회' 는 접기(∧) 바로 왼쪽 (플랜 카드 머리에서 옮겼다). 플랜이 둘 이상이면 카드마다 쓴다
                     if (플랜모양 && 플.size == 1) 글(플랜횟수글(상태, 플[0]), 크기값 = 크기.아주작게, 색 = c.옅음)
-                    val 돌림 by animateFloatAsState(if (펼) 180f else 0f, tween(움직임.펼침), label = "접힘표")
+                    val 돌림 by animateFloatAsState(if (펼 && !접는중) 180f else 0f, tween(움직임.펼침), label = "접힘표")
                     Icon(아이콘.아래, if (펼) "접기" else "펼치기", Modifier.size(종목치수.펼침그림).graphicsLayer { rotationZ = 돌림 }, tint = c.옅음)
                 }
             }
@@ -353,10 +370,14 @@ private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modif
             if (펼 && t != null && !플랜모양) 버튼("삭제", { 종목삭제(상태, t) }, 낮게 = true, 글색 = c.나쁨)   // 10-09 홍겸 님: 플랜 종목은 삭제 없음
             // 10-08 홍겸 님: 펼친 상자 머리에는 체크 상자를 두지 않는다 (접힌 줄에만)
             if (!펼 && 넣기 != null && 수 >= 0) 넣기체크(x.이름, 수,
-                누름 = { if (넣기.수(x) > 0) 넣기.빼기(x) else 넣기.넣기(x) },
+                누름 = { if (넣기.수(x) > 0) 넣기.빼기(x) else { 넣기.넣기(x); 꾹안내(상태) } },   // 10-09 홍겸 님: 눌러 넣을 때 '꾸욱 누르면…' 토스트
                 꾹 = { 넣기.넣기(x) })
         }
-        if (펼) Column(Modifier.padding(top = 간격.좁게), verticalArrangement = Arrangement.spacedBy(간격.좁게)) {
+        if (펼) AnimatedVisibility(
+            visible = !접는중,
+            exit = shrinkVertically(tween(움직임.펼침)) + fadeOut(tween(움직임.펼침)),
+            label = "상자접힘",
+        ) { Column(Modifier.padding(top = 간격.좁게), verticalArrangement = Arrangement.spacedBy(간격.좁게)) {
             if (플랜모양) {
                 // 10-05 검수: PlanScreen 의 끌 수 있는 카드 목록을 그 종목 플랜만으로 (전: 끌기 없는 따로 만든 카드)
                 // 10-09 홍겸 님: 카드 차례 = 게이지 → 다음 측정 → 근육 그림 2장 → [변경][지우기]
@@ -365,14 +386,14 @@ private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modif
                     if (t != null) key(t.id) { 플랜종목근육(상태, t) } else 근육읽기(상태, x.이름)
                 })
             } else {
-                if (t != null) key(t.id) { 종목고치기(상태, t, 플.isNotEmpty()) }
+                if (t != null) key(t.id) { 종목고치기(상태, t, 플.isNotEmpty(), 저장뒤 = { 접는중 = true }) }
                 else {
                     종목세팅(상태, x.이름, 플.isNotEmpty())
                     근육읽기(상태, x.이름)
                 }
             }
             if (t != null && t.사진.isNotEmpty()) 넣은사진줄(상태, t)
-        }
+        } }
     }
 }
 
@@ -395,12 +416,6 @@ private fun 펼침가림막(구멍: Rect, 접기: () -> Unit, modifier: Modifier
         Box(Modifier.fillMaxWidth().weight(1f).then(칠))
     }
 }
-
-/** 내용 위에 가림색을 덮는다 — 모양대로(둥근 단추면 둥글게). [켬] 이 꺼지면 아무것도 안 한다 */
-private fun Modifier.가림덮음(켬: Boolean): Modifier =
-    if (!켬) this
-    else this.graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
-        .drawWithContent { drawContent(); drawRect(종목치수.가림, blendMode = BlendMode.SrcAtop) }
 
 /** [삭제] — 종목 · 기본 세팅 · 이 종목을 쓰는 루틴 줄을 뺀다(지난 기록은 그대로). 묻지 않고 지우고 [되돌리기] */
 private fun 종목삭제(상태: 앱상태, t: 종목) {
@@ -490,15 +505,38 @@ internal fun Modifier.이름칸밖누름(): Modifier = composed {
         }
 }
 
+/** 10-09 홍겸 님: 넣기 체크 상자를 눌러 넣을 때 띄우는 안내 */
+private const val 꾹안내글 = "꾸욱 누르면 한 번 더 추가됩니다."
+
+/** 안내를 마지막으로 띄운 때 (SystemClock.uptimeMillis) — 어느 체크 상자든 같이 쓴다 */
+private object 꾹안내기억 { var 뜬때 = Long.MIN_VALUE / 2 }
+
+/**
+ * 10-09 홍겸 님: 체크 상자를 눌러 넣을 때마다 토스트 '꾸욱 누르면 한 번 더 추가됩니다.' 2초([움직임.꾹안내]) —
+ * 띄운 뒤 5초([움직임.꾹안내쉼]) 안에는 다른 체크 상자든 같은 체크 상자든 눌러도 다시 띄우지 않는다
+ */
+private fun 꾹안내(상태: 앱상태) {
+    val 지금 = SystemClock.uptimeMillis()
+    if (지금 - 꾹안내기억.뜬때 < 움직임.꾹안내쉼) return
+    꾹안내기억.뜬때 = 지금
+    상태.알림.토스트(꾹안내글, 움직임.꾹안내)
+}
+
 /**
  * 넣기 체크 상자 (종목 넣기 시트 · 시안 `.넣기체크` 20) — 들어간 개수만큼 ✓ (넷부터 ✓×n). 누르는 칸 28.
  * 누름 = 안 들어 있으면 넣기 · 들어 있으면 하나 빼기 / 꾹 = 하나 더 넣기
+ * 10-09 홍겸 님 버그(꾹이 안 먹힘): 전에는 `눌림길게`(combinedClickable)였다. 이 환경에선 폰에서 돌려 볼 수 없어 원인은 **추측**이다 —
+ * `눌림길게` 는 다시 그려질 때마다 새 interactionSource 를 만들어, 누르고 있는 중 다시 그려지면 꾹 세기가 끊길 수 있다.
+ * 그래서 한 번 만든 손([pointerInput] · detectTapGestures)이 최신 동작만 불러 주는 꼴로 바꿨다. 꾹이 먹히면 짧게 떨린다 (상자 머리의 꾹 = 끌기와 같은 느낌)
  */
 @Composable
 private fun 넣기체크(이름: String, 수: Int, 누름: () -> Unit, 꾹: () -> Unit) {
     val c = Local색.current
     val 들어감 = 수 > 0
     val 상자 = RoundedCornerShape(넣기값.체크모서리)
+    val 누름최신 by rememberUpdatedState(누름)
+    val 꾹최신 by rememberUpdatedState(꾹)
+    val 진동 = LocalHapticFeedback.current
     Box(
         // 10-08 홍겸 님: ∨ 와의 눈에 보이는 간격을 35% 줄이고(12 → 7.8) 체크 상자를 오른쪽으로 4 옮긴다.
         //  누르는 칸 28 은 그대로 — 차지하는 폭만 줄여, 같은 줄의 이름 칸이 그만큼 넓어진다 (∨ 가 오른쪽으로 간다)
@@ -513,8 +551,15 @@ private fun 넣기체크(이름: String, 수: Int, 누름: () -> Unit, 꾹: () -
         }.heightIn(min = 높이.아주낮게).widthIn(min = 높이.아주낮게).clip(RoundedCornerShape(모서리.작게))
             .semantics(mergeDescendants = true) {
                 contentDescription = "$이름 · ${수}개 들어 있음 · ${if (들어감) "누르면 하나 빼기" else "누르면 넣기"}, 꾹 누르면 하나 더"
+                onClick { 누름최신(); true }
+                onLongClick { 꾹최신(); true }
             }
-            .눌림길게(누름, 꾹),
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onLongPress = { 진동.performHapticFeedback(HapticFeedbackType.LongPress); 꾹최신() },
+                    onTap = { 누름최신() },
+                )
+            },
         contentAlignment = Alignment.Center,
     ) {
         Box(
@@ -534,7 +579,7 @@ private fun 넣기체크(이름: String, 수: Int, 누름: () -> Unit, 꾹: () -
  * 저장은 새 종목 시트 [편집] 과 같은 길(`종목고침` — 근육 · 칸 · 세트)이라 저장 · 계산은 새로 만들지 않았다
  */
 @Composable
-private fun 종목고치기(상태: 앱상태, t: 종목, 플랜있음: Boolean) {
+private fun 종목고치기(상태: 앱상태, t: 종목, 플랜있음: Boolean, 저장뒤: () -> Unit = {}) {
     val c = Local색.current
     val d = 상태.d
     var 처음 by remember { mutableStateOf(d.편집초기(t)) }
@@ -552,6 +597,7 @@ private fun 종목고치기(상태: 앱상태, t: 종목, 플랜있음: Boolean)
         발자취.적기("종목 저장 · ${nt.이름}")
         상태.알림.토스트("저장했습니다 · ${nt.이름}")
         처음 = nd.편집초기(nt); v = 처음
+        저장뒤()   // 10-09 홍겸 님: 저장하면 접힌다
     }
     Column(verticalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
@@ -566,7 +612,7 @@ private fun 종목고치기(상태: 앱상태, t: 종목, 플랜있음: Boolean)
         버튼("저장", { 저장() }, Modifier.weight(1f), 주요 = 바뀜, 작게 = true)
         버튼("취소", { v = 처음 }, 작게 = true, 글색 = if (바뀜) c.나쁨 else c.옅음)
     }
-    if (v.팝 != null) 근육팝(v, { f -> v = f(v) }, { 상태.알림.토스트(it) }, d.카테고리)
+    if (v.팝 != null) 근육팝(v, { f -> v = f(v) }, d.설정.색표, d.카테고리)
 }
 
 /**
@@ -597,7 +643,7 @@ private fun 플랜종목근육(상태: 앱상태, t: 종목) {
     if (v.팝 != null) 근육팝(v, { f ->
         val n = f(v)
         v = if (n.팝 == null) 닫으며저장(n) else n
-    }, { 상태.알림.토스트(it) }, d.카테고리)
+    }, d.설정.색표, d.카테고리)
 }
 
 /** 고칠 종목이 없는(플랜만 남은) 상자의 근육 그림 2장 — 보기만 한다 (누름 없음) */

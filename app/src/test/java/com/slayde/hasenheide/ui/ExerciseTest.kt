@@ -197,7 +197,7 @@ class ExerciseTest {
         assertNull(새종목값().팝빈열기().칸)             // 새 종목 = 카테고리 선택 없음
     }
 
-    @Test fun 팝_역할고르기_주동근은협응근막힘() {
+    @Test fun 팝_역할고르기_다른역할은흐리게만_눌러서옮김() {
         var v = 새종목값().팝열기(listOf("chest_mid"))
         v = v.팝역할("chest_mid", "P")
         assertEquals(mapOf("chest_mid" to "P"), v.근육)
@@ -205,18 +205,23 @@ class ExerciseTest {
         // 같은 묶음의 다른 줄도 바로
         v = v.팝역할("chest_upper", "Y")
         assertEquals("Y", v.근육["chest_upper"])
-        // 이미 주동근인 부위의 [협응근] = 막힘 · 값 그대로
-        assertTrue(팝막힘(v.근육, "chest_mid", "Y"))
-        assertFalse(팝막힘(v.근육, "chest_upper", "Y"))
-        assertFalse(팝막힘(v.근육, "chest_mid", "P"))
-        assertEquals(v, v.팝역할("chest_mid", "Y"))
-        // 협응근 → 주동근은 된다 · [빼기] = 지움
+        // 10-09: 다른 역할이 이미 있는 부위의 칩은 흐리게만 (주동근 부위의 [협응근] · 협응근 부위의 [주동근])
+        assertTrue(팝흐림(v.근육, "chest_mid", "Y"))
+        assertTrue(팝흐림(v.근육, "chest_upper", "P"))
+        assertFalse(팝흐림(v.근육, "chest_mid", "P"))
+        assertFalse(팝흐림(v.근육, "chest_upper", "Y"))
+        assertFalse(팝흐림(v.근육, "chest_mid", 팝빼기))
+        assertFalse(팝흐림(v.근육, "chest_lower", "P"))            // 아무 역할도 없는 부위
+        assertFalse(팝흐림(v.근육, "chest_lower", "Y"))
+        // 흐려도 눌린다 — 한 부위는 한 역할만이라 옮겨 간다
+        assertEquals("Y", v.팝역할("chest_mid", "Y").근육["chest_mid"])
         assertEquals("P", v.팝역할("chest_upper", "P").근육["chest_upper"])
+        assertEquals(2, v.팝역할("chest_mid", "Y").근육.size)         // 부위 수는 그대로 (한 부위가 두 역할로 늘지 않는다)
+        // [빼기] = 지움
         v = v.팝역할("chest_mid", 팝빼기)
         assertNull(v.근육["chest_mid"])
         assertEquals(v, v.팝역할("없는부위", "P"))                 // 세부 부위가 아니면 그대로
         assertEquals(listOf("P", "Y", 팝빼기), 팝역할들.map { it.first })
-        assertEquals("이미 주동근으로 선택되어있습니다.", 주동근막힘글)
     }
 
     // ─────────────── v22 ⑨ 이름이 바뀌면 근육을 비운다 · 정할 때 사전 → 저장 종목 → 빈 채로 ───────────────
