@@ -219,9 +219,9 @@ class 알림판 {
     private fun 자리(): Float? = if (SystemClock.uptimeMillis() - 누른때 < 움직임.누름기억) 누른y else null
 
     /** 글만 잠깐 — 앞 토스트는 바로 치운다 */
-    fun 토스트(글: String) {
+    fun 토스트(글: String, 시간: Int = 움직임.토스트) {
         뗀수 = 0
-        목록 = 목록.filter { it.꼴 != 꼴.토스트 } + 알림(++번호, 꼴.토스트, 글, null, null, null, 1, 움직임.토스트, 자리())
+        목록 = 목록.filter { it.꼴 != 꼴.토스트 } + 알림(++번호, 꼴.토스트, 글, null, null, null, 1, 시간, 자리())
     }
 
     /**
