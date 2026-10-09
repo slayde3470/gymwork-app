@@ -1,5 +1,8 @@
 package com.slayde.hasenheide.ui
 
+import androidx.compose.ui.test.swipeLeft
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.onRoot
 import com.slayde.hasenheide.data.세트
 import com.slayde.hasenheide.data.끝냄
 import com.slayde.hasenheide.data.수정메모
@@ -249,7 +252,13 @@ class Shot_s16f_workoutAdd : ShotBase() {
 
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class Shot_s16g_nextExercise : ShotBase() {
-    @Test fun t() { 켜기 { 세션넣기(it, 4) }; 누름설명("다음 종목"); 찍("16g_운동_다음종목") }
+    // 10-09: 맨 아래 ‹ › 를 빼고 화면을 왼쪽으로 밀어 다음 종목으로
+    @Test fun t() {
+        켜기 { 세션넣기(it, 4) }
+        rule.onRoot().performTouchInput { swipeLeft(startX = width * 0.85f, endX = width * 0.15f, durationMillis = 300) }
+        rule.mainClock.advanceTimeBy(1500); rule.waitForIdle()
+        찍("16g_운동_다음종목")
+    }
 }
 
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
