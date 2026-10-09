@@ -3,7 +3,7 @@ from PIL import Image
 from scipy import ndimage
 HEAD_W, HEAD_H = 0.95, 0.95*0.90
 SH, WA, HIP = 1.05, 0.95, 1.06
-DIP = 0.07
+DIP = 0.0
 MED = 0.09
 TOP, CHIN, C, BODY0 = 31, 225, 384, 200
 HX0, HX1 = 300, 469
