@@ -37,9 +37,10 @@ APK 고정 주소: `github.com/slayde3470/gymwork-app/releases/latest/download/h
 ### 1-1. 화면 사진 — 폰 없이 진짜 화면 보기 (10-08)
 
 가지 `screens/now` 에서 Robolectric 이 **지금 코드를 그대로 그려** `app/screens/*.png` 로 올린다 (main · APK 와 상관없음).
-1. `git checkout screens/now && git merge main` → `app/src/test/찍을것.txt` 에 **바꾼 화면만** 한 줄 (예 `Shot_s16*` · 비우면 전부 6분)
+1. `git checkout screens/now && git merge main` → `app/src/test/찍을것.txt` 에 **바꾼 화면만** 한 줄 (예 `Shot_s16*`). **매번 전부 찍지 않는다** — 비우면 전부(약 12분 · 87장)는 거의 모든 화면이 바뀌었을 때만
 2. push → `tools/기다리기.sh screens/now <커밋>` → `git pull` → 사진을 `Read` 로 본다. 실패는 `app/screens/_로그.txt`
 3. 같은 판에 계산 시험(`*Test`)도 돈다 → **check 가지를 따로 돌리지 않는다**
+- `기다리기.sh` 가 사진 판이 1분 안에 끝나면(사진 0장) · 2분 넘게 판이 안 생기면(빈 커밋) ⚠ 를 찍고 실패로 끝낸다 (10-09)
 - 새 화면 상태가 필요하면 `ScreenShots.kt` 에 `Shot_` 클래스 하나 (클래스마다 새 앱 · 예시 자료)
 - 화면 모음 아티팩트 `claude.ai/artifact/V6pHUDvuLeJZYwTWzFqTgK` — 홍겸 님이 번호로 고칠 곳을 말한다
 
