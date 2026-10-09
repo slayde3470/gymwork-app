@@ -4,7 +4,7 @@ import 비율고치기 as warp
 from 비율고치기 import segs, C
 def halfw(f):
     m=ndimage.binary_fill_holes(np.asarray(Image.open(f).convert('L'))<240); d={}
-    for y in range(560,820):
+    for y in range(560,880):
         I=[s for s in segs(m[y]) if abs((s[0]+s[1])/2-C)<=210]
         if I: d[y]=((C-I[0][0])+(I[-1][1]-C))/2
     return d
@@ -22,3 +22,14 @@ for name in ['front','back']:
     print(name,yw,W0*2,yh,W1*2)
     warp.run(f'{name}.png',f'{name}_new.png',extra)
     json.dump(extra,open(f'extra_{name}.json','w'))
+
+# 앞모습만: 허리 가장 가는 곳 → 허벅지 원래 폭(840 높이)까지 둥근 곡선 하나 — 홍겸 님 10-10 "허벅지가 더 커 보이지 않게"
+ho=halfw('front.png'); warp.run('front.png','front_new.png'); hn=halfw('front_new.png')
+yw=min(range(590,640),key=lambda y:hn[y]); W0=hn[yw]; yh=840; W1=ho[yh]; ex={}
+for y in range(yw-40,yh+1):
+    if y<yw: t=(yw-y)/40; tgt=W0+(hn[y]-W0)*(1-np.cos(np.pi*t))/2
+    else:
+        t=(y-yw)/(yh-yw); u=min(t/0.2,1.0); g=u*u*(3-2*u); tgt=W0+(W1-W0)*g*(1-(1-t)**2)
+    ex[y]=float(tgt/hn[y])
+warp.run('front.png','front_new.png',ex)
+json.dump(ex,open('extra_front.json','w'))
