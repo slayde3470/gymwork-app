@@ -66,6 +66,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupPositionProvider
 import androidx.compose.ui.window.PopupProperties
+import com.slayde.hasenheide.data.사전기본횟수
+import com.slayde.hasenheide.data.사전기본무게
 import com.slayde.hasenheide.data.같은세트들
 import com.slayde.hasenheide.data.그날운동도
 import com.slayde.hasenheide.data.근육계산
@@ -523,7 +525,7 @@ internal fun 새종목값.기본묶음(): String {
     return (p?.let { k -> 묶들.firstOrNull { k in it.second }?.first }) ?: 묶들[0].first
 }
 
-/** 새 종목 — 칸은 비워 두고 시작 (v19 D ③) · 세트 = 설정의 기본 세트 수 × 20kg · 10회 · 기본 휴식 */
+/** 새 종목 — 칸은 비워 두고 시작 (v19 D ③) · 세트 = 설정의 기본 세트 수 × 20kg · 10회 · 기본 휴식 (이름을 정하면 장비 무게로 — [장비무게맞춤]) */
 internal fun 앱데이터.새초기(처음이름: String = ""): 새종목값 =
     새종목값(이름 = 처음이름, 찾는중 = 처음이름.isNotBlank(), 세트 = 같은세트들(설정.기본세트, 20.0, 10, 설정.기본휴식))
 
@@ -567,7 +569,21 @@ internal fun 새종목값.확인(d: 앱데이터): Pair<새종목값, String?> {
             v = v.copy(묶음 = v.기본묶음())
         }
     }
-    return v.copy(정한 = v.이름, 찾는중 = false, 고름 = true) to null
+    return v.copy(정한 = v.이름, 찾는중 = false, 고름 = true).장비무게맞춤(d) to null
+}
+
+/**
+ * 10-09 홍겸 님 "덤벨 2kg · 바벨 20kg · 머신 10kg · 10회" — 세트를 아직 손대지 않았으면(처음 그대로) 이름의 장비 무게로.
+ * 장비 = 사전 종목이면 사전의 장비, 아니면 이름으로 짐작(저장할 때와 같은 [이름추천]) · 모르면 20
+ */
+internal fun 새종목값.장비무게맞춤(d: 앱데이터): 새종목값 {
+    val 처음무게들 = setOf(20.0, 2.0, 10.0, 0.0)
+    val 손안댐 = 세트.size == d.설정.기본세트 && 세트.map { it.w }.distinct().size <= 1 &&
+        세트.all { it.r == 사전기본횟수 && it.휴 == d.설정.기본휴식 && it.w in 처음무게들 }
+    if (!손안댐) return this
+    val 장비 = 종목사전.이름으로(이름.trim())?.let { 종목사전.장비(it) } ?: 이름추천.추측하기(이름.trim()).장비 ?: ""
+    val w = if (장비.isBlank()) 20.0 else 사전기본무게(장비)
+    return copy(세트 = 세트.map { it.copy(w = w) })
 }
 
 /** 찾은 줄을 눌렀다 (시안 `새사전고름`) — 편집이면 이름만 */
@@ -575,7 +591,7 @@ internal fun 새종목값.사전고름(d: 앱데이터, 이름값: String): 새�
     if (편집 != null) return copy(이름 = 이름값, 찾는중 = false)
     val x = 종목사전.이름으로(이름값)
     val v = if (x != null) 사전적용(x, d.카테고리) else copy(이름 = 이름값, 고름 = false).확인(d).first
-    return v.copy(찾는중 = false, 고름 = true)
+    return v.copy(찾는중 = false, 고름 = true).장비무게맞춤(d)
 }
 
 /** 카테고리 칩 — 손으로 고름. 같은 묶음이 있으면 그리로 */
