@@ -2,7 +2,8 @@ package com.slayde.hasenheide.ui
 
 import com.slayde.hasenheide.data.종목사전
 import java.io.File
-import javax.imageio.ImageIO
+import java.io.DataInputStream
+import java.util.zip.Inflater
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -35,12 +36,53 @@ class MusclePicTest {
         assertTrue("serratus" !in 칸("복부"))
     }
 
+    /** 8비트 회색 PNG 읽기 (안드로이드 단위시험에는 ImageIO 가 없다) → (폭, 높이, 값들) */
+    private fun 회색png(f: File): Triple<Int, Int, IntArray> {
+        val inp = DataInputStream(f.inputStream().buffered())
+        inp.skipBytes(8)
+        var w = 0; var h = 0
+        val idat = java.io.ByteArrayOutputStream()
+        while (true) {
+            val n = inp.readInt(); val t = String(ByteArray(4).also { inp.readFully(it) })
+            val d = ByteArray(n).also { inp.readFully(it) }; inp.readInt()
+            if (t == "IHDR") {
+                w = java.nio.ByteBuffer.wrap(d, 0, 4).int; h = java.nio.ByteBuffer.wrap(d, 4, 4).int
+                assertEquals(8, d[8].toInt()); assertEquals(0, d[9].toInt(), "회색 PNG 여야 한다")
+            }
+            if (t == "IDAT") idat.write(d)
+            if (t == "IEND") break
+        }
+        val raw = ByteArray((w + 1) * h)
+        Inflater().apply {
+            setInput(idat.toByteArray())
+            var o = 0
+            while (o < raw.size && !finished()) o += inflate(raw, o, raw.size - o)
+            end()
+        }
+        val out = IntArray(w * h)
+        for (y in 0 until h) {
+            val ft = raw[y * (w + 1)].toInt()
+            for (x in 0 until w) {
+                val r = raw[y * (w + 1) + 1 + x].toInt() and 0xFF
+                val a = if (x > 0) out[y * w + x - 1] else 0
+                val b = if (y > 0) out[(y - 1) * w + x] else 0
+                val c = if (x > 0 && y > 0) out[(y - 1) * w + x - 1] else 0
+                val pr = when (ft) {
+                    0 -> 0; 1 -> a; 2 -> b; 3 -> (a + b) / 2
+                    else -> { val p = a + b - c; val pa = Math.abs(p - a); val pb = Math.abs(p - b); val pc = Math.abs(p - c)
+                        if (pa <= pb && pa <= pc) a else if (pb <= pc) b else c }
+                }
+                out[y * w + x] = (r + pr) and 0xFF
+            }
+        }
+        return Triple(w, h, out)
+    }
+
     private fun 판칸(번호: String): Set<String> {
         val f = listOf("src/main/assets/muscle/${번호}_map.png", "app/src/main/assets/muscle/${번호}_map.png").map(::File).first { it.exists() }
-        val im = ImageIO.read(f)
+        val (_, _, 값들) = 회색png(f)
         val 칸 = HashSet<String>()
-        for (y in 0 until im.height) for (x in 0 until im.width) {
-            val v = im.raster.getSample(x, y, 0)
+        for (v in 값들) {
             if (v == 0) continue
             val i = 판값칸(v)
             assertTrue(i != null && v % 16 <= 2, "$번호 판에 표에 없는 값 $v")
