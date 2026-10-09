@@ -15,7 +15,7 @@
   · 색표.json · 대표칸/칸표.json
 
 쓰는 것 — 손으로 고치지 않는다
-  · app/src/main/assets/muscle/NN.webp      그림 (전신 높이 1032 · 확대 640 · 밝기만 남긴 회색)
+  · app/src/main/assets/muscle/NN.webp      그림 (전신 높이 1032 · 확대는 몸만 잘라 긴 변 640 · 밝기만 남긴 회색)
   · app/src/main/assets/muscle/NN_map.png   칸 번호 판 (회색 한 장 · 값 = 칸번호(1~15) × 16 + 쪽(0 · L 1 · R 2) · 0 = 빈 곳)
   · app/src/main/java/com/slayde/hasenheide/ui/MusclePicData.kt   그림 이름 · 크기 · 칸 이름 · 칸에 든 근육
 """
@@ -64,7 +64,17 @@ def main():
         L = np.clip(L / np.percentile(L[a[..., 3] >= 128], 밝기기준), 0, 1) * 255
         a[..., 0] = a[..., 1] = a[..., 2] = L
         im = Image.fromarray(a.astype(np.uint8), "RGBA")
-        크기 = (확대긴변, 확대긴변) if im.size[0] == im.size[1] else (round(im.size[0] * 전신높이 / im.size[1]), 전신높이)
+        확대 = im.size[0] == im.size[1]
+        if 확대:
+            # 10-09 홍겸 님 "팔 확대 사진 가운데 정렬" — 확대 그림은 몸이 그려진 곳만 남기고 잘라 칸 가운데에 오게 (여백 2%)
+            ys, xs = np.nonzero(np.array(im)[..., 3] > 8)
+            m = round(im.size[0] * 0.02)
+            상자 = (max(0, xs.min() - m), max(0, ys.min() - m), min(im.size[0], xs.max() + 1 + m), min(im.size[1], ys.max() + 1 + m))
+            im = im.crop(상자); 판 = 판.crop(상자)
+            배 = 확대긴변 / max(im.size)
+            크기 = (round(im.size[0] * 배), round(im.size[1] * 배))
+        else:
+            크기 = (round(im.size[0] * 전신높이 / im.size[1]), 전신높이)
         im = im.resize(크기, Image.LANCZOS)
         판 = 판.resize(크기, Image.NEAREST)
         im.save(os.path.join(자원, 번호 + ".webp"), "WEBP", quality=82, method=6)

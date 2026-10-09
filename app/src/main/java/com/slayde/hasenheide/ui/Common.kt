@@ -529,19 +529,20 @@ fun 숫자버튼줄(
 }
 
 /**
- * 발자취 — 방금 한 동작 20가지를 담아 둔다 (09-24 메모).
- * 메모를 적으면 **직전 10가지가 메모에 함께 저장**돼, 무엇을 하다 적었는지 알 수 있다.
- * 폰 안에만 있고, 메모에 붙은 것만 남는다. 자판처럼 이어지는 동작은 한 번으로 친다.
+ * 발자취 — 방금 한 동작을 담아 둔다 (09-24 메모).
+ * 메모를 적으면 **직전 동작이 메모에 함께 저장**돼, 무엇을 하다 적었는지 알 수 있다.
+ * 10-09 홍겸 님: 시간 없이 **이름만 · 최근 3개까지** (그게 더 빠르다).
+ * 폰 안에만 있고, 메모에 붙은 것만 남는다. 같은 동작이 잇따르면 한 번으로 친다.
  */
 object 발자취 {
+    const val 메모에 = 3
     private val 것 = ArrayDeque<String>()
     fun 적기(글: String) {
-        if (것.lastOrNull()?.substringAfter(' ') == 글) return   // 같은 동작이 잇따르면 한 번으로
-        val t = java.time.LocalTime.now()
-        것.addLast("%02d:%02d:%02d %s".format(t.hour, t.minute, t.second, 글))
-        while (것.size > 20) 것.removeFirst()
+        if (것.lastOrNull() == 글) return   // 같은 동작이 잇따르면 한 번으로
+        것.addLast(글)
+        while (것.size > 메모에) 것.removeFirst()
     }
-    fun 최근(n: Int = 10): List<String> = 것.toList().takeLast(n)
+    fun 최근(n: Int = 메모에): List<String> = 것.toList().takeLast(n)
 }
 
 /** 지금 숫자를 고치는 칸이 몇 개 열려 있나 — 0 이 아니면 아래 탭을 숨긴다 */

@@ -45,6 +45,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -222,6 +224,27 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
     }
     fun 바꿈(f: (운동세션) -> 운동세션) = 함 { s -> 운결과(f(s), 운보기.본) }
 
+    // 10-09 홍겸 님: 그 종목 마지막 세트의 휴식을 끝까지 기다렸으면 다음 종목으로 (건너뛰기와 같다).
+    //  데이터는 이미 다음 종목으로 가 있고 보는 칸만 남아 있었다. 남은 종목이 없으면(마지막 종목의 마지막 세트) 그대로 — 보고서로 가지 않는다
+    val 지금쉼 = 쉬는종목(S)
+    LaunchedEffect(지금쉼, S.휴식 == null) {
+        val 앞 = 운보기.앞쉼
+        운보기.앞쉼 = 지금쉼
+        val 지금S = 상태.d.세션 ?: return@LaunchedEffect
+        if (지금S.휴식 != null || 앞 == null || 앞 != 운보기.본) return@LaunchedEffect
+        val 본e = 지금S.종목들.getOrNull(운보기.본) ?: return@LaunchedEffect
+        if (운남음(본e)) return@LaunchedEffect
+        val 갈 = 다음남은(지금S, 운보기.본)
+        if (갈 >= 0) { 운보기.본 = 갈; 당김++ }
+    }
+    // 10-09 홍겸 님: 화면을 좌우로 밀면 이전 · 다음 종목 (맨 아래 ‹ › 대신)
+    val 넘김: (Int) -> Unit = { 쪽 ->
+        상태.d.세션?.let { s ->
+            val 새 = (운보기.본 + 쪽).coerceIn(0, max(0, s.종목들.size - 1))
+            if (새 != 운보기.본) { 발자취.적기(if (쪽 > 0) "다음 종목으로 밀기" else "이전 종목으로 밀기"); 운보기.본 = 새; 당김++ }
+        }
+    }
+
     // 슈퍼세트 — 체크하면 지금 · 쉬는 줄이 묶음 안 다른 종목으로 간다. 같은 묶음을 보고 있으면 따라간다 (시안에는 슈퍼세트가 없다)
     LaunchedEffect(S.i, S.휴식?.종목, S.휴식 == null) { 운보기.본 = 본따라감(S, 운보기.본) }
 
@@ -237,20 +260,18 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
                 발자취.적기("운동 화면 나가기"); 뒤로?.onBackPressed()
             }
             AnimatedVisibility(visible = 그림켬 && !그림숨김) {
-                Box(Modifier.번호("운그림")) { 운동그림칸(상태, S.copy(i = 본), 지금) { 그림칸기억.숨긴운동 = S.루틴id } }
+                Box(Modifier.번호("운그림").좌우밀기(넘김)) { 운동그림칸(상태, S.copy(i = 본), 지금) { 그림칸기억.숨긴운동 = S.루틴id } }
             }
-            세트목록(상태, S, 본, 지금, Modifier.weight(1f), 함 = ::함, 바꿈 = ::바꿈, 당김 = { 당김++ })
+            세트목록(상태, S, 본, 지금, Modifier.weight(1f).좌우밀기(넘김), 함 = ::함, 바꿈 = ::바꿈, 당김 = { 당김++ })
             진행상자(상태, S, 본, 당김, Modifier.번호("운띠"), 함 = ::함, 고름 = { i -> 운보기.본 = i; 당김++ }, 넣기 = { 넣기열림 = true })
             단추줄(S, 본,
-                이전 = { 운보기.본 = max(0, 운보기.본 - 1); 당김++ },
-                다음 = { 상태.d.세션?.let { s -> 운보기.본 = min(s.종목들.size - 1, 운보기.본 + 1) }; 당김++ },
                 주 = { 발자취.적기("큰 단추 ${운주상태(S, 본).글}"); 함 { s -> 운주누름(s, 운보기.본, System.currentTimeMillis()) }; 당김++ },
                 끝내기 = { 발자취.적기("오늘 운동 끝내기"); 바꿈 { it.끝냄(System.currentTimeMillis()) } },
             )
         }
         // [＋] 종목 넣기 — 루틴과 같은 시트 (속은 RT 도우미 몫). 누름 = 넣기 / 들어간 것 누름 = 맨 뒤 하나 빼기 / 꾹 = 하나 더
         if (넣기열림) 종목넣기시트(
-            상태, 제목 = "${S.루틴이름}에 넣기",
+            상태, 제목 = "종목 추가하기",   // 10-09 홍겸 님: 루틴 이름(종목 이름들)이 길게 나오던 것 → 짧게
             개수 = { 열쇠 -> 상태.d.세션?.종목들?.count { it.열쇠 == 열쇠 && it.플랜id == null } ?: 0 },
             넣기 = { 열쇠 ->
                 발자취.적기("운동 중 넣기 $열쇠")
@@ -287,6 +308,19 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
 private object 운보기 {
     var 세션 by mutableLongStateOf(Long.MIN_VALUE)
     var 본 by mutableIntStateOf(0)
+    /** 바로 전에 쉬던 종목 — 휴식이 끝까지 돌아 끝났을 때 보는 칸을 다음 종목으로 옮기려고 (10-09) */
+    var 앞쉼: Int? = null
+}
+
+/** 좌우로 밀기 — [운치수.밀기] 넘게 밀었다 떼면 왼쪽으로 민 것 = 다음(+1) · 오른쪽 = 이전(−1). 위아래 스크롤과는 먼저 움직인 쪽이 이긴다 */
+private fun Modifier.좌우밀기(넘김: (Int) -> Unit): Modifier = pointerInput(Unit) {
+    val 기준 = 운치수.밀기.toPx()
+    var 합 = 0f
+    detectHorizontalDragGestures(
+        onDragStart = { 합 = 0f },
+        onDragEnd = { if (abs(합) > 기준) 넘김(if (합 < 0) 1 else -1); 합 = 0f },
+        onDragCancel = { 합 = 0f },
+    ) { ch, dx -> 합 += dx; ch.consume() }
 }
 
 /** 지금 치고 있는 kg · 회 칸 — 다른 행동을 하기 전에 친 값을 넣는다 (한 번에 하나) */
@@ -317,7 +351,7 @@ private object 운치수 {
     const val 더동그라미비 = 0.95f   // 10-09: 세트 줄 아래 [＋ 세트] 동그라미 = 번호 동그라미 × 0.95 [11_UI지침에 올릴 값]
     const val 값그림배 = 0.97f       // 10-09: 세트 줄 − ＋ 그림 3% 작게 (16 → 15.52 · 누르는 칸 20 은 그대로) [11_UI지침에 올릴 값]
     val 칸여유 = 4.dp               // 10-09: 세트 줄 kg · 회 · 휴식 칸 = 단추 둘 + 테 둘 + 잰 글자 폭 + 이 여유
-    val 단추그림 = 20.dp            // 맨 아래 ‹ › (시안 `.운단추줄 svg`)
+    val 밀기 = 48.dp                // 10-09 홍겸 님: 화면을 좌우로 이만큼 밀면 이전 · 다음 종목 [11_UI지침에 올릴 값]
     val 점선 = 3.dp                 // [＋] 점선 테
     val 칸번호위 = 9.dp             // 칸 오른쪽 위 번호 딱지 (위 4 + 딱지가 스스로 올라가는 5)
     val 칸번호뺄수위 = 39.dp        // ✕ 가 있는 칸은 세트 수 줄 오른쪽 (34 + 5)
@@ -329,7 +363,7 @@ private object 운치수 {
     const val 게이지줄 = 1.1f        // 게이지 시간 줄 높이(em) — 15 × 1.1 = 16.5
     const val 게이지문구줄 = 1.3f    // 게이지 문구 줄 높이(em) — 11 × 1.3 = 14.3. 1.1 이면 한글 아래가 잘렸다 (10-06 홍겸 님 '건너뛰기 아래 잘림'). 합 30.8 ≤ 32
     const val 칸이름줄 = 1.25f       // 아래 칸 이름 11 두 줄이 28 안에 (시안 `.운칸 .ㅇ line-height 1.25`)
-    val 단추비 = listOf(0.125f, 0.475f, 0.275f, 0.125f)   // v21 ④
+    val 단추비 = listOf(0.475f / 0.75f, 0.275f / 0.75f)   // v21 ④ 의 큰 주 단추 : 운동 마치기 — 10-09 ‹ › 를 빼고 그 비율대로 줄을 채운다
     const val 세트줄간격비 = 0.75f   // 세트 줄 사이 간격 25% 줄임 (10-06 홍겸 님 ⑤) — 줄 위아래 안쪽 여백 · 줄 사이 틈 둘 다 이 비율로
     val 줄비 = listOf(66f, 80f, 102f, 104f)                  // 세트 줄 칸 비율 — 번호 · kg · 회 · 휴식. 최소 폭은 10-09 부터 글자를 재서 정한다(`세트칸최소`)
 }
@@ -1047,11 +1081,10 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.나선그림(왼: F
 
 // ═════════════════════ 맨 아래 단추 넷 ═════════════════════
 
-/** [‹ 12.5%][큰 주 단추 47.5%][오늘 운동/끝내기 27.5% · 빨강][› 12.5%] (v21 ④) — 높이 40 · 틈 8 */
+/** [큰 주 단추][운동 마치기 · 빨강] (v21 ④ 에서 ‹ › 를 뺌 · 10-09) — 높이 40 · 틈 8 */
 @Composable
-private fun 단추줄(S: 운동세션, 본: Int, 이전: () -> Unit, 다음: () -> Unit, 주: () -> Unit, 끝내기: () -> Unit) {
+private fun 단추줄(S: 운동세션, 본: Int, 주: () -> Unit, 끝내기: () -> Unit) {
     val c = Local색.current
-    val n = S.종목들.size
     BoxWithConstraints(
         Modifier.fillMaxWidth().background(c.면).번호("운6")
             .drawBehind { drawRect(c.선, size = Size(size.width, 선굵기.보통.toPx())) }
@@ -1066,21 +1099,16 @@ private fun 단추줄(S: 운동세션, 본: Int, 이전: () -> Unit, 다음: () 
                 운주글(상.글, Modifier.weight(1f, fill = false))
             }
         } else Row(horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
-            운단추(Modifier.width(폭[0]), 쓸수있음 = 본 > 0, 설명 = "이전 종목", onClick = 이전) {
-                Icon(아이콘.칩왼쪽, null, Modifier.size(운치수.단추그림), tint = c.글)
-            }
-            운단추(Modifier.width(폭[1]), 주요 = true, 설명 = 상.글, onClick = 주) {
+            // 10-09 홍겸 님: 맨 아래 ‹ › 는 뺐다 — 종목은 화면을 좌우로 밀어 넘긴다
+            운단추(Modifier.width(폭[0]), 주요 = true, 설명 = 상.글, onClick = 주) {
                 노란점()
                 운주글(상.글, Modifier.weight(1f, fill = false))
             }
-            운단추(Modifier.width(폭[2]), onClick = 끝내기) {
+            운단추(Modifier.width(폭[1]), onClick = 끝내기) {
                 Text(
                     "운동 마치기", style = 글꼴.보통(크기.버튼, FontWeight.Bold), color = c.나쁨,   // 10-09 홍겸 님: '오늘 운동 끝내기' → '운동 마치기'
                     textAlign = TextAlign.Center, maxLines = 2,
                 )
-            }
-            운단추(Modifier.width(폭[3]), 쓸수있음 = 본 < n - 1, 설명 = "다음 종목", onClick = 다음) {
-                Icon(아이콘.칩오른쪽, null, Modifier.size(운치수.단추그림), tint = c.글)
             }
         }
     }

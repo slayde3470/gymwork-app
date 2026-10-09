@@ -30,7 +30,7 @@ import kotlin.math.sin
 /**
  * 떠 있는 동그라미 (10-08 홍겸 님) — 운동 중에 앱을 벗어나면 다른 앱(유튜브 작은 창 등) 위에 작은 동그라미를 띄운다.
  * 안드로이드 작은 창(PiP)은 한 번에 하나뿐이라 유튜브 작은 창과 같이 못 떴다 → '다른 앱 위에 표시' 권한으로 띄운다.
- *  · 쉬는 중: 초록 동그라미에 남은 시간 + 줄어드는 고리
+ *  · 쉬는 중: 초록 동그라미에 남은 시간 + 줄어드는 고리 + 운동 중처럼 퍼지는 고리 · 숨 쉬는 동그라미 (10-09)
  *  · 운동 중: 앱 아이콘 + 바깥으로 퍼지는 고리(누를 수 있다는 표시)
  *  · 누르면 운동 화면으로 돌아간다 · 끌어서 옮길 수 있다
  * 권한이 없으면 전처럼 PiP 를 쓴다 (MainActivity).
@@ -116,6 +116,14 @@ object 떠있는동그라미 {
             val 남 = v.쉼남은초
             if (남 != null && 남 > 0) {
                 // 쉬는 중 — 초록 동그라미 · 남은 시간 · 줄어드는 고리 (홍겸 님이 보낸 초록 동그라미처럼)
+                // 10-09 홍겸 님: 운동 중 아이콘처럼 바깥으로 퍼지는 고리 + 가운데 동그라미가 숨 쉬듯 커졌다 작아짐 (퍼지는 고리는 동그라미와 같은 초록)
+                val t = (SystemClock.uptimeMillis() % 동그라미치수.한바퀴).toFloat() / 동그라미치수.한바퀴
+                val 퍼짐 = (동그라미치수.칸 / 2f * 밀도 - r)
+                붓.style = Paint.Style.STROKE; 붓.strokeWidth = 동그라미치수.고리 * 밀도; 붓.strokeCap = Paint.Cap.BUTT
+                붓.color = 좋음; 붓.alpha = ((1f - t) * 200).toInt()
+                c.drawCircle(cx, cy, r + 퍼짐 * t, 붓)
+                val 숨 = 1f + 0.04f * sin(t * 2 * PI).toFloat()
+                c.save(); c.scale(숨, 숨, cx, cy)
                 붓.style = Paint.Style.FILL; 붓.color = 좋음; 붓.alpha = 255
                 c.drawCircle(cx, cy, r, 붓)
                 val 굵 = 동그라미치수.고리 * 밀도
@@ -125,9 +133,11 @@ object 떠있는동그라미 {
                 c.drawArc(고리칸, 0f, 360f, false, 붓)
                 붓.alpha = 255
                 val 비 = if (v.쉼총초 > 0) (남.toFloat() / v.쉼총초).coerceIn(0f, 1f) else 1f
-                c.drawArc(고리칸, -90f, 360f * 비, false, 붓)
+                // 10-09 홍겸 님: 시계 방향으로 줄어든다 — 끝은 12시에 두고 시작점이 시계 방향으로 따라간다
+                c.drawArc(고리칸, -90f + 360f * (1f - 비), 360f * 비, false, 붓)
                 val 글 = "%d:%02d".format(남 / 60, 남 % 60)
                 c.drawText(글, cx, cy - (글붓.descent() + 글붓.ascent()) / 2, 글붓)
+                c.restore()
             } else {
                 // 운동 중 — 바깥으로 퍼지며 옅어지는 고리 (누를 수 있다는 표시) + 앱 아이콘
                 val t = (SystemClock.uptimeMillis() % 동그라미치수.한바퀴).toFloat() / 동그라미치수.한바퀴
@@ -174,10 +184,10 @@ object 떠있는동그라미 {
 
 /** 떠 있는 동그라미 치수 (dp · ms) [11_UI지침에 올릴 값] */
 private object 동그라미치수 {
-    const val 칸 = 72f        // 창 크기 (퍼지는 고리 자리 포함)
-    const val 반지름 = 26f    // 동그라미
+    const val 칸 = 83f        // 창 크기 (퍼지는 고리 자리 포함) · 10-09 홍겸 님 15% 키움 (72 →)
+    const val 반지름 = 30f    // 동그라미 · 10-09 15% 키움 (26 →)
     const val 고리 = 3f       // 고리 굵기
-    const val 글 = 15f        // 남은 시간 글자 (sp 처럼 쓴다)
+    const val 글 = 17f        // 남은 시간 글자 (sp 처럼 쓴다) · 10-09 15% 키움 (15 →)
     const val 옆 = 12f        // 처음 자리 — 오른쪽에서
     const val 처음위 = 160f   // 처음 자리 — 위에서
     const val 한바퀴 = 1600L  // 퍼지는 고리 한 번
