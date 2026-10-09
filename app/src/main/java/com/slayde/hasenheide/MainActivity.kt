@@ -28,6 +28,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import com.slayde.hasenheide.ui.앱
 import com.slayde.hasenheide.ui.작은창
+import com.slayde.hasenheide.ui.물음창
 import com.slayde.hasenheide.ui.Local번호
 import androidx.compose.runtime.CompositionLocalProvider
 import com.slayde.hasenheide.ui.앱상태
@@ -74,7 +75,32 @@ class MainActivity : ComponentActivity() {
     private var 권한물음 = false
     /** 지금 걸어 둔 휴식 알람의 끝 시각 */
     private var 걸린끝: Long? = null
-    private val 알림권한창 = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
+    /** 10-09: 처음 권한 물음에서 '켜기' → 알림 권한 답을 받은 뒤 이어서 '다른 앱 위에 표시' 화면을 연다 */
+    private var 떠있기이어서 = false
+    private val 알림권한창 = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
+        if (떠있기이어서) { 떠있기이어서 = false; 떠있기열기() }
+    }
+    private fun 떠있기열기() { if (!떠있는동그라미.됨(this)) 떠있는동그라미.권한열기(this) }
+
+    /**
+     * 10-09 홍겸 님: 앱을 처음 켤 때 권한을 켤지 한 번 묻는다.
+     * '다른 앱 위에 표시'가 꺼져 있으면 휴식 시간이 PiP 로 뜨는데, 안드로이드 PiP 는 한 번에 하나뿐이라 유튜브 작은 창과 같이 못 뜬다.
+     * 이미 둘 다 켜져 있으면 묻지 않는다. 답과 상관없이 한 번만 (폰 안 설정 파일에 기록 · 앱 기록 JSON 과 따로).
+     */
+    private val 처음물음 = mutableStateOf(false)
+    private fun 알림됨() = Build.VERSION.SDK_INT < 33 || checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+    private fun 처음물음확인() {
+        val 판 = getSharedPreferences("hasenheide_처음", MODE_PRIVATE)
+        if (판.getBoolean("권한물음", false)) return
+        판.edit().putBoolean("권한물음", true).apply()
+        if (알림됨() && 떠있는동그라미.됨(this)) return
+        처음물음.value = true
+    }
+    private fun 처음물음켜기() {
+        처음물음.value = false
+        if (!알림됨()) { 권한물음 = true; 떠있기이어서 = true; 알림권한창.launch(Manifest.permission.POST_NOTIFICATIONS) }
+        else 떠있기열기()
+    }
     private fun 알림권한묻기() {
         if (권한물음 || Build.VERSION.SDK_INT < 33) return
         권한물음 = true
@@ -126,6 +152,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         // 화면 가장자리(상태바·내비게이션바)까지 앱이 그려지게 한다
         enableEdgeToEdge()
+        처음물음확인()
         val 폰 = 폰기능(
             // 앱이 앞에 있을 때만 여기서 울린다 — 뒤에 있거나 화면이 꺼져 있으면 휴식알람이 울린다 (두 번 울리지 않게)
             알림 = { if (휴식알람.앞에있음) 휴식끝알림() },
@@ -170,6 +197,13 @@ class MainActivity : ComponentActivity() {
                     Box(Modifier.fillMaxSize()) {
                         앱(상태, 폰)
                         if (작은창중.value) 작은창(상태)
+                        else if (처음물음.value) 물음창(
+                            제목 = "권한을 켤까요?",
+                            설명 = "휴식 알림, 그리고 유튜브를 보면서도 휴식 시간이 보이게 하려면 필요합니다",
+                            예 = "켜기",
+                            on예 = { 처음물음켜기() },
+                            on아니오 = { 처음물음.value = false },
+                        )
                     }
                 }
             }
