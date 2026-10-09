@@ -113,7 +113,8 @@ class MainActivity : ComponentActivity() {
         val S = 상태.d.세션 ?: return null
         if (S.끝화면) return null
         val h = S.휴식
-        return if (h != null && !h.물음) 떠있는동그라미.값(h.남은초(System.currentTimeMillis()), h.총초) else 떠있는동그라미.값(null, 0)
+        val 지금 = System.currentTimeMillis()
+        return if (h != null && !h.물음) 떠있는동그라미.값(h.남은초(지금), h.총초, (h.끝시각 - 지금).coerceAtLeast(0L)) else 떠있는동그라미.값(null, 0)
     }
 
     /** 운동 중 자동 작은 창(PiP) — 떠 있는 동그라미 권한이 있으면 PiP 대신 동그라미를 쓴다 */
