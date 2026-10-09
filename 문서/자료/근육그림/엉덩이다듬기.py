@@ -24,7 +24,7 @@ for side in p['sides']:
         HOL[s_]=ndimage.median_filter(np.array(hs,float),21); HOL[s_]=ndimage.uniform_filter1d(HOL[s_],15)
 out=a.copy(); M=np.zeros((H,W))
 for y in range(y0,y1+1):
-    w=max(0.0,np.sin(np.pi*(y-y0)/(y1-y0)))**p.get('pow',0.8)
+    t_=(y-y0)/(y1-y0); w=(max(0.0,1-(2*t_-1)**2)**0.5)**p.get('pow',0.8) if p.get('arc') else max(0.0,np.sin(np.pi*t_))**p.get('pow',0.8)
     ks=[(0,0),(W-1,W-1),(crack,crack+p.get('dC',0)*w)]
     for side in p['sides']:
         s=side['s']; e=cv(side['sil'],y) if 'sil' in side else sil(y,s)
