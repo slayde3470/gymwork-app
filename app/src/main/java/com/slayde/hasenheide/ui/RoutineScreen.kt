@@ -111,6 +111,10 @@ import com.slayde.hasenheide.data.열쇠
 import com.slayde.hasenheide.data.예상초
 import com.slayde.hasenheide.data.예정맞추기
 import com.slayde.hasenheide.data.예정초기화
+import com.slayde.hasenheide.data.묶을수있다
+import com.slayde.hasenheide.data.새묶음이름
+import com.slayde.hasenheide.data.슈퍼묶기
+import com.slayde.hasenheide.data.슈퍼풀기
 import com.slayde.hasenheide.data.종목옮기기
 import com.slayde.hasenheide.data.총세트
 import com.slayde.hasenheide.data.다음회
