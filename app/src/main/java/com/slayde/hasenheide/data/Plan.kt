@@ -500,8 +500,17 @@ fun 속도출처글(기록들: List<향상기록>, 종목: String): String {
 }
 
 /** 측정일 기록 — 그 회 처방 무게로 최대 반복한 결과 (13-1 12번) */
-data class 측정(val 회: Int, val 날: String, val 무게: Double, val 횟수: Int) {
+data class 측정(
+    val 회: Int, val 날: String, val 무게: Double, val 횟수: Int,
+    /**
+     * 맨몸 측정의 소수 값 (10-10 · 0 이면 [횟수] 를 쓴다). 측정일 처방은 정수 횟수라 목표 1.28 → 1개로 버려졌고,
+     * 1개에서 시작해 처방대로만 하면 진행값이 영원히 1.0 에 머물렀다(턱걸이 · 팔굽 · 맨몸 스쿼트 모두).
+     * 처방을 다 했으면 그 회 목표값 그대로 이어 간다. 무게 종목은 쓰지 않는다
+     */
+    val 값: Double = 0.0,
+) {
     val 환산1RM: Double get() = 일RM(무게, 횟수)
+    val 맨몸값: Double get() = if (값 > 0.0) 값 else 횟수.toDouble()
 }
 
 /**
@@ -592,7 +601,7 @@ data class 플랜(
     /** 지금 실력 — 측정 기록이 있으면 그 값 */
     val 지금진행값: Double get() {
         재기준씀?.let { return if (횟수진행) max(1.0, it.값) else it.값 }
-        return if (횟수진행) max(1.0, 마지막측정?.횟수?.toDouble() ?: 시작개수) else 지금1RM
+        return if (횟수진행) max(1.0, 마지막측정?.맨몸값 ?: 시작개수) else 지금1RM
     }
     /** 맨몸 목표 글 — "500개" · "60초" · "1000m" */
     val 맨몸목표글: String get() = "${무게글(목표개수)}${단위.단위}"
@@ -835,7 +844,7 @@ fun 보통워밍업(본무게: Double, n: Int, 무게폭: Double = 1.0): List<�
  */
 fun 측정일조정(표: 플랜종목, 측정값: 측정, 계획1RM: Double, 목표1RM: Double, 몸: 몸조건): Pair<Int, Boolean> {
     // 맨몸 종목은 진행 변수가 횟수다 — 환산하지 않고 그 횟수를 그대로 쓴다 (21 문서 0절)
-    val 실제 = if (표.횟수진행) 측정값.횟수.toDouble() else 측정값.환산1RM
+    val 실제 = if (표.횟수진행) 측정값.맨몸값 else 측정값.환산1RM
     val 남 = 회표(표, 실제, 목표1RM, 몸).size
     if (abs(실제 - 계획1RM) <= (if (표.횟수진행) 0.5 else 플랜표.그대로폭)) return 남 to false
     val 달성비 = if (계획1RM > 0) 실제 / 계획1RM else 1.0
@@ -874,7 +883,7 @@ fun 향상한줄(플랜값: 플랜, 측정값: 측정, 계획값: Double, 몸: �
     return 향상기록(
         날짜 = 측정값.날,
         종목 = 플랜값.종목,
-        측정값 = if (플랜값.횟수진행) 측정값.횟수.toDouble() else 측정값.환산1RM,
+        측정값 = if (플랜값.횟수진행) 측정값.맨몸값 else 측정값.환산1RM,
         체중 = 몸.체중,
         유효부하 = 부하,
         누적횟수 = 누적횟수,
@@ -966,7 +975,9 @@ fun 실제진행값(p: 플랜, 목표값: Double, 처방: List<세트>, 실제: 
     val 비 = 실제.filter { it.종류 != 세트종류.워밍업 && it.r > 0 && it.w > 0 }.mapNotNull { s ->
         // 10-01 감시관: 세트 위치는 저장되지 않는다 → **무게가 가장 가까운 처방**과 견준다
         // (5/3/1 · 매드카우처럼 세트마다 무게가 다른 방식에서 한 세트를 건너뛰어도 짝이 맞게)
-        val 목 = 처방.minBy { abs(it.w - s.w) }
+        // 10-10: 무게가 같은 처방이 둘 이상이면(가벼운 무게·굵은 무게폭에서 3×10 과 10×1 이 같은 무게로 맞춰질 때) 횟수가 가까운 쪽 —
+        // 첫 줄로만 짝지으면 처방 그대로 했는데도 비율이 1 이 아니어서 '재기준' 이 생겼다
+        val 목 = 처방.minWith(compareBy({ abs(it.w - s.w) }, { abs(it.r - s.r) }))
         val 분모 = 일RM(목.w, 목.r)
         // 무게 종목: 처방보다 많이 한 횟수는 10회(또는 처방 횟수)까지만 센다 — 에플리가 높은 횟수에서 부풀린다
         // 맨몸은 횟수 자체가 진행값이라 자르지 않는다 (감시관 2차: 더 해도 앞당겨지지 않던 것)
@@ -990,7 +1001,8 @@ fun 측정날값(p: 플랜, 세트들: List<세트>, 몸: 몸조건): Double? {
     val 본 = 세트들.filter { it.종류 != 세트종류.워밍업 && it.r > 0 }
     if (p.횟수진행) {
         val 정 = p.표?.유효부하(몸.체중) ?: return null
-        return 본.filter { it.w >= 정 - 0.01 }.maxOfOrNull { it.r.toDouble() }
+        // 10-10: 운동 중 무게 칸을 만지면 0.1kg 로 반올림된다(62.424 → 62.4) → 0.06 까지는 정자세로 본다 (전에는 0.01 이라 측정이 안 쌓였다)
+        return 본.filter { it.w >= 정 - 0.06 }.maxOfOrNull { it.r.toDouble() }
     }
     return 본.filter { it.r <= 플랜표.환산최대횟수 }.maxOfOrNull { 일RM(it.w, it.r) }
 }
@@ -1025,7 +1037,7 @@ fun 플랜반영(d: 앱데이터, 종목들: List<종목기록>, 날: String, �
             if (값 > 0) {
                 val 최고 = 세트들.filter { it.r <= 플랜표.환산최대횟수 }.maxByOrNull { 일RM(it.w, it.r) }
                 val m = when {
-                    p.횟수진행 -> 측정(회, 날, p.표?.유효부하(d.몸.체중) ?: 0.0, max(1, 값.roundToInt()))
+                    p.횟수진행 -> 측정(회, 날, p.표?.유효부하(d.몸.체중) ?: 0.0, max(1, 값.roundToInt()), 값 = max(1.0, 값))
                     최고 != null && 일RM(최고.w, 최고.r) >= 값 - 1e-9 -> 측정(회, 날, 최고.w, 최고.r)
                     else -> 측정(회, 날, 값, 1)   // 1회 = 그 값이 곧 1RM
                 }

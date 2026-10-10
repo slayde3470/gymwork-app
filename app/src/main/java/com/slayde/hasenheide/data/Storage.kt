@@ -134,7 +134,7 @@ object 저장소 {
         .put("만든날", p.만든날).put("한회", p.한회).put("누적볼륨", p.누적볼륨)
         .put("워밍업수", p.워밍업수).put("켬", p.켬).put("측정먼저", p.측정먼저)
         .put("측정들", JSONArray().also { a ->
-            p.측정들.forEach { m -> a.put(JSONObject().put("회", m.회).put("날", m.날).put("무게", m.무게).put("횟수", m.횟수)) }
+            p.측정들.forEach { m -> a.put(JSONObject().put("회", m.회).put("날", m.날).put("무게", m.무게).put("횟수", m.횟수).put("값", m.값)) }
         })
         // 스키마 12 (10-01) — 매 회차 자기조절의 출발점
         .also { o -> p.재기준?.let { r -> o.put("재기준", JSONObject().put("회", r.회).put("날", r.날).put("값", r.값)) } }
@@ -393,7 +393,7 @@ object 저장소 {
             측정들 = 목록(o.optJSONArray("측정들")) { a, i ->
                 a.getJSONObject(i).let {
                     // 옛 파일은 '주' 로 적혀 있다 — 회로 읽되 주당 횟수를 모르니 그대로 둔다
-                    측정(if (it.has("회")) it.optInt("회") else it.optInt("주"), it.optString("날"), it.optDouble("무게"), it.optInt("횟수"))
+                    측정(if (it.has("회")) it.optInt("회") else it.optInt("주"), it.optString("날"), it.optDouble("무게"), it.optInt("횟수"), it.optDouble("값", 0.0))
                 }
             },
             워밍업수 = o.optInt("워밍업수", 0),

@@ -1514,7 +1514,13 @@ fun 앱데이터.저장되감기(): Pair<앱데이터, 저장앞?> {
         else r.copy(종목 = r.종목.mapIndexed { j, e -> 옛.getOrNull(j)?.takeIf { it.열쇠 == e.열쇠 && it.플랜id == e.플랜id } ?: e })
     }
     val 옛플랜 = z.플랜.associateBy { it.id }
-    val 플랜들2 = 플랜들.map { 옛플랜[it.id] ?: it }
+    // 10-10: 이 저장이 바꾼 것(회차 · 누적 볼륨 · 측정 · 재기준)만 저장 전으로 돌린다 — 그 사이 플랜 탭에서 고친 목표 · 방식 · 이름은 그대로 둔다
+    // (통째로 되돌리면 보고서를 다시 열 때 고친 플랜이 옛 값으로 돌아갔다)
+    val 플랜들2 = 플랜들.map { q ->
+        val 옛 = 옛플랜[q.id] ?: return@map q
+        q.copy(한회 = 옛.한회, 누적볼륨 = 옛.누적볼륨, 재기준 = 옛.재기준,
+            측정들 = q.측정들.filter { m -> m.회 <= 옛.한회 })   // 이 저장이 더한 측정(회 = 옛.한회 + 1)만 뺀다 · 같은 회는 지금 값 우선
+    }
     // 이 저장이 더한 향상기록 — 뒤에서부터 같은 줄을 하나씩 뺀다
     val 향 = 향상기록들.toMutableList()
     z.향상.forEach { h -> val i = 향.lastIndexOf(h); if (i >= 0) 향.removeAt(i) }
