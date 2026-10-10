@@ -575,7 +575,7 @@ private fun 루틴지우기(상태: 앱상태, rid: String) {
             else {
                 val l = dd.루틴들.toMutableList().also { it.add(min(i, it.size), r) }
                 // 예정은 지우기 전 그대로 (그사이 다시 깔린 것을 지운 루틴 자리로 되돌린다)
-                dd.copy(루틴들 = l, 예정 = 전.예정, 예정고정 = 전.예정고정).예정맞추기(상태.오늘)
+                dd.copy(루틴들 = l, 예정 = 전.예정.filterValues { id -> id == rid || dd.루틴(id) != null }, 예정고정 = 전.예정고정).예정맞추기(상태.오늘)   // 10-10: 그 사이 없앤 그 날 운동을 가리키는 예정은 되살리지 않는다
             }
         }
     }

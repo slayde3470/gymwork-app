@@ -5,6 +5,14 @@ import com.slayde.hasenheide.data.루틴종목
 import com.slayde.hasenheide.data.세션종목
 import com.slayde.hasenheide.data.세트
 import com.slayde.hasenheide.data.값고치기
+import com.slayde.hasenheide.data.끝냄
+import com.slayde.hasenheide.data.보고저장
+import com.slayde.hasenheide.data.앱데이터
+import com.slayde.hasenheide.data.예정초기화
+import com.slayde.hasenheide.data.오래된운동정리
+import com.slayde.hasenheide.data.운동저장하기
+import com.slayde.hasenheide.data.재개
+import com.slayde.hasenheide.data.저장기록열쇠
 import com.slayde.hasenheide.data.목표
 import com.slayde.hasenheide.data.오늘반영
 import com.slayde.hasenheide.data.운동세션
@@ -13,6 +21,7 @@ import com.slayde.hasenheide.data.총칸
 import com.slayde.hasenheide.data.한세트수
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -72,5 +81,71 @@ class ChaosTest {
         for (k in 0 until S.종목들[0].총칸()) S = 운체크(S, 0, k, 때 + k)
         assertTrue(S.한세트수() <= S.종목들[0].계획세트 + S.종목들[1].계획세트)
         assertEquals(2, S.종목들[0].계획세트)
+    }
+
+    // ─────────────── 30일 추적 시험(Month 시험기)에서 잡은 것 (10-10) ───────────────
+
+    private val T0 = 1_000_000_000_000L
+    private val 날 = "2026-10-05"
+
+    private fun 체크한세션(루틴: 루틴, t: Long): 운동세션 {
+        var S = assertNotNull(운동시작(루틴, t))
+        S = 운체크(S, 0, 0, t + 1000)
+        return S.끝냄(t + 5000)
+    }
+
+    @Test fun 보고서에서_이어한_뒤_캘린더에서_앞_기록을_지워도_다시_끝내면_기록은_하나() {
+        val 루 = 루틴("r", "R", 종목 = listOf(루틴종목("벤치", 3, 20.0, 10, 60)), 자동생성 = true)
+        // 아침 운동 A 가 이미 있고, 저녁 운동 C 를 보고서에서 한 번 저장(~2) 한 뒤 ‹ 로 돌아왔다
+        val d0 = 앱데이터(루틴들 = listOf(루)).copy(세션 = 체크한세션(루, T0)).운동저장하기(날, T0 + 6000)
+        val d1 = d0.copy(세션 = 체크한세션(루, T0 + 100_000))
+        val (d2, _) = d1.보고저장(날, T0 + 106_000)
+        assertEquals(setOf(날, "$날~2"), d2.기록.keys)
+        val d2b = d2.copy(세션 = d2.세션!!.재개(T0 + 107_000))
+        // 캘린더에서 아침 기록 A 를 지운다 → C 가 첫 기록 열쇠로 옮겨 간다
+        val (d3, _) = assertNotNull(d2b.캘기록지우기(날, setOf(날)))
+        assertEquals(setOf(날), d3.기록.keys)
+        assertEquals(날, d3.저장기록열쇠(d3.세션!!))   // 옛 열쇠(~2)가 아니라 지금 열쇠
+        // 다시 끝내고 저장 → 덮어쓰기 (겹치지 않는다)
+        val d4 = d3.copy(세션 = d3.세션!!.끝냄(T0 + 109_000)).보고저장(날, T0 + 110_000).first
+        assertEquals(1, d4.기록.size)
+    }
+
+    @Test fun 이어하던_운동의_저장_기록을_지웠으면_다시_끝낼_때_새로_저장() {
+        val 루 = 루틴("r", "R", 종목 = listOf(루틴종목("벤치", 3, 20.0, 10, 60)))
+        val (d1, _) = 앱데이터(루틴들 = listOf(루)).copy(세션 = 체크한세션(루, T0)).보고저장(날, T0 + 6000)
+        val d2 = d1.copy(세션 = d1.세션!!.재개(T0 + 7000))
+        val (d3, _) = assertNotNull(d2.캘기록지우기(날, setOf(날)))
+        assertNull(d3.저장기록열쇠(d3.세션!!))
+        val d4 = d3.copy(세션 = d3.세션!!.끝냄(T0 + 9000)).보고저장(날, T0 + 10_000).first
+        assertEquals(1, d4.기록.size)
+    }
+
+    @Test fun 자정을_걸쳐_저장한_날의_미실시는_지운다() {
+        val 루 = 루틴("r", "R", 종목 = listOf(루틴종목("벤치", 3, 20.0, 10, 60)))
+        val d = 앱데이터(루틴들 = listOf(루), 미실시 = mapOf(날 to "R")).copy(세션 = 체크한세션(루, T0))
+        assertFalse(날 in d.운동저장하기(날, T0 + 6000).미실시)
+    }
+
+    @Test fun 기록을_되살리면_그_날의_미실시도_뺀다() {
+        val 루 = 루틴("r", "R", 종목 = listOf(루틴종목("벤치", 3, 20.0, 10, 60)))
+        val d0 = 앱데이터(루틴들 = listOf(루)).copy(세션 = 체크한세션(루, T0)).운동저장하기(날, T0 + 6000)
+        val (지운, x) = assertNotNull(d0.캘기록지우기(날, setOf(날)))
+        val 되 = 지운.copy(미실시 = 지운.미실시 + (날 to "R")).캘기록되살림(x)
+        assertEquals(1, 되.기록.size)
+        assertFalse(날 in 되.미실시)
+    }
+
+    @Test fun 다시_저장해도_지운_루틴이_예정에_되살아나지_않는다() {
+        val a = 루틴("a", "A", 종목 = listOf(루틴종목("벤치", 3, 20.0, 10, 60)), 자동생성 = true)
+        val b = 루틴("b", "B", 종목 = listOf(루틴종목("컬", 3, 10.0, 12, 60)), 자동생성 = true)
+        val d0 = 앱데이터(루틴들 = listOf(a, b)).예정초기화(날)
+        val (d1, _) = d0.copy(세션 = 체크한세션(a, T0)).보고저장(날, T0 + 6000)
+        // 이어하다 말고 루틴 A(지금 하는 운동의 루틴)를 지운다
+        val d2 = d1.copy(세션 = d1.세션!!.재개(T0 + 7000)).let { x ->
+            x.copy(루틴들 = x.루틴들.filter { it.id != "a" }, 예정 = x.예정.filterValues { it != "a" })
+        }
+        val d3 = d2.copy(세션 = d2.세션!!.copy(마지막 = T0 + 7000)).오래된운동정리(T0 + 7000 + 4 * 3600_000L)
+        assertTrue(d3.예정.values.all { id -> d3.루틴(id) != null }, "예정 ${d3.예정}")
     }
 }

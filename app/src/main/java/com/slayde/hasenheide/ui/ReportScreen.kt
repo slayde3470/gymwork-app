@@ -120,6 +120,7 @@ import com.slayde.hasenheide.data.재개
 import com.slayde.hasenheide.data.보고끝
 import com.slayde.hasenheide.data.보고저장
 import com.slayde.hasenheide.data.보고저장결과
+import com.slayde.hasenheide.data.저장기록열쇠
 import com.slayde.hasenheide.data.종목기록
 import com.slayde.hasenheide.data.종목열쇠
 import com.slayde.hasenheide.data.종목찾기
@@ -411,7 +412,7 @@ internal fun 마무리(상태: 앱상태, S: 운동세션, 저장됨: Boolean = 
         }
     }
     // 끝내기 전(세션) 보고서도 방금 저장한 자기 기록이 있으면 그 열쇠로 견준다 — 자기 기록은 빼고 · 플랜은 '반영됨' (시안 v22 D)
-    val 자기 = if (저장됨) null else S.저장?.열쇠?.takeIf { d.기록.containsKey(it) }
+    val 자기 = if (저장됨) null else d.저장기록열쇠(S)   // 10-10: 번호가 다시 매겨졌어도 끝 시각으로 찾는다
     val 저장키 = if (저장됨) remember(d.기록, S.루틴id, S.끝시각) { 저장열쇠(d, S) } else 자기
     val 날 = 저장키?.let { 날짜만(it) } ?: 상태.오늘
     // 저장된 결과를 보다가 그 기록이 지워져도 세션 값으로 그린다 · 끝내기 전은 늘 세션 값 (빈 종목도 차례대로)
