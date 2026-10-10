@@ -294,23 +294,6 @@ fun 앱데이터.예정옮기기(원: String, D: String, 오늘: String): 앱데
     return if (원 < D) 옮김.copy(예정 = 옮김.예정 - 원, 예정고정 = 옮김.예정고정 + (원 to "")) else 옮김
 }
 
-/** 오늘 쉬기 — push: 오늘 루틴을 내일로 / skip: 오늘 루틴을 건너뛰기 (2-5) */
-fun 앱데이터.오늘휴식(미루기: Boolean, 오늘: String): 앱데이터 = 날휴식(미루기, 오늘, 오늘)
-
-/**
- * 그 날 쉬기 — 오늘만이 아니라 앞으로의 아무 날에나 (10-01 홍겸 님: 정해진 일정을 고칠 수 없었다)
- *  · 미루기: 그 날 루틴을 다음 날로, 뒤는 하루씩 밀린다 · 건너뛰기: 그 날 루틴을 빼고 다음 차례부터
- *  · 자동생성이 꺼진 루틴(그 날에만 넣은 것)이면 그 날만 비운다
- */
-fun 앱데이터.날휴식(미루기: Boolean, D: String, 오늘: String): 앱데이터 {
-    if (D < 오늘 || 기록.containsKey(D)) return this
-    val idx = 순번.indexOfFirst { it.id == 예정[D] }
-    if (idx < 0) return 예정지우기(D, 오늘)
-    val 남김 = 예정.filterKeys { it < D }
-    val 시작 = if (미루기) idx else (idx + 1) % 순번.size
-    return copy(예정고정 = 예정고정 - D).let { it.copy(예정 = it.예정채움(날더하기(D, 1), 시작, 남김)) }
-}
-
 /** 그 날 예정만 지운다 — 앞뒤 순서는 그대로 (10-01) */
 fun 앱데이터.예정지우기(D: String, 오늘: String): 앱데이터 =
     if (D < 오늘 || 기록.containsKey(D)) this else copy(예정 = 예정 - D, 예정고정 = 예정고정 + (D to ""))
@@ -318,16 +301,6 @@ fun 앱데이터.예정지우기(D: String, 오늘: String): 앱데이터 =
 /** 그 날만 다른 루틴으로 — 앞뒤 순서는 그대로 (10-01. '이 날부터 다시 깔기' 는 꽂기) */
 fun 앱데이터.그날만바꾸기(rid: String, D: String, 오늘: String): 앱데이터 =
     if (D < 오늘 || 기록.containsKey(D) || 루틴(rid) == null) this else copy(예정 = 예정 + (D to rid), 예정고정 = 예정고정 + (D to rid))
-/** 휴식 물음에 보여줄 '앞으로 사흘' — 오늘이 아닌 날에도 (10-01: 두 번째 인자는 쉬는 그 날) */
-fun 앱데이터.사흘미리(미루기: Boolean, 오늘: String): List<String> {
-    val 줄 = 순번
-    val idx = 줄.indexOfFirst { it.id == 예정[오늘] }
-    if (idx < 0 || 줄.isEmpty()) return emptyList()
-    val 시작 = if (미루기) idx else idx + 1
-    val n = 줄.size
-    return (0 until 3).map { 줄[((시작 + it) % n + n) % n].이름 }
-}
-
 fun 앱데이터.다음차례(오늘: String): 루틴? {
     val k = 예정.keys.filter { it >= 오늘 }.minOrNull()
     return if (k != null) 예정루틴(k) else 순번.firstOrNull()
@@ -926,6 +899,13 @@ fun 앱데이터.운동저장하기(오늘: String, 지금: Long, 고정열쇠: 
 }
 
 /**
+ * 운동을 **시작한 날** (폰 시간대) — 자정을 걸쳐 끝나도 기록은 시작한 날로 저장한다 (10-10 홍겸 님).
+ * 시작 시각이 없으면(0 이하) [오늘] 을 쓴다
+ */
+fun 운동세션.시작날(오늘: String): String =
+    if (시작시각 <= 0L) 오늘 else java.time.Instant.ofEpochMilli(시작시각).atZone(java.time.ZoneId.systemDefault()).toLocalDate().toString()
+
+/**
  * 오래 손대지 않은 운동은 저절로 끝낸다 (09-25 메모: 어제 시작한 운동이 다음 날까지 돌고 있었다)
  *  · 마지막으로 손댄 뒤 [한계] 가 지나면 끝낸다 (기본 3시간)
  *  · 체크한 세트가 있으면 **운동을 시작한 날**의 기록으로 저장한다 (루틴 반영 · 다음 차례도 저장과 같게)
@@ -939,7 +919,7 @@ fun 앱데이터.오래된운동정리(지금: Long, 한계: Long = 3 * 60 * 60 
     // 10-06 v22 D: 보고서에서 앞서 저장했으면 먼저 되감고 같은 열쇠에 덮어쓴다 (체크가 다 풀렸으면 되감기만)
     val (d, 옛) = 저장되감기()
     if (S.종목들.none { it.찬것().isNotEmpty() }) return d.copy(세션 = null)   // 넣은 줄 · 워밍업만 체크했어도 남긴다 (손으로 끝낼 때와 같게 · 10-02 감시관)
-    val 날 = 옛?.날?.ifEmpty { null } ?: java.time.Instant.ofEpochMilli(S.시작시각).atZone(java.time.ZoneId.systemDefault()).toLocalDate().toString()
+    val 날 = 옛?.날?.ifEmpty { null } ?: S.시작날("1970-01-01")
     // 10-01: 저장하고 결과 화면을 **한 번 보여 준다** (전에는 조용히 저장만 해서 결과 화면이 안 나왔다)
     return d.운동저장하기(날, S.끝시각 ?: 마지막, 옛?.열쇠?.ifEmpty { null }).copy(결과 = S.copy(저장 = null).끝냄(S.끝시각 ?: 마지막))   // 그 날 기록이 있으면 '한 번 더' 로 남는다
 }
@@ -1574,7 +1554,7 @@ fun 앱데이터.보고저장(오늘: String, 지금: Long): Pair<앱데이터, 
     val (d, 옛) = 저장되감기()
     val S = d.세션 ?: return d to 보고저장결과.없음
     if (S.종목들.none { it.찬것().isNotEmpty() }) return d to 보고저장결과.체크없음
-    val 날 = 옛?.날?.ifEmpty { null } ?: 오늘   // 덮어쓸 때는 처음 저장한 날로 (자정을 넘겨 다시 끝내도 같은 날)
+    val 날 = 옛?.날?.ifEmpty { null } ?: S.시작날(오늘)   // 덮어쓸 때는 처음 저장한 날로 · 처음이면 운동을 시작한 날 (10-10: 자정을 넘겨 끝내도 시작한 날)
     val 앞 = 저장앞(
         열쇠 = 옛?.열쇠?.ifEmpty { null } ?: d.새기록열쇠(날), 끝시각 = S.끝시각, 날 = 날,
         루틴 = d.루틴(S.루틴id)?.종목,
@@ -1587,14 +1567,14 @@ fun 앱데이터.보고저장(오늘: String, 지금: Long): Pair<앱데이터, 
 }
 
 /**
- * 보고서에서 나간다 (탭 · 뒤로가기 · ›) — 이미 저장했으면 세션만 닫는다.
+ * 보고서에서 나간다 (탭 · 뒤로가기 · ›) — 이미 저장했으면 세션만 닫는다. 저장하는 날은 운동을 시작한 날 (10-10).
  * 아직이면(보고서가 그려지기 전에 나감) 되감고 저장한 뒤 닫는다. 체크한 세트가 없으면 버린다(앞 저장은 되감긴 채)
  */
 fun 앱데이터.보고끝(오늘: String, 지금: Long): 앱데이터 {
     val S = 세션 ?: return this
     if (S.저장 != null && S.저장.끝시각 == S.끝시각) return copy(세션 = null)
     val (d, 옛) = 저장되감기()
-    return d.운동저장하기(옛?.날?.ifEmpty { null } ?: 오늘, 지금, 옛?.열쇠?.ifEmpty { null })
+    return d.운동저장하기(옛?.날?.ifEmpty { null } ?: S.시작날(오늘), 지금, 옛?.열쇠?.ifEmpty { null })   // 10-10: 시작한 날
 }
 
 /**

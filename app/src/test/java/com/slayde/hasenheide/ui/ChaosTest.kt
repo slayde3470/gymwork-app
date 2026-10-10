@@ -6,6 +6,7 @@ import com.slayde.hasenheide.data.세션종목
 import com.slayde.hasenheide.data.세트
 import com.slayde.hasenheide.data.값고치기
 import com.slayde.hasenheide.data.끝냄
+import com.slayde.hasenheide.data.보고끝
 import com.slayde.hasenheide.data.보고저장
 import com.slayde.hasenheide.data.앱데이터
 import com.slayde.hasenheide.data.예정초기화
@@ -86,7 +87,8 @@ class ChaosTest {
     // ─────────────── 30일 추적 시험(Month 시험기)에서 잡은 것 (10-10) ───────────────
 
     private val T0 = 1_000_000_000_000L
-    private val 날 = "2026-10-05"
+    // 10-10: 보고서 저장은 운동을 시작한 날 열쇠로 들어간다 → T0 가 속한 날
+    private val 날 = java.time.Instant.ofEpochMilli(T0).atZone(java.time.ZoneId.systemDefault()).toLocalDate().toString()
 
     private fun 체크한세션(루틴: 루틴, t: Long): 운동세션 {
         var S = assertNotNull(운동시작(루틴, t))
@@ -147,5 +149,35 @@ class ChaosTest {
         }
         val d3 = d2.copy(세션 = d2.세션!!.copy(마지막 = T0 + 7000)).오래된운동정리(T0 + 7000 + 4 * 3600_000L)
         assertTrue(d3.예정.values.all { id -> d3.루틴(id) != null }, "예정 ${d3.예정}")
+    }
+
+    // ─────────────── 시작한 날로 저장 (10-10 홍겸 님) ───────────────
+
+    @Test fun 자정을_넘겨_끝낸_운동은_시작한_날로_저장된다() {
+        val 루 = 루틴("r", "R", 종목 = listOf(루틴종목("벤치", 3, 20.0, 10, 60)))
+        val 다음날 = java.time.LocalDate.parse(날).plusDays(1).toString()
+        val S = 체크한세션(루, T0)
+        // 보고서가 열리는 순간 — 앱은 '오늘'(= 자정 뒤 다음 날)을 넘기지만 기록은 시작한 날 열쇠
+        val (d1, _) = 앱데이터(루틴들 = listOf(루)).copy(세션 = S).보고저장(다음날, T0 + 6000)
+        assertEquals(setOf(날), d1.기록.keys)
+        assertEquals(날, d1.세션?.저장?.열쇠)
+        // 저장 전에 탭으로 나가는 길(보고끝)도 같다
+        val d2 = 앱데이터(루틴들 = listOf(루)).copy(세션 = S).보고끝(다음날, T0 + 6000)
+        assertEquals(setOf(날), d2.기록.keys)
+        // 같은 날 먼저 한 운동이 있으면 '한 번 더' 열쇠 — 다음 날 열쇠가 아니다
+        val d3 = d2.copy(세션 = 체크한세션(루, T0 + 100_000)).보고저장(다음날, T0 + 106_000).first
+        assertEquals(setOf(날, "$날~2"), d3.기록.keys)
+    }
+
+    @Test fun 자정을_넘겨_끝낸_운동_뒤_다음날_예정은_다음_차례_미실시는_지운다() {
+        val a = 루틴("a", "A", 종목 = listOf(루틴종목("벤치", 3, 20.0, 10, 60)), 자동생성 = true)
+        val b = 루틴("b", "B", 종목 = listOf(루틴종목("컬", 3, 10.0, 12, 60)), 자동생성 = true)
+        val 다음날 = java.time.LocalDate.parse(날).plusDays(1).toString()
+        // 시작한 날 예정은 A · 다음 날은 B. 자정 뒤 앱이 시작한 날을 '미실시'로 먼저 담아 둔 상태
+        val d0 = 앱데이터(루틴들 = listOf(a, b), 미실시 = mapOf(날 to "A")).예정초기화(날)
+        val (d1, _) = d0.copy(세션 = 체크한세션(a, T0)).보고저장(다음날, T0 + 6000)
+        assertEquals(setOf(날), d1.기록.keys)
+        assertFalse(날 in d1.미실시, "시작한 날에 기록이 생겼는데 미실시가 남았다")
+        assertEquals("b", d1.예정[다음날], "A 를 한 다음 차례는 B")
     }
 }

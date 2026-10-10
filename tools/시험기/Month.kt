@@ -272,6 +272,7 @@ internal class Mo(val rnd: Random, val 위반: MutableMap<String, MutableList<St
         준비()
         val 전 = d
         d = d.copy(메모 = emptyList())   // 메모/사진/종목을 지운 것으로 치고
+        val 지운뒤 = d
         로그.add("지우고알림(스냅)")
         val 끼움 = rnd.nextInt(0, 3)
         val 시작기록 = d.기록
@@ -283,6 +284,10 @@ internal class Mo(val rnd: Random, val 위반: MutableMap<String, MutableList<St
                 2 -> { 루틴수정() }
                 else -> { 예정조작() }
             }
+        }
+        // 10-10 홍겸 님: 지운 뒤 다른 일로 데이터가 바뀌면 되돌리기 띠는 사라진다 (앱상태.바꿈 → 알림.데이터바뀜) → 되돌릴 수 없다
+        if (d != 지운뒤) {
+            셈("스냅띠사라짐"); 로그.add("스냅띠사라짐"); return
         }
         val 날아감 = (d.기록 != 시작기록) || (d.세션 != 시작세션) || (d.루틴들 != 전.루틴들) || (d.예정 != 전.예정)
         d = 전   // 되돌리기 = 스냅샷 통째 복원
