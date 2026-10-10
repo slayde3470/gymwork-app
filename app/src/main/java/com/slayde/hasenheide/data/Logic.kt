@@ -289,7 +289,20 @@ fun 앱데이터.예정옮기기(원: String, D: String, 오늘: String): 앱데
     val rid = 예정[원] ?: return this
     val 자동 = 루틴(rid)?.자동생성 == true
     val 풀린 = copy(예정고정 = 예정고정 - 원 - D)
-    if (!자동) return 풀린.copy(예정 = 예정 - 원 + (D to rid), 예정고정 = 풀린.예정고정 + (D to rid) + (원 to ""))
+    if (!자동) {
+        val 이동 = 풀린.copy(예정 = 예정 - 원 + (D to rid), 예정고정 = 풀린.예정고정 + (D to rid) + (원 to ""))
+        // 10-10: 그 날만 쓰는 운동은 id 가 날짜("날2026-10-06")라서 날짜가 바뀌면 id 도 새 날짜로 — 아니면 옮긴 날에서 '그 날 운동' 으로 안 읽힌다.
+        // 옮겨 간 날의 옛 예정은 '넣기 전 예정'으로 기억해 둔다(다 빼면 그리로 돌아간다)
+        val 날운 = 그날운동.firstOrNull { it.id == rid && rid == 그날운동id(원) } ?: return 이동
+        val 새id = 그날운동id(D)
+        val 옛D = if (예정[D] == 새id) 그날운동.firstOrNull { it.id == 새id } else null
+        val 새 = 날운.copy(id = 새id, 원래예정 = 옛D?.원래예정 ?: (예정[D] ?: ""), 원래고정 = if (옛D != null) 옛D.원래고정 else 예정고정[D])
+        return 이동.copy(
+            그날운동 = 그날운동.filter { it.id != rid && it.id != 새id } + 새,
+            예정 = 이동.예정 + (D to 새id),
+            예정고정 = 이동.예정고정 + (D to 새id),
+        )
+    }
     val 옮김 = 풀린.꽂기(rid, D, 오늘)
     return if (원 < D) 옮김.copy(예정 = 옮김.예정 - 원, 예정고정 = 옮김.예정고정 + (원 to "")) else 옮김
 }

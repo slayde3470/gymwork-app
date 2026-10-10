@@ -226,6 +226,12 @@ class RoutineTest {
         assertEquals(listOf(null, "g1", "g1"), 묶.종목.map { it.슈퍼 })
     }
 
+    @Test fun 루틴합치기_휴식일과_자기자신은_안_된다() {
+        val l = listOf(루틴("a", "가슴"), 루틴("b", "등"), 루틴("c", "쉼", 휴식일 = true))
+        assertTrue(합칠수있다(l, 0, 1)); assertTrue(합칠수있다(l, 1, 0))
+        assertFalse(합칠수있다(l, 0, 0)); assertFalse(합칠수있다(l, 0, 2)); assertFalse(합칠수있다(l, 2, 1)); assertFalse(합칠수있다(l, 0, 9))
+    }
+
     @Test fun 슈퍼풀기는_그_묶음만() {
         val r = 루틴("r", "x", 종목 = listOf(줄("A", 슈퍼 = "g1"), 줄("B", 슈퍼 = "g1"), 줄("C", 슈퍼 = "g2"), 줄("D", 슈퍼 = "g2")))
         assertEquals(listOf(null, null, "g2", "g2"), r.슈퍼풀기("g1").종목.map { it.슈퍼 })

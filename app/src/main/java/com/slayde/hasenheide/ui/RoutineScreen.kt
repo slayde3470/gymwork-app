@@ -111,6 +111,7 @@ import com.slayde.hasenheide.data.열쇠
 import com.slayde.hasenheide.data.예상초
 import com.slayde.hasenheide.data.예정맞추기
 import com.slayde.hasenheide.data.예정초기화
+import com.slayde.hasenheide.data.루틴합치기
 import com.slayde.hasenheide.data.묶을수있다
 import com.slayde.hasenheide.data.새묶음이름
 import com.slayde.hasenheide.data.슈퍼묶기
@@ -231,10 +232,23 @@ private fun 루틴목록화면(상태: 앱상태, 열기: (String) -> Unit) {
     val 넘김 = rememberScrollState()
     val 끌 = remember { 세로끌기() }
     val 진동 = LocalHapticFeedback.current
+    // 10-10 홍겸 님: 루틴을 끌어 다른 루틴 가운데에 놓으면 둘을 합친 새 루틴을 만든다 (동작방식 D3-9 · 원래 두 루틴은 그대로)
+    끌.묶음가능 = { a, b -> 합칠수있다(상태.d.루틴들, a, b) }
+    fun 합치기(원: Int, 대상: Int) {
+        val l = 상태.d.루틴들
+        if (!합칠수있다(l, 원, 대상)) return
+        val 위 = l[minOf(원, 대상)]; val 아래 = l[maxOf(원, 대상)]   // 목록에서 위에 있는 루틴의 종목이 먼저
+        val id = "r" + System.currentTimeMillis()
+        상태.바꿈 { dd -> dd.루틴합치기(위.id, 아래.id, id) }
+        발자취.적기("루틴 합침 · ${위.이름} + ${아래.이름}")
+        상태.알림.토스트("${위.이름} + ${아래.이름} 루틴을 만들었습니다")
+    }
     fun 놓기() {
         val 원 = 끌.원 ?: return
+        val 합 = 끌.묶기대상(넘김.value)   // 놓기 전 표시와 같은 계산
         val t = 끌.대상(넘김.value)
         끌.끝()
+        if (합 != null) { 합치기(원, 합); return }
         if (t == null || t.first == 원) return
         상태.바꿈 { dd ->
             val l = dd.루틴들.toMutableList()
@@ -1226,6 +1240,10 @@ internal fun 끌가운데(칸들: List<끌칸>, x: Float?, y: Float, dy: Float):
     val 아래선 = k.위 - dy + 높 * 7f / 10f
     return if (y >= 위선 && y < 아래선) k.번호 else null
 }
+
+/** 루틴 두 개를 합칠 수 있나 — 서로 다른 루틴이고 둘 다 휴식일이 아니어야 한다 ([앱데이터.루틴합치기] 와 같은 조건) */
+internal fun 합칠수있다(루틴들: List<루틴>, a: Int, b: Int): Boolean =
+    a != b && 루틴들.getOrNull(a)?.휴식일 == false && 루틴들.getOrNull(b)?.휴식일 == false
 
 /** 묶은 뒤의 차례 — 새 차례대로 옛 번호를 늘어놓은 것 ([루틴옮김표] 와 같은 방식 · 펼침이 따라가게) */
 internal fun 루틴묶음표(r: 루틴, from: Int, to: Int): List<Int> {
