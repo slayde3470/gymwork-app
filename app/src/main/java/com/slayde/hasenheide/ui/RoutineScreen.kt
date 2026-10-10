@@ -67,6 +67,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
@@ -426,10 +428,23 @@ private fun 루틴상세화면(상태: 앱상태, r: 루틴, 닫기: () -> Unit)
         펼침바꿈 { 펼침맞춤(it, 차례) }
         발자취.적기("루틴 안 종목 순서 바꿈")
     }
+    // 10-10 홍겸 님: 꾹 눌러 끌어 다른 종목 가운데에 놓으면 슈퍼세트로 묶는다 (동작방식 D3-9 · 기능명세 8-2)
+    fun 묶기(원: Int, 대상: Int) {
+        val 지금 = 상태.d.루틴(rid) ?: return
+        if (!지금.묶을수있다(원, 대상)) return
+        val 차례 = 루틴묶음표(지금, 원, 대상)
+        val 이름 = 지금.종목[원].이름
+        상태.바꿈 { dd -> dd.루틴바꿈(rid) { x -> x.슈퍼묶기(원, 대상, x.새묶음이름()) } }
+        펼침바꿈 { 펼침맞춤(it, 차례) }
+        발자취.적기("슈퍼세트로 묶음 · $이름 + ${지금.종목[대상].이름}")
+        상태.알림.토스트("슈퍼세트로 묶었습니다")
+    }
     fun 놓기() {
         val 원 = 끌.원 ?: return
+        val 묶 = 끌.묶기대상(넘김.value)   // 놓기 전 표시와 같은 계산 — 표시된 그대로 들어간다
         val t = 끌.대상(넘김.value)
         끌.끝()
+        if (묶 != null) { 묶기(원, 묶); return }
         if (t == null || t.first == 원) return
         옮기기(원, t.first, t.second)
     }
@@ -446,6 +461,7 @@ private fun 루틴상세화면(상태: 앱상태, r: 루틴, 닫기: () -> Unit)
         }
     }
     끌기자동넘김(끌, 넘김)
+    끌.묶음가능 = { a, b -> 상태.d.루틴(rid)?.묶을수있다(a, b) == true }
     // 10-07 홍겸 님: 상세의 [취소](= 루틴 지우기)는 뺐다 — 지우기는 목록 카드 오른쪽 휴지통
 
     Box(Modifier.fillMaxSize().onGloballyPositioned { 끌.틀 = it.boundsInRoot() }) {
@@ -488,6 +504,19 @@ private fun 루틴상세화면(상태: 앱상태, r: 루틴, 닫기: () -> Unit)
                                     on고치기 = { 손댐(); if (p != null) { 발자취.적기("루틴에서 플랜 고치기 · ${p.이름}"); 플랜고침.value = p.id } },
                                     on빼기 = { 종목뺌(j) })
                                 else 종목상자(상태, e, j + 1, j in 펼침, 자리줄, 표시, 끌기길, 손잡이,
+                                        묶음글 = e.슈퍼?.let { g ->
+                                            val 식구 = r.종목.indices.filter { r.종목[it].슈퍼 == g }
+                                            "슈퍼 ${식구.indexOf(j) + 1}/${식구.size}"
+                                        },
+                                        on풀기 = {
+                                            손댐()
+                                            val g = 상태.d.루틴(rid)?.종목?.getOrNull(j)?.슈퍼
+                                            if (g != null) {
+                                                상태.바꿈 { dd -> dd.루틴바꿈(rid) { x -> x.슈퍼풀기(g) } }
+                                                발자취.적기("슈퍼세트 풀기 · ${e.이름}")
+                                                상태.알림.토스트("슈퍼세트를 풀었습니다")
+                                            }
+                                        },
                                         on펼침 = { 손댐(); 펼침바꿈 { s -> if (j in s) s - j else s + j } },
                                         on빼기 = { 종목뺌(j) },
                                         on고침 = { f -> 줄고침(j, f) },
@@ -777,6 +806,7 @@ private fun 빼기단추(이름: String, on누름: () -> Unit) {
 @Composable
 private fun 종목상자(
     상태: 앱상태, e: 루틴종목, 번호: Int, 펼침: Boolean, modifier: Modifier, 표시: Int, 끌기길: Modifier, 손잡이: @Composable () -> Unit,
+    묶음글: String?, on풀기: () -> Unit,
     on펼침: () -> Unit, on빼기: () -> Unit,
     on고침: ((루틴종목) -> 루틴종목) -> Unit, on세트지움: (Int) -> Unit,
 ) {
@@ -796,6 +826,7 @@ private fun 종목상자(
                 상자번호(번호)
                 종목이름딱지(상태.d, e.종id, e.이름, Modifier.weight(1f, fill = false))
                 Text("${e.세트}세트", style = 글꼴.보통(크기.조금작게).copy(fontFeatureSettings = "tnum"), color = c.흐림, maxLines = 1, softWrap = false)
+                if (묶음글 != null) Text(묶음글, style = 글꼴.보통(크기.조금작게).copy(fontFeatureSettings = "tnum"), color = c.흐림, maxLines = 1, softWrap = false)
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 펼침단추(펼침, on펼침)
@@ -860,6 +891,7 @@ private fun 종목상자(
                 val 판 = remember루톡(true)
                 버튼("세트", { 판.톡(); 발자취.적기("세트 더하기 · ${e.이름}"); on고침 { it.세트더하기() } },
                     Modifier.fillMaxWidth().루톡(판), 낮게 = true, 그림 = 아이콘.더하기)
+                if (묶음글 != null) 버튼("슈퍼세트 풀기", on풀기, Modifier.fillMaxWidth(), 낮게 = true)
             }
         }
     }
@@ -1005,6 +1037,8 @@ private class 세로끌기 {
     private var 굳은: List<끌칸> = emptyList()
     private var 가로: Set<Int> = emptySet()
     private var 시작넘김 = 0
+    /** (집은 번호, 대상 번호) → 가운데에 놓아 묶을 수 있나. 기본은 안 됨(루틴 목록은 묶지 않는다) — 루틴 상세가 정해 준다 */
+    var 묶음가능: (Int, Int) -> Boolean = { _, _ -> false }
 
     /** [수] = 지금 줄 수 — 그보다 큰 번호의 옛 자리(지운 줄)는 버린다. [손x] · [가로] = 2열 격자 */
     fun 시작(i: Int, 이름: String, 손y: Float, 넘김: Int, 수: Int, 손x: Float? = null, 가로: Set<Int> = emptySet()) {
@@ -1018,8 +1052,15 @@ private class 세로끌기 {
         if (원 == null) return null
         return 끌대상(굳은, x, y, (넘김 - 시작넘김).toFloat(), 가로)
     }
-    /** 이 칸에 그릴 놓을 표시 — 0 위 선 · 2 아래 선 · 1 왼쪽 선 · 3 오른쪽 선 · -1 없음 */
+    /** 손가락이 묶을 수 있는 칸의 가운데(위 30% · 아래 30% 를 뺀 40%)에 있으면 그 칸 번호 — 세로 목록에서만 */
+    fun 묶기대상(넘김: Int): Int? {
+        val a = 원 ?: return null
+        val b = 끌가운데(굳은, x, y, (넘김 - 시작넘김).toFloat()) ?: return null
+        return if (b != a && 묶음가능(a, b)) b else null
+    }
+    /** 이 칸에 그릴 놓을 표시 — 0 위 선 · 2 아래 선 · 1 왼쪽 선 · 3 오른쪽 선 · 4 가운데(둘레 테두리) · -1 없음 */
     fun 표시(i: Int, 넘김: Int): Int {
+        if (묶기대상(넘김) == i) return 4
         val t = 대상(넘김) ?: return -1
         if (t.first != i || t.first == 원) return -1
         return if (i in 가로) (if (t.second) 3 else 1) else (if (t.second) 2 else 0)
@@ -1061,6 +1102,11 @@ private fun 끌기이름표(끌: 세로끌기) {
 private fun Modifier.놓을선(표시: Int, 색: androidx.compose.ui.graphics.Color): Modifier =
     if (표시 < 0) this else this.drawWithContent {
         drawContent()
+        if (표시 == 4) {   // 가운데 = 2dp 테두리 (11 지침 U5-5)
+            val w = 선굵기.굵게.toPx()
+            drawRoundRect(색, Offset(w / 2, w / 2), Size(size.width - w, size.height - w), CornerRadius(모서리.보통.toPx()), style = Stroke(w))
+            return@drawWithContent
+        }
         val h = 부품치수.놓을선.toPx()
         if (표시 == 1 || 표시 == 3) drawRect(색, topLeft = Offset(if (표시 == 3) size.width - h else 0f, 0f), size = Size(h, size.height))
         else drawRect(색, topLeft = Offset(0f, if (표시 == 2) size.height - h else 0f), size = Size(size.width, h))
@@ -1162,6 +1208,26 @@ internal fun 끌대상(칸들: List<끌칸>, x: Float?, y: Float, dy: Float, 가
     val k = 칸들.firstOrNull { c -> y >= c.위 - dy && y < c.아래 - dy && (x == null || (x >= c.왼 && x < c.오른)) } ?: return null
     val 뒤 = if (x != null && k.번호 in 가로) x > (k.왼 + k.오른) / 2 else y > (k.위 + k.아래) / 2 - dy
     return k.번호 to 뒤
+}
+
+/**
+ * 세로 목록에서 손가락(y)이 칸의 **가운데 40%**(위 30% · 아래 30% 를 뺀 곳)에 있으면 그 칸 번호 (동작방식 D3-9).
+ * [x] 가 있으면(2열 격자) 가운데 묶기는 없다 → null. [dy] = 끌기 시작 뒤 넘긴 만큼
+ */
+internal fun 끌가운데(칸들: List<끌칸>, x: Float?, y: Float, dy: Float): Int? {
+    if (x != null) return null
+    val k = 칸들.firstOrNull { c -> y >= c.위 - dy && y < c.아래 - dy } ?: return null
+    val 높 = k.아래 - k.위
+    val 위선 = k.위 - dy + 높 * 3f / 10f
+    val 아래선 = k.위 - dy + 높 * 7f / 10f
+    return if (y >= 위선 && y < 아래선) k.번호 else null
+}
+
+/** 묶은 뒤의 차례 — 새 차례대로 옛 번호를 늘어놓은 것 ([루틴옮김표] 와 같은 방식 · 펼침이 따라가게) */
+internal fun 루틴묶음표(r: 루틴, from: Int, to: Int): List<Int> {
+    if (from !in r.종목.indices || to !in r.종목.indices) return r.종목.indices.toList()
+    val 표 = r.copy(종목 = r.종목.mapIndexed { i, e -> e.copy(이름 = "$i") })
+    return 표.슈퍼묶기(from, to, 표.새묶음이름()).종목.map { it.이름.toInt() }
 }
 
 /** 자동생성 루틴의 차례 'N번째' — 목록 차례로 1, 2 … (휴식일도 센다 · 시안 `++순`). 수동 루틴은 없음 */

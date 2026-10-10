@@ -1065,33 +1065,56 @@ fun 앱데이터.루틴옮기기(집은id: String, 대상id: String, 뒤에: Boo
     return copy(루틴들 = 남은)
 }
 
-/** 순서 옮기기 — 묶음이면 통째로. 모드: 앞(before) / 뒤(after) */
+/**
+ * 순서 옮기기 — 묶음이면 통째로. 모드: 앞(before) / 뒤(after)
+ * 10-10: 줄을 **번호로** 다룬다. 값이 같은 줄(같은 종목을 두 번 넣은 것)을 `in` 으로 찾으면 쌍둥이가 같이 빠져 한 줄이 사라졌다
+ */
 fun 루틴.종목옮기기(from: Int, to: Int, 뒤에: Boolean): 루틴 {
-    val 대상 = 종목.getOrNull(to) ?: return this
+    if (from !in 종목.indices || to !in 종목.indices) return this
     val 집은 = 종목[from]
-    val 옮길 = if (집은.슈퍼 != null) 종목.filter { it.슈퍼 == 집은.슈퍼 } else listOf(집은)
-    if (옮길.contains(대상)) return this
-    val 남은 = 종목.filter { it !in 옮길 }.toMutableList()
+    val 옮길 = if (집은.슈퍼 != null) 종목.indices.filter { 종목[it].슈퍼 == 집은.슈퍼 } else listOf(from)
+    if (to in 옮길) return this
+    val 남은 = 종목.indices.filter { it !in 옮길 }
     // 대상이 묶음이면 그 묶음 전체의 앞/뒤로
-    val 대상식구 = if (대상.슈퍼 != null) 남은.filter { it.슈퍼 == 대상.슈퍼 } else listOf(대상)
+    val 대상슈퍼 = 종목[to].슈퍼
+    val 대상식구 = if (대상슈퍼 != null) 남은.filter { 종목[it].슈퍼 == 대상슈퍼 } else listOf(to)
     val at = if (뒤에) 남은.indexOf(대상식구.last()) + 1 else 남은.indexOf(대상식구.first())
-    남은.addAll(at, 옮길)
-    return copy(종목 = 남은)
+    val 차례 = 남은.toMutableList().also { it.addAll(at, 옮길) }
+    return copy(종목 = 차례.map { 종목[it] })
 }
 
-/** 슈퍼세트로 묶기 — 대상(또는 그 묶음) 바로 뒤로 옮겨 붙인다 */
+/** from 줄을 to 줄 가운데에 놓아 슈퍼세트로 묶을 수 있나 — 플랜 줄은 안 되고, 이미 같은 묶음이면 할 일이 없다 */
+fun 루틴.묶을수있다(from: Int, to: Int): Boolean {
+    val a = 종목.getOrNull(from) ?: return false
+    val b = 종목.getOrNull(to) ?: return false
+    if (from == to || a.플랜id != null || b.플랜id != null) return false
+    return !(a.슈퍼 != null && a.슈퍼 == b.슈퍼)
+}
+
+/** 슈퍼세트 묶음 이름 하나 — 이 루틴에서 아직 안 쓰는 "g1", "g2" … */
+fun 루틴.새묶음이름(): String {
+    val 쓴 = 종목.mapNotNull { it.슈퍼 }.toSet()
+    var n = 1
+    while ("g$n" in 쓴) n++
+    return "g$n"
+}
+
+/**
+ * 슈퍼세트로 묶기 — 대상(또는 그 묶음) 바로 뒤로 옮겨 붙인다. 묶음을 집으면 묶음째 편입한다.
+ * 플랜 줄은 묶지 않는다. 줄을 번호로 다룬다(값이 같은 쌍둥이 줄이 같이 움직이지 않게 · 10-10)
+ */
 fun 루틴.슈퍼묶기(from: Int, to: Int, 새이름: String): 루틴 {
     val 대상 = 종목.getOrNull(to) ?: return this
     val 집은 = 종목.getOrNull(from) ?: return this
     // 플랜 종목은 슈퍼세트로 묶지 않는다 (01 ㉓-7 확정 · 10-01 감사에서 빠진 것을 찾음)
     if (집은.플랜id != null || 대상.플랜id != null) return this
     if (집은.슈퍼 != null && 집은.슈퍼 == 대상.슈퍼) return this
+    val 옮길 = if (집은.슈퍼 != null) 종목.indices.filter { 종목[it].슈퍼 == 집은.슈퍼 } else listOf(from)
+    if (to in 옮길) return this
     val g = 대상.슈퍼 ?: 새이름
-    val 옮길 = (if (집은.슈퍼 != null) 종목.filter { it.슈퍼 == 집은.슈퍼 } else listOf(집은)).map { it.copy(슈퍼 = g) }
-    val 옛것 = if (집은.슈퍼 != null) 종목.filter { it.슈퍼 == 집은.슈퍼 } else listOf(집은)
-    val 남은 = 종목.filter { it !in 옛것 }.map { if (it == 대상) it.copy(슈퍼 = g) else it }.toMutableList()
+    val 남은 = 종목.indices.filter { it !in 옮길 }.map { i -> if (i == to) 종목[i].copy(슈퍼 = g) else 종목[i] }.toMutableList()
     val at = 남은.indexOfLast { it.슈퍼 == g } + 1
-    남은.addAll(at, 옮길)
+    남은.addAll(at, 옮길.map { 종목[it].copy(슈퍼 = g) })
     return copy(종목 = 남은)
 }
 

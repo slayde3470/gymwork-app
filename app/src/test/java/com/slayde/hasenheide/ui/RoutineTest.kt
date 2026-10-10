@@ -6,6 +6,10 @@ import com.slayde.hasenheide.data.목표
 import com.slayde.hasenheide.data.세트
 import com.slayde.hasenheide.data.세트빼기
 import com.slayde.hasenheide.data.종목
+import com.slayde.hasenheide.data.묶을수있다
+import com.slayde.hasenheide.data.새묶음이름
+import com.slayde.hasenheide.data.슈퍼묶기
+import com.slayde.hasenheide.data.슈퍼풀기
 import com.slayde.hasenheide.data.종목옮기기
 import com.slayde.hasenheide.data.플랜
 import com.slayde.hasenheide.data.휴식
@@ -159,6 +163,72 @@ class RoutineTest {
         // 묶음(1, 2)을 맨 끝 뒤로 → A A S T
         assertEquals(listOf(0, 3, 1, 2), 루틴옮김표(r, 1, 3, true))
         assertEquals(listOf(0, 1, 2, 3), 루틴옮김표(r, 9, 0, false))
+    }
+
+    // ─────────────── 10-10 홍겸 님: 꾹 눌러 끌어 가운데에 놓으면 슈퍼세트 ───────────────
+
+    @Test fun 끌기_가운데_40퍼센트만_묶기() {
+        val 세로 = listOf(끌칸(0, 0f, 0f, 100f, 100f), 끌칸(1, 0f, 108f, 100f, 208f))
+        assertNull(끌가운데(세로, null, 20f, 0f))           // 위 30% = 앞
+        assertEquals(0, 끌가운데(세로, null, 30f, 0f))      // 경계(30%)부터 가운데
+        assertEquals(0, 끌가운데(세로, null, 69f, 0f))
+        assertNull(끌가운데(세로, null, 70f, 0f))           // 아래 30% = 뒤
+        assertEquals(1, 끌가운데(세로, null, 158f, 0f))
+        assertNull(끌가운데(세로, null, 104f, 0f))          // 틈
+        assertEquals(1, 끌가운데(세로, null, 128f, 30f))    // 칸 1 은 30 위로: 78~178 → 가운데 108~148
+        assertNull(끌가운데(세로, 50f, 50f, 0f))            // 2열 격자(x 있음)에는 가운데 묶기가 없다
+    }
+
+    @Test fun 묶기_가운데에_놓으면_대상_바로_뒤에_붙는다() {
+        val r = 루틴("r", "x", 종목 = listOf(줄("A"), 줄("B"), 줄("C"), 줄("D")))
+        val 새 = r.슈퍼묶기(0, 2, r.새묶음이름())
+        assertEquals(listOf("B", "C", "A", "D"), 새.종목.map { it.이름 })
+        assertEquals(listOf(null, "g1", "g1", null), 새.종목.map { it.슈퍼 })
+        assertEquals(listOf(1, 2, 0, 3), 루틴묶음표(r, 0, 2))
+        // 세 번째가 편입 — 묶음 이름은 그대로
+        val 셋 = 새.슈퍼묶기(0, 1, 새.새묶음이름())
+        assertEquals(listOf("C", "A", "B", "D"), 셋.종목.map { it.이름 })
+        assertEquals(listOf("g1", "g1", "g1", null), 셋.종목.map { it.슈퍼 })
+        assertEquals("g2", 새.새묶음이름())
+    }
+
+    @Test fun 묶기_묶음째_집어_다른_종목에() {
+        val r = 루틴("r", "x", 종목 = listOf(줄("A", 슈퍼 = "g1"), 줄("B", 슈퍼 = "g1"), 줄("C"), 줄("D")))
+        val 새 = r.슈퍼묶기(1, 3, r.새묶음이름())   // 묶음(A B)을 집어 D 에 → D 도 같은 이름이 아니라 새 묶음 g2 로 모두 한 묶음
+        assertEquals(listOf("C", "D", "A", "B"), 새.종목.map { it.이름 })
+        assertEquals(listOf(null, "g2", "g2", "g2"), 새.종목.map { it.슈퍼 })
+    }
+
+    @Test fun 묶기_플랜줄_자기자신_같은묶음은_안_된다() {
+        val r = 루틴("r", "x", 종목 = listOf(줄("A"), 줄("P", 플랜id = "p"), 줄("S", 슈퍼 = "g1"), 줄("T", 슈퍼 = "g1")))
+        assertFalse(r.묶을수있다(0, 1)); assertFalse(r.묶을수있다(1, 0))
+        assertFalse(r.묶을수있다(0, 0)); assertFalse(r.묶을수있다(2, 3))
+        assertFalse(r.묶을수있다(0, 9)); assertTrue(r.묶을수있다(0, 2))
+        assertEquals(r, r.슈퍼묶기(0, 1, "g9")); assertEquals(r, r.슈퍼묶기(2, 3, "g9"))
+    }
+
+    @Test fun 같은_종목_두_줄도_하나도_사라지지_않는다() {
+        // 똑같은 줄(값까지 같음)이 둘 — 값으로 찾으면 쌍둥이가 같이 빠져 한 줄이 사라졌다
+        val r = 루틴("r", "x", 종목 = listOf(줄("A"), 줄("A"), 줄("B")))
+        for (f in 0..2) for (t in 0..2) for (뒤 in listOf(false, true)) {
+            val 새 = r.종목옮기기(f, t, 뒤)
+            assertEquals(listOf("A", "A", "B"), 새.종목.map { it.이름 }.sorted(), "옮기기 f=$f t=$t")
+        }
+        for (f in 0..2) for (t in 0..2) {
+            val 새 = r.슈퍼묶기(f, t, "g1")
+            assertEquals(listOf("A", "A", "B"), 새.종목.map { it.이름 }.sorted(), "묶기 f=$f t=$t")
+        }
+        // A(0) 를 B 뒤로 → A B A
+        assertEquals(listOf("A", "B", "A"), r.종목옮기기(0, 2, true).종목.map { it.이름 })
+        // 둘째 A(1) 만 B 에 묶기 → 첫 A 는 그대로
+        val 묶 = r.슈퍼묶기(1, 2, "g1")
+        assertEquals(listOf("A", "B", "A"), 묶.종목.map { it.이름 })
+        assertEquals(listOf(null, "g1", "g1"), 묶.종목.map { it.슈퍼 })
+    }
+
+    @Test fun 슈퍼풀기는_그_묶음만() {
+        val r = 루틴("r", "x", 종목 = listOf(줄("A", 슈퍼 = "g1"), 줄("B", 슈퍼 = "g1"), 줄("C", 슈퍼 = "g2"), 줄("D", 슈퍼 = "g2")))
+        assertEquals(listOf(null, null, "g2", "g2"), r.슈퍼풀기("g1").종목.map { it.슈퍼 })
     }
 
     @Test fun 펼침이_종목을_따라간다() {
