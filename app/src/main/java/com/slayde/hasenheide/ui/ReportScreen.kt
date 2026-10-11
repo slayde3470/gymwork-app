@@ -108,7 +108,6 @@ import com.slayde.hasenheide.data.두대비
 import com.slayde.hasenheide.data.목표단위
 import com.slayde.hasenheide.data.목표세트
 import com.slayde.hasenheide.data.무게글
-import androidx.compose.ui.graphics.drawscope.clipPath
 import com.slayde.hasenheide.data.묶음이름
 import com.slayde.hasenheide.data.볼륨
 import com.slayde.hasenheide.data.분초
@@ -710,7 +709,7 @@ private fun ColumnScope.보고본문(
 
     // ── 종목 두 칸 격자 — 이 안에서만 넘긴다. 누르면 그 줄 아래 두 칸 폭으로 상세 (한 번에 하나) ──
     Column(
-        (if (넘김 != null) Modifier.weight(1f).verticalScroll(넘김) else Modifier).fillMaxWidth().padding(bottom = 아래여백),
+        (if (넘김 != null) Modifier.weight(1f).verticalScroll(넘김) else Modifier).fillMaxWidth().padding(top = 4.dp, bottom = 아래여백),   // 10-11: 맨 윗줄 슈퍼 테두리 · 딱지가 잘리지 않게 위 여백 4
         verticalArrangement = Arrangement.spacedBy(간격.아주좁게),
     ) {
         if (값.칸들.isEmpty()) {
@@ -749,7 +748,7 @@ private fun ColumnScope.보고본문(
                             val q = androidx.compose.ui.graphics.Path().apply { addRect(Rect(r.left - g, 줄.top - g, r.right + g, 줄.bottom + g)) }
                             합 = 합?.let { a -> androidx.compose.ui.graphics.Path.combine(androidx.compose.ui.graphics.PathOperation.Union, a, q) } ?: q
                         }
-                        합?.let { u -> clipPath(u) { drawPath(u, 주, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 선굵기.굵게.toPx() * 1.5f, pathEffect = androidx.compose.ui.graphics.PathEffect.cornerPathEffect(모서리.작게.toPx()))) } }   // 10-11: 안쪽 반만 보이게 잘라 다른 슈퍼세트 테두리와 안 겹침 · 굵기 75%
+                        합?.let { drawPath(it, 주, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 선굵기.굵게.toPx() * 0.7f, pathEffect = androidx.compose.ui.graphics.PathEffect.cornerPathEffect(모서리.작게.toPx()))) }   // 10-11 홍겸 님: 통짜 둘레 그대로(통째로 한 선) · 다른 슈퍼세트와 겹치지 않게 굵기만 70%
                     }
                 },
             verticalArrangement = Arrangement.spacedBy(간격.아주좁게),
