@@ -713,7 +713,7 @@ private fun 넣기체크(이름: String, 수: Int, 즐겨: Boolean, 누름: () -
                 contentAlignment = Alignment.Center,
             ) {
                 별(들어감, 넣기값.체크 + 2.dp, c.즐겨)
-                if (들어감) Text(체크글(수), style = 글꼴.보통(크기.작게 * (if (수 >= 3) 0.9f else 1.05f), FontWeight.Bold).copy(letterSpacing = (-0.1).em), color = c.강조, maxLines = 1, softWrap = false, modifier = Modifier.넘쳐도폭없이().offset(y = 1.dp))
+                if (들어감) Text(체크글(수), style = 글꼴.보통(크기.작게 * (if (수 >= 3) 1.0f else 1.15f), FontWeight.Bold).copy(letterSpacing = (-0.1).em), color = c.강조, maxLines = 1, softWrap = false, modifier = Modifier.넘쳐도폭없이().offset(y = 1.dp))
             }
         } else Box(
             Modifier.padding(start = 넣기값.체크옆).graphicsLayer { scaleX = 깊이.value; scaleY = 깊이.value }.heightIn(min = 넣기값.체크).widthIn(min = 넣기값.체크)
@@ -722,7 +722,7 @@ private fun 넣기체크(이름: String, 수: Int, 즐겨: Boolean, 누름: () -
                 .padding(horizontal = 간격.아주좁게),
             contentAlignment = Alignment.Center,
         ) {
-            if (들어감) Text(체크글(수), style = 글꼴.보통(크기.작게 * (if (수 >= 3) 0.9f else 1.05f), FontWeight.Bold).copy(letterSpacing = (-0.1).em), color = c.강조글, maxLines = 1, softWrap = false, modifier = Modifier.넘쳐도폭없이())
+            if (들어감) Text(체크글(수), style = 글꼴.보통(크기.작게 * (if (수 >= 3) 1.0f else 1.15f), FontWeight.Bold).copy(letterSpacing = (-0.1).em, shadow = androidx.compose.ui.graphics.Shadow(c.강조, androidx.compose.ui.geometry.Offset.Zero, 7f)), color = c.강조글, maxLines = 1, softWrap = false, modifier = Modifier.넘쳐도폭없이())
         }
     }
 }

@@ -740,7 +740,7 @@ private fun ColumnScope.보고본문(
                     drawContent()
                     // 10-11 홍겸 님: 묶인 칸의 **상자 테두리 바로 바깥(1dp)** 을 따라 한 줄 — 칸 사이 틈은 다리(사각형)로 이어 경계를 없앤다.
                     //  선이 틈 한가운데가 아니라 제 칸 곁에 붙으니 이웃한 다른 슈퍼세트 선과 겹치지 않는다
-                    val e = 1.dp.toPx()
+                    val e = 1.4.dp.toPx()
                     fun 사각(r: Rect) = androidx.compose.ui.graphics.Path().apply { addRect(r) }
                     묶음들.forEach { l ->
                         val R = HashMap<Int, Rect>()
@@ -761,7 +761,7 @@ private fun ColumnScope.보고본문(
                         }
                         var 합: androidx.compose.ui.graphics.Path? = null
                         조각.forEach { q -> 합 = 합?.let { x -> androidx.compose.ui.graphics.Path.combine(androidx.compose.ui.graphics.PathOperation.Union, x, 사각(q)) } ?: 사각(q) }
-                        합?.let { drawPath(it, 주, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 선굵기.굵게.toPx() * 0.7f, pathEffect = androidx.compose.ui.graphics.PathEffect.cornerPathEffect(모서리.작게.toPx()))) }
+                        합?.let { drawPath(it, 주, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 선굵기.굵게.toPx() * 0.55f, pathEffect = androidx.compose.ui.graphics.PathEffect.cornerPathEffect(모서리.작게.toPx()))) }
                     }
                 },
             verticalArrangement = Arrangement.spacedBy(간격.아주좁게),
