@@ -242,6 +242,8 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
         if (목표본 == 표시본) return@LaunchedEffect
         val 방식 = 넘김방식[0]; 넘김방식[0] = 0
         val 쪽 = if (목표본 > 표시본) 1 else -1
+        // 10-11 홍겸 님: 슈퍼세트는 한 화면 — 같은 묶음 안에서 종목이 바뀔 때는 화면을 넘기지 않고 이름 칸만 바뀐다
+        if (S.식구(표시본).let { it.size > 1 && 목표본 in it }) { 표시본 = 목표본; 끌림x.floatValue = 0f; return@LaunchedEffect }
         진행.snapTo(0f)   // 새 쪽이 처음 그려지는 판에 옛 진행값이 남아 있지 않게 — 그림을 찍기 전에
         val 그림 = try {
             (if (방식 == 1) 층A else 층B).toImageBitmap()   // 표시본을 바꾸기 전에 지금 쪽을 찍는다
@@ -290,19 +292,19 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
     // 10-09 홍겸 님: 화면을 좌우로 밀면 이전 · 다음 종목 (맨 아래 ‹ › 대신)
     val 넘김: (Int) -> Unit = { 쪽 ->
         상태.d.세션?.let { s ->
-            val 새 = (운보기.본 + 쪽).coerceIn(0, max(0, s.종목들.size - 1))
+            val 새 = 이웃본찾기(s, 운보기.본, 쪽) ?: 운보기.본   // 10-11: 슈퍼세트 묶음은 한 쪽 — 건너뛴다
             if (새 != 운보기.본) { 발자취.적기(if (쪽 > 0) "다음 종목으로 밀기" else "이전 종목으로 밀기"); 넘김방식[0] = 1; 운보기.본 = 새; 당김++ }
         }
     }
     // 10-11 홍겸 님: 좌우로 밀면 화면이 손가락을 따라 끌려온다. 기준(밀기)을 넘겨 떼면 그 자리에서 이어서 밀려 넘어가고, 덜 밀었으면 제자리로 돌아온다
     val 끌기: (Float) -> Unit = { x ->
-        val 갈곳 = 운보기.본 + (if (x < 0) 1 else -1)
-        끌림x.floatValue = if (갈곳 in 0 until (상태.d.세션?.종목들?.size ?: 1)) x else x * 0.25f   // 맨 끝에서는 무겁게
+        val 갈곳 = 상태.d.세션?.let { 이웃본찾기(it, 운보기.본, if (x < 0) 1 else -1) }
+        끌림x.floatValue = if (갈곳 != null) x else x * 0.25f   // 맨 끝에서는 무겁게
     }
     val 놓기기준 = with(androidx.compose.ui.platform.LocalDensity.current) { 운치수.밀기.toPx() }
     val 놓기: (Float) -> Unit = { x ->
         val 쪽 = if (x < 0) 1 else -1
-        if (abs(x) > 놓기기준 && 운보기.본 + 쪽 in 0 until (상태.d.세션?.종목들?.size ?: 1)) { 옛시작.floatValue = 끌림x.floatValue; 넘김(쪽) }
+        if (abs(x) > 놓기기준 && 상태.d.세션?.let { 이웃본찾기(it, 운보기.본, 쪽) } != null) { 옛시작.floatValue = 끌림x.floatValue; 넘김(쪽) }
         else 끌범위.launch { animate(끌림x.floatValue, 0f, animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) { v, _ -> 끌림x.floatValue = v } }
     }
 
@@ -367,8 +369,8 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
                 // 가만히 있을 때(0.3초 뒤)부터 양옆 화면을 미리 그려 둔다 — 끌 때 새로 그리지 않고 옆에서 꺼내 온다
                 val 이웃준비 by produceState(false, 표시본) { value = false; delay(300); value = true }
                 if (옛그림 == null) for (이웃 in intArrayOf(-1, 1)) {
-                    val 이웃본 = 본 + 이웃
-                    if (이웃본 !in 0 until n || !(이웃준비 || 이웃 == 이웃방향)) continue
+                    val 이웃본 = 이웃본찾기(S, 본, 이웃) ?: continue
+                    if (!(이웃준비 || 이웃 == 이웃방향)) continue
                     key(이웃본) {
                         Box(
                             Modifier.fillMaxSize().clipToBounds()
@@ -432,6 +434,14 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
             },
         )
     }
+}
+
+/** 방향(+1 · −1)으로 한 쪽 옮긴 종목 번호 — 슈퍼세트 묶음은 한 쪽이라 건너뛴다. 없으면 null */
+private fun 이웃본찾기(S: 운동세션, 본: Int, 방향: Int): Int? {
+    val 식구 = S.식구(본)
+    var i = 본 + 방향
+    while (i in S.종목들.indices && i in 식구) i += 방향
+    return if (i in S.종목들.indices) i else null
 }
 
 /** 보는 종목 — 화면을 떠났다 와도(다른 탭) 이 운동 동안은 그대로 (시안 `U.본` 은 화면 밖 상태다). 앱을 껐다 켜면 지금 종목부터 */
@@ -639,9 +649,10 @@ private fun 운이름(d: 앱데이터, S: 운동세션, 본: Int, e: 세션종�
             listOfNotNull("${계?.회 ?: (p.한회 + 1)}회차", if (계?.측정일 == true) "측정일" else null,
                 if (p.만든날.isNotBlank()) "${p.지난주(오늘)}주 진행 중" else null).joinToString(" · ")
         }
-        S.식구(본).size > 1 -> "슈퍼세트 " + ('A' + S.식구(본).indexOf(본)).toString()
+        S.식구(본).size > 1 -> "- 슈퍼세트 (${S.식구(본).indexOf(본) + 1}/${S.식구(본).size})"   // 10-11 홍겸 님: 한 이름 칸에서 '덤벨컬 - 슈퍼세트 (1/2)' (주황) → 끝나면 '리스트컬 - 슈퍼세트 (2/2)'
         else -> null
     }
+    val 슈퍼중 = p == null && S.식구(본).size > 1
     val 측정 = rememberTextMeasurer()
     val 밀도 = LocalDensity.current
     val 딱꼴 = 글꼴.보통(크기.작게, FontWeight.Bold).copy(lineHeight = 부품치수.딱지글높이, fontFeatureSettings = "tnum")
@@ -651,7 +662,7 @@ private fun 운이름(d: 앱데이터, S: 운동세션, 본: Int, e: 세션종�
     val 글 = buildAnnotatedString {
         append(e.이름.trim())
         if (딱 != null) { append("\u2060"); appendInlineContent("딱", 딱) }   // 끝 낱말과 딱지가 떨어져 감기지 않게
-        if (곁 != null) withStyle(SpanStyle(fontSize = 크기.버튼, fontWeight = FontWeight.Normal, letterSpacing = (-0.01).em)) {
+        if (곁 != null) withStyle(SpanStyle(fontSize = 크기.버튼, fontWeight = if (슈퍼중) FontWeight.Bold else FontWeight.Normal, letterSpacing = (-0.01).em, color = if (슈퍼중) c.슈퍼글 else Color.Unspecified)) {
             append("  "); append(곁.replace(' ', '\u00A0'))
         }
     }
@@ -690,13 +701,19 @@ private fun 세트목록(
     상태: 앱상태, S: 운동세션, 본: Int, 지금: Long, modifier: Modifier,
     함: ((운동세션) -> 운결과?) -> Unit, 바꿈: ((운동세션) -> 운동세션) -> Unit, 당김: () -> Unit,
 ) {
-    val c = Local색.current
+    val c0 = Local색.current
     val e = S.종목들[본]
+    // 10-11 홍겸 님: 슈퍼세트 = 한 세트 상자에 묶인 종목 세트가 번갈아 (덤벨컬 1 · 리스트컬 1 · 덤벨컬 2 …) · 이 칸의 파란 중심색은 전부 주황
+    val 식구 = S.식구(본)
+    val 묶음 = 식구.size > 1
+    val c = if (묶음) c0.copy(강조 = c0.슈퍼, 강조옅음 = c0.슈퍼옅음, 지금깜빡 = c0.슈퍼옅음) else c0
+    val 줄들: List<Pair<Int, Int>> = if (묶음) (0 until 식구.maxOf { S.종목들[it].총칸() }).flatMap { k -> 식구.filter { k < S.종목들[it].총칸() }.map { it to k } }
+        else (0 until e.총칸()).map { 본 to it }
     val 목 = rememberScrollState()
     val 자 = remember { 줄자리() }
     var 다음줄 by remember { mutableStateOf<Triple<Int, Int, Long>?>(null) }   // (보는 칸, 줄, 누른 때) — 한 번만 쓴다
     var 세트더 by remember { mutableStateOf<Pair<Int, Long>?>(null) }           // (보는 칸, 누른 때) — '+ 세트' 를 눌렀다 · 한 번만 쓴다
-    val 본키 = "${S.시작시각}|$본|${e.열쇠}"
+    val 본키 = if (묶음) "${S.시작시각}|묶음|${e.슈퍼}" else "${S.시작시각}|$본|${e.열쇠}"
     LaunchedEffect(본키) { 목.scrollTo(0) }
     LaunchedEffect(다음줄) {
         val (b, k, _) = 다음줄 ?: return@LaunchedEffect
@@ -718,6 +735,7 @@ private fun 세트목록(
     }
     val 지금k = 첫빈칸(e)
     val 무게폭 = 상태.d.설정.무게폭
+    androidx.compose.runtime.CompositionLocalProvider(Local색 provides c) {
     BoxWithConstraints(modifier.fillMaxWidth()) {
         val 남는 = maxWidth - 간격.보통 * 2 - 높이.아주낮게 - 간격.아주좁게 * 4
         // 10-09 홍겸 님: kg 칸은 100.00 · 횟수 칸은 100 · 휴식 칸은 10:00 이 다 들어가게 — 글자를 재서 칸 최소 폭을 정한다.
@@ -741,22 +759,23 @@ private fun 세트목록(
                     Text(t, Modifier.width(폭[x]), style = 글꼴.보통(크기.작게), color = c.옅음, textAlign = TextAlign.Center, maxLines = 1)
                 }
             }
-            val 앞 = 앞줄개수(e.총칸(), 본키)   // 10-08: 방금 더한 줄은 한 번 점멸 · 눌렸다 제자리
-            for (k in 0 until e.총칸()) {
+            val 앞 = 앞줄개수(줄들.size, 본키)   // 10-08: 방금 더한 줄은 한 번 점멸 · 눌렸다 제자리
+            줄들.forEachIndexed { r, (jj, k) ->
+                val ej = S.종목들[jj]
                 운세트줄(
-                    S, 본, k, 지금k, 폭, 글크기, 지금, 무게폭,
-                    Modifier.새줄효과(k >= 앞).onPlaced { 자.위[k] = it.positionInParent().y.roundToInt(); 자.높이 = it.size.height },
+                    S, jj, k, if (묶음) (if (jj == S.i) 첫빈칸(ej) else -1) else 지금k, 폭, 글크기, 지금, 무게폭,
+                    Modifier.새줄효과(r >= 앞).onPlaced { 자.위[r] = it.positionInParent().y.roundToInt(); 자.높이 = it.size.height },
                     체크 = {
-                        val 전 = 상태.d.세션?.종목들?.getOrNull(본)
+                        val 전 = 상태.d.세션?.종목들?.getOrNull(jj)
                         val 체크함 = 전 != null && 전.기록.칸(k) == null
-                        발자취.적기("${e.이름} ${k + 1}세트 ${if (체크함) "체크" else "체크 풀기"}")
+                        발자취.적기("${ej.이름} ${k + 1}세트 ${if (체크함) "체크" else "체크 풀기"}")
                         // 보이는 칸 아래 절반의 줄을 체크하면 다음 빈 줄을 가운데로 (넘칠 때만)
-                        val y = 자.위[k]
+                        val y = 자.위[r]
                         if (체크함 && 전 != null && y != null && 목.maxValue > 0 && y + 자.위끝 + 자.높이 / 2 - 목.value > 자.보임 / 2) {
-                            val 다 = (k + 1 until 전.총칸()).firstOrNull { 전.기록.칸(it) == null }
+                            val 다 = (r + 1 until 줄들.size).firstOrNull { q -> 상태.d.세션?.종목들?.getOrNull(줄들[q].first)?.기록?.칸(줄들[q].second) == null }
                             if (다 != null) 다음줄 = Triple(본, 다, System.nanoTime())
                         }
-                        함 { s -> 운체크(s, 본, k, System.currentTimeMillis()).let { 운결과(it, 본따라감(it, 본)) } }
+                        함 { s -> 운체크(s, jj, k, System.currentTimeMillis()).let { 운결과(it, 본따라감(it, 본)) } }
                         당김()
                     },
                     쉼누름 = { 마무리 ->
@@ -765,7 +784,7 @@ private fun 세트목록(
                         당김()
                     },
                     값 = { f -> 바꿈(f); 당김() },
-                    지우기 = { 세트지우기(상태, 본, k) { 당김() } },
+                    지우기 = { 세트지우기(상태, jj, k) { 당김() } },
                 )
             }
             // 10-09 홍겸 님: [+ 세트] = 세트 줄들 바로 아래 줄, 세트 번호 동그라미 자리에 (번호 동그라미 × 0.95) 동그라미 + ＋
@@ -787,6 +806,7 @@ private fun 세트목록(
                 }
             }
         }
+    }
     }
 }
 

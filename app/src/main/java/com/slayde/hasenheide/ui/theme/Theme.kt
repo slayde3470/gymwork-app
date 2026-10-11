@@ -66,6 +66,10 @@ data class 색표(
     val 노랑테: Color = Color.Transparent,      // 노란 점 둘레 1 — 어두운 화면의 강조 단추 위에서만 (시안 --노랑테)
     // 10-05 검수: 나쁨(빨강) 바탕 위 글 — 밝음 · 어두움 모두 흰색 (목록 '어두운 화면의 빨간 버림 확인 글은 흰색' · 11_UI지침에 올릴 값)
     val 나쁨글: Color = Color(0xFFFFFFFF),
+    // 10-11 홍겸 님: 슈퍼세트 = 주황 — 테두리 · 연한 바탕 · 파란 띠 위 글자 (루틴 묶음 상자 · 운동 중 세트 칸 · 이름 칸 '슈퍼세트 (1/2)')
+    val 슈퍼: Color = Color(0xFFE8820C),
+    val 슈퍼옅음: Color = Color(0xFFFFF0DC),
+    val 슈퍼글: Color = Color(0xFFFFB04D),
 )
 
 /**
