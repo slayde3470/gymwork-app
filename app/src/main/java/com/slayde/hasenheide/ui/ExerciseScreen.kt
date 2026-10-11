@@ -151,7 +151,9 @@ fun 앱데이터.종목이름바꿈(옛: String, 새: String): 앱데이터 {
 
 /** 이 화면만 쓰는 치수 — Theme 에 없는 값 (보고서 '공용 고칠 것' — 합칠 때 부품치수로 옮긴다) */
 internal object 종목치수 {
-    val 이름글 = 14.sp   // 10-07 홍겸 님: 종목명 1 작게 · 굵게 빼기 (U2-1 단계 밖 — 지침에 올릴 값)
+    val 이름글 = 11.sp   // 10-11 홍겸 님: 기본 글씨 = '케이블 체스트 프레스' 크기(11) — 전 14(→13) 에서 줄임.  전: 10-07 홍겸 님: 종목명 1 작게 · 굵게 빼기 (U2-1 단계 밖 — 지침에 올릴 값)
+    val 접힌오른쪽 = 1.5.dp  // 10-11: 접힌 상자 오른쪽 여백 — ∨ 그림 안쪽 여백(18×25% = 4.5) 과 합쳐 테두리와 6
+    val 접힌그림앞 = 1.5.dp  // 이름 칸과 ∨ 사이 — 같은 이유로 6
     val 펼침그림 = 18.dp // 10-07 홍겸 님: 접기·펼치기 그림을 다른 곳(펼침단추 · U3-6 기본 18)과 같게
     val 뜸자리 = 64.dp   // 오른쪽 아래 떠 있는 [새 종목 만들기] 에 마지막 줄이 가리지 않게 (단추 40 + 아래 12 + 12)
     val 번호칸 = 16.dp   // 시안 .종세트 첫 칸 16 (세트 번호)
@@ -459,7 +461,7 @@ private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modif
                     drawRoundRect(c.강조, cornerRadius = r, alpha = a, style = Stroke(width = 선굵기.굵게.toPx()))
                 }
             } else Modifier)
-            .padding(start = if (체크보임) 0.dp else 간격.좁게, top = 간격.좁게, end = 간격.좁게, bottom = 간격.좁게),   // 10-11 홍겸 님: 체크 상자 좌우 3 (누르는 칸 안쪽 여백 3 + 바깥 0)
+            .padding(start = if (체크보임) 0.dp else 간격.좁게, top = 간격.좁게, end = if (펼) 간격.좁게 else 종목치수.접힌오른쪽, bottom = 간격.좁게),   // 10-11 홍겸 님: 체크 · ∨ 좌우 6 (체크: 누르는 칸 안쪽 여백 6 + 바깥 0 · ∨: 그림 안쪽 여백 4.5 + 1.5)
     ) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(if (체크보임) 0.dp else 간격.좁게), verticalAlignment = Alignment.Top) {
             // 10-08 홍겸 님: 펼친 상자 머리에는 체크 상자를 두지 않는다 (접힌 줄에만)
@@ -473,7 +475,7 @@ private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modif
             Column(Modifier.weight(1f).눌림길게({ 펼침(x.열쇠) }, { }).격자끌기손(끌판, x.종목?.id ?: x.열쇠, x.이름, 켬 = x.종목 != null)) {
                 Row(
                     Modifier.fillMaxWidth().heightIn(min = maxOf(높이.아주낮게, 이름높이)),
-                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.아주좁게),
+                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(if (펼) 간격.아주좁게 else 종목치수.접힌그림앞),
                 ) {
                     Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
                         if (펼 && t != null && 이름고침) 종목이름고침칸(상태, t, { 이름고침 = false }, 펼침, Modifier.weight(1f))

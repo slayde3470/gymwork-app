@@ -43,6 +43,13 @@ class ExerciseTest {
         assertEquals(emptyList(), 격자줄(emptyList()))
     }
 
+    @Test fun 이름두줄_띄어쓰기에서_첫줄이_짧게() {
+        assertEquals("인클라인\n체스트 프레스 머신", 이름두줄("인클라인 체스트 프레스 머신"))
+        assertEquals("불가리안\n스플릿 스쿼트", 이름두줄("불가리안 스플릿 스쿼트"))
+        assertEquals("스미스 머신\n숄더 프레스", 이름두줄("스미스 머신 숄더 프레스"))
+        assertEquals("벤치프레스", 이름두줄("벤치프레스"))
+    }
+
     // ─────────────── 종목 탭 판 ───────────────
 
     @Test fun 판_플랜만남은종목은기타() {

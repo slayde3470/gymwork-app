@@ -748,14 +748,29 @@ fun 이름맞춤(
         val w = constraints.maxWidth
         val (꼴, 줄) = remember(이름, w, 바탕크기, 굵기, 두줄촘촘, 넓힘px) { 이름꼴고르기(측정, 이름, w, 바탕크기, 굵기, 두줄촘촘, 넓힘px) }
         Text(
-            이름, if (가운데) Modifier.fillMaxWidth() else Modifier, style = 꼴, color = 색, maxLines = 줄, softWrap = 줄 > 1, overflow = TextOverflow.Clip,
+            if (줄 > 1) 이름두줄(이름) else 이름, if (가운데) Modifier.fillMaxWidth() else Modifier, style = 꼴, color = 색, maxLines = 줄, softWrap = 줄 > 1, overflow = TextOverflow.Clip,
             textAlign = if (가운데) TextAlign.Center else null,
         )
     }
 }
 
+/**
+ * 두 줄 이름의 줄바꿈 자리 (10-11 홍겸 님) — 띄어쓰기 자리에서만, 첫 줄이 둘째 줄보다 길지 않게 하되 가장 고르게.
+ * '인클라인 / 체스트 프레스 머신' · '불가리안 / 스플릿 스쿼트' · '스미스 머신 / 숄더 프레스'. 첫 줄이 짧을 수 없으면 가장 고른 자리.
+ */
+internal fun 이름두줄(이름: String): String {
+    val 말 = 이름.trim().split(" ").filter { it.isNotEmpty() }
+    if (말.size < 2) return 이름
+    fun 길(l: List<String>) = l.sumOf { it.codePointCount(0, it.length) }
+    val 자리 = (1 until 말.size).map { k -> 길(말.take(k)) to 길(말.drop(k)) }
+    val 고름 = 자리.withIndex().filter { it.value.first <= it.value.second }.minByOrNull { it.value.second - it.value.first }
+        ?: 자리.withIndex().minBy { kotlin.math.abs(it.value.second - it.value.first) }
+    val k = 고름.index + 1
+    return 말.take(k).joinToString(" ") + "\n" + 말.drop(k).joinToString(" ")
+}
+
 private fun 이름넘침(측정: TextMeasurer, 이름: String, st: TextStyle, 줄: Int, w: Int): Boolean =
-    측정.measure(이름, st, overflow = TextOverflow.Clip, softWrap = 줄 > 1, maxLines = 줄, constraints = Constraints(maxWidth = w)).hasVisualOverflow
+    측정.measure(if (줄 > 1) 이름두줄(이름) else 이름, st, overflow = TextOverflow.Clip, softWrap = 줄 > 1, maxLines = 줄, constraints = Constraints(maxWidth = w)).hasVisualOverflow
 
 /** [넓힘px] — 칸이 그만큼 넓어졌을 때: 글 크기는 (좁은 칸에서 고른) 그대로 두고 자간만 기본(−0.01em) 쪽으로 넓힌다 (10-11 홍겸 님) */
 private fun 이름꼴고르기(측정: TextMeasurer, 이름: String, w: Int, 바탕: TextUnit, 굵기: FontWeight, 촘촘: Boolean, 넓힘px: Int): Pair<TextStyle, Int> {
