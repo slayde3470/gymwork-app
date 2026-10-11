@@ -231,14 +231,14 @@ private fun 넣기속(
                     kotlinx.coroutines.coroutineScope {
                         launch {
                             val 돌아감 = 펼치전[0]; 펼치전[0] = -1
-                            if (돌아감 >= 0 && 돌아감 != 넘김.value) 넘김.animateScrollTo(돌아감.coerceAtMost(넘김.maxValue), tween(움직임.펼침))
+                            if (돌아감 >= 0 && 돌아감 != 넘김.value) 넘김.animateScrollTo(돌아감.coerceAtMost(넘김.maxValue), tween(움직임.상자펼침))
                         }
-                        launch { kotlinx.coroutines.delay(움직임.펼침.toLong()); if (펼친 == k) 펼친 = null }
+                        launch { kotlinx.coroutines.delay(움직임.상자펼침.toLong()); if (펼친 == k) 펼친 = null }
                     }
                     접는키 = null; 접힘정리 = false
                 }
                 LaunchedEffect(펼친 != null && 접는키 == null) {
-                    어둠.animateTo(if (펼친 != null && 접는키 == null) 1f else 0f, tween(움직임.펼침))
+                    어둠.animateTo(if (펼친 != null && 접는키 == null) 1f else 0f, tween(움직임.상자펼침))
                     if (펼친 == null) 창구멍.value = null
                 }
                 LaunchedEffect(펼친) {
@@ -269,7 +269,7 @@ private fun 넣기속(
                         withFrameNanos { }
                         withFrameNanos { }
                         구멍재기()
-                        구멍?.let { 넘김.animateScrollTo(it.top.roundToInt().coerceAtLeast(0), tween(움직임.펼침)) }   // 10-11: 펼쳐지는 것과 같은 시간에 같이 움직인다 (전: 한 번에 확 건너뜀)
+                        구멍?.let { 넘김.animateScrollTo(it.top.roundToInt().coerceAtLeast(0), tween(움직임.상자펼침)) }   // 10-11: 펼쳐지는 것과 같은 시간에 같이 움직인다 (전: 한 번에 확 건너뜀)
                     }
                 }
                 if (쓸 == null && !못잼) {

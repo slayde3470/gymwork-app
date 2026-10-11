@@ -204,8 +204,8 @@ fun 종목화면(상태: 앱상태) {
     val 어둠 = remember { Animatable(0f) }
     var 어둠켬 by remember { mutableStateOf(false) }
     LaunchedEffect(펼친 != null) {
-        if (펼친 != null) { 어둠켬 = true; 어둠.animateTo(1f, tween(움직임.펼침)) }
-        else { 어둠.animateTo(0f, tween(움직임.펼침)); 어둠켬 = false }
+        if (펼친 != null) { 어둠켬 = true; 어둠.animateTo(1f, tween(움직임.상자펼침)) }
+        else { 어둠.animateTo(0f, tween(움직임.상자펼침)); 어둠켬 = false }
     }
     val 접기 = { 펼친 = null }
     Box(Modifier.fillMaxSize()) {
@@ -306,7 +306,7 @@ private fun Modifier.위치흐름(흐름: 격자흐름, 열쇠: String, 신호: 
                     val d = 기록.first - p
                     if (d != Offset.Zero) 범위.launch(start = kotlinx.coroutines.CoroutineStart.UNDISPATCHED) {
                         값.snapTo(d); 처리됨 = true
-                        값.animateTo(Offset.Zero, tween(움직임.펼침))
+                        값.animateTo(Offset.Zero, tween(움직임.상자펼침))
                     } else 처리됨 = true
                 } else 처리됨 = true
             }
@@ -401,7 +401,7 @@ private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modif
     val 접는중 = 접는중내부 || (펼 && 접는키 == x.열쇠)   // 10-11: 시트가 접으라고 한 상자도 속부터 줄어든다
     val 펼최신 by rememberUpdatedState(펼)
     LaunchedEffect(접는중내부) {
-        if (접는중내부) { delay(움직임.펼침.toLong()); if (펼최신) 펼침(x.열쇠) }
+        if (접는중내부) { delay(움직임.상자펼침.toLong()); if (펼최신) 펼침(x.열쇠) }
     }
     val 모양 = RoundedCornerShape(모서리.작게)
     // 10-11 홍겸 님: 방금 접은 상자는 한 번 반짝인다 (어느 종목을 눌렀는지 알 수 있게) — 그리는 단계에서만 값을 읽는다
@@ -468,7 +468,7 @@ private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modif
                     if (펼 && 곁.isNotEmpty()) 글(곁, 크기값 = 크기.작게, 색 = c.옅음)
                     // 10-09 홍겸 님: '0/139회' 는 접기(∧) 바로 왼쪽 (플랜 카드 머리에서 옮겼다). 플랜이 둘 이상이면 카드마다 쓴다
                     if (플랜모양 && 플.size == 1) 글(플랜횟수글(상태, 플[0]), 크기값 = 크기.아주작게, 색 = c.옅음)
-                    val 돌림 by animateFloatAsState(if (펼 && !접는중) 180f else 0f, tween(움직임.펼침), label = "접힘표")
+                    val 돌림 by animateFloatAsState(if (펼 && !접는중) 180f else 0f, tween(움직임.상자펼침), label = "접힘표")
                     Icon(아이콘.아래, if (펼) "접기" else "펼치기", Modifier.size(종목치수.펼침그림).graphicsLayer { rotationZ = 돌림 }, tint = c.옅음)
                 }
             }
@@ -477,8 +477,8 @@ private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modif
         }
         if (펼) AnimatedVisibility(
             visible = 들어옴 && !접는중,
-            enter = expandVertically(tween(움직임.펼침), expandFrom = Alignment.Top) + fadeIn(tween(움직임.펼침)),   // 10-11 홍겸 님: 위에서 아래로 쭉 펼친다 (기본은 아래에서 올라옴)
-            exit = shrinkVertically(tween(움직임.펼침), shrinkTowards = Alignment.Top) + fadeOut(tween(움직임.펼침)),
+            enter = expandVertically(tween(움직임.상자펼침), expandFrom = Alignment.Top) + fadeIn(tween(움직임.상자펼침)),   // 10-11 홍겸 님: 위에서 아래로 쭉 펼친다 (기본은 아래에서 올라옴)
+            exit = shrinkVertically(tween(움직임.상자펼침), shrinkTowards = Alignment.Top) + fadeOut(tween(움직임.상자펼침)),
             label = "상자접힘",
         ) { Column(Modifier.padding(top = 간격.좁게), verticalArrangement = Arrangement.spacedBy(간격.좁게)) {
             if (플랜모양) {
