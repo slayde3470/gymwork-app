@@ -53,6 +53,7 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -160,7 +161,7 @@ fun 루틴화면(상태: 앱상태, 폰: 폰기능) {
     // 열어 둔 루틴이 사라졌으면(지움 · 되돌리기) 목록으로
     LaunchedEffect(열린, r == null) { if (열린 != null && r == null) 루틴기억.열린.value = null }
     Box(Modifier.fillMaxSize()) {
-        if (r != null) 루틴상세화면(상태, r) { 빈새루틴치우기(상태, r.id); 루틴기억.열린.value = null }
+        if (r != null) 루틴상세화면(상태, r) { 빈새루틴치우기(상태, r.id); 루틴기억.펼침.remove(r.id); 루틴기억.열린.value = null }   // 10-11 홍겸 님: 뒤로 갔다 다시 열면 종목은 접힌 채
         else 루틴목록화면(상태) { 루틴기억.열린.value = it }
         플랜고치기자리(상태)   // 플랜 상자 누름 → 플랜 고치기 시트 (PlanScreen.kt · PS 몫)
     }
@@ -484,7 +485,15 @@ private fun 루틴상세화면(상태: 앱상태, r: 루틴, 닫기: () -> Unit)
 
     Box(Modifier.fillMaxSize().onGloballyPositioned { 끌.틀 = it.boundsInRoot() }) {
         Column(Modifier.fillMaxSize()) {
-            머리띠("루틴")   // 10-06 v22 ① 상세에서도 맨 위 「루틴」 띠는 목록과 같은 띠 그대로
+            머리띠("루틴", 왼쪽 = {
+                // 10-11 홍겸 님: [‹ 뒤로] 단추는 없애고 맨 위 띠 왼쪽에 동그라미 안의 ‹
+                Box(
+                    Modifier.size(높이.아주낮게).clip(CircleShape).background(c.강조글)
+                        .semantics { contentDescription = "루틴 목록으로" }
+                        .눌림 { 초점.clearFocus(); 닫기() },
+                    contentAlignment = Alignment.Center,
+                ) { Icon(아이콘.왼쪽, null, Modifier.size(20.dp), tint = c.강조) }
+            })   // 10-06 v22 ① 상세에서도 맨 위 「루틴」 띠는 목록과 같은 띠 그대로
             // 10-09 홍겸 님: 루틴 탭 전체 — 책장 겹침(쪽겹) 삭제
             Column(Modifier.weight(1f).fillMaxWidth().background(c.바탕)) {
                 루틴상세띠(상태, r, { 초점.clearFocus(); 닫기() }, {})
@@ -712,10 +721,7 @@ private fun 루틴상세띠(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(간격.좁게),
     ) {
-        // [‹ 뒤로] — 띠 위 흰 단추 (시안 `.작은흰` · v22 ① '‹ 루틴' → '‹ 뒤로'). 10-06 같은 폭 (오른쪽 빈자리와 짝)
-        띠흰단추(Modifier.width(루틴값.띠단추폭).semantics { contentDescription = "루틴 목록으로" }, { 손댐(); 닫기() }) {
-            글("‹ 뒤로", 크기값 = 크기.버튼, 색 = c.강조, 굵기 = FontWeight.Bold)
-        }
+        // 10-11 홍겸 님: [‹ 뒤로] 는 없앴다 — 맨 위 「루틴」 띠 왼쪽 동그라미 ‹ 가 대신한다
         // 이름 칸 — 10-06 홍겸 님: 예상 · 세트 글은 뺐고, 칸 너비는 남는 자리의 75%(25% 줄임 · 가운데),
         //   이름이 끝나는 곳에 연필 그림(고칠 수 있다는 표시). 칸 어디를 눌러도 쳐 넣는다
         Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
@@ -745,8 +751,6 @@ private fun 루틴상세띠(
                 Icon(아이콘.연필, "이름 고치기", Modifier.size(루틴값.연필그림), tint = c.옅음)
             }
         }
-        // 10-07: [취소] 를 뺀 자리 — 비워 두어 이름 칸이 띠 가운데에 그대로 있게 한다
-        Spacer(Modifier.width(루틴값.띠단추폭))
     }
 }
 
@@ -766,12 +770,12 @@ private fun 띠흰단추(modifier: Modifier, on누름: () -> Unit, 속: @Composa
  * 10-08: 한 줄 전체 폭이라 반 폭 모양은 없다 (머리는 늘 한 줄)
  */
 @Composable
-private fun 상자머리(content: @Composable RowScope.() -> Unit) {
+private fun 상자머리(시작: Dp = 간격.보통, 끝: Dp = 간격.아주좁게, content: @Composable RowScope.() -> Unit) {
     val c = Local색.current
     Row(
         Modifier.fillMaxWidth().heightIn(min = 높이.보통)
             .background(c.강조옅음)
-            .padding(start = 간격.보통, end = 간격.아주좁게, top = 간격.아주좁게, bottom = 간격.아주좁게),
+            .padding(start = 시작, end = 끝, top = 간격.아주좁게, bottom = 간격.아주좁게),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(간격.좁게),
         content = content,
@@ -780,9 +784,9 @@ private fun 상자머리(content: @Composable RowScope.() -> Unit) {
 
 /** 상자 머리 맨 앞 번호 (1부터) — 13 굵게 · 흐림 · tnum · 폭 고정 */
 @Composable
-private fun 상자번호(번호: Int) {
+private fun 상자번호(번호: Int, 좁게: Boolean = false) {
     Text(
-        번호.toString(), Modifier.width(루틴값.상자번호폭),
+        번호.toString(), if (좁게) Modifier.widthIn(min = 9.dp) else Modifier.width(루틴값.상자번호폭),
         style = 글꼴.보통(크기.조금작게, FontWeight.Bold).copy(fontFeatureSettings = "tnum"),
         color = Local색.current.흐림, maxLines = 1, softWrap = false,
     )
@@ -833,23 +837,31 @@ private fun 종목상자(
     Column(
         modifier.fillMaxWidth().clip(모양).background(c.면).border(선굵기.보통, c.속선, 모양).놓을선(표시, c.강조),
     ) {
-        상자머리 {
+        // 10-11 홍겸 님: 번호 좌우 7 · 세트 수는 이름 바로 아래 작게(50%) · 휴지통은 머리에서 빼고 펼치면 손잡이 자리에 굵게 · ∨ 와 손잡이 사이 7
+        상자머리(시작 = 7.dp, 끝 = 2.dp) {
             Row(
                 Modifier.weight(1f).heightIn(min = 높이.낮게).then(끌기길)
                     .semantics(mergeDescendants = true) { contentDescription = "${e.이름} ${e.세트}세트 ${if (펼침) "접기" else "펼치기"}" }
                     .눌림(on펼침),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(간격.아주좁게),
+                horizontalArrangement = Arrangement.spacedBy(7.dp),
             ) {
-                상자번호(번호)
-                종목이름딱지(상태.d, e.종id, e.이름, Modifier.weight(1f, fill = false))
-                Text("${e.세트}세트", style = 글꼴.보통(크기.조금작게).copy(fontFeatureSettings = "tnum"), color = c.흐림, maxLines = 1, softWrap = false)
+                상자번호(번호, 좁게 = true)
+                Column(Modifier.weight(1f, fill = false)) {
+                    종목이름딱지(상태.d, e.종id, e.이름, Modifier)
+                    Text("${e.세트}세트", Modifier.padding(top = 2.dp), style = 글꼴.보통(크기.조금작게 * 0.5f).copy(fontFeatureSettings = "tnum"), color = c.흐림, maxLines = 1, softWrap = false)
+                }
                 if (묶음글 != null) Text(묶음글, style = 글꼴.보통(크기.조금작게).copy(fontFeatureSettings = "tnum"), color = c.흐림, maxLines = 1, softWrap = false)
             }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                펼침단추(펼침, on펼침)
-                빼기단추(e.이름, on빼기)
-                손잡이()
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy((-2.5).dp)) {
+                // ∨ 그림 안쪽 여백 4.5 + 손잡이 점 안쪽 여백 5 − 겹침 2.5 = 눈에 보이는 간격 7
+                val 각 by androidx.compose.animation.core.animateFloatAsState(if (펼침) 180f else 0f, tween(움직임.펼침), label = "종목펼침단추")
+                Box(Modifier.width(18.dp).height(높이.낮게).눌림(on펼침), contentAlignment = Alignment.Center) {
+                    Icon(아이콘.아래, if (펼침) "접기" else "펼치기", Modifier.size(18.dp).graphicsLayer { rotationZ = 각 }, tint = c.옅음)
+                }
+                if (펼침) Box(Modifier.width(18.dp).height(높이.낮게).눌림(on빼기), contentAlignment = Alignment.Center) {
+                    Icon(아이콘.지우기, "${e.이름} 빼기", Modifier.size(20.dp), tint = c.글)   // 굵게 눈에 띄게 — 진한 색 · 조금 크게
+                } else Box(Modifier.width(18.dp).height(높이.낮게), contentAlignment = Alignment.Center) { 손잡이() }
             }
         }
         if (펼침) {
@@ -907,8 +919,16 @@ private fun 종목상자(
                     )
                 }
                 val 판 = remember루톡(true)
-                버튼("세트", { 판.톡(); 발자취.적기("세트 더하기 · ${e.이름}"); on고침 { it.세트더하기() } },
-                    Modifier.fillMaxWidth().루톡(판), 낮게 = true, 그림 = 아이콘.더하기)
+                val 초점 = LocalFocusManager.current
+                val 범위 = rememberCoroutineScope()
+                // 10-11 홍겸 님: 쳐 넣던 칸이 있으면 먼저 초점을 놓아(깜빡임 사라짐 · 값 저장) 그 값으로 세트를 더한다
+                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    버튼("세트", {
+                        판.톡(); 발자취.적기("세트 더하기 · ${e.이름}")
+                        초점.clearFocus()
+                        범위.launch { withFrameNanos { }; withFrameNanos { }; on고침 { it.세트더하기() } }
+                    }, Modifier.fillMaxWidth(0.6f).루톡(판), 낮게 = true, 그림 = 아이콘.더하기)
+                }
                 if (묶음글 != null) 버튼("슈퍼세트 풀기", on풀기, Modifier.fillMaxWidth(), 낮게 = true)
             }
         }
