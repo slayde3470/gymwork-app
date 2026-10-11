@@ -3,6 +3,7 @@ package com.slayde.hasenheide.ui
 import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -49,6 +50,7 @@ import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.key
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
@@ -68,6 +70,12 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.layer.GraphicsLayer
+import androidx.compose.ui.graphics.layer.drawLayer
+import androidx.compose.ui.graphics.layer.toImageBitmap
+import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -103,6 +111,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
@@ -163,8 +172,10 @@ import com.slayde.hasenheide.ui.theme.크기
 import com.slayde.hasenheide.ui.theme.휴식칸값
 import com.slayde.hasenheide.ui.theme.쉼게이지글
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import kotlin.math.abs
+import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -206,18 +217,32 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
     // 보는 종목 — 이 운동(시작 시각) 동안 기억한다. 탭을 오가도 그대로 (시안 `U.본`)
     val 목표본 = if (운보기.세션 == S.시작시각 && 운보기.본 in S.종목들.indices) 운보기.본 else S.i.coerceIn(0, n - 1)
     SideEffect { 운보기.세션 = S.시작시각; 운보기.본 = 목표본 }
-    // 10-11 홍겸 님: 종목을 넘기면 책장 넘기듯 — 화면에 그리는 종목(본)은 '나가는 효과가 끝날 때' 목표본으로 바뀐다.
-    //  그릴 화면은 언제나 한 벌이다(두 벌 겹치지 않음 → 터치 · 스크롤 · 입력 칸 상태가 둘이 되지 않는다). 첫 그림에는 효과가 없다
+    // 10-11 홍겸 님: 종목을 넘기면 — 새 쪽은 이미 아래에 깔려 있고, 옛 쪽(스냅샷 그림)이 넘어가며 드러낸다.
+    //  그릴 화면은 언제나 한 벌이다(옛 쪽은 그림일 뿐 → 터치 · 스크롤 · 입력 칸 상태가 둘이 되지 않는다). 첫 그림에는 효과가 없다
+    //  방식 1 = 좌우 밀기(책장 · 영역 A 전체) · 방식 0 = 버튼 · 자동 · 칸 고르기(밀기 · 영역 B 만)
     var 표시본 by remember(S.시작시각) { mutableIntStateOf(목표본) }
     val 본 = 표시본.coerceIn(0, n - 1)
-    val 책장 = remember(S.시작시각) { Animatable(0f) }   // 0 = 평평 · −1 = 왼쪽으로 나감 · +1 = 오른쪽으로 나감(또는 오른쪽에서 들어오기 전)
+    val 넘김방식 = remember { intArrayOf(0) }   // 좌우 밀기 람다만 1 로 세운다. 효과가 읽고 0 으로 되돌린다
+    val 층A = rememberGraphicsLayer()
+    val 층B = rememberGraphicsLayer()
+    var 옛그림 by remember(S.시작시각) { mutableStateOf<ImageBitmap?>(null) }
+    var 옛방식 by remember(S.시작시각) { mutableIntStateOf(0) }
+    var 옛방향 by remember(S.시작시각) { mutableIntStateOf(1) }   // +1 = 다음 · −1 = 이전
+    val 진행 = remember(S.시작시각) { Animatable(0f) }
     LaunchedEffect(S.시작시각, 목표본) {
-        if (목표본 == 표시본) { 책장.animateTo(0f, tween(운치수.책장들어옴, easing = 움직임.부드럽게)); return@LaunchedEffect }
-        val 방향 = if (목표본 > 표시본) 1f else -1f   // 다음 = 오른쪽 → 왼쪽 · 이전 = 왼쪽 → 오른쪽
-        책장.animateTo(-방향, tween(운치수.책장나감, easing = LinearEasing))   // 나가는 쪽 (화면 밖에서 끝난다 — 속이 바뀌는 순간이 안 보인다)
-        표시본 = 목표본
-        책장.snapTo(방향)   // 반대편 바깥에서
-        책장.animateTo(0f, tween(운치수.책장들어옴, easing = 움직임.부드럽게))   // 들어오는 쪽
+        if (목표본 == 표시본) return@LaunchedEffect
+        val 방식 = 넘김방식[0]; 넘김방식[0] = 0
+        val 쪽 = if (목표본 > 표시본) 1 else -1
+        진행.snapTo(0f)   // 새 쪽이 처음 그려지는 판에 옛 진행값이 남아 있지 않게 — 그림을 찍기 전에
+        val 그림 = try {
+            (if (방식 == 1) 층A else 층B).toImageBitmap()   // 표시본을 바꾸기 전에 지금 쪽을 찍는다
+        } catch (t: CancellationException) { throw t } catch (t: Exception) { null }
+        if (그림 == null) { 표시본 = 목표본; return@LaunchedEffect }
+        try {
+            옛방식 = 방식; 옛방향 = 쪽; 옛그림 = 그림
+            표시본 = 목표본   // 이제 새 내용이 아래에 그려진다
+            진행.animateTo(1f, tween(if (방식 == 1) 운치수.책장시간 else 운치수.밀기시간, easing = LinearEasing))
+        } finally { 옛그림 = null }
     }
     val e = S.종목들[본]
     // 칸 줄을 '보는 칸 맨 앞' 으로 다시 맞추라는 신호 (시안 `운자리.당김`)
@@ -256,7 +281,7 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
     val 넘김: (Int) -> Unit = { 쪽 ->
         상태.d.세션?.let { s ->
             val 새 = (운보기.본 + 쪽).coerceIn(0, max(0, s.종목들.size - 1))
-            if (새 != 운보기.본) { 발자취.적기(if (쪽 > 0) "다음 종목으로 밀기" else "이전 종목으로 밀기"); 운보기.본 = 새; 당김++ }
+            if (새 != 운보기.본) { 발자취.적기(if (쪽 > 0) "다음 종목으로 밀기" else "이전 종목으로 밀기"); 넘김방식[0] = 1; 운보기.본 = 새; 당김++ }
         }
     }
 
@@ -269,47 +294,51 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
     val 뒤로 = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
 
     Box(Modifier.fillMaxSize()) {
-        // 책장 넘김 — 맨 아래 탭줄(App)만 빼고 이 화면 전부(띠 · 그림 · 세트 · 진행 칸 · 단추)가 한 장으로 같이 넘어간다. 시트는 이 바깥
-        BoxWithConstraints(Modifier.fillMaxSize()) {
-        val 폭px = constraints.maxWidth.toFloat()
-        Column(
-            Modifier.fillMaxSize()
-                .graphicsLayer {
-                    val v = 책장.value   // 그리기에서만 읽는다 — 다시 짜지 않고 자리도 다시 재지 않는다
-                    translationX = v * 폭px
-                    rotationY = -v * 운치수.책장각
-                    transformOrigin = TransformOrigin(if (v < 0f) 0f else 1f, 0.5f)   // 축 = 화면 가운데 쪽을 보는 가장자리
-                    cameraDistance = 운치수.책장카메라 * density
-                }
-                .drawWithContent {
-                    val v = 책장.value
-                    if (v != 0f) drawRect(c.바탕)   // 넘어가는 동안만 종이처럼 바탕을 깐다 (평소 모양은 그대로)
-                    drawContent()
-                    if (v != 0f) drawRect(c.글, alpha = abs(v) * 운치수.책장그늘)   // 접히며 어두워지는 옅은 그림자
-                },
-        ) {
-            운머리(상태, S, 본, e, 지금, 그림보기 = if (그림켬 && 그림숨김) ({ 발자취.적기("그림 칸 다시 보임"); 그림칸기억.숨긴운동 = "" }) else null) {
+        // 10-11 홍겸 님: 띠 윗줄(‹ · 루틴 · 지표 · 시계 · 게이지) 과 맨 아래 단추줄은 고정. 책장은 종목 이름 칸부터 진행 상자까지(영역 A) ·
+        //  버튼 · 자동으로 넘어갈 때의 밀기는 근육 지도부터 세트 상자까지(영역 B)
+        Column(Modifier.fillMaxSize()) {
+            운머리윗줄(S, 지금) {
                 // ‹ = 캘린더로 나가기 (운동은 그대로 이어진다) — 앱의 뒤로가기와 같은 길
                 발자취.적기("운동 화면 나가기"); 뒤로?.onBackPressed()
             }
-            AnimatedVisibility(visible = 그림켬 && !그림숨김) {
-                Box(Modifier.번호("운그림").좌우밀기(넘김)) { 운동그림칸(상태, S.copy(i = 본), 지금) { 그림칸기억.숨긴운동 = S.루틴id } }
+            val 막방식 = if (옛그림 != null) 옛방식 else 넘김방식[0]   // 터치를 막는 영역: 1 = A 전체 · 0 = B 만
+            val 전환중 = 옛그림 != null || 표시본 != 목표본
+            Box(Modifier.weight(1f).clipToBounds()) {   // 영역 A
+                Column(Modifier.fillMaxSize().기록층(층A)) {
+                    운머리아랫줄(상태, S, 본, e, if (그림켬 && 그림숨김) ({ 발자취.적기("그림 칸 다시 보임"); 그림칸기억.숨긴운동 = "" }) else null)
+                    Box(Modifier.weight(1f).clipToBounds()) {   // 영역 B
+                        Column(
+                            Modifier.fillMaxSize()
+                                .graphicsLayer {
+                                    // 밀기 — 새 쪽(살아 있는 내용)이 반대편에서 들어온다. 그리기 단계에서만 값을 읽는다 (기록 층보다 바깥 → 그림에 안 섞인다)
+                                    if (옛그림 != null && 옛방식 == 0) {
+                                        val v = 움직임.부드럽게.transform(진행.value.coerceIn(0f, 1f))
+                                        translationX = 옛방향 * size.width * 운치수.밀기폭 * (1f - v)
+                                        alpha = v
+                                    } else { translationX = 0f; alpha = 1f }
+                                }
+                                .기록층(층B),
+                        ) {
+                            AnimatedVisibility(visible = 그림켬 && !그림숨김) {
+                                // key(본) — 종목이 바뀌면 근육 지도를 새로 만든다 (안의 색 이동 애니메이션이 펄럭이지 않게)
+                                Box(Modifier.번호("운그림").좌우밀기(넘김)) { key(본) { 운동그림칸(상태, S.copy(i = 본), 지금) { 그림칸기억.숨긴운동 = S.루틴id } } }
+                            }
+                            세트목록(상태, S, 본, 지금, Modifier.weight(1f).좌우밀기(넘김), 함 = ::함, 바꿈 = ::바꿈, 당김 = { 당김++ })
+                        }
+                        val 밀그림 = 옛그림
+                        if (밀그림 != null && 옛방식 == 0) 밀기옛쪽(밀그림, 옛방향) { 진행.value }
+                        if (전환중 && 막방식 == 0) Box(Modifier.fillMaxSize().터치삼킴())   // 반쯤 바뀐 채 누른 것이 엉뚱한 종목에 가지 않게
+                    }
+                    진행상자(상태, S, 본, 당김, Modifier.번호("운띠"), 함 = ::함, 고름 = { i -> 운보기.본 = i; 당김++ }, 넣기 = { 넣기열림 = true })
+                }
+                val 책그림 = 옛그림
+                if (책그림 != null && 옛방식 == 1) 책장옛쪽(책그림, 옛방향) { 진행.value }
+                if (전환중 && 막방식 == 1) Box(Modifier.fillMaxSize().터치삼킴())
             }
-            세트목록(상태, S, 본, 지금, Modifier.weight(1f).좌우밀기(넘김), 함 = ::함, 바꿈 = ::바꿈, 당김 = { 당김++ })
-            진행상자(상태, S, 본, 당김, Modifier.번호("운띠"), 함 = ::함, 고름 = { i -> 운보기.본 = i; 당김++ }, 넣기 = { 넣기열림 = true })
             단추줄(S, 본,
                 주 = { 발자취.적기("큰 단추 ${운주상태(S, 본).글}"); 함 { s -> 운주누름(s, 운보기.본, System.currentTimeMillis()) }; 당김++ },
                 끝내기 = { 발자취.적기("오늘 운동 끝내기"); 바꿈 { it.끝냄(System.currentTimeMillis()) } },
             )
-        }
-        // 넘어가는 동안(약 0.35초)은 화면이 반쯤 바뀐 채라 누른 것이 엉뚱한 종목에 가지 않게 터치를 막는다
-        if (책장.isRunning || 표시본 != 목표본) Box(
-            Modifier.fillMaxSize().pointerInput(Unit) {
-                awaitPointerEventScope {
-                    while (true) { awaitPointerEvent(PointerEventPass.Initial).changes.forEach { it.consume() } }
-                }
-            },
-        )
         }
         // [＋] 종목 넣기 — 루틴과 같은 시트 (속은 RT 도우미 몫). 누름 = 넣기 / 들어간 것 누름 = 맨 뒤 하나 빼기 / 꾹 = 하나 더
         if (넣기열림) 종목넣기시트(
@@ -365,6 +394,78 @@ private fun Modifier.좌우밀기(넘김: (Int) -> Unit): Modifier = pointerInpu
     ) { ch, dx -> 합 += dx; ch.consume() }
 }
 
+/** 내용을 그리면서 GraphicsLayer 에도 기록해 둔다 — 종목이 바뀌기 직전에 `toImageBitmap()` 으로 옛 쪽 그림을 얻는다 (10-11) */
+private fun Modifier.기록층(층: GraphicsLayer): Modifier = this.drawWithContent {
+    층.record { this@drawWithContent.drawContent() }
+    drawLayer(층)
+}
+
+/** 전환 중 터치 삼키기 — 눌림 · 스크롤 · 밀기가 자식에게 가지 않는다 */
+private fun Modifier.터치삼킴(): Modifier = pointerInput(Unit) {
+    awaitPointerEventScope {
+        while (true) { awaitPointerEvent(PointerEventPass.Initial).changes.forEach { it.consume() } }
+    }
+}
+
+/**
+ * 책장 넘김의 옛 쪽 (방식 1) — 새 쪽 위에 옛 쪽 그림이 책등을 축으로 넘어간다. 다음(+1) = 왼쪽 가장자리가 책등 · 이전(−1) = 오른쪽 가장자리.
+ * 넘어갈수록 어두워지고, 넘어가는 가장자리 옆 새 쪽 위에 그림자가 깔린다. 마지막 10% 는 서서히 지운다
+ */
+@Composable
+private fun 책장옛쪽(그림: ImageBitmap, 방향: Int, 진행값: () -> Float) {
+    val c = Local색.current
+    Box(Modifier.fillMaxSize()) {
+        // 새 쪽 위의 그림자 (옛 쪽보다 아래층)
+        Box(
+            Modifier.fillMaxSize().drawBehind {
+                val e = 운치수.책장곡선.transform(진행값().coerceIn(0f, 1f))
+                val 흐림 = 1f - ((e - 0.9f) / 0.1f).coerceIn(0f, 1f)
+                val w = size.width
+                val 폭 = w * 운치수.책장그림자폭
+                val 코 = cos(Math.PI / 2.0 * e).toFloat()
+                val 짙음 = Color.Black.copy(alpha = 운치수.책장그림자 * (1f - e) * 흐림)
+                if (방향 > 0) {
+                    val x0 = w * 코   // 넘어가는 가장자리 — 그 오른쪽(새 쪽)에
+                    drawRect(Brush.horizontalGradient(listOf(짙음, Color.Transparent), startX = x0, endX = x0 + 폭), Offset(x0, 0f), Size(폭, size.height))
+                } else {
+                    val x1 = w - w * 코   // 그 왼쪽(새 쪽)에
+                    drawRect(Brush.horizontalGradient(listOf(Color.Transparent, 짙음), startX = x1 - 폭, endX = x1), Offset(x1 - 폭, 0f), Size(폭, size.height))
+                }
+            },
+        )
+        Box(
+            Modifier.fillMaxSize()
+                .graphicsLayer {
+                    val e = 운치수.책장곡선.transform(진행값().coerceIn(0f, 1f))
+                    rotationY = (if (방향 > 0) -90f else 90f) * e
+                    transformOrigin = TransformOrigin(if (방향 > 0) 0f else 1f, 0.5f)
+                    cameraDistance = 운치수.책장카메라 * density
+                    alpha = 1f - ((e - 0.9f) / 0.1f).coerceIn(0f, 1f)
+                }
+                .drawBehind {
+                    val e = 운치수.책장곡선.transform(진행값().coerceIn(0f, 1f))
+                    drawRect(c.바탕)   // 그림 뒤가 비어 있어도 새 쪽이 비치지 않게 종이 바탕
+                    drawImage(그림, dstSize = IntSize(size.width.roundToInt(), size.height.roundToInt()))
+                    drawRect(Color.Black, alpha = e * 운치수.책장어둠)
+                },
+        )
+    }
+}
+
+/** 밀기의 옛 쪽 (방식 0 · 영역 B) — 옆으로 물러나며 사라진다. 새 쪽은 반대편에서 들어온다(살아 있는 내용 쪽 graphicsLayer) */
+@Composable
+private fun 밀기옛쪽(그림: ImageBitmap, 방향: Int, 진행값: () -> Float) {
+    Box(
+        Modifier.fillMaxSize()
+            .graphicsLayer {
+                val v = 움직임.부드럽게.transform(진행값().coerceIn(0f, 1f))
+                translationX = -방향 * size.width * 운치수.밀기폭 * v
+                alpha = 1f - v
+            }
+            .drawBehind { drawImage(그림, dstSize = IntSize(size.width.roundToInt(), size.height.roundToInt())) },
+    )
+}
+
 /** 지금 치고 있는 kg · 회 칸 — 다른 행동을 하기 전에 친 값을 넣는다 (한 번에 하나) */
 private object 운입력 { var 확정: (() -> Unit)? = null }
 
@@ -393,11 +494,14 @@ private object 운치수 {
     const val 더동그라미비 = 0.95f   // 10-09: 세트 줄 아래 [＋ 세트] 동그라미 = 번호 동그라미 × 0.95 [11_UI지침에 올릴 값]
     const val 값그림배 = 0.97f       // 10-09: 세트 줄 − ＋ 그림 3% 작게 (16 → 15.52 · 누르는 칸 20 은 그대로) [11_UI지침에 올릴 값]
     val 칸여유 = 4.dp               // 10-09: 세트 줄 kg · 회 · 휴식 칸 = 단추 둘 + 테 둘 + 잰 글자 폭 + 이 여유
-    const val 책장나감 = 150          // 10-11 홍겸 님: 책장 넘김 — 나가는 시간(ms). 나감 + 들어옴 = 0.35초 [11_UI지침에 올릴 값]
-    const val 책장들어옴 = 200        // 들어오는 시간(ms)
-    const val 책장각 = 35f            // 접히는 각도(도) — 가장자리를 축으로
+    const val 책장시간 = 520          // 10-11 홍겸 님: 좌우 밀기 책장 넘김(ms) — 새 쪽이 아래에 깔리고 옛 쪽이 책등을 축으로 넘어간다 [11_UI지침에 올릴 값]
+    const val 밀기시간 = 380          // 버튼 · 자동 · 칸 고르기로 넘어갈 때 옆으로 밀려 바뀌는 시간(ms)
+    const val 밀기폭 = 0.28f          // 밀려나는 거리 = 영역 폭 × 이만큼
+    const val 책장어둠 = 0.35f        // 넘어가는 옛 쪽이 어두워지는 최대 농도 (검정)
+    const val 책장그림자 = 0.25f      // 넘어가는 가장자리 옆 새 쪽 위 그림자 최대 농도 — 색표에 검정 이름이 없어 Color.Black. 새 이름 '책장그림자' 제안
+    const val 책장그림자폭 = 0.1f     // 그림자 너비 = 영역 폭 × 이만큼
     const val 책장카메라 = 12f        // 원근 거리 = 이 값 × density
-    const val 책장그늘 = 0.3f         // 접히며 깔리는 그림자 농도(최대) — 지금은 색표 글 색을 씀. 새 이름 '책장그림자' 제안
+    val 책장곡선 = CubicBezierEasing(0.4f, 0f, 0.2f, 1f)   // 천천히 들었다 끝에서 부드럽게 눕는 곡선
     val 밀기 = 48.dp                // 10-09 홍겸 님: 화면을 좌우로 이만큼 밀면 이전 · 다음 종목 [11_UI지침에 올릴 값]
     val 점선 = 3.dp                 // [＋] 점선 테
     val 칸번호위 = 9.dp             // 칸 오른쪽 위 번호 딱지 (위 4 + 딱지가 스스로 올라가는 5)
@@ -419,15 +523,12 @@ private object 운치수 {
 
 /**
  * 시안 `.운머리.띠` — 강조 바탕. 10-09 홍겸 님: 아래 상자에 있던 루틴 이름 · 전체 게이지 · 지표를 올렸다.
- *  · 1번째 줄: ‹ · 루틴 이름 · (오른쪽 끝에서 왼쪽으로) 시계 · 볼륨 · 세트 · 종목  — 시계 글자는 35% 작게
- *  · 게이지: 1번째 · 2번째 줄 사이 틈에 얇게 (전체 세트 진행)
- *  · 2번째 줄: 지금 종목 이름(잘리지 않는다 · 두 줄까지) · 오른쪽에 [그림] 칩(그림을 감췄을 때)
+ * 10-11 홍겸 님: 띠를 둘로 쪼갰다 — 윗줄(고정)과 아랫줄(종목 이름 · 종목이 넘어갈 때 같이 넘어간다). 둘이 붙으면 예전 띠 그대로
+ *  · 윗줄: ‹ · 루틴 이름 · (오른쪽 끝에서 왼쪽으로) 시계 · 볼륨 · 세트 · 종목 — 시계 글자는 35% 작게 / 그 아래 전체 진행 게이지
  */
 @Composable
-private fun 운머리(상태: 앱상태, S: 운동세션, 본: Int, e: 세션종목, 지금: Long, 그림보기: (() -> Unit)?, 나가기: () -> Unit) {
+private fun 운머리윗줄(S: 운동세션, 지금: Long, 나가기: () -> Unit) {
     val c = Local색.current
-    // 10-06 v22 검수: 보고서에서 ‹ 로 돌아왔으면 저장 전 플랜 회차 · 기록으로 (다음 회차 · 측정일로 보이지 않게)
-    val d = 상태.d.let { x -> remember(x) { x.저장전 } }
     // 10-09 홍겸 님: 아래 진행 상자에서 올라온 지표 — 종목 n/m · 세트 a/b · 볼륨 x/y
     val n = S.종목들.size
     val 전 = S.종목들.sumOf { it.총칸() }
@@ -436,10 +537,10 @@ private fun 운머리(상태: 앱상태, S: 운동세션, 본: Int, e: 세션종
     val 총볼 = S.종목들.sumOf { 볼륨(it.찬것()) }
     val 총목 = S.종목들.sumOf { x -> 볼륨((0 until x.총칸()).map { S.세트값(x, it) }) }
     Column(
-        // 10-09 홍겸 님: 띠도 좌우 여백 12 · 모서리 8 (운동 보고서처럼)
+        // 10-09 홍겸 님: 띠도 좌우 여백 12 · 모서리 8 (운동 보고서처럼) — 윗줄은 위쪽 모서리만
         Modifier.padding(start = 간격.보통, end = 간격.보통, top = 간격.보통).fillMaxWidth()
-            .clip(RoundedCornerShape(모서리.작게)).background(c.강조).번호("운0")
-            .padding(horizontal = 간격.보통, vertical = 부품치수.띠세로여백),
+            .clip(RoundedCornerShape(topStart = 모서리.작게, topEnd = 모서리.작게)).background(c.강조).번호("운0")
+            .padding(start = 간격.보통, end = 간격.보통, top = 부품치수.띠세로여백),
     ) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
             Box(
@@ -463,13 +564,26 @@ private fun 운머리(상태: 앱상태, S: 운동세션, 본: Int, e: 세션종
             )
         }
         띠게이지(if (전 > 0) 끝낸.toFloat() / 전 else 0f, Modifier.fillMaxWidth().padding(vertical = 운치수.띠게이지틈))
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
-            운이름(d, S, 본, e, 상태.오늘, Modifier.weight(1f))
-            if (그림보기 != null) Box(
-                Modifier.clip(RoundedCornerShape(모서리.작게)).background(c.강조글).눌림(그림보기)
-                    .padding(horizontal = 간격.좁게, vertical = 간격.아주좁게),
-            ) { Text("그림", style = 글꼴.보통(크기.버튼, FontWeight.Bold), color = c.강조, maxLines = 1) }
-        }
+    }
+}
+
+/** 띠 아랫줄 (10-11) — 지금 종목 이름(잘리지 않는다 · 두 줄까지) · 오른쪽에 [그림] 칩(그림을 감췄을 때). 아래쪽 모서리만 둥글다 */
+@Composable
+private fun 운머리아랫줄(상태: 앱상태, S: 운동세션, 본: Int, e: 세션종목, 그림보기: (() -> Unit)?) {
+    val c = Local색.current
+    // 10-06 v22 검수: 보고서에서 ‹ 로 돌아왔으면 저장 전 플랜 회차 · 기록으로 (다음 회차 · 측정일로 보이지 않게)
+    val d = 상태.d.let { x -> remember(x) { x.저장전 } }
+    Row(
+        Modifier.padding(start = 간격.보통, end = 간격.보통).fillMaxWidth()
+            .clip(RoundedCornerShape(bottomStart = 모서리.작게, bottomEnd = 모서리.작게)).background(c.강조)
+            .padding(start = 간격.보통, end = 간격.보통, bottom = 부품치수.띠세로여백),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.좁게),
+    ) {
+        운이름(d, S, 본, e, 상태.오늘, Modifier.weight(1f))
+        if (그림보기 != null) Box(
+            Modifier.clip(RoundedCornerShape(모서리.작게)).background(c.강조글).눌림(그림보기)
+                .padding(horizontal = 간격.좁게, vertical = 간격.아주좁게),
+        ) { Text("그림", style = 글꼴.보통(크기.버튼, FontWeight.Bold), color = c.강조, maxLines = 1) }
     }
 }
 

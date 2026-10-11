@@ -796,9 +796,14 @@ fun 시트(
     겹: Int = 0,
     /** 10-08: 띠 아닌 시트의 제목 줄을 글 대신 이것으로 (달 고르기 ‹ 2026 ›). null = [제목] 글 */
     제목칸: (@Composable RowScope.() -> Unit)? = null,
+    /** 10-11: 속이 무거운 시트(종목 목록) — 올라오는 움직임이 끝난 뒤에 속을 그린다 (속을 먼저 그리면 그 시간만큼 움직임이 먹힌다) */
+    속늦춤: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val c = Local색.current
+    var 속그림 by remember { mutableStateOf(!속늦춤) }
+    if (속늦춤) LaunchedEffect(Unit) { kotlinx.coroutines.delay(움직임.시트 + 60L); 속그림 = true }
+    val 속투명 by animateFloatAsState(if (속그림) 1f else 0f, tween(180), label = "시트속")
     // 10-02: 나타날 때 아래에서 올라오고, ✕ · 바깥 · 뒤로가기로 닫으면 내려간 뒤에 닫힌다.
     //        (안에서 무언가를 골라 화면이 시트를 바로 치우는 경우는 내려가는 움직임 없이 사라진다)
     val 보임 = remember { MutableTransitionState(false).apply { targetState = true } }
@@ -878,9 +883,9 @@ fun 시트(
                     }
                 }
                 Column(
-                    Modifier.then(if (위끝고정) Modifier.weight(1f).padding(horizontal = 간격.넓게) else Modifier).padding(top = 12.dp).verticalScroll(rememberScrollState()),
-                    content = content,
-                )
+                    Modifier.then(if (위끝고정) Modifier.weight(1f).padding(horizontal = 간격.넓게) else Modifier).padding(top = 12.dp)
+                        .graphicsLayer { alpha = 속투명 }.verticalScroll(rememberScrollState()),
+                ) { if (속그림) content() }
             }
         }
     }

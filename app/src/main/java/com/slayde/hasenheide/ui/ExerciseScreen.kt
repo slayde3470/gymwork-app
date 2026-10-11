@@ -159,9 +159,9 @@ internal object 종목치수 {
     const val 열횟수 = 70f
     const val 열휴식 = 79f
     /** 10-09 홍겸 님: 종목을 펼치면 펼친 상자 밖을 어둡게 — 시트 가림막(Common.kt `시트`)과 같은 값 */
-    val 가림 = Color.Black.copy(alpha = 0.35f)   // [11_UI지침에 올릴 값]
+    val 가림 = Color.Black.copy(alpha = 0.42f)   // [11_UI지침에 올릴 값]
     /** 10-11 홍겸 님: 종목 넣기 시트는 펼친 상자 말고 전부(칩 줄 · 목록 상자들) 더 어둡게 */
-    val 넣기가림 = Color.Black.copy(alpha = 0.6f)   // [11_UI지침에 올릴 값]
+    val 넣기가림 = Color.Black.copy(alpha = 0.72f)   // [11_UI지침에 올릴 값]
 }
 
 /**

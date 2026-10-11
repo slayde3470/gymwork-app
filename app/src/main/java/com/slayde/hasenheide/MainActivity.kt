@@ -29,7 +29,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import com.slayde.hasenheide.ui.앱
 import com.slayde.hasenheide.ui.작은창
 import com.slayde.hasenheide.ui.근육그림미리읽기
-import com.slayde.hasenheide.ui.물음창
+import com.slayde.hasenheide.ui.알림안내창
 import com.slayde.hasenheide.ui.Local번호
 import androidx.compose.runtime.CompositionLocalProvider
 import com.slayde.hasenheide.ui.앱상태
@@ -199,13 +199,7 @@ class MainActivity : ComponentActivity() {
                     Box(Modifier.fillMaxSize()) {
                         앱(상태, 폰)
                         if (작은창중.value) 작은창(상태)
-                        else if (처음물음.value) 물음창(
-                            제목 = "권한을 켤까요?",
-                            설명 = "휴식 알림, 그리고 유튜브를 보면서도 휴식 시간이 보이게 하려면 필요합니다",
-                            예 = "켜기",
-                            on예 = { 처음물음켜기() },
-                            on아니오 = { 처음물음.value = false },
-                        )
+                        else if (처음물음.value) 알림안내창(on켜기 = { 처음물음켜기() }, on나중에 = { 처음물음.value = false })
                     }
                 }
             }

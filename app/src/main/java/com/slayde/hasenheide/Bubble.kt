@@ -70,8 +70,8 @@ object 떠있는동그라미 {
             gravity = Gravity.TOP or Gravity.START
             // 10-11 홍겸 님: 화면 밖으로 끌려 나가 안 눌리는 일이 없게 — 저장된 자리도 화면 안으로 다시 넣는다
             val 화면 = app.resources.displayMetrics
-            x = (if (마지막x >= 0) 마지막x else 화면.widthPixels - 칸 - (동그라미치수.옆 * 밀도).toInt()).coerceIn(0, (화면.widthPixels - 칸).coerceAtLeast(0))
-            y = (if (마지막y >= 0) 마지막y else (동그라미치수.처음위 * 밀도).toInt()).coerceIn(0, (화면.heightPixels - 칸).coerceAtLeast(0))
+            x = (if (마지막x >= 0) 마지막x else 화면.widthPixels - 칸 - (동그라미치수.옆 * 밀도).toInt()).coerceIn(-칸 / 2, 화면.widthPixels - 칸 / 2)
+            y = (if (마지막y >= 0) 마지막y else (동그라미치수.처음위 * 밀도).toInt()).coerceIn(-칸 / 2, 화면.heightPixels - 칸 / 2)
         }
         val v = 동그라미뷰(app, 값, p, wm)
         try { wm.addView(v, p); 뷰 = v; v.시작() } catch (_: Exception) { }
@@ -169,8 +169,8 @@ object 떠있는동그라미 {
         private var 아래x = 0f; private var 아래y = 0f; private var 처음x = 0; private var 처음y = 0; private var 끌었 = false
 
         // 10-11 홍겸 님: 끝으로 끌어도 창이 화면 밖으로 나가지 않는다 (나가면 눌리지 않았다)
-        private fun 안쪽x(x: Int) = x.coerceIn(0, (resources.displayMetrics.widthPixels - p.width).coerceAtLeast(0))
-        private fun 안쪽y(y: Int) = y.coerceIn(0, (resources.displayMetrics.heightPixels - p.height).coerceAtLeast(0))
+        private fun 안쪽x(x: Int) = x.coerceIn(-p.width / 2, resources.displayMetrics.widthPixels - p.width / 2)
+        private fun 안쪽y(y: Int) = y.coerceIn(-p.height / 2, resources.displayMetrics.heightPixels - p.height / 2)
 
         @SuppressLint("ClickableViewAccessibility")
         override fun onTouchEvent(e: MotionEvent): Boolean {
