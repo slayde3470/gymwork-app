@@ -691,7 +691,7 @@ private fun 넣기체크(이름: String, 수: Int, 즐겨: Boolean, 누름: () -
         // 10-11 홍겸 님: 맨 앞으로 옮겼다 — 전 오른쪽 끝용 폭 줄임(∨ 와의 간격 35% · 오른쪽 4)은 뺐다. 누르는 칸 28
         Modifier.zIndex(1f).layout { m, c ->
                 // 10-11 홍겸 님: 누르는 범위 +15% — 오른쪽으로 늘리되 자리는 그대로(이름 칸을 밀지 않는다 · 위로 올려 먼저 받는다)
-                val p = m.measure(c); layout(p.width - 넣기값.체크늘림.roundToPx(), p.height) { p.place(0, 0) }
+                val p = m.measure(c); layout(p.width + (if (수 >= 3) 4.dp.roundToPx() else -넣기값.체크늘림.roundToPx()), p.height) { p.place(0, 0) }   // 10-11 홍겸 님: ✓×3 이상은 상자가 넓어지니 이름과 겹치지 않게 오른쪽 틈을 남긴다
             }.heightIn(min = 높이.아주낮게).widthIn(min = 넣기값.체크 + 넣기값.체크옆 * 2 + 넣기값.체크늘림).clip(RoundedCornerShape(모서리.작게))
             .semantics(mergeDescendants = true) {
                 contentDescription = "$이름 · ${수}개 들어 있음 · ${if (들어감) "누르면 하나 빼기" else "누르면 넣기"}, 꾹 누르면 하나 더"
@@ -709,17 +709,17 @@ private fun 넣기체크(이름: String, 수: Int, 즐겨: Boolean, 누름: () -
         if (즐겨) {
             // 10-11 홍겸 님: 즐겨찾기 종목은 네모 체크 상자 대신 별 — 넣기 전엔 속이 빈 별 · 넣으면 노랗게 칠해지고 파란 체크 (둘 이상이면 체크 대신 수). 일반 체크 상자와 같은 한 칸·같은 누름
             Box(
-                Modifier.padding(start = 넣기값.체크옆).layout { m, cc -> val p = m.measure(cc); val w = p.width - (if (수 >= 3) 3.dp.roundToPx() else 0); layout(w, p.height) { p.place(0, 0) } }.graphicsLayer { scaleX = 깊이.value; scaleY = 깊이.value },
+                Modifier.padding(start = 넣기값.체크옆).graphicsLayer { scaleX = 깊이.value; scaleY = 깊이.value },
                 contentAlignment = Alignment.Center,
             ) {
                 별(들어감, 넣기값.체크 + 2.dp, c.즐겨)
                 if (들어감) Text(체크글(수), style = 글꼴.보통(크기.작게 * 0.85f, FontWeight.Bold).copy(letterSpacing = (-0.08).em), color = c.강조, maxLines = 1, softWrap = false, modifier = Modifier.offset(y = 1.dp))
             }
         } else Box(
-            Modifier.padding(start = 넣기값.체크옆).layout { m, cc -> val p = m.measure(cc); val w = p.width - (if (수 >= 3) 3.dp.roundToPx() else 0); layout(w, p.height) { p.place(0, 0) } }.graphicsLayer { scaleX = 깊이.value; scaleY = 깊이.value }.heightIn(min = 넣기값.체크).widthIn(min = 넣기값.체크).clip(상자)
+            Modifier.padding(start = 넣기값.체크옆).graphicsLayer { scaleX = 깊이.value; scaleY = 깊이.value }.heightIn(min = 넣기값.체크).widthIn(min = 넣기값.체크).clip(상자)
                 .background(if (들어감) c.강조 else c.면)
                 .border(선굵기.보통, if (들어감) c.강조 else c.속선, 상자)
-                .padding(horizontal = 간격.아주좁게),
+                .padding(horizontal = if (수 >= 3) 1.dp else 간격.아주좁게),   // 10-11: ✓×3 이상은 좌우 안쪽 여백을 줄여 상자 너비를 줄인다
             contentAlignment = Alignment.Center,
         ) {
             if (들어감) Text(체크글(수), style = 글꼴.보통(크기.작게 * 0.85f, FontWeight.Bold).copy(letterSpacing = (-0.08).em), color = c.강조글, maxLines = 1, softWrap = false)
