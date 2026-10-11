@@ -739,11 +739,14 @@ fun 이름맞춤(
     색: Color = Local색.current.글,
     굵기: FontWeight = FontWeight.Bold,
     가운데: Boolean = false,
+    두줄촘촘: Boolean = false,
+    자간넓힘폭: androidx.compose.ui.unit.Dp = 0.dp,
 ) {
     val 측정 = rememberTextMeasurer()
+    val 넓힘px = with(LocalDensity.current) { 자간넓힘폭.roundToPx() }
     BoxWithConstraints(modifier) {
         val w = constraints.maxWidth
-        val (꼴, 줄) = remember(이름, w, 바탕크기, 굵기) { 이름꼴고르기(측정, 이름, w, 바탕크기, 굵기) }
+        val (꼴, 줄) = remember(이름, w, 바탕크기, 굵기, 두줄촘촘, 넓힘px) { 이름꼴고르기(측정, 이름, w, 바탕크기, 굵기, 두줄촘촘, 넓힘px) }
         Text(
             이름, if (가운데) Modifier.fillMaxWidth() else Modifier, style = 꼴, color = 색, maxLines = 줄, softWrap = 줄 > 1, overflow = TextOverflow.Clip,
             textAlign = if (가운데) TextAlign.Center else null,
@@ -751,27 +754,46 @@ fun 이름맞춤(
     }
 }
 
-private fun 이름꼴고르기(측정: TextMeasurer, 이름: String, w: Int, 바탕: TextUnit, 굵기: FontWeight): Pair<TextStyle, Int> {
+private fun 이름넘침(측정: TextMeasurer, 이름: String, st: TextStyle, 줄: Int, w: Int): Boolean =
+    측정.measure(이름, st, overflow = TextOverflow.Clip, softWrap = 줄 > 1, maxLines = 줄, constraints = Constraints(maxWidth = w)).hasVisualOverflow
+
+/** [넓힘px] — 칸이 그만큼 넓어졌을 때: 글 크기는 (좁은 칸에서 고른) 그대로 두고 자간만 기본(−0.01em) 쪽으로 넓힌다 (10-11 홍겸 님) */
+private fun 이름꼴고르기(측정: TextMeasurer, 이름: String, w: Int, 바탕: TextUnit, 굵기: FontWeight, 촘촘: Boolean, 넓힘px: Int): Pair<TextStyle, Int> {
+    if (w == Constraints.Infinity || w <= 0 || 넓힘px <= 0) return 이름꼴기본(측정, 이름, w, 바탕, 굵기, 촘촘)
+    val (꼴0, 줄) = 이름꼴기본(측정, 이름, (w - 넓힘px).coerceAtLeast(1), 바탕, 굵기, 촘촘)
+    val 기본 = -0.01f
+    val 지금 = 꼴0.letterSpacing.value
+    if (지금 >= 기본 - 0.0001f) return 꼴0 to 줄
+    var s = 기본
+    while (s > 지금 + 0.0001f) {
+        val st = 꼴0.copy(letterSpacing = s.em)
+        if (!이름넘침(측정, 이름, st, 줄, w)) return st to 줄
+        s -= 이름맞춤값.자간폭
+    }
+    return 꼴0 to 줄
+}
+
+private fun 이름꼴기본(측정: TextMeasurer, 이름: String, w: Int, 바탕: TextUnit, 굵기: FontWeight, 촘촘: Boolean): Pair<TextStyle, Int> {
     val 줄0 = 이름줄수(이름)
+    fun 단계(줄: Int): List<Float> =
+        (if (촘촘 && 줄 > 1) 이름맞춤값.두줄글단계 else 이름맞춤값.글단계).filter { it <= 바탕.value + 0.1f }.ifEmpty { listOf(이름맞춤값.두줄글단계.last().coerceAtMost(바탕.value)) }
+    fun 꼴(fs: Float, 줄: Int): TextStyle = 글꼴.보통(fs.sp, 굵기).let { if (촘촘 && 줄 > 1) it.copy(lineHeight = fs.sp * 이름맞춤값.두줄줄높이) else it }
+    fun 끝꼴(줄: Int) = 꼴(단계(줄).last(), 줄).copy(letterSpacing = 이름맞춤값.자간끝.em)
     if (w == Constraints.Infinity || w <= 0) return 글꼴.보통(바탕, 굵기) to 줄0
-    val 단계 = 이름맞춤값.글단계.filter { it <= 바탕.value + 0.1f }.ifEmpty { listOf(바탕.value) }
-    val 끝꼴 = 글꼴.보통(단계.last().sp, 굵기).copy(letterSpacing = 이름맞춤값.자간끝.em)
-    fun 넘침(st: TextStyle, 줄: Int): Boolean =
-        측정.measure(이름, st, overflow = TextOverflow.Clip, softWrap = 줄 > 1, maxLines = 줄, constraints = Constraints(maxWidth = w)).hasVisualOverflow
     fun 해봄(줄: Int): TextStyle? {
-        for (fs in 단계) { val st = 글꼴.보통(fs.sp, 굵기); if (!넘침(st, 줄)) return st }
+        for (fs in 단계(줄)) { val st = 꼴(fs, 줄); if (!이름넘침(측정, 이름, st, 줄, w)) return st }
         var n = 2
         while (n <= (-이름맞춤값.자간끝 * 100).roundToInt()) {
-            val st = 글꼴.보통(단계.last().sp, 굵기).copy(letterSpacing = (-n * 이름맞춤값.자간폭).em)
-            if (!넘침(st, 줄)) return st
+            val st = 꼴(단계(줄).last(), 줄).copy(letterSpacing = (-n * 이름맞춤값.자간폭).em)
+            if (!이름넘침(측정, 이름, st, 줄, w)) return st
             n++
         }
         return null
     }
     해봄(줄0)?.let { return it to 줄0 }
-    if (줄0 > 1) return 끝꼴 to 줄0
+    if (줄0 > 1) return 끝꼴(줄0) to 줄0
     해봄(2)?.let { return it to 2 }
-    return 끝꼴 to 2
+    return 끝꼴(2) to 2
 }
 
 // ═════════════════════ 9. 점멸 — 지금 줄 바탕 · 노란 점 · 끝난 줄 ═════════════════════

@@ -169,6 +169,7 @@ private fun 넣기속(
     var 구멍 by 구멍상태
     var 마지막 by remember { mutableStateOf<마지막누름?>(null) }   // 10-11 홍겸 님: 방금 접은 종목 — 반짝이고 화면 밖이면 안으로 되돌린다
     val 마지막틀 = remember { arrayOfNulls<LayoutCoordinates>(1) }
+    val 보임틀 = remember { arrayOfNulls<LayoutCoordinates>(1) }   // 목록이 보이는 칸 — 어두운 구멍이 머리 띠 위로 번지지 않게 이 안으로 자른다
     var 접힘정리 by remember { mutableStateOf(false) }
     var 접는키 by remember { mutableStateOf<String?>(null) }   // 10-11 홍겸 님: 접는 중인 상자 — 속이 줄어드는 동안 어둠 · 스크롤도 같이 돌아온다
     val 기억높이 = remember { floatArrayOf(0f) }   // 접는 동안 아래 빈칸이 갑자기 줄지 않게 마지막으로 잰 펼친 상자 높이
@@ -179,7 +180,9 @@ private fun 넣기속(
         구멍 = if (속 != null && 상 != null && 속.isAttached && 상.isAttached) 속.localBoundingBoxOf(상, clipBounds = false) else null
         // 10-11 홍겸 님: 시트 전체를 어둡게 칠하려고 창 좌표로도 알린다 (시트 [가림구멍])
         if (상 != null && 상.isAttached) {
-            창구멍.value = Rect(상.localToWindow(Offset.Zero), androidx.compose.ui.geometry.Size(상.size.width.toFloat(), 상.size.height.toFloat()))
+            val 창 = Rect(상.localToWindow(Offset.Zero), androidx.compose.ui.geometry.Size(상.size.width.toFloat(), 상.size.height.toFloat()))
+            val 뷰 = 보임틀[0]?.takeIf { it.isAttached }?.let { Rect(it.localToWindow(Offset.Zero), androidx.compose.ui.geometry.Size(it.size.width.toFloat(), it.size.height.toFloat())) }
+            창구멍.value = if (뷰 == null) 창 else 창.intersect(뷰).let { if (it.width <= 0f || it.height <= 0f) Rect(뷰.left, 뷰.top, 뷰.left, 뷰.top) else it }
             기억높이[0] = 상.size.height.toFloat()
         }
     }
@@ -281,7 +284,7 @@ private fun 넣기속(
                     val 아래여백px = with(밀도) { 아래여백.roundToPx() }
                     Column(
                         Modifier.fillMaxWidth()
-                            .then(if (쓸 != null) Modifier.weight(1f).onSizeChanged { 보임px = it.height }.격자끌기틀(끌판, 넘김).verticalScroll(넘김) else Modifier)
+                            .then(if (쓸 != null) Modifier.weight(1f).onSizeChanged { 보임px = it.height }.onGloballyPositioned { 보임틀[0] = it; 구멍재기() }.격자끌기틀(끌판, 넘김).verticalScroll(넘김) else Modifier)
                             .padding(bottom = 아래여백),
                     ) {
                         // 스크롤 속 칸 하나 — 목록이 짧아도 보이는 칸 끝까지 어둡게 하려고 보이는 높이 이상으로 둔다.
@@ -375,6 +378,8 @@ internal fun 넣기빈칸(글자: String, modifier: Modifier = Modifier) {
 internal object 넣기값 {
     val 번호폭 = 12.dp          // .넣기번 min-width
     val 체크 = 20.dp            // .넣기체크 20 × 20
+    val 체크옆 = 3.dp           // 10-11 홍겸 님: 체크 상자 좌우 여백 3 (상자 테두리 · 이름과의 사이)
+    val 체크옆넓힘 = 18.dp      // 전 좌우 12 → 3 으로 줄어 이름 칸이 넓어진 만큼 (글 크기는 그대로 · 자간만 넓힌다)
     val 체크모서리 = 4.dp       // .넣기체크 border-radius
     val 딱지겹침 = (-5).dp      // 이름 오른쪽 위 5 겹침 (부품치수.딱지겹침 과 같은 값)
     val 최소높이 = 120.dp       // 잰 목록 높이가 이보다 작거나

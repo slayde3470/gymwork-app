@@ -383,7 +383,7 @@ private fun 종목격자(상태: 앱상태, l: List<종목칸값>, 무리: Strin
             key(첫.열쇠) {
                 if (줄.size == 1 && 첫.열쇠 == 펼친) 종목상자(상태, 첫, true, Modifier.fillMaxWidth().then(if (흐름 != null) Modifier.위치흐름(흐름, 첫.열쇠, 펼친) else Modifier).끌기칸(끌판, 첫, 무리).then(if (펼침틀 != null) Modifier.onGloballyPositioned { 펼침틀(it) } else Modifier), 0.dp, 끌판, 펼침, 넣기, 접는키 = 접는키)
                 else {
-                    val 높이맞춤 = if (실.any { 이름줄수(l[it].이름) > 1 }) 두줄높이 else 0.dp
+                    val 높이맞춤 = 0.dp   // 10-11 홍겸 님: 두 줄 이름도 글을 줄여 한 줄 상자와 같은 높이 (상자 크기 뒤죽박죽 금지)
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
                         줄.forEach { i -> if (i < 0) Box(Modifier.weight(1f)) else key(l[i].열쇠) {
                             val 이것 = 마지막?.takeIf { it.열쇠 == l[i].열쇠 }
@@ -446,6 +446,7 @@ private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modif
     // 10-11 홍겸 님: [넣기 시트] 에서 펼칠 때 속이 늘어나며 나타난다 (처음엔 접힌 채 그렸다가 바로 펼침). 종목 탭은 전처럼 바로 보인다
     var 들어옴 by remember(x.열쇠, 펼) { mutableStateOf(!시트펼침) }
     if (시트펼침) LaunchedEffect(Unit) { 들어옴 = true }
+    val 체크보임 = !펼 && 넣기 != null && 수 >= 0
     Column(
         modifier.graphicsLayer { scaleX = 오목.value; scaleY = 오목.value }.clip(모양).background(상자바탕)
             .border(if (시트펼침) 선굵기.굵게 else 선굵기.보통, 상자테, 모양)
@@ -458,9 +459,9 @@ private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modif
                     drawRoundRect(c.강조, cornerRadius = r, alpha = a, style = Stroke(width = 선굵기.굵게.toPx()))
                 }
             } else Modifier)
-            .padding(간격.좁게),
+            .padding(start = if (체크보임) 0.dp else 간격.좁게, top = 간격.좁게, end = 간격.좁게, bottom = 간격.좁게),   // 10-11 홍겸 님: 체크 상자 좌우 3 (누르는 칸 안쪽 여백 3 + 바깥 0)
     ) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(간격.좁게), verticalAlignment = Alignment.Top) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(if (체크보임) 0.dp else 간격.좁게), verticalAlignment = Alignment.Top) {
             // 10-08 홍겸 님: 펼친 상자 머리에는 체크 상자를 두지 않는다 (접힌 줄에만)
             // 10-11 홍겸 님: 체크 상자는 이름 왼쪽 맨 앞 (전: 오른쪽 끝)
             if (!펼 && 넣기 != null && 수 >= 0) 넣기체크(x.이름, 수,
@@ -483,7 +484,7 @@ private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modif
                                     .눌림 { 이름고침 = true },
                                 contentAlignment = Alignment.CenterStart,
                             ) { 이름맞춤(x.이름, Modifier, 바탕크기 = 종목치수.이름글, 굵기 = FontWeight.Medium) }
-                            else 이름맞춤(x.이름, Modifier.weight(1f, fill = false), 바탕크기 = 종목치수.이름글, 굵기 = FontWeight.Medium)
+                            else 이름맞춤(x.이름, Modifier.weight(1f, fill = false), 바탕크기 = 종목치수.이름글, 굵기 = FontWeight.Medium, 두줄촘촘 = !펼, 자간넓힘폭 = if (체크보임) 넣기값.체크옆넓힘 else 0.dp)
                             if (번 > 0 || 플.isNotEmpty()) Row(Modifier.offset(x = 부품치수.딱지겹침), horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
                                 번호딱지(번)
                                 if (플.isNotEmpty()) 플랜딱지()
@@ -671,7 +672,7 @@ private fun 넣기체크(이름: String, 수: Int, 누름: () -> Unit, 꾹: () -
     val 진동 = LocalHapticFeedback.current
     Box(
         // 10-11 홍겸 님: 맨 앞으로 옮겼다 — 전 오른쪽 끝용 폭 줄임(∨ 와의 간격 35% · 오른쪽 4)은 뺐다. 누르는 칸 28
-        Modifier.heightIn(min = 높이.아주낮게).widthIn(min = 높이.아주낮게).clip(RoundedCornerShape(모서리.작게))
+        Modifier.heightIn(min = 높이.아주낮게).width(넣기값.체크 + 넣기값.체크옆 * 2).clip(RoundedCornerShape(모서리.작게))
             .semantics(mergeDescendants = true) {
                 contentDescription = "$이름 · ${수}개 들어 있음 · ${if (들어감) "누르면 하나 빼기" else "누르면 넣기"}, 꾹 누르면 하나 더"
                 onClick { 오목(); 누름최신(); true }
