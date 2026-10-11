@@ -755,7 +755,7 @@ private fun ColumnScope.보고본문(
                             val a1 = R[i] ?: return@forEach
                             R[i + 1]?.let { b1 ->
                                 if (i / 2 == (i + 1) / 2) 조각.add(Rect(a1.right - e, a1.top - e, b1.left + e, a1.bottom + e))   // 같은 줄 옆 칸
-                                else 조각.add(Rect(b1.right - 3 * e, a1.bottom - 3 * e, a1.left + 3 * e, b1.top + 3 * e))   // 줄 바꿈(대각선)
+                                else 조각.add(Rect(b1.right + e - 1f, a1.bottom + e - 1f, a1.left - e + 1f, b1.top - e + 1f))   // 줄 바꿈(대각선) — 두 칸 모서리가 겨우 맞닿게(전과 같은 부드러운 모양)
                             }
                             R[i + 2]?.let { c1 -> 조각.add(Rect(a1.left - e, a1.bottom - e, a1.right + e, c1.top + e)) }   // 아래 칸
                         }
