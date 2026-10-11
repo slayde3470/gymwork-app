@@ -448,8 +448,8 @@ internal fun 넣기칸들(종목표: List<종목>, 플랜들: List<플랜>, 칸:
 internal fun 넣기이름넘침(이름: String, 잘림: Boolean, 줄끝: List<Int>): Boolean =
     잘림 || 줄끝.dropLast(1).any { e -> e in 1 until 이름.length && !이름[e - 1].isWhitespace() && !이름[e].isWhitespace() }
 
-/** 체크 상자 글 — 1~3 = ✓ 그 수만큼, 넷부터 ✓×n, 0 = "" (시안 v18 D ③) */
-internal fun 체크글(n: Int): String = if (n <= 0) "" else if (n > 3) "✓×${n}" else "✓".repeat(n)
+/** 체크 상자 글 — 1~2 = ✓ 그 수만큼, 셋부터 ✓×n (10-11 홍겸 님: 넷 → 셋부터), 0 = "" (시안 v18 D ③) */
+internal fun 체크글(n: Int): String = if (n <= 0) "" else if (n >= 3) "✓×${n}" else "✓".repeat(n)
 
 /** 펼친 상자 둘레의 어두운 막 — 구멍(펼친 상자 자리)을 이 안에서만 읽어, 펼치는 동안 이 작은 부분만 다시 그린다. 구멍을 아직 못 쟀으면 전부 어둡게 */
 @Composable

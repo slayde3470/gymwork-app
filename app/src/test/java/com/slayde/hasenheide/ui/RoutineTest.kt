@@ -86,10 +86,11 @@ class RoutineTest {
         assertEquals(l.size, l.map { it.열쇠 }.toSet().size)
     }
 
-    @Test fun 체크글_넷부터_곱() {
+    @Test fun 체크글_셋부터_곱() {
         assertEquals("", 체크글(0))
         assertEquals("✓", 체크글(1))
-        assertEquals("✓✓✓", 체크글(3))
+        assertEquals("✓✓", 체크글(2))
+        assertEquals("✓×3", 체크글(3))
         assertEquals("✓×4", 체크글(4))
         assertEquals("✓×12", 체크글(12))
     }
