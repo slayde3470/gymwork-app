@@ -891,7 +891,7 @@ private fun 세트표줄(
 
 /** 펼친 상자 머리의 사진 칸 28 — 첫 사진 · 없으면 점선 ＋. 누르면 사진 넣기 (시안 `.사진넣칸`) */
 @Composable
-private fun 사진넣는칸(상태: 앱상태, t: 종목, 크기: Modifier = Modifier.size(그림칸.사진)) {
+private fun 사진넣는칸(상태: 앱상태, t: 종목, 칸틀: Modifier = Modifier.size(그림칸.사진)) {
     val c = Local색.current
     val ctx = LocalContext.current
     val 일꾼 = rememberCoroutineScope()
@@ -911,7 +911,7 @@ private fun 사진넣는칸(상태: 앱상태, t: 종목, 크기: Modifier = Mod
     val 모양 = RoundedCornerShape(그림칸.모서리)
     val 첫: String? = null   // 10-11 홍겸 님: 머리 사진 칸은 즐겨찾기 별로 — 사진 넣기는 아래 사진 줄 맨 앞 [＋] 칸
     Box(
-        크기.clip(모양)
+        칸틀.clip(모양)
             .then(if (첫 == null) Modifier.background(c.면2).border(선굵기.보통, c.속선, 모양) else Modifier)
             .눌림 {
                 if (넣는중) return@눌림
