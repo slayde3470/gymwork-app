@@ -27,6 +27,7 @@ import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.text.TextRange
@@ -153,7 +154,7 @@ fun 앱데이터.종목이름바꿈(옛: String, 새: String): 앱데이터 {
 internal object 종목치수 {
     val 이름글 = 11.sp   // 10-11 홍겸 님: 기본 글씨 = '케이블 체스트 프레스' 크기(11) — 전 14(→13) 에서 줄임.  전: 10-07 홍겸 님: 종목명 1 작게 · 굵게 빼기 (U2-1 단계 밖 — 지침에 올릴 값)
     val 접힌위아래 = 6.dp    // 10-11 홍겸 님: 접힌 상자 위 · 아래 여백 8 → 6
-    val 접힌오른쪽 = 1.5.dp  // 10-11: 접힌 상자 오른쪽 여백 — ∨ 그림 안쪽 여백(18×25% = 4.5) 과 합쳐 테두리와 6
+    val 접힌오른쪽 = 3.5.dp  // 10-11: 접힌 상자 오른쪽 여백 — ∨ 그림 안쪽 여백(18×25% = 4.5) 과 합쳐 테두리와 6
     val 접힌그림앞 = 1.5.dp  // 이름 칸과 ∨ 사이 — 같은 이유로 6
     val 펼침그림 = 18.dp // 10-07 홍겸 님: 접기·펼치기 그림을 다른 곳(펼침단추 · U3-6 기본 18)과 같게
     val 뜸자리 = 64.dp   // 오른쪽 아래 떠 있는 [새 종목 만들기] 에 마지막 줄이 가리지 않게 (단추 40 + 아래 12 + 12)
@@ -410,7 +411,7 @@ private fun 종목격자(상태: 앱상태, l: List<종목칸값>, 무리: Strin
 
 /** 상자 자리 · 그리기 — 종목표에 있는 종목만(플랜만 남은 '기타' 상자는 못 끈다). 잡는 손은 상자 머리([종목상자]) */
 private fun Modifier.끌기칸(끌판: 격자끌기판, x: 종목칸값, 무리: String): Modifier =
-    this.격자끌기자리(끌판, x.종목?.id ?: x.열쇠, 무리, 켬 = x.종목 != null)
+    this.격자끌기자리(끌판, x.종목?.id ?: x.열쇠, 무리, 켬 = false)   // 10-11 홍겸 님: 종목 목록은 이름순 — 꾹 눌러 순서 옮기기는 없앴다
 
 /**
  * 종목 상자 하나 (시안 `종목칸`). 10-08 홍겸 님: 펼친 상자 = [사진][이름 · ▾][삭제] → 기본 세팅(세트 · 무게 · 횟수 · 휴식)
@@ -477,7 +478,7 @@ private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modif
                 눌렀다 = { 오목범위.launch { 오목.animateTo(0.91f, tween(110)); 오목.animateTo(1f, androidx.compose.animation.core.spring(dampingRatio = 0.5f, stiffness = 400f)) } })
             if (펼 && t != null) 사진넣는칸(상태, t)
             // 10-07 꾹 눌러 끌기 — 손은 누름보다 안쪽(먼저 받아야 끊기지 않는다). 꾹 누르고 떼어도 펼치지 않게 길게 누름은 빈 동작
-            Column(Modifier.weight(1f).눌림길게({ 펼침(x.열쇠) }, { }).격자끌기손(끌판, x.종목?.id ?: x.열쇠, x.이름, 켬 = x.종목 != null)) {
+            Column(Modifier.weight(1f).눌림길게({ 펼침(x.열쇠) }, { }).격자끌기손(끌판, x.종목?.id ?: x.열쇠, x.이름, 켬 = false)) {
                 Row(
                     Modifier.fillMaxWidth().heightIn(min = maxOf(높이.아주낮게, 이름높이)),
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(if (펼) 간격.아주좁게 else 종목치수.접힌그림앞),
@@ -679,7 +680,10 @@ private fun 넣기체크(이름: String, 수: Int, 누름: () -> Unit, 꾹: () -
     val 진동 = LocalHapticFeedback.current
     Box(
         // 10-11 홍겸 님: 맨 앞으로 옮겼다 — 전 오른쪽 끝용 폭 줄임(∨ 와의 간격 35% · 오른쪽 4)은 뺐다. 누르는 칸 28
-        Modifier.heightIn(min = 높이.아주낮게).width(넣기값.체크 + 넣기값.체크옆 * 2).clip(RoundedCornerShape(모서리.작게))
+        Modifier.zIndex(1f).layout { m, c ->
+                // 10-11 홍겸 님: 누르는 범위 +15% — 오른쪽으로 늘리되 자리는 그대로(이름 칸을 밀지 않는다 · 위로 올려 먼저 받는다)
+                val p = m.measure(c); layout(p.width - 넣기값.체크늘림.roundToPx(), p.height) { p.place(0, 0) }
+            }.heightIn(min = 높이.아주낮게).width(넣기값.체크 + 넣기값.체크옆 * 2 + 넣기값.체크늘림).clip(RoundedCornerShape(모서리.작게))
             .semantics(mergeDescendants = true) {
                 contentDescription = "$이름 · ${수}개 들어 있음 · ${if (들어감) "누르면 하나 빼기" else "누르면 넣기"}, 꾹 누르면 하나 더"
                 onClick { 오목(); 누름최신(); true }
@@ -691,10 +695,10 @@ private fun 넣기체크(이름: String, 수: Int, 누름: () -> Unit, 꾹: () -
                     onTap = { 오목(); 누름최신() },
                 )
             },
-        contentAlignment = Alignment.Center,
+        contentAlignment = Alignment.CenterStart,
     ) {
         Box(
-            Modifier.graphicsLayer { scaleX = 깊이.value; scaleY = 깊이.value }.heightIn(min = 넣기값.체크).widthIn(min = 넣기값.체크).clip(상자)
+            Modifier.padding(start = 넣기값.체크옆).graphicsLayer { scaleX = 깊이.value; scaleY = 깊이.value }.heightIn(min = 넣기값.체크).widthIn(min = 넣기값.체크).clip(상자)
                 .background(if (들어감) c.강조 else c.면)
                 .border(선굵기.보통, if (들어감) c.강조 else c.속선, 상자)
                 .padding(horizontal = 간격.아주좁게),

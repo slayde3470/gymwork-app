@@ -848,12 +848,12 @@ private fun 종목상자(
                 horizontalArrangement = Arrangement.spacedBy(7.dp),
             ) {
                 상자번호(번호, 좁게 = true)
-                // 10-11 홍겸 님: 이름은 줄 가운데 · 세트 수는 이름 아래에 (자리를 내주지 않고 겹쳐 내려 앉는다 — 이름 아래 3)
-                val 틈 = with(LocalDensity.current) { 3.dp.roundToPx() }
+                // 10-11 홍겸 님: 이름은 줄 가운데 · 세트 수는 이름 아래에 (자리를 내주지 않고 겹쳐 내려 앉는다 — 이름 아래 2 · 글 +1sp)
+                val 틈 = with(LocalDensity.current) { 2.dp.roundToPx() }
                 Layout(
                     content = {
                         종목이름딱지(상태.d, e.종id, e.이름, Modifier)
-                        Text("${e.세트}세트", style = 글꼴.보통(크기.조금작게 * 0.5f).copy(fontFeatureSettings = "tnum"), color = c.흐림, maxLines = 1, softWrap = false)
+                        Text("${e.세트}세트", style = 글꼴.보통(크기.조금작게 * 0.5f + 1.sp).copy(fontFeatureSettings = "tnum"), color = c.흐림, maxLines = 1, softWrap = false)
                     },
                     modifier = Modifier.weight(1f, fill = false),
                 ) { ms, cs ->
