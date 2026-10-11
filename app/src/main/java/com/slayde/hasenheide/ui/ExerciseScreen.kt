@@ -42,6 +42,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.VectorConverter
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -278,6 +279,41 @@ internal class 종목넣기손(
 /** 10-11 홍겸 님: 접은 뒤 '방금 누른 상자' — 그 상자가 한 번 반짝이고, 부르는 쪽은 [틀] 로 그 자리를 알아 화면 안으로 되돌린다 */
 internal class 마지막누름(val 열쇠: String, val 틀: (LayoutCoordinates) -> Unit)
 
+/**
+ * 10-11 홍겸 님: 펼치거나 접을 때 상자들이 칸 · 줄을 옮겨 가며 툭 튀지 않고 옛 자리에서 새 자리로 미끄러진다.
+ * 상자마다 마지막 배치 자리(이 목록 맨 위 기준)를 기억해 두었다가, 펼친 상자가 바뀐 직후 첫 배치에서 옛 자리와 차이만큼 되돌려 놓고 0 으로 흘려보낸다.
+ * (펼치는 동안 상자가 자라서 밀리는 건 연속이라 건드리지 않는다 — 신호가 바뀐 첫 배치만)
+ */
+internal class 격자흐름 {
+    var 기준: LayoutCoordinates? = null
+    val 위치 = HashMap<String, Pair<Offset, String?>>()
+}
+
+@Composable
+private fun Modifier.위치흐름(흐름: 격자흐름, 열쇠: String, 신호: String?): Modifier {
+    val 범위 = rememberCoroutineScope()
+    val 옛 = remember { 흐름.위치[열쇠] }
+    val 값 = remember { Animatable(Offset.Zero, Offset.VectorConverter) }
+    var 처리됨 by remember { mutableStateOf(옛 == null || 옛.second == 신호) }   // 새로 만들어지며 옮겨 와야 하는 상자는 첫 배치 전까지 숨긴다 (최종 자리에서 번쩍이지 않게)
+    return this
+        .onGloballyPositioned { co ->
+            val 기 = 흐름.기준
+            if (기 != null && 기.isAttached && co.isAttached) {
+                val p = 기.localPositionOf(co, Offset.Zero)
+                val 기록 = 흐름.위치[열쇠]
+                흐름.위치[열쇠] = p to 신호
+                if (기록 != null && 기록.second != 신호) {
+                    val d = 기록.first - p
+                    if (d != Offset.Zero) 범위.launch(start = kotlinx.coroutines.CoroutineStart.UNDISPATCHED) {
+                        값.snapTo(d); 처리됨 = true
+                        값.animateTo(Offset.Zero, tween(움직임.펼침))
+                    } else 처리됨 = true
+                } else 처리됨 = true
+            }
+        }
+        .graphicsLayer { translationX = 값.value.x; translationY = 값.value.y; alpha = if (처리됨) 1f else 0f }
+}
+
 /** 카테고리 묶음들 — 종목 탭과 [운동 종목 추가] 시트가 같이 쓴다 (10-08 홍겸 님 — 두 목록은 같은 화면이어야 한다) */
 @Composable
 internal fun 종목묶음들(
@@ -295,29 +331,32 @@ internal fun 종목묶음들(
     // 10-09 홍겸 님: [루틴] 없음 → 안내 글 (두 줄 이상이 될 수 있어 줄 = 3)
     if (판.묶음.isEmpty()) 글("현재 만들어진 운동이 없습니다. 새 종목 추가하기 버튼을 눌러 운동을 추가해주세요.", 크기값 = 크기.조금작게, 색 = c.옅음, 줄 = 3)
     var 남음 = 한도
+    val 흐름 = remember(판.고름) { 격자흐름() }
+    Column(Modifier.onGloballyPositioned { 흐름.기준 = it }, verticalArrangement = Arrangement.spacedBy(간격.좁게)) {
     판.묶음.forEach { (칸이름, 전체l) ->
         if (남음 <= 0) return@forEach
         val l = if (남음 >= 전체l.size) 전체l else 전체l.take(남음)
         남음 -= l.size
         key(칸이름) {
             Column(verticalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
-                if (판.고름 == "전체") 이름표(칸이름, Modifier.padding(start = 간격.아주좁게, top = 간격.아주좁게))
-                종목격자(상태, l, 칸이름, 끌판, 펼친, 펼침, 넣기, 펼침틀, 마지막, 접는키)
+                if (판.고름 == "전체") 이름표(칸이름, Modifier.위치흐름(흐름, "라벨$칸이름", 펼친).padding(start = 간격.아주좁게, top = 간격.아주좁게))
+                종목격자(상태, l, 칸이름, 끌판, 펼친, 펼침, 넣기, 펼침틀, 마지막, 접는키, 흐름)
             }
         }
+    }
     }
 }
 
 /** 2열 격자 — 접힌 상자는 한 칸, 펼친 상자는 줄 전체. 줄마다 접힌 이름이 두 줄이면 옆 상자도 같은 높이 */
 @Composable
-private fun 종목격자(상태: 앱상태, l: List<종목칸값>, 무리: String, 끌판: 격자끌기판, 펼친: String?, 펼침: (String) -> Unit, 넣기: 종목넣기손?, 펼침틀: ((LayoutCoordinates) -> Unit)?, 마지막: 마지막누름? = null, 접는키: String? = null) {
+private fun 종목격자(상태: 앱상태, l: List<종목칸값>, 무리: String, 끌판: 격자끌기판, 펼친: String?, 펼침: (String) -> Unit, 넣기: 종목넣기손?, 펼침틀: ((LayoutCoordinates) -> Unit)?, 마지막: 마지막누름? = null, 접는키: String? = null, 흐름: 격자흐름? = null) {
     val 줄들 = 격자줄(l.map { it.열쇠 == 펼친 })
     val 두줄높이 = with(LocalDensity.current) { (크기.본문 * 1.4f * 2).toDp() }
     Column(verticalArrangement = Arrangement.spacedBy(간격.좁게)) {
         줄들.forEach { 줄 ->
             val 첫 = l[줄[0]]
             key(첫.열쇠) {
-                if (줄.size == 1 && 첫.열쇠 == 펼친) 종목상자(상태, 첫, true, Modifier.fillMaxWidth().끌기칸(끌판, 첫, 무리).then(if (펼침틀 != null) Modifier.onGloballyPositioned { 펼침틀(it) } else Modifier), 0.dp, 끌판, 펼침, 넣기, 접는키 = 접는키)
+                if (줄.size == 1 && 첫.열쇠 == 펼친) 종목상자(상태, 첫, true, Modifier.fillMaxWidth().then(if (흐름 != null) Modifier.위치흐름(흐름, 첫.열쇠, 펼친) else Modifier).끌기칸(끌판, 첫, 무리).then(if (펼침틀 != null) Modifier.onGloballyPositioned { 펼침틀(it) } else Modifier), 0.dp, 끌판, 펼침, 넣기, 접는키 = 접는키)
                 else {
                     val 높이맞춤 = if (줄.any { 이름줄수(l[it].이름) > 1 }) 두줄높이 else 0.dp
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
@@ -325,7 +364,7 @@ private fun 종목격자(상태: 앱상태, l: List<종목칸값>, 무리: Strin
                             val 이것 = 마지막?.takeIf { it.열쇠 == l[i].열쇠 }
                             종목상자(
                                 상태, l[i], false,
-                                Modifier.weight(1f).끌기칸(끌판, l[i], 무리).then(if (이것 != null) Modifier.onGloballyPositioned { 이것.틀(it) } else Modifier),
+                                Modifier.weight(1f).then(if (흐름 != null) Modifier.위치흐름(흐름, l[i].열쇠, 펼친) else Modifier).끌기칸(끌판, l[i], 무리).then(if (이것 != null) Modifier.onGloballyPositioned { 이것.틀(it) } else Modifier),
                                 높이맞춤, 끌판, 펼침, 넣기, 이것,
                             )
                         } }
