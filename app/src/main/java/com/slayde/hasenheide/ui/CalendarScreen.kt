@@ -777,7 +777,7 @@ private fun 날판(
         // ── 띠 — 고른 날 · 요일 (10-11: [오늘] 은 달력 우측 하단으로 옮겼다. 10-08: [변경] · [루틴 넣기] 는 없앴다 — 아래 단추 줄이 한다) ──
         Row(
             Modifier.padding(horizontal = 간격.보통).fillMaxWidth()   // 10-09: 좌우 여백 12 · 모서리 8 · 10-11: 높이 = 글 위아래 7
-                .clip(RoundedCornerShape(모서리.작게)).background(c.강조).padding(horizontal = 간격.보통, vertical = 4.dp),
+                .clip(RoundedCornerShape(모서리.작게)).background(c.강조).padding(horizontal = 간격.보통, vertical = 6.dp),   // 10-11 홍겸 님: 띠 위아래 +2
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.좁게),
         ) {
             // 10-11 홍겸 님: 날짜 글 18 → 16 (2sp ↓) · 요일 글 18 → 14 (4sp ↓). 모양은 띠글(굵게 · 강조글)과 같다
@@ -948,7 +948,7 @@ private fun 목록칸(i: Int, 이름: String, 곁: String) {
     val c = Local색.current
     // 한 줄 (10-06 ⑤) — [번호][이름 13 · 넘치면 …][무게×횟수 11 · 넘치면 맞춤글로 줄임]. 이름과 곁 글은 남은 폭을 반씩까지
     Row(
-        Modifier.fillMaxWidth().아랫선(c.선).padding(vertical = 간격.아주좁게),
+        Modifier.fillMaxWidth().height(목록줄높이).아랫선(c.선),   // 10-11 홍겸 님: 두 칸 줄이 맞게 높이 고정
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.아주좁게),
     ) {
         Text("${i + 1}", Modifier.width(간격.넓게), style = 글꼴.보통(크기.작게, FontWeight.Bold), color = c.옅음, textAlign = TextAlign.Center, maxLines = 1)
@@ -962,7 +962,7 @@ private fun 목록칸(i: Int, 이름: String, 곁: String) {
 private fun 접기칸(펼침: Boolean, 남은: Int, onClick: () -> Unit) {
     val c = Local색.current
     Row(
-        Modifier.fillMaxWidth().heightIn(min = 높이.낮게).아랫선(c.선).눌림(onClick),
+        Modifier.fillMaxWidth().height(목록줄높이).아랫선(c.선).눌림(onClick),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.아주좁게),
     ) {
         Box(Modifier.width(간격.넓게))
@@ -971,6 +971,8 @@ private fun 접기칸(펼침: Boolean, 남은: Int, onClick: () -> Unit) {
     }
 }
 
+/** 날짜 판 목록 한 줄 높이 — 왼쪽·오른쪽 칸 줄이 같은 높이로 맞는다 (글이 줄어도 · '외 N종목' 칸이어도) */
+private val 목록줄높이 = 30.dp
 private val 그림보통 = 18.dp   // 11 지침 U3-6 기본 아이콘
 private val 그림작게 = 16.dp   // 11 지침 U3-6 글 옆 · 체크 안
 
