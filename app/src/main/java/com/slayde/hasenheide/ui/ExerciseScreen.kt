@@ -105,6 +105,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.sp
 import com.slayde.hasenheide.data.근육표
 import com.slayde.hasenheide.data.무게글
@@ -713,7 +714,7 @@ private fun 넣기체크(이름: String, 수: Int, 즐겨: Boolean, 누름: () -
                 contentAlignment = Alignment.Center,
             ) {
                 별(들어감, 넣기값.체크 + 2.dp, c.즐겨)
-                if (들어감) Text(체크글(수), style = 글꼴.보통(크기.작게 * (if (수 >= 3) 1.0f else 1.15f), FontWeight.Bold).copy(letterSpacing = (-0.1).em), color = c.강조, maxLines = 1, softWrap = false, modifier = Modifier.넘쳐도폭없이().offset(y = 1.dp))
+                if (들어감) Text(체크글꼴(수, 크기.작게 * (if (수 >= 3) 0.9f else 1.05f)), style = 글꼴.보통(크기.작게 * (if (수 >= 3) 1.0f else 1.15f), FontWeight.Bold).copy(letterSpacing = (-0.1).em), color = c.강조, maxLines = 1, softWrap = false, modifier = Modifier.넘쳐도폭없이().offset(y = 1.dp))
             }
         } else Box(
             Modifier.padding(start = 넣기값.체크옆).graphicsLayer { scaleX = 깊이.value; scaleY = 깊이.value }.heightIn(min = 넣기값.체크).widthIn(min = 넣기값.체크)
@@ -722,7 +723,7 @@ private fun 넣기체크(이름: String, 수: Int, 즐겨: Boolean, 누름: () -
                 .padding(horizontal = 간격.아주좁게),
             contentAlignment = Alignment.Center,
         ) {
-            if (들어감) Text(체크글(수), style = 글꼴.보통(크기.작게 * (if (수 >= 3) 1.0f else 1.15f), FontWeight.Bold).copy(letterSpacing = (-0.1).em, shadow = androidx.compose.ui.graphics.Shadow(c.강조, androidx.compose.ui.geometry.Offset.Zero, 7f)), color = c.강조글, maxLines = 1, softWrap = false, modifier = Modifier.넘쳐도폭없이())
+            if (들어감) Text(체크글꼴(수, 크기.작게 * (if (수 >= 3) 0.9f else 1.05f)), style = 글꼴.보통(크기.작게 * (if (수 >= 3) 1.0f else 1.15f), FontWeight.Bold).copy(letterSpacing = (-0.1).em), color = c.강조글, maxLines = 1, softWrap = false, modifier = Modifier.넘쳐도폭없이())
         }
     }
 }
@@ -1366,3 +1367,12 @@ private fun Modifier.넘쳐도폭없이(): Modifier = this.layout { m, _ ->
     val p = m.measure(androidx.compose.ui.unit.Constraints())
     layout(0, p.height) { p.place(-p.width / 2, 0) }
 }
+
+/** 10-11 홍겸 님: ✓ 는 굵게 · 숫자(×4)는 굵기를 풀고 1sp 작게 */
+private fun 체크글꼴(수: Int, 숫자크기: androidx.compose.ui.unit.TextUnit): androidx.compose.ui.text.AnnotatedString =
+    androidx.compose.ui.text.buildAnnotatedString {
+        for (ch in 체크글(수)) {
+            if (ch == '✓') append(ch)
+            else withStyle(androidx.compose.ui.text.SpanStyle(fontWeight = FontWeight.Normal, fontSize = 숫자크기)) { append(ch) }
+        }
+    }
