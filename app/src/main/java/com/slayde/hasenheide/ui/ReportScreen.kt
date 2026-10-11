@@ -845,7 +845,7 @@ private fun 종목칸(d: 앱데이터, k: 보고칸, 열림: Boolean, 움직: Bo
     Column(
         modifier.들어옴(상자p, false).보고상자(if (열림) c.강조옅음 else c.면, if (열림) c.강조 else c.선)
             .then(if (찍는용) Modifier else Modifier.눌림(onClick).semantics { contentDescription = "${k.이름} ${if (열림) "접기" else "펼치기"}"; role = Role.Button })
-            .padding(간격.좁게),
+            .padding(horizontal = 간격.좁게, vertical = 5.dp),   // 10-11 홍겸 님: 10개가 다 보이게 위아래 여백 8 → 5
         verticalArrangement = Arrangement.spacedBy(간격.아주좁게),
     ) {
         이름딱지(k.이름, 번호 = d.같은이름번호(k.종id, k.이름), 플랜 = k.플랜id != null, 크기값 = 크기.조금작게)
