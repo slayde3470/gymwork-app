@@ -777,7 +777,7 @@ private fun 날판(
         // ── 띠 — 고른 날 · 요일 (10-11: [오늘] 은 달력 우측 하단으로 옮겼다. 10-08: [변경] · [루틴 넣기] 는 없앴다 — 아래 단추 줄이 한다) ──
         Row(
             Modifier.padding(horizontal = 간격.보통).fillMaxWidth()   // 10-09: 좌우 여백 12 · 모서리 8 · 10-11: 높이 = 글 위아래 7
-                .clip(RoundedCornerShape(모서리.작게)).background(c.강조).padding(horizontal = 간격.보통, vertical = 7.dp),
+                .clip(RoundedCornerShape(모서리.작게)).background(c.강조).padding(horizontal = 간격.보통, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.좁게),
         ) {
             // 10-11 홍겸 님: 날짜 글 18 → 16 (2sp ↓) · 요일 글 18 → 14 (4sp ↓). 모양은 띠글(굵게 · 강조글)과 같다
@@ -998,8 +998,8 @@ private fun 판단추(
     if (록.isEmpty() && k < 오늘) return   // 지난 날 · 기록 없음 = 단추 없음
     if (록.isEmpty() && k == 오늘 && d.세션 != null) return   // 10-11 홍겸 님: 운동 중에는 [운동 시작] · [초기화] 를 없앤다 (그 자리에 [돌아가기] 가 있다)
     Row(
-        Modifier.fillMaxWidth().background(c.바탕).padding(horizontal = 간격.보통, vertical = 간격.좁게),
-        horizontalArrangement = Arrangement.spacedBy(간격.좁게),
+        Modifier.fillMaxWidth().background(c.바탕).padding(7.dp),   // 10-11 홍겸 님: 상하좌우 7
+        horizontalArrangement = Arrangement.spacedBy(간격.좁게), verticalAlignment = Alignment.CenterVertically,
     ) {
         if (록.isNotEmpty() && 지움모드) {
             val 꺼짐 = 록.none { it.first in 록골 }
@@ -1027,12 +1027,12 @@ private fun 판단추(
                     val 지금r = dd.예정루틴(k)
                     if (지금r == null || 지금r.휴식일) return@버튼
                     시작(dd.조절해시작(지금r, k, System.currentTimeMillis()))
-                }, Modifier.weight(큰폭).번호("캘3"), 주요 = true, 작게 = true, 세로여백 = 7.dp, 줄임 = true)
+                }, Modifier.weight(큰폭).번호("캘3"), 주요 = true, 작게 = true, 세로여백 = 7.dp, 줄임 = true, 글배율 = 0.9f)
             } else {
                 // 10-09 홍겸 님: 내일 이후 · 운동 예정이 있어도 이름은 [운동 계획 만들기] 로 통일
-                버튼("운동 계획 만들기", { 계획(k) }, Modifier.weight(큰폭).번호("캘3"), 주요 = true, 작게 = true, 세로여백 = 7.dp, 줄임 = true)
+                버튼("운동 계획 만들기", { 계획(k) }, Modifier.weight(큰폭).번호("캘3"), 주요 = true, 작게 = true, 세로여백 = 4.dp, 줄임 = true, 글배율 = 0.9f)
             }
-            if (초기화있음) 버튼("초기화", { 초기화(k) }, Modifier.weight(판단추폭.초기화), 작게 = true, 세로여백 = 7.dp, 글색 = c.나쁨, 줄임 = true)
+            if (초기화있음) 버튼("초기화", { 초기화(k) }, Modifier.weight(판단추폭.초기화), 작게 = true, 세로여백 = if (운동예정 && k == 오늘) 7.dp else 4.dp, 글색 = c.나쁨, 줄임 = true, 글배율 = 0.9f)
         }
     }
 }

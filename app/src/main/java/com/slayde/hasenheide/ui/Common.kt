@@ -48,6 +48,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -258,6 +260,8 @@ fun 버튼(
     줄임: Boolean = false,
     /** 10-11 홍겸 님: 높이를 고정하지 않고 글 위아래 이만큼만 두고 줄인다 (캘린더 아래 단추 줄) */
     세로여백: Dp? = null,
+    /** 10-11: 글 크기 배율 (캘린더 아래 단추 줄 0.9) */
+    글배율: Float = 1f,
 ) {
     val c = Local색.current
     val 손 = remember { MutableInteractionSource() }
@@ -279,8 +283,8 @@ fun 버튼(
             Icon(그림, null, Modifier.size(if (낮게) 14.dp else 16.dp), tint = 색)
             Box(Modifier.width(if (낮게) 4.dp else 6.dp))
         }
-        val 글크기 = if (낮게) 크기.조금작게 else if (작게) 크기.버튼 else 크기.본문
-        if (줄임) 맞춤글(text, 최대 = 글크기, 최소 = 크기.작게, 색 = 색, 굵기 = FontWeight.Bold)
+        val 글크기 = (if (낮게) 크기.조금작게 else if (작게) 크기.버튼 else 크기.본문).let { if (글배율 == 1f) it else (it.value * 글배율).sp }
+        if (줄임) 맞춤글(text, 최대 = 글크기, 최소 = if (글크기.value < 크기.작게.value) 글크기 else 크기.작게, 색 = 색, 굵기 = FontWeight.Bold)
         else 글(text, 크기값 = 글크기, 색 = 색, 굵기 = FontWeight.Bold)
     }
 }
@@ -800,8 +804,8 @@ fun 시트(
     제목칸: (@Composable RowScope.() -> Unit)? = null,
     /** 10-11: 속이 무거운 시트(종목 목록) — 올라오는 움직임이 끝난 뒤에 속을 그린다 (속을 먼저 그리면 그 시간만큼 움직임이 먹힌다) */
     속늦춤: Boolean = false,
-    /** 10-11: 머리(손잡이 · 띠)를 어둡게 — 종목 넣기에서 상자를 펼쳤을 때 */
-    머리가림: Boolean = false,
+    /** 10-11: 펼친 상자 자리(창 좌표) — 있으면 시트 전체(머리 띠 · 둘레 여백 포함)를 어둡게 칠하고 이 자리만 비운다 (종목 넣기) */
+    가림구멍: State<androidx.compose.ui.geometry.Rect?>? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val c = Local색.current
@@ -818,6 +822,7 @@ fun 시트(
     BackHandler(onBack = { 닫기() })
     // 끌어내린 만큼 (px) — 그릴 때만 읽는다
     var 끌림 by remember { mutableStateOf(0f) }
+    val 판창 = remember { mutableStateOf(Offset.Zero) }
     val 범위 = rememberCoroutineScope()
     val 닫을px = with(LocalDensity.current) { 부품치수.시트닫기.toPx() }
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
@@ -837,6 +842,21 @@ fun 시트(
                     .graphicsLayer { translationY = 끌림 }
                     .clip(RoundedCornerShape(topStart = 모서리.크게, topEnd = 모서리.크게))
                     .background(c.면)
+                    .onGloballyPositioned { 판창.value = it.positionInWindow() }
+                    .drawWithContent {
+                        drawContent()
+                        val h = 가림구멍?.value
+                        if (h != null) {
+                            val o = 판창.value
+                            val l = (h.left - o.x).coerceIn(0f, size.width); val t = (h.top - o.y).coerceIn(0f, size.height)
+                            val r = (h.right - o.x).coerceIn(0f, size.width); val b = (h.bottom - o.y).coerceIn(0f, size.height)
+                            val 색 = 종목치수.넣기가림
+                            drawRect(색, Offset(0f, 0f), Size(size.width, t))
+                            drawRect(색, Offset(0f, b), Size(size.width, size.height - b))
+                            drawRect(색, Offset(0f, t), Size(l, b - t))
+                            drawRect(색, Offset(r, t), Size(size.width - r, b - t))
+                        }
+                    }
                     .눌림 { }
                     .navigationBarsPadding()
                     .imePadding()
@@ -846,7 +866,7 @@ fun 시트(
             ) {
                 // 머리 — 손잡이 막대 + 제목 줄. 여기를 잡고 끌어내린다 (시트 안 스크롤과 겹치지 않는다)
                 Column(
-                    Modifier.fillMaxWidth().drawWithContent { drawContent(); if (머리가림) drawRect(종목치수.넣기가림) }.pointerInput(Unit) {
+                    Modifier.fillMaxWidth().pointerInput(Unit) {
                         detectVerticalDragGestures(
                             onVerticalDrag = { ch, dy -> ch.consume(); 끌림 = (끌림 + dy).coerceAtLeast(0f) },
                             onDragEnd = {

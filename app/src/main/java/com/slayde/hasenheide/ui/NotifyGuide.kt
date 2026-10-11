@@ -59,7 +59,7 @@ import com.slayde.hasenheide.ui.theme.*
 import kotlin.math.PI
 import kotlin.math.sin
 
-private const val 시연휴식ms = 5000   // 휴식중 시연: 1:00 → 0:00 을 5초에
+private const val 시연휴식ms = 60000   // 휴식중 시연: 1:00 → 0:00 을 실제 속도(60초)로
 
 /** 안내 박스 — '켜기' = 권한 설정으로, '나중에' · 바깥 · 뒤로가기 = 닫기 */
 @Composable

@@ -9,6 +9,10 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.animate
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -228,6 +232,9 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
     var 옛방식 by remember(S.시작시각) { mutableIntStateOf(0) }
     var 옛방향 by remember(S.시작시각) { mutableIntStateOf(1) }   // +1 = 다음 · −1 = 이전
     val 진행 = remember(S.시작시각) { Animatable(0f) }
+    val 끌림x = remember { mutableFloatStateOf(0f) }   // 손가락을 따라 끌려오는 거리(px) — 그릴 때만 읽는다
+    val 옛시작 = remember { mutableFloatStateOf(0f) }   // 손을 뗀 자리 — 옛 쪽 그림이 여기서부터 밀려 나간다
+    val 끌범위 = rememberCoroutineScope()
     LaunchedEffect(S.시작시각, 목표본) {
         if (목표본 == 표시본) return@LaunchedEffect
         val 방식 = 넘김방식[0]; 넘김방식[0] = 0
@@ -236,10 +243,11 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
         val 그림 = try {
             (if (방식 == 1) 층A else 층B).toImageBitmap()   // 표시본을 바꾸기 전에 지금 쪽을 찍는다
         } catch (t: CancellationException) { throw t } catch (t: Exception) { null }
-        if (그림 == null) { 표시본 = 목표본; return@LaunchedEffect }
+        if (그림 == null) { 표시본 = 목표본; 끌림x.floatValue = 0f; return@LaunchedEffect }
         try {
             옛방식 = 방식; 옛방향 = 쪽; 옛그림 = 그림
             표시본 = 목표본   // 이제 새 내용이 아래에 그려진다
+            끌림x.floatValue = 0f
             진행.animateTo(1f, tween(if (방식 == 1) 운치수.책장시간 else 운치수.밀기시간, easing = LinearEasing))
         } finally { 옛그림 = null }
     }
@@ -283,6 +291,17 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
             if (새 != 운보기.본) { 발자취.적기(if (쪽 > 0) "다음 종목으로 밀기" else "이전 종목으로 밀기"); 넘김방식[0] = 1; 운보기.본 = 새; 당김++ }
         }
     }
+    // 10-11 홍겸 님: 좌우로 밀면 화면이 손가락을 따라 끌려온다. 기준(밀기)을 넘겨 떼면 그 자리에서 이어서 밀려 넘어가고, 덜 밀었으면 제자리로 돌아온다
+    val 끌기: (Float) -> Unit = { x ->
+        val 갈곳 = 운보기.본 + (if (x < 0) 1 else -1)
+        끌림x.floatValue = if (갈곳 in 0 until (상태.d.세션?.종목들?.size ?: 1)) x else x * 0.25f   // 맨 끝에서는 무겁게
+    }
+    val 놓기기준 = with(androidx.compose.ui.platform.LocalDensity.current) { 운치수.밀기.toPx() }
+    val 놓기: (Float) -> Unit = { x ->
+        val 쪽 = if (x < 0) 1 else -1
+        if (abs(x) > 놓기기준 && 운보기.본 + 쪽 in 0 until (상태.d.세션?.종목들?.size ?: 1)) { 옛시작.floatValue = 끌림x.floatValue; 넘김(쪽) }
+        else 끌범위.launch { animate(끌림x.floatValue, 0f, animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) { v, _ -> 끌림x.floatValue = v } }
+    }
 
     // 슈퍼세트 — 체크하면 지금 · 쉬는 줄이 묶음 안 다른 종목으로 간다. 같은 묶음을 보고 있으면 따라간다 (시안에는 슈퍼세트가 없다)
     LaunchedEffect(S.i, S.휴식?.종목, S.휴식 == null) { 운보기.본 = 본따라감(S, 운보기.본) }
@@ -309,8 +328,9 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
                             // 좌우 밀기 — 새 쪽이 밀려 들어온다 (옛 쪽 그림이 같이 밀려 나간다). 그리기 단계에서만 값을 읽는다
                             if (옛그림 != null && 옛방식 == 1) {
                                 val v = 움직임.부드럽게.transform(진행.value.coerceIn(0f, 1f))
-                                translationX = 옛방향 * size.width * (1f - v)
-                            } else translationX = 0f
+                                val 옛 = 옛시작.floatValue + (-옛방향 * size.width - 옛시작.floatValue) * v
+                                translationX = 옛 + 옛방향 * size.width   // 새 쪽은 옛 쪽 바로 옆에 붙어 온다
+                            } else translationX = 끌림x.floatValue
                         }
                         .기록층(층A),
                 ) {
@@ -330,9 +350,9 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
                         ) {
                             AnimatedVisibility(visible = 그림켬 && !그림숨김) {
                                 // key(본) — 종목이 바뀌면 근육 지도를 새로 만든다 (안의 색 이동 애니메이션이 펄럭이지 않게)
-                                Box(Modifier.번호("운그림").좌우밀기(넘김)) { key(본) { 운동그림칸(상태, S.copy(i = 본), 지금) { 그림칸기억.숨긴운동 = S.루틴id } } }
+                                Box(Modifier.번호("운그림").좌우밀기(끌기, 놓기)) { key(본) { 운동그림칸(상태, S.copy(i = 본), 지금) { 그림칸기억.숨긴운동 = S.루틴id } } }
                             }
-                            세트목록(상태, S, 본, 지금, Modifier.weight(1f).좌우밀기(넘김), 함 = ::함, 바꿈 = ::바꿈, 당김 = { 당김++ })
+                            세트목록(상태, S, 본, 지금, Modifier.weight(1f).좌우밀기(끌기, 놓기), 함 = ::함, 바꿈 = ::바꿈, 당김 = { 당김++ })
                         }
                         val 밀그림 = 옛그림
                         if (밀그림 != null && 옛방식 == 0) 밀기옛쪽(밀그림, 옛방향) { 진행.value }
@@ -341,7 +361,7 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
                     진행상자(상태, S, 본, 당김, Modifier.번호("운띠"), 함 = ::함, 고름 = { i -> 운보기.본 = i; 당김++ }, 넣기 = { 넣기열림 = true })
                 }
                 val 책그림 = 옛그림
-                if (책그림 != null && 옛방식 == 1) 책장옛쪽(책그림, 옛방향) { 진행.value }
+                if (책그림 != null && 옛방식 == 1) 책장옛쪽(책그림, 옛방향, { 옛시작.floatValue }) { 진행.value }
                 if (전환중 && 막방식 == 1) Box(Modifier.fillMaxSize().터치삼킴())
             }
             단추줄(S, 본,
@@ -392,15 +412,14 @@ private object 운보기 {
     var 앞쉼: Int? = null
 }
 
-/** 좌우로 밀기 — [운치수.밀기] 넘게 밀었다 떼면 왼쪽으로 민 것 = 다음(+1) · 오른쪽 = 이전(−1). 위아래 스크롤과는 먼저 움직인 쪽이 이긴다 */
-private fun Modifier.좌우밀기(넘김: (Int) -> Unit): Modifier = pointerInput(Unit) {
-    val 기준 = 운치수.밀기.toPx()
+/** 좌우로 밀기 — 밀리는 동안 [끌기] 로 누적 거리를 알리고, 뗄 때 [놓기] 로 알린다. 위아래 스크롤과는 먼저 움직인 쪽이 이긴다 */
+private fun Modifier.좌우밀기(끌기: (Float) -> Unit, 놓기: (Float) -> Unit): Modifier = pointerInput(Unit) {
     var 합 = 0f
     detectHorizontalDragGestures(
         onDragStart = { 합 = 0f },
-        onDragEnd = { if (abs(합) > 기준) 넘김(if (합 < 0) 1 else -1); 합 = 0f },
-        onDragCancel = { 합 = 0f },
-    ) { ch, dx -> 합 += dx; ch.consume() }
+        onDragEnd = { 놓기(합); 합 = 0f },
+        onDragCancel = { 놓기(0f); 합 = 0f },
+    ) { ch, dx -> 합 += dx; 끌기(합); ch.consume() }
 }
 
 /** 내용을 그리면서 GraphicsLayer 에도 기록해 둔다 — 종목이 바뀌기 직전에 `toImageBitmap()` 으로 옛 쪽 그림을 얻는다 (10-11) */
@@ -418,12 +437,12 @@ private fun Modifier.터치삼킴(): Modifier = pointerInput(Unit) {
 
 /** 좌우 밀기의 옛 쪽 (방식 1) — 새 쪽과 붙어서 같이 밀려 나간다 (다음 = 왼쪽으로 · 이전 = 오른쪽으로) */
 @Composable
-private fun 책장옛쪽(그림: ImageBitmap, 방향: Int, 진행값: () -> Float) {
+private fun 책장옛쪽(그림: ImageBitmap, 방향: Int, 옛시작: () -> Float, 진행값: () -> Float) {
     Box(
         Modifier.fillMaxSize()
             .graphicsLayer {
                 val v = 움직임.부드럽게.transform(진행값().coerceIn(0f, 1f))
-                translationX = -방향 * size.width * v
+                translationX = 옛시작() + (-방향 * size.width - 옛시작()) * v
             }
             .drawBehind { drawImage(그림, dstSize = IntSize(size.width.roundToInt(), size.height.roundToInt())) },
     )

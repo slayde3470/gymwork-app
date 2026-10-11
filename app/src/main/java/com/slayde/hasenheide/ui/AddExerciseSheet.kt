@@ -123,9 +123,9 @@ fun 종목넣기시트(
         })
     } else {
         val 플랜길 = if (플랜개수 != null && 플랜넣기 != null && 플랜빼기 != null) 플랜손(플랜개수, 플랜넣기, 플랜빼기) else null
-        var 펼침 by remember { mutableStateOf(false) }
-        시트(제목, 닫기, 위끝고정 = true, 닫기글 = "확인", 겹 = 겹, 속늦춤 = true, 머리가림 = 펼침) {
-            넣기속(상태, 칸고름, { 칸고름 = it }, 개수, 넣기, 빼기, 새종목만들기, { 새로 = true }, 플랜길, { 펼침 = it })
+        val 창구멍 = remember { mutableStateOf<Rect?>(null) }
+        시트(제목, 닫기, 위끝고정 = true, 닫기글 = "확인", 겹 = 겹, 속늦춤 = true, 가림구멍 = 창구멍) {
+            넣기속(상태, 칸고름, { 칸고름 = it }, 개수, 넣기, 빼기, 새종목만들기, { 새로 = true }, 플랜길, 창구멍)
         }
     }
 }
@@ -152,15 +152,13 @@ private fun 넣기속(
     새종목만들기: Boolean,
     새로열기: () -> Unit,
     플랜길: 플랜손?,
-    펼침바뀜: (Boolean) -> Unit = {},
+    창구멍: androidx.compose.runtime.MutableState<Rect?>,
 ) {
     val d = 상태.d
     val 밀도 = LocalDensity.current
     var 칸높이 by remember { mutableStateOf<Dp?>(null) }
     var 못잼 by remember { mutableStateOf(false) }
     var 펼친 by remember { mutableStateOf<String?>(null) }
-    val 펼침최신 by rememberUpdatedState(펼침바뀜)
-    LaunchedEffect(펼친 != null) { 펼침최신(펼친 != null) }   // 10-11: 시트 머리 띠도 같이 어둡게
     // 10-11 홍겸 님: 펼치면 펼친 상자 말고 나머지를 어둡게 (종목 탭 [펼침가림막] 을 그대로 쓴다) · 어두운 곳을 누르면 접힌다.
     //  펼친 상자 자리([구멍])는 스크롤 속 칸 기준으로 재서 스크롤해도 안 변한다. 한 번에 하나만 펼침은 전부터 그랬다([펼친] 하나)
     val 구멍틀 = remember { arrayOfNulls<LayoutCoordinates>(2) }   // [0] 스크롤 속 칸 · [1] 펼친 상자
@@ -174,6 +172,8 @@ private fun 넣기속(
     fun 구멍재기() {
         val 속 = 구멍틀[0]; val 상 = 구멍틀[1]
         구멍 = if (속 != null && 상 != null && 속.isAttached && 상.isAttached) 속.localBoundingBoxOf(상, clipBounds = false) else null
+        // 10-11 홍겸 님: 시트 전체를 어둡게 칠하려고 창 좌표로도 알린다 (시트 [가림구멍])
+        창구멍.value = if (상 != null && 상.isAttached) Rect(상.localToWindow(Offset.Zero), androidx.compose.ui.geometry.Size(상.size.width.toFloat(), 상.size.height.toFloat())) else null
     }
     val 접기 = { 펼친?.let { k -> 마지막 = 마지막누름(k) { c -> 마지막틀[0] = c } }; 펼친 = null }
     val 판톡 = remember루톡(true)
@@ -203,7 +203,7 @@ private fun 넣기속(
         Column(Modifier.fillMaxWidth().then(if (쓸 != null) Modifier.fillMaxHeight() else Modifier)) {
             Box(Modifier.fillMaxWidth()) {
                 칩줄(listOf(넣기전체) + 판.칸들, 판.고름, { 칸바꿈(it) })
-                if (펼친 != null) Box(Modifier.matchParentSize().background(종목치수.넣기가림).눌림(접기))   // 칩줄도 어둡게 (누르면 접힌다)
+                if (펼친 != null) Box(Modifier.matchParentSize().눌림(접기))   // 어둡게 칠하는 건 시트가 한다 — 여기는 누름만   // 칩줄도 어둡게 (누르면 접힌다)
             }
             Spacer(Modifier.height(간격.좁게))
             // 칩을 바꾸면 맨 위부터 (시안 v18 D ⑤) · 칸을 눌러 다시 그려도 보던 자리 그대로
@@ -213,7 +213,7 @@ private fun 넣기속(
                 //  접힐 때는 구멍만 비운다. 다른 종목으로 바꾸면 이 효과가 다시 돌아 새 자리로 한 번 움직인다
                 LaunchedEffect(펼친) {
                     if (펼친 == null) {
-                        구멍틀[1] = null; 구멍 = null
+                        구멍틀[1] = null; 구멍 = null; 창구멍.value = null
                         // 10-11 홍겸 님: 접은 뒤 방금 누른 상자가 화면 밖으로 나가 있으면 안으로 부드럽게 되돌린다 (그 상자는 반짝인다)
                         if (마지막 != null) {
                             접힘정리 = true
@@ -405,6 +405,6 @@ internal fun 체크글(n: Int): String = if (n <= 0) "" else if (n > 3) "✓×${
 @Composable
 private fun 가림막자리(구멍: State<Rect?>, 접기: () -> Unit, modifier: Modifier) {
     val h = 구멍.value
-    if (h != null) 펼침가림막(h, 접기, modifier, 종목치수.넣기가림)
-    else Box(modifier.background(종목치수.넣기가림).눌림(접기))
+    if (h != null) 펼침가림막(h, 접기, modifier, androidx.compose.ui.graphics.Color.Transparent)
+    else Box(modifier.눌림(접기))
 }
