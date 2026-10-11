@@ -183,9 +183,9 @@ private object 보고치수 {
     val 날짜옆 = 15.dp            // v17 B 2 — 제목 글자 오른쪽 끝에서
     val 날짜위 = 15.dp            // v17 B 2 — 제목 위끝에서
     val 찍기폭 = 32.dp            // v19 B — 카메라 · 공유 누르는 칸 32 × 40 · 아이콘 18
-    val 사진 = 58.dp              // v10 0vnw — 48 × 1.2
-    val 사진칸 = 64.dp            // v10 — 사진 58 + 좌우 3
-    val 사진그림 = 28.dp          // 사진 없을 때 사람 그림 (시안 .보고사진 svg)
+    val 사진 = 48.dp              // v10 0vnw — 48 × 1.2
+    val 사진칸 = 54.dp            // v10 — 사진 58 + 좌우 3
+    val 사진그림 = 24.dp          // 사진 없을 때 사람 그림 (시안 .보고사진 svg)
     val 톱니칸 = 28.dp
     val 톱니그림 = 15.3.dp        // v17 B 8 — 18 × 0.85
     val 톱니비킴 = 24.dp          // 톱니 밑에 파란 상자 · 이름 줄이 깔리지 않게
@@ -645,7 +645,7 @@ private fun ColumnScope.보고본문(
     if (보임.프로필) {
         Box(Modifier.fillMaxWidth().들어옴(상자p, false).보고상자(c.면, c.선)) {
             Row(
-                Modifier.fillMaxWidth().padding(간격.보통),
+                Modifier.fillMaxWidth().padding(horizontal = 간격.보통, vertical = 8.dp),   // 10-11 홍겸 님: 10개가 다 보이게 프로필 상자를 줄임 (사진 58→48 · 위아래 12→8)
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.보통),
             ) {
                 Column(Modifier.width(보고치수.사진칸), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
@@ -845,7 +845,7 @@ private fun 종목칸(d: 앱데이터, k: 보고칸, 열림: Boolean, 움직: Bo
     Column(
         modifier.들어옴(상자p, false).보고상자(if (열림) c.강조옅음 else c.면, if (열림) c.강조 else c.선)
             .then(if (찍는용) Modifier else Modifier.눌림(onClick).semantics { contentDescription = "${k.이름} ${if (열림) "접기" else "펼치기"}"; role = Role.Button })
-            .padding(horizontal = 간격.좁게, vertical = 5.dp),   // 10-11 홍겸 님: 10개가 다 보이게 위아래 여백 8 → 5
+            .padding(간격.좁게),
         verticalArrangement = Arrangement.spacedBy(간격.아주좁게),
     ) {
         이름딱지(k.이름, 번호 = d.같은이름번호(k.종id, k.이름), 플랜 = k.플랜id != null, 크기값 = 크기.조금작게)
