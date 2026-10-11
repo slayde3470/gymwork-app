@@ -854,7 +854,7 @@ private fun 종목상자(
                 Layout(
                     content = {
                         종목이름딱지(상태.d, e.종id, e.이름, Modifier)
-                        Text("${e.세트}세트", style = 글꼴.보통(크기.조금작게 * 0.5f + 1.sp).copy(fontFeatureSettings = "tnum"), color = c.흐림, maxLines = 1, softWrap = false)
+                        Text("${e.세트}세트", style = 글꼴.보통((크기.조금작게.value * 0.5f + 1f).sp).copy(fontFeatureSettings = "tnum"), color = c.흐림, maxLines = 1, softWrap = false)
                     },
                     modifier = Modifier.weight(1f, fill = false),
                 ) { ms, cs ->
