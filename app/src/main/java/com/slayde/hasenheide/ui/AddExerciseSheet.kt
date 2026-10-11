@@ -244,6 +244,13 @@ private fun 넣기속(
                     어둠.animateTo(if (펼친 != null && 접는키 == null) 1f else 0f, tween(움직임.상자펼침))
                     if (펼친 == null) 창구멍.value = null
                 }
+                // 10-11 홍겸 님: 펼친 종목을 지우면 상자가 없어졌는데 어둠 · 구멍만 남던 버그 — 펼친 것이 목록에 없으면 접은 것으로 친다
+                LaunchedEffect(펼친, 판) {
+                    if (펼친 != null && 판.묶음.none { g -> g.second.any { it.열쇠 == 펼친 } }) {
+                        접는키 = null; 접힘정리 = false; 마지막 = null; 마지막틀[0] = null
+                        펼친 = null; 구멍틀[1] = null; 구멍 = null; 창구멍.value = null
+                    }
+                }
                 LaunchedEffect(펼친) {
                     if (펼친 == null) {
                         구멍틀[1] = null; 구멍 = null

@@ -204,6 +204,8 @@ fun 종목화면(상태: 앱상태) {
         구멍?.let { 구멍기억[0] = it }
     }
     LaunchedEffect(펼친) { if (펼친 == null) { 구멍틀[1] = null; 구멍 = null } }
+    // 10-11 홍겸 님: 펼친 종목을 지우면(삭제) 상자가 없어졌는데 어둠만 남던 버그 — 펼친 것이 목록에 없으면 접은 것으로 친다
+    LaunchedEffect(펼친, 판) { if (펼친 != null && 판.묶음.none { g -> g.second.any { it.열쇠 == 펼친 } }) { 펼친 = null; 구멍틀[1] = null; 구멍 = null } }
     // 10-11 홍겸 님: 어두워질 때 · 밝아질 때 확 바뀌지 않고 페이드 (밝아질 때는 마지막으로 잰 구멍을 그대로 둔다)
     val 어둠 = remember { Animatable(0f) }
     var 어둠켬 by remember { mutableStateOf(false) }
