@@ -21,6 +21,7 @@ import androidx.compose.ui.composed
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
@@ -75,6 +76,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -284,9 +286,11 @@ internal class 마지막누름(val 열쇠: String, val 틀: (LayoutCoordinates) 
  * 상자마다 마지막 배치 자리(이 목록 맨 위 기준)를 기억해 두었다가, 펼친 상자가 바뀐 직후 첫 배치에서 옛 자리와 차이만큼 되돌려 놓고 0 으로 흘려보낸다.
  * (펼치는 동안 상자가 자라서 밀리는 건 연속이라 건드리지 않는다 — 신호가 바뀐 첫 배치만)
  */
+internal class 격자기록(val 위치: Offset, val 폭: Int, val 신호: String?)
+
 internal class 격자흐름 {
     var 기준: LayoutCoordinates? = null
-    val 위치 = HashMap<String, Pair<Offset, String?>>()
+    val 위치 = HashMap<String, 격자기록>()
 }
 
 @Composable
@@ -294,24 +298,44 @@ private fun Modifier.위치흐름(흐름: 격자흐름, 열쇠: String, 신호: 
     val 범위 = rememberCoroutineScope()
     val 옛 = remember { 흐름.위치[열쇠] }
     val 값 = remember { Animatable(Offset.Zero, Offset.VectorConverter) }
-    var 처리됨 by remember { mutableStateOf(옛 == null || 옛.second == 신호) }   // 새로 만들어지며 옮겨 와야 하는 상자는 첫 배치 전까지 숨긴다 (최종 자리에서 번쩍이지 않게)
+    val 폭흐름 = remember { Animatable(0f) }   // 0 = 옛 폭 → 1 = 새 폭 (넓어질 때만)
+    var 옛폭 by remember { mutableIntStateOf(0) }   // 0 = 폭 움직임 없음
+    var 처리됨 by remember { mutableStateOf(옛 == null || 옛.신호 == 신호) }   // 새로 만들어지며 옮겨 와야 하는 상자는 첫 배치 전까지 숨긴다 (최종 자리에서 번쩍이지 않게)
     return this
         .onGloballyPositioned { co ->
             val 기 = 흐름.기준
             if (기 != null && 기.isAttached && co.isAttached) {
                 val p = 기.localPositionOf(co, Offset.Zero)
                 val 기록 = 흐름.위치[열쇠]
-                흐름.위치[열쇠] = p to 신호
-                if (기록 != null && 기록.second != 신호) {
-                    val d = 기록.first - p
-                    if (d != Offset.Zero) 범위.launch(start = kotlinx.coroutines.CoroutineStart.UNDISPATCHED) {
-                        값.snapTo(d); 처리됨 = true
-                        값.animateTo(Offset.Zero, tween(움직임.상자펼침))
+                흐름.위치[열쇠] = 격자기록(p, co.size.width, 신호)
+                if (기록 != null && 기록.신호 != 신호) {
+                    val d = 기록.위치 - p
+                    val 넓어짐 = 기록.폭 in 1 until co.size.width
+                    if (d != Offset.Zero || 넓어짐) {
+                        // 10-11 홍겸 님: 자리 이동과 폭 넓어짐이 한 움직임 — 확대되는 상자가 옆 상자를 밀어내듯 (오른쪽 칸이면 왼쪽으로 넓어진다)
+                        if (넓어짐) 범위.launch(start = kotlinx.coroutines.CoroutineStart.UNDISPATCHED) {
+                            폭흐름.snapTo(0f); 옛폭 = 기록.폭
+                            androidx.compose.runtime.withFrameNanos { }   // 좁아진 폭이 한 번 그려진 뒤에 보이게
+                            처리됨 = true
+                            폭흐름.animateTo(1f, tween(움직임.상자펼침))
+                            옛폭 = 0
+                        }
+                        범위.launch(start = kotlinx.coroutines.CoroutineStart.UNDISPATCHED) {
+                            값.snapTo(d)
+                            if (!넓어짐) 처리됨 = true
+                            값.animateTo(Offset.Zero, tween(움직임.상자펼침))
+                        }
                     } else 처리됨 = true
                 } else 처리됨 = true
             }
         }
         .graphicsLayer { translationX = 값.value.x; translationY = 값.value.y; alpha = if (처리됨) 1f else 0f }
+        .clipToBounds()
+        .layout { m, c ->
+            val q = m.measure(c)
+            val 폭 = if (옛폭 in 1 until q.width) (옛폭 + (q.width - 옛폭) * 폭흐름.value).roundToInt() else q.width
+            layout(폭, q.height) { q.place(0, 0) }
+        }
 }
 
 /** 카테고리 묶음들 — 종목 탭과 [운동 종목 추가] 시트가 같이 쓴다 (10-08 홍겸 님 — 두 목록은 같은 화면이어야 한다) */
@@ -354,13 +378,14 @@ private fun 종목격자(상태: 앱상태, l: List<종목칸값>, 무리: Strin
     val 두줄높이 = with(LocalDensity.current) { (크기.본문 * 1.4f * 2).toDp() }
     Column(verticalArrangement = Arrangement.spacedBy(간격.좁게)) {
         줄들.forEach { 줄 ->
-            val 첫 = l[줄[0]]
+            val 실 = 줄.filter { it >= 0 }
+            val 첫 = l[실[0]]
             key(첫.열쇠) {
                 if (줄.size == 1 && 첫.열쇠 == 펼친) 종목상자(상태, 첫, true, Modifier.fillMaxWidth().then(if (흐름 != null) Modifier.위치흐름(흐름, 첫.열쇠, 펼친) else Modifier).끌기칸(끌판, 첫, 무리).then(if (펼침틀 != null) Modifier.onGloballyPositioned { 펼침틀(it) } else Modifier), 0.dp, 끌판, 펼침, 넣기, 접는키 = 접는키)
                 else {
-                    val 높이맞춤 = if (줄.any { 이름줄수(l[it].이름) > 1 }) 두줄높이 else 0.dp
+                    val 높이맞춤 = if (실.any { 이름줄수(l[it].이름) > 1 }) 두줄높이 else 0.dp
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
-                        줄.forEach { i -> key(l[i].열쇠) {
+                        줄.forEach { i -> if (i < 0) Box(Modifier.weight(1f)) else key(l[i].열쇠) {
                             val 이것 = 마지막?.takeIf { it.열쇠 == l[i].열쇠 }
                             종목상자(
                                 상태, l[i], false,
@@ -1209,25 +1234,22 @@ internal fun 앱데이터.상자플랜(x: 종목칸값): List<플랜> {
 }
 
 /**
- * 2열 격자 줄 나누기 — CSS grid 2열 · row dense 와 같다. 펼친 것(true)은 줄 전체를 차지하고,
- * 그 앞에 생긴 빈 칸은 뒤의 접힌 상자가 채운다. 결과 = 줄마다 상자 번호 (1개 또는 2개)
+ * 2열 격자 줄 나누기 — 펼친 것(true)은 줄 전체를 차지한다.
+ * 10-11 홍겸 님: 펼친 상자 뒤의 상자가 앞 빈칸으로 건너뛰어 올라오지 않는다 — 뒤 상자는 제 짝 그대로.
+ * 펼친 상자 앞 구간이 홀수 개면 맨 앞에 보이지 않는 빈칸(-1)을 하나 두어 앞 상자들이 한 칸씩 밀려 짝을 맞춘다.
+ * 결과 = 줄마다 상자 번호 (1개 또는 2개 · -1 = 빈칸)
  */
 internal fun 격자줄(펼침: List<Boolean>): List<List<Int>> {
-    val 줄: MutableList<MutableList<Int?>> = mutableListOf()
-    펼침.forEachIndexed { i, 넓 ->
-        if (넓) {
-            val r = 줄.indexOfFirst { it[0] == null && it[1] == null }
-            if (r >= 0) { 줄[r][0] = i; 줄[r][1] = -1 } else 줄.add(mutableListOf(i, -1))
-        } else {
-            var 놓음 = false
-            for (r in 줄) {
-                if (r[0] == null) { r[0] = i; 놓음 = true; break }
-                if (r[1] == null) { r[1] = i; 놓음 = true; break }
-            }
-            if (!놓음) 줄.add(mutableListOf(i, null))
-        }
+    val 줄 = mutableListOf<List<Int>>()
+    var 구간 = mutableListOf<Int>()
+    fun 구간내기(뒤에펼침: Boolean) {
+        val 칸 = if (뒤에펼침 && 구간.size % 2 == 1) listOf(-1) + 구간 else 구간.toList()
+        칸.chunked(2).forEach { 줄.add(it) }
+        구간 = mutableListOf()
     }
-    return 줄.map { r -> r.filterNotNull().filter { it >= 0 } }.filter { it.isNotEmpty() }
+    펼침.forEachIndexed { i, 넓 -> if (넓) { 구간내기(true); 줄.add(listOf(i)) } else 구간.add(i) }
+    구간내기(false)
+    return 줄
 }
 
 /** − ＋ 한 번 — 무게는 무게폭씩(0 아래로 안 감 · 0.1 단위로 맞춤), 횟수는 1씩(1 아래로 안 감) */

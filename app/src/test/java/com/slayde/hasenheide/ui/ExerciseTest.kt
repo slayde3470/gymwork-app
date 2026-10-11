@@ -34,9 +34,9 @@ class ExerciseTest {
         assertEquals(listOf(listOf(0, 1), listOf(2, 3), listOf(4)), 격자줄(listOf(false, false, false, false, false)))
     }
 
-    @Test fun 격자_펼친것은한줄_빈칸은뒤가채움() {
-        // 0 접힘 · 1 펼침 · 2 접힘 → [0, 2] 가 첫 줄(빈 칸을 2가 채움) · [1] 둘째 줄
-        assertEquals(listOf(listOf(0, 2), listOf(1)), 격자줄(listOf(false, true, false)))
+    @Test fun 격자_펼친것은한줄_뒤는건너뛰지않음() {
+        // 0 접힘 · 1 펼침 · 2 접힘 → 앞 구간(0)이 홀수라 맨 앞 빈칸(-1) · [-1, 0] · [1] · [2] (뒤 상자 2 는 건너뛰지 않는다)
+        assertEquals(listOf(listOf(-1, 0), listOf(1), listOf(2)), 격자줄(listOf(false, true, false)))   // 10-11: 뒤 상자가 건너뛰어 올라오지 않는다 · 앞 구간이 홀수면 맨 앞 빈칸(-1)
         assertEquals(listOf(listOf(0), listOf(1, 2)), 격자줄(listOf(true, false, false)))
         assertEquals(listOf(listOf(0, 1), listOf(2)), 격자줄(listOf(false, false, true)))
         assertEquals(emptyList(), 격자줄(emptyList()))
