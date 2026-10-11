@@ -23,7 +23,9 @@ import android.view.WindowManager
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.content.ContextCompat
 import com.slayde.hasenheide.ui.theme.밝은색표
+import kotlin.math.PI
 import kotlin.math.abs
+import kotlin.math.sin
 
 /**
  * 떠 있는 동그라미 (10-08 홍겸 님) — 운동 중에 앱을 벗어나면 다른 앱(유튜브 작은 창 등) 위에 작은 동그라미를 띄운다.
@@ -121,9 +123,10 @@ object 떠있는동그라미 {
                 붓.style = Paint.Style.STROKE; 붓.strokeWidth = 동그라미치수.고리 * 밀도; 붓.strokeCap = Paint.Cap.BUTT
                 붓.color = 좋음; 붓.alpha = ((1f - t) * 200).toInt()
                 c.drawCircle(cx, cy, r + 퍼짐 * t, 붓)
-                // 10-11 홍겸 님: 가운데(시간 · 고리 · 옅은 띠)는 줄어들면 싸구려 같다 → 크기 고정, 바깥 파문만 퍼진다
+                // 10-11 홍겸 님: 층이 둘이다 — 안쪽(시간 · 고리 · 옅은 띠)은 크기 고정, 전체를 감싼 초록 동그라미(바깥)만 숨 쉬듯 줄었다 커진다
+                val 숨 = 1.05f + 0.05f * sin(t * 2 * PI).toFloat()   // 1.0 ~ 1.1 — 안쪽 가장자리(1.0)보다 작아지지 않는다
                 붓.style = Paint.Style.FILL; 붓.color = 좋음; 붓.alpha = 255
-                c.drawCircle(cx, cy, r, 붓)
+                c.drawCircle(cx, cy, r * 숨, 붓)
                 val 굵 = 동그라미치수.고리 * 밀도
                 고리칸.set(cx - r + 굵, cy - r + 굵, cx + r - 굵, cy + r - 굵)
                 붓.style = Paint.Style.STROKE; 붓.strokeWidth = 굵; 붓.strokeCap = Paint.Cap.ROUND
@@ -144,10 +147,11 @@ object 떠있는동그라미 {
                 붓.style = Paint.Style.STROKE; 붓.strokeWidth = 동그라미치수.고리 * 밀도
                 붓.color = 강조; 붓.alpha = ((1f - t) * 200).toInt()
                 c.drawCircle(cx, cy, r + 퍼짐 * t, 붓)
-                // 10-11 홍겸 님: 로고도 크기 고정 — 바깥 파문만 퍼진다
-                c.save()
+                // 10-11 홍겸 님: 로고는 크기 고정 — 로고를 감싼 동그라미(바깥)만 숨 쉬듯 줄었다 커진다
+                val 숨 = 1.05f + 0.05f * sin(t * 2 * PI).toFloat()   // 1.0 ~ 1.1 — 로고 가장자리(1.0)보다 작아지지 않는다
                 붓.style = Paint.Style.FILL; 붓.color = 강조; 붓.alpha = 255
-                c.drawCircle(cx, cy, r, 붓)
+                c.drawCircle(cx, cy, r * 숨, 붓)
+                c.save()
                 동그길.reset(); 동그길.addCircle(cx, cy, r, Path.Direction.CW)
                 c.clipPath(동그길)
                 그림?.let { it.setBounds((cx - r).toInt(), (cy - r).toInt(), (cx + r).toInt(), (cy + r).toInt()); it.draw(c) }
