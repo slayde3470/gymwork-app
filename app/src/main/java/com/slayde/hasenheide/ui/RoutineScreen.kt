@@ -33,6 +33,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -766,12 +767,13 @@ private fun 루틴상세띠(
         //   이름이 끝나는 곳에 연필 그림(고칠 수 있다는 표시). 칸 어디를 눌러도 쳐 넣는다
         Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
             Row(
-                Modifier.fillMaxWidth(루틴값.이름칸비율).height(높이.낮게).clip(RoundedCornerShape(모서리.작게)).background(c.면)
+                Modifier.widthIn(min = 루틴값.이름칸최소).height(높이.낮게).clip(RoundedCornerShape(모서리.작게)).background(c.면)
                     .눌림 { try { 칸초점.requestFocus() } catch (_: Exception) { } }
                     .padding(horizontal = 간격.좁게),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(간격.아주좁게),
             ) {
+                Icon(아이콘.연필, "이름 고치기", Modifier.size(루틴값.연필그림), tint = c.옅음)
                 BasicTextField(
                     value = 이름,
                     onValueChange = { 이름 = it.replace("\n", "") },
@@ -788,7 +790,6 @@ private fun 루틴상세띠(
                             else if (고치는중) { 고치는중 = false; 넣기(이름); 이름 = 상태.d.루틴(r.id)?.이름 ?: 이름 }
                         },
                 )
-                Icon(아이콘.연필, "이름 고치기", Modifier.size(루틴값.연필그림), tint = c.옅음)
             }
         }
     }
@@ -897,7 +898,7 @@ private fun 슈퍼상자(
                     Text("${합}세트", Modifier.padding(top = 2.dp), style = 글꼴.보통((크기.조금작게.value * 0.5f + 1f).sp).copy(fontFeatureSettings = "tnum"), color = c.흐림, maxLines = 1, softWrap = false)
                 }
             }
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy((-2.5).dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(1.5.dp)) {
                 val 각 by androidx.compose.animation.core.animateFloatAsState(if (펼침) 180f else 0f, tween(움직임.펼침), label = "슈퍼펼침단추")
                 Box(Modifier.width(18.dp).height(높이.낮게).눌림(on펼침), contentAlignment = Alignment.Center) {
                     Icon(아이콘.아래, if (펼침) "접기" else "펼치기", Modifier.size(18.dp).graphicsLayer { rotationZ = 각 }, tint = c.슈퍼)
@@ -914,7 +915,7 @@ private fun 슈퍼상자(
                 verticalArrangement = Arrangement.spacedBy(간격.아주좁게),
             ) {
                 세트칸줄(
-                    { 글("세트", 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true) },
+                    { Text("세트", Modifier.wrapContentSize(unbounded = true), style = 글꼴.보통(크기.작게), color = c.옅음, maxLines = 1, softWrap = false, overflow = TextOverflow.Visible) },
                     { 글("무게 kg", 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true) },
                     { 글("횟수", 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true) },
                     { 글("휴식", 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true) },
@@ -996,7 +997,7 @@ private fun 종목상자(
         modifier.fillMaxWidth().clip(모양).background(c.면).border(선굵기.보통, c.속선, 모양).놓을선(표시, c.강조),
     ) {
         // 10-11 홍겸 님: 번호 좌우 7 · 세트 수는 이름 바로 아래 작게(50%) · 휴지통은 머리에서 빼고 펼치면 손잡이 자리에 굵게 · ∨ 와 손잡이 사이 7
-        상자머리(시작 = 7.dp, 끝 = 2.dp) {
+        상자머리(시작 = 7.dp, 끝 = 7.dp) {
             Row(
                 Modifier.weight(1f).heightIn(min = 38.dp).then(끌기길)
                     .semantics(mergeDescendants = true) { contentDescription = "${e.이름} ${e.세트}세트 ${if (펼침) "접기" else "펼치기"}" }
@@ -1006,21 +1007,26 @@ private fun 종목상자(
             ) {
                 상자번호(번호, 좁게 = true)
                 // 10-11 홍겸 님: 이름은 줄 가운데 · 세트 수는 이름 아래에 (자리를 내주지 않고 겹쳐 내려 앉는다 — 이름 아래 2 · 글 +1sp)
-                val 틈 = with(LocalDensity.current) { 2.dp.roundToPx() }
+                val 머리아래 = with(LocalDensity.current) { 간격.아주좁게.roundToPx() }
                 Layout(
                     content = {
                         종목이름딱지(상태.d, e.종id, e.이름, Modifier)
                         Text("${e.세트}세트", style = 글꼴.보통((크기.조금작게.value * 0.5f + 1f).sp).copy(fontFeatureSettings = "tnum"), color = c.흐림, maxLines = 1, softWrap = false)
                     },
-                    modifier = Modifier.weight(1f, fill = false),
+                    modifier = Modifier.weight(1f, fill = false).heightIn(min = 38.dp),
                 ) { ms, cs ->
                     val n = ms[0].measure(cs.copy(minWidth = 0, minHeight = 0))
                     val l = ms[1].measure(androidx.compose.ui.unit.Constraints(maxWidth = cs.maxWidth))
-                    layout(maxOf(n.width, l.width), n.height) { n.place(0, 0); l.place(0, n.height + 틈) }
+                    // 10-11 홍겸 님: 세트 수는 이름 아래 ~ 머리 아랫단 사이 정중앙 — 이름은 줄 가운데, 남는 아래 칸을 재서 가운데
+                    val 높 = maxOf(cs.minHeight, n.height)
+                    val 이름위 = (높 - n.height) / 2
+                    val 아래칸 = 높 - (이름위 + n.height) + 머리아래
+                    val 라벨위 = 이름위 + n.height + ((아래칸 - l.height) / 2).coerceAtLeast(0)
+                    layout(maxOf(n.width, l.width), 높) { n.place(0, 이름위); l.place(0, 라벨위) }
                 }
                 if (묶음글 != null) Text(묶음글, style = 글꼴.보통(크기.조금작게).copy(fontFeatureSettings = "tnum"), color = c.흐림, maxLines = 1, softWrap = false)
             }
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy((-2.5).dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(1.5.dp)) {
                 // ∨ 그림 안쪽 여백 4.5 + 손잡이 점 안쪽 여백 5 − 겹침 2.5 = 눈에 보이는 간격 7
                 val 각 by androidx.compose.animation.core.animateFloatAsState(if (펼침) 180f else 0f, tween(움직임.펼침), label = "종목펼침단추")
                 Box(Modifier.width(18.dp).height(높이.낮게).눌림(on펼침), contentAlignment = Alignment.Center) {
@@ -1039,7 +1045,7 @@ private fun 종목상자(
                 verticalArrangement = Arrangement.spacedBy(간격.아주좁게),
             ) {
                 세트칸줄(
-                    { 글("세트", 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true) },
+                    { Text("세트", Modifier.wrapContentSize(unbounded = true), style = 글꼴.보통(크기.작게), color = c.옅음, maxLines = 1, softWrap = false, overflow = TextOverflow.Visible) },
                     { 글("무게 kg", 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true) },
                     { 글("횟수", 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true) },
                     { 글("휴식", 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true) },
@@ -1360,7 +1366,7 @@ internal object 루틴값 {
     val 상자번호폭 = 20.dp      // 상세 종목 상자 머리의 번호 칸 (두 자리까지)
     val 자동띠 = 4.dp           // .루틴카드.자동 border-left 4
     val 카드줄틈 = 2.dp         // .루틴카드 gap 2
-    const val 이름칸비율 = 0.75f  // 상세 띠 이름 칸 너비 — 남는 자리의 75% (10-06 홍겸 님 25% 줄임)
+    val 이름칸최소 = 96.dp       // 10-11 홍겸 님: 이름 칸은 글이 늘면 같이 늘어난다 (최소 폭)
     val 띠단추폭 = 72.dp        // 상세 띠 [‹ 뒤로] 폭 = 오른쪽 빈자리 폭 (이름 칸 가운데 맞춤)
     val 연필그림 = 16.dp        // 이름 끝 연필 (글 옆 16)
     val 스위치폭 = 46.dp        // 공용 스위치와 같은 값

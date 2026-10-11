@@ -521,7 +521,7 @@ private object 운치수 {
     val 끌기오른끝 = 칸높이 + 화살자리   // 끄는 손이 이 안에 들면 오른쪽으로 넘긴다 ([＋] 28 + [›] 자리 32)
     val 뺌동그라미 = 16.dp          // 보는 칸 ✕ (v21 ①)
     val 뺌그림 = 14.dp
-    val 시계오른 = 20.dp            // 5gd1 타이머 왼쪽으로 20
+    val 시계오른 = 0.dp             // 10-11 홍겸 님: 시간 오른쪽 끝 = 게이지 끝 (종목 · 세트 · 시간이 오른쪽으로)
     const val 시계배 = 0.65f         // 10-09 홍겸 님: 위 띠 시간 글자 35% 작게 (18 → 11.7) [11_UI지침에 올릴 값]
     val 띠게이지 = 3.dp             // 10-09: 위 띠 전체 진행 게이지 — 1번째 · 2번째 줄 사이 틈에 얇게 [11_UI지침에 올릴 값]
     val 띠게이지틈 = 2.dp           // 게이지 위아래 틈
@@ -579,15 +579,11 @@ private fun 운머리윗줄(S: 운동세션, 지금: Long, 나가기: () -> Unit
             .padding(start = 간격.보통, end = 간격.보통, top = 부품치수.띠세로여백),
     ) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
-            Box(
-                Modifier.height(높이.낮게).widthIn(min = 높이.아주낮게).눌림(나가기).semantics { contentDescription = "나가기" },
-                contentAlignment = Alignment.Center,
-            ) { Text("‹", style = 글꼴.보통(크기.크게, FontWeight.Bold), color = c.강조글) }
             // 루틴 이름 — 지표가 먼저 자리를 잡고 남는 폭에 한 줄 (좁으면 …)
-            Text(S.루틴이름, Modifier.weight(1f), style = 글꼴.보통(크기.버튼, FontWeight.Bold), color = c.강조글, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            val 작 = 글꼴.보통(크기.작게).copy(fontFeatureSettings = "tnum")
+            Text(S.루틴이름, Modifier.weight(1f), style = 글꼴.보통(크기.버튼 * 1.3f, FontWeight.Bold), color = c.강조글, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            val 작 = 글꼴.보통(크기.작게 * 0.9f).copy(fontFeatureSettings = "tnum")
             fun 값(앞: String, b: String, 뒤: String = "") = buildAnnotatedString {
-                append(앞); withStyle(SpanStyle(color = c.강조글, fontWeight = FontWeight.Bold)) { append(b) }; append(뒤)
+                append(앞); withStyle(SpanStyle(color = c.강조글, fontWeight = FontWeight.Bold, fontSize = 크기.작게 * 0.9f * 0.75f)) { append(b) }; append(뒤)
             }
             val 라벨색 = c.강조글.copy(alpha = 운치수.띠라벨투명)
             Text(값("종목 ", "$끝종/$n"), style = 작, color = 라벨색, maxLines = 1, softWrap = false)
@@ -649,10 +645,11 @@ private fun 운이름(d: 앱데이터, S: 운동세션, 본: Int, e: 세션종�
             listOfNotNull("${계?.회 ?: (p.한회 + 1)}회차", if (계?.측정일 == true) "측정일" else null,
                 if (p.만든날.isNotBlank()) "${p.지난주(오늘)}주 진행 중" else null).joinToString(" · ")
         }
-        S.식구(본).size > 1 -> "- 슈퍼세트 (${S.식구(본).indexOf(본) + 1}/${S.식구(본).size})"   // 10-11 홍겸 님: 한 이름 칸에서 '덤벨컬 - 슈퍼세트 (1/2)' (주황) → 끝나면 '리스트컬 - 슈퍼세트 (2/2)'
+        S.식구(본).size > 1 -> "· 슈퍼세트"   // 10-11 홍겸 님: 한 이름 칸에서 '덤벨컬 - 슈퍼세트 (1/2)' (주황) → 끝나면 '리스트컬 - 슈퍼세트 (2/2)'
         else -> null
     }
     val 슈퍼중 = p == null && S.식구(본).size > 1
+    val 진행 = if (슈퍼중) "(${S.식구(본).indexOf(본) + 1}/${S.식구(본).size})" else null
     val 측정 = rememberTextMeasurer()
     val 밀도 = LocalDensity.current
     val 딱꼴 = 글꼴.보통(크기.작게, FontWeight.Bold).copy(lineHeight = 부품치수.딱지글높이, fontFeatureSettings = "tnum")
@@ -662,8 +659,9 @@ private fun 운이름(d: 앱데이터, S: 운동세션, 본: Int, e: 세션종�
     val 글 = buildAnnotatedString {
         append(e.이름.trim())
         if (딱 != null) { append("\u2060"); appendInlineContent("딱", 딱) }   // 끝 낱말과 딱지가 떨어져 감기지 않게
-        if (곁 != null) withStyle(SpanStyle(fontSize = 크기.버튼, fontWeight = if (슈퍼중) FontWeight.Bold else FontWeight.Normal, letterSpacing = (-0.01).em, color = if (슈퍼중) c.슈퍼글 else Color.Unspecified)) {
+        if (곁 != null) withStyle(SpanStyle(fontSize = 크기.버튼 * 0.9f, fontWeight = if (슈퍼중) FontWeight.Bold else FontWeight.Normal, letterSpacing = (-0.01).em, color = if (슈퍼중) c.슈퍼글 else Color.Unspecified)) {
             append("  "); append(곁.replace(' ', '\u00A0'))
+            if (진행 != null) withStyle(SpanStyle(fontSize = 크기.버튼 * 0.9f * 0.85f)) { append("\u00A0"); append(진행) }
         }
     }
     val 붙임 = if (딱 == null || 딱폭 == null) emptyMap() else mapOf(
@@ -671,7 +669,7 @@ private fun 운이름(d: 앱데이터, S: 운동세션, 본: Int, e: 세션종�
     )
     Text(
         글, modifier, color = c.강조글, inlineContent = 붙임,
-        style = 글꼴.제목(크기.크게),
+        style = 글꼴.제목(크기.크게 * 0.8f),
     )
 }
 

@@ -31,6 +31,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -62,6 +63,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
@@ -211,6 +213,7 @@ internal data class 보고줄(val 이름: String, val 값: String, val 차: Doub
 internal data class 보고칸(
     val 번호: Int, val 이름: String, val 종id: String?, val 플랜id: String?,
     val 세트들: List<세트>, val 총: Int, val 맨몸: Boolean, val 줄1: 보고줄, val 줄2: 보고줄,
+    val 묶음: String? = null,   // 10-11 슈퍼세트면 묶음 이름 — 보고서에서 주황으로 묶어 보인다
 )
 
 /** 큰 운동 한 칸 — 맨 앞은 N대 합계. v = 이 기록까지 최고 추정 1RM · 앞 = 이 기록 앞까지 · 때 = 그 값을 처음 낸 날 */
@@ -299,7 +302,7 @@ internal fun 앱데이터.보고계산(rec: 날기록, 저장키: String?, 날: 
             줄1 = 보고줄("1RM", "${kg글(rm)}kg", if (전.isEmpty()) null else 견줌차(rm, 전.maxOf { 일RM(it.w, it.r) }), "kg")
             줄2 = 보고줄("볼륨", "${콤마(볼)}kg", if (전.isEmpty()) null else 견줌차(볼, 볼륨(전.take(m))), "kg")
         }
-        보고칸(i, e.이름, e.종id, e.플랜id, 세, max(m, 총칸들?.getOrNull(i) ?: m), 맨, 줄1, 줄2)
+        보고칸(i, e.이름, e.종id, e.플랜id, 세, max(m, 총칸들?.getOrNull(i) ?: m), 맨, 줄1, 줄2, e.묶음)
     }
     return 보고값(날, rec.루틴이름, rec.종목들.sumOf { it.세트들.size }, 루볼, max(0, rec.걸린초), 루차, 칸들)
 }
@@ -710,13 +713,38 @@ private fun ColumnScope.보고본문(
         if (값.칸들.isEmpty()) {
             Text("체크한 세트가 없습니다", Modifier.padding(horizontal = 간격.아주좁게, vertical = 간격.좁게), style = 글꼴.보통(크기.조금작게), color = c.옅음)
         }
-        값.칸들.chunked(2).forEach { 줄 -> key(줄.first().번호) {
+        // 10-11 홍겸 님: 슈퍼세트는 주황으로 묶어 보인다 — 두 칸 격자에서 묶음이 줄 사이에 걸치면 빈 칸을 하나 끼워 줄 맨 앞에서 시작
+        val 슬롯 = ArrayList<보고칸?>()
+        값.칸들.forEachIndexed { i, k ->
+            val 첫 = k.묶음 != null && 값.칸들.getOrNull(i - 1)?.묶음 != k.묶음
+            if (첫 && 슬롯.size % 2 == 1 && 값.칸들.getOrNull(i + 1)?.묶음 == k.묶음) 슬롯.add(null)
+            슬롯.add(k)
+        }
+        슬롯.chunked(2).forEachIndexed { 줄번, 줄0 -> val 줄 = 줄0.filterNotNull(); key(줄.firstOrNull()?.번호 ?: -줄번 - 1) {
             val 열린 = 줄.firstOrNull { it.번호 == 펼침 }
             val 보기 = remember { BringIntoViewRequester() }
             Column(Modifier.fillMaxWidth().bringIntoViewRequester(보기), verticalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
-                    줄.forEach { k -> 종목칸(d, k, k.번호 == 펼침, 움직, 키, 찍는용, 상자p, Modifier.weight(1f)) { on펼침(k.번호) } }
-                    if (줄.size == 1) Box(Modifier.weight(1f))
+                    줄0.forEach { k ->
+                        if (k == null) { Box(Modifier.weight(1f)); return@forEach }
+                        val 묶 = k.묶음
+                        val 다 = 슬롯.indexOf(k)
+                        // 묶음의 맨 윗줄 오른쪽 칸에 [슈퍼] 딱지
+                        val 딱 = 묶 != null && 다 % 2 == 1 && 슬롯.getOrNull(다 - 1)?.묶음 == 묶 && 슬롯.getOrNull(다 - 2)?.묶음 != 묶
+                        val 주 = c.슈퍼
+                        Box(
+                            Modifier.weight(1f).then(if (묶 == null) Modifier else Modifier.drawBehind {
+                                val g = 3.dp.toPx()
+                                drawRoundRect(주, Offset(-g, -g), Size(size.width + g * 2, size.height + g * 2), CornerRadius(모서리.작게.toPx() + g))
+                            }),
+                        ) {
+                            종목칸(d, k, k.번호 == 펼침, 움직, 키, 찍는용, 상자p, Modifier.fillMaxWidth()) { on펼침(k.번호) }
+                            if (딱) Box(
+                                Modifier.align(Alignment.TopEnd).offset(x = 3.dp, y = (-3).dp).clip(RoundedCornerShape(bottomStart = 모서리.작게))
+                                    .background(주).padding(horizontal = 간격.아주좁게),
+                            ) { Text("슈퍼", style = 글꼴.보통(크기.작게 * 0.9f, FontWeight.Bold), color = c.강조, maxLines = 1, softWrap = false) }
+                        }
+                    }
                 }
                 if (열린 != null) {
                     // 상세는 옅게 → 진하게. 다 그린 뒤 그 줄 + 상세가 보이게 올린다 (시안 ya8r — 움직임 중에 자리를 재지 않는다)

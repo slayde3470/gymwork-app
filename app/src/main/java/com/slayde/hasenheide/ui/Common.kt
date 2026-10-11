@@ -293,6 +293,8 @@ fun 버튼(
 @Composable
 fun 칩줄(
     목록: List<String>, 선택: String?, onSelect: (String) -> Unit, modifier: Modifier = Modifier,
+    /** 10-11: 칩 사이 간격 (기본 8 · 종목 넣기 = 7) */
+    사이: Dp = 8.dp,
     /** 10-05: 밖에서 넘김을 쥘 때 (양끝 ‹ › 단추 — Parts.kt 화살칩줄). null 이면 전처럼 안에서 */
     밖넘김: androidx.compose.foundation.ScrollState? = null,
 ) {
@@ -301,7 +303,7 @@ fun 칩줄(
     val 넘김 = 밖넘김 ?: 안넘김
     Row(
         modifier.fillMaxWidth().오른끝흐림(넘김).horizontalScroll(넘김),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(사이),
     ) {
         목록.forEach { p -> key(p) {
             val 켬 = p == 선택
@@ -324,6 +326,9 @@ fun 칩줄(
         } }
     }
 }
+
+/** 시트 안에서 시트를 (내려가는 움직임과 함께) 닫는다 — 종목 넣기의 [확인] */
+val Local시트닫기 = androidx.compose.runtime.staticCompositionLocalOf<() -> Unit> { {} }
 
 /** 켜고 끄기 */
 @Composable
@@ -796,6 +801,8 @@ fun 시트(
     제목: String, onClose: () -> Unit, 위끝고정: Boolean = false,
     /** 10-06 v22 RT: 띠 머리 오른쪽을 ✕ 대신 이 글 단추로 (종목 넣기 = "확인" · 동작은 닫기 그대로). null = ✕ */
     닫기글: String? = null,
+    /** 10-11: 띠 아래 ~ 속 사이 틈 (기본 12 · 종목 넣기 = 9) */
+    위틈: Dp = 12.dp,
     /** 10-07: 위끝 고정 시트의 위끝 비율 (새 종목 시트 = 5%) */
     위끝: Float = 부품치수.시트위끝,
     /** 10-08: 화면 단계 — 1 이상이면 왼쪽에 [겹] 장만큼 책장처럼 겹쳐 그린다 ([쪽겹]) */
@@ -889,7 +896,7 @@ fun 시트(
                                     .size(부품치수.손잡이폭, 부품치수.손잡이두께).clip(RoundedCornerShape(부품치수.손잡이모서리)).background(c.속선),
                             )
                             머리띠(제목, 위여백 = 0.dp, 오른쪽 = {
-                                if (닫기글 != null) 띠칩(닫기글, { 닫기() })   // U4-8 띠 위 단추 = 캘린더 스탯 칩 모양
+                                if (닫기글 != null) { if (닫기글.isNotEmpty()) 띠칩(닫기글, { 닫기() }) }   // 빈 글 = 띠 오른쪽에 아무것도 두지 않는다   // U4-8 띠 위 단추 = 캘린더 스탯 칩 모양
                                 else 아이콘버튼(아이콘.닫기, "닫기", { 닫기() }, 칠함 = false, 색 = c.강조글, 크기칸 = 높이.낮게)
                             })
                         }
@@ -907,9 +914,9 @@ fun 시트(
                     }
                 }
                 Column(
-                    Modifier.then(if (위끝고정) Modifier.weight(1f).padding(horizontal = 간격.넓게) else Modifier).padding(top = 12.dp)
+                    Modifier.then(if (위끝고정) Modifier.weight(1f).padding(horizontal = 간격.넓게) else Modifier).padding(top = 위틈)
                         .graphicsLayer { alpha = 속투명 }.verticalScroll(rememberScrollState()),
-                ) { if (속그림) content() }
+                ) { if (속그림) androidx.compose.runtime.CompositionLocalProvider(Local시트닫기 provides { 닫기() }) { content() } }
             }
         }
     }

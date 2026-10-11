@@ -265,7 +265,7 @@ fun 운동그림칸(상태: 앱상태, S: 운동세션, 지금: Long, on숨김: 
     }
     val 더미수 = (사진들.size - (if (모 == "사진 2장") 2 else 1)).coerceIn(0, 그림칸.더미최대)
     Box(Modifier.fillMaxWidth().height(높).번호("운1.1").padding(start = 간격.보통, end = 간격.보통, top = 간격.좁게)) {
-        Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(그림칸.사이)) {
+        Row(Modifier.fillMaxHeight().fillMaxWidth(0.9f).align(Alignment.Center), horizontalArrangement = Arrangement.spacedBy(그림칸.사이)) {   // 10-11 홍겸 님: 좌우 너비 10% 줄임
             칸들.forEachIndexed { 칸, p0 ->
                 key(칸) {
                     Box(Modifier.weight(1f).fillMaxHeight()) {
@@ -274,14 +274,6 @@ fun 운동그림칸(상태: 앱상태, S: 운동세션, 지금: Long, on숨김: 
                 }
             }
         }
-        // ✕ — 이 운동 동안 감춘다. 머리줄의 '그림' 으로 다시 보인다
-        val 손 = remember { MutableInteractionSource() }
-        val 배 = 눌림배율(손)
-        Box(
-            Modifier.align(Alignment.TopEnd).padding(top = 간격.아주좁게, end = 간격.아주좁게).size(그림칸.닫기).배율(배).clip(CircleShape)
-                .background(c.면).눌림손(손) { 발자취.적기("그림 칸 감춤"); on숨김() },
-            contentAlignment = Alignment.Center,
-        ) { Icon(아이콘.닫기, "그림 감추기", Modifier.size(16.dp), tint = c.흐림) }
     }
 }
 
