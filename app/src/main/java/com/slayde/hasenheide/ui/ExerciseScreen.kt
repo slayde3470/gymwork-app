@@ -152,6 +152,7 @@ fun 앱데이터.종목이름바꿈(옛: String, 새: String): 앱데이터 {
 /** 이 화면만 쓰는 치수 — Theme 에 없는 값 (보고서 '공용 고칠 것' — 합칠 때 부품치수로 옮긴다) */
 internal object 종목치수 {
     val 이름글 = 11.sp   // 10-11 홍겸 님: 기본 글씨 = '케이블 체스트 프레스' 크기(11) — 전 14(→13) 에서 줄임.  전: 10-07 홍겸 님: 종목명 1 작게 · 굵게 빼기 (U2-1 단계 밖 — 지침에 올릴 값)
+    val 접힌위아래 = 6.dp    // 10-11 홍겸 님: 접힌 상자 위 · 아래 여백 8 → 6
     val 접힌오른쪽 = 1.5.dp  // 10-11: 접힌 상자 오른쪽 여백 — ∨ 그림 안쪽 여백(18×25% = 4.5) 과 합쳐 테두리와 6
     val 접힌그림앞 = 1.5.dp  // 이름 칸과 ∨ 사이 — 같은 이유로 6
     val 펼침그림 = 18.dp // 10-07 홍겸 님: 접기·펼치기 그림을 다른 곳(펼침단추 · U3-6 기본 18)과 같게
@@ -204,6 +205,8 @@ fun 종목화면(상태: 앱상태) {
         구멍?.let { 구멍기억[0] = it }
     }
     LaunchedEffect(펼친) { if (펼친 == null) { 구멍틀[1] = null; 구멍 = null } }
+    // 10-11 홍겸 님: 펼친 종목을 지우면(삭제) 상자가 없어졌는데 어둠만 남던 버그 — 펼친 것이 목록에 없으면 접은 것으로 친다
+    LaunchedEffect(펼친, 판) { if (펼친 != null && 판.묶음.none { g -> g.second.any { it.열쇠 == 펼친 } }) { 펼친 = null; 구멍틀[1] = null; 구멍 = null } }
     // 10-11 홍겸 님: 펼친 종목을 지우면(삭제) 상자가 없어졌는데 어둠만 남던 버그 — 펼친 것이 목록에 없으면 접은 것으로 친다
     LaunchedEffect(펼친, 판) { if (펼친 != null && 판.묶음.none { g -> g.second.any { it.열쇠 == 펼친 } }) { 펼친 = null; 구멍틀[1] = null; 구멍 = null } }
     // 10-11 홍겸 님: 어두워질 때 · 밝아질 때 확 바뀌지 않고 페이드 (밝아질 때는 마지막으로 잰 구멍을 그대로 둔다)
@@ -463,7 +466,7 @@ private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modif
                     drawRoundRect(c.강조, cornerRadius = r, alpha = a, style = Stroke(width = 선굵기.굵게.toPx()))
                 }
             } else Modifier)
-            .padding(start = if (체크보임) 0.dp else 간격.좁게, top = 간격.좁게, end = if (펼) 간격.좁게 else 종목치수.접힌오른쪽, bottom = 간격.좁게),   // 10-11 홍겸 님: 체크 · ∨ 좌우 6 (체크: 누르는 칸 안쪽 여백 6 + 바깥 0 · ∨: 그림 안쪽 여백 4.5 + 1.5)
+            .padding(start = if (체크보임) 0.dp else 간격.좁게, top = if (펼) 간격.좁게 else 종목치수.접힌위아래, end = if (펼) 간격.좁게 else 종목치수.접힌오른쪽, bottom = if (펼) 간격.좁게 else 종목치수.접힌위아래),   // 10-11 홍겸 님: 체크 · ∨ 좌우 6 (체크: 누르는 칸 안쪽 여백 6 + 바깥 0 · ∨: 그림 안쪽 여백 4.5 + 1.5)
     ) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(if (체크보임) 0.dp else 간격.좁게), verticalAlignment = Alignment.Top) {
             // 10-08 홍겸 님: 펼친 상자 머리에는 체크 상자를 두지 않는다 (접힌 줄에만)
