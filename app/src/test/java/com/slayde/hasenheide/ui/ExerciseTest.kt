@@ -34,8 +34,8 @@ class ExerciseTest {
         assertEquals(listOf(listOf(0, 1), listOf(2, 3), listOf(4)), 격자줄(listOf(false, false, false, false, false)))
     }
 
+    @Test fun 격자_펼친것은한줄_뒤는건너뛰지않음() {
         // 0 접힘 · 1 펼침(오른쪽 칸) · 2 접힘 → 0 은 가상 칸으로 가려지고 [1] · [2]
-        // 0 접힘 · 1 펼침 · 2 접힘 → 앞 구간(0)이 홀수라 맨 앞 빈칸(-1) · [-1, 0] · [1] · [2] (뒤 상자 2 는 건너뛰지 않는다)
         assertEquals(listOf(listOf(1), listOf(2)), 격자줄(listOf(false, true, false)))   // 10-11: 오른쪽 칸을 펼치면 맨 앞(0)이 가상 칸으로 가려지고 펼친 상자는 제자리 · 뒤 종목은 건너뛰지 않는다
         assertEquals(listOf(listOf(1, 2), listOf(3), listOf(4)), 격자줄(listOf(false, false, false, true, false)))
         assertEquals(listOf(listOf(0), listOf(1, 2)), 격자줄(listOf(true, false, false)))
