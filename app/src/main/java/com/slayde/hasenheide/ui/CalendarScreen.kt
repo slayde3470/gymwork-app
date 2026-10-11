@@ -284,7 +284,7 @@ internal fun 캘요일글(k: String): String = "일월화수목금토"[LocalDate
 // ─────────────── 화면 값 ───────────────
 
 /** 달력 칸 높이 (시안 `.칸날` 64 · 날짜 13 + 루틴 11 + 상태 11 이 들어간다) [Theme 에 없는 새 값 — 합칠 때 Theme.kt 로] */
-private val 칸높이 = 64.dp
+private val 칸높이 = 54.dp   // 10-11 홍겸 님: 64 → 54 (날짜 판에 예정 종목 10개가 들어가게)
 /** 달력 한 달 전체 높이 — 6줄 기준으로 고정. 5줄 · 4줄인 달은 같은 높이를 줄 수로 균등하게 나눈다 (10-11 홍겸 님) */
 private const val 기본줄수 = 6
 private val 달력높이 = 칸높이 * 기본줄수
@@ -1003,20 +1003,20 @@ private fun 판단추(
     ) {
         if (록.isNotEmpty() && 지움모드) {
             val 꺼짐 = 록.none { it.first in 록골 }
-            버튼("취소", { on지움모드(false) }, Modifier.weight(1f), 작게 = true, 세로여백 = 7.dp)
-            버튼("기록 삭제", { if (!꺼짐) 지움(k) }, Modifier.weight(1f).alpha(if (꺼짐) 꺼짐투명 else 1f), 작게 = true, 세로여백 = 7.dp, 글색 = c.나쁨)
+            버튼("취소", { on지움모드(false) }, Modifier.weight(1f), 작게 = true, 세로여백 = 4.dp, 글배율 = 0.9f)
+            버튼("기록 삭제", { if (!꺼짐) 지움(k) }, Modifier.weight(1f).alpha(if (꺼짐) 꺼짐투명 else 1f), 작게 = true, 세로여백 = 4.dp, 글배율 = 0.9f, 글색 = c.나쁨)
         } else if (록.isNotEmpty()) {
             val 끝 = 록.last().second
-            버튼("운동 보고서", { 상태.d.캘기록목록(k).lastOrNull()?.let { (kk, rr) -> 보고서(kk, rr) } }, Modifier.weight(1f).번호("캘3"), 작게 = true, 세로여백 = 7.dp)
+            버튼("운동 보고서", { 상태.d.캘기록목록(k).lastOrNull()?.let { (kk, rr) -> 보고서(kk, rr) } }, Modifier.weight(1f).번호("캘3"), 작게 = true, 세로여백 = 4.dp, 글배율 = 0.9f)
             val 다시 = if (k == 오늘) d.루틴(끝.루틴id)?.takeIf { !it.휴식일 } else null
             if (다시 != null) 버튼("한 번 더 운동하기", {
                 // 측정일이면 플랜 줄 앞에 워밍업 (20 B-3 · 조절해시작과 같은 함수). 저장하면 그 날 '~2' 기록으로 따로 남는다
                 val dd = 상태.d
                 val rr = dd.루틴(다시.id)
                 시작(rr?.let { 운동시작(dd.측정워밍업붙임(dd.플랜줄채움(it)), System.currentTimeMillis()) })
-            }, Modifier.weight(판단추폭.넓게), 주요 = true, 작게 = true, 세로여백 = 7.dp, 줄임 = true)
+            }, Modifier.weight(판단추폭.넓게), 주요 = true, 작게 = true, 세로여백 = 4.dp, 글배율 = 0.9f, 줄임 = true)
             // 10-08 홍겸 님: '기록 삭제' 로 줄이고 폭을 줄인다 — 줄어든 만큼 [한 번 더 운동하기] 가 넓어진다. 누르면 지움 모드
-            버튼("기록 삭제", { on지움모드(true) }, Modifier.weight(판단추폭.좁게), 작게 = true, 세로여백 = 7.dp, 글색 = c.나쁨, 줄임 = true)
+            버튼("기록 삭제", { on지움모드(true) }, Modifier.weight(판단추폭.좁게), 작게 = true, 세로여백 = 4.dp, 글배율 = 0.9f, 글색 = c.나쁨, 줄임 = true)
         } else {
             // 10-08 홍겸 님: 기록 없는 오늘 이후. 휴식 예정이 있어도 [초기화] 는 오른쪽에 둔다
             val 초기화있음 = r != null

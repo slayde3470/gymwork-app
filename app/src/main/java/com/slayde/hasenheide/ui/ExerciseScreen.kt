@@ -104,6 +104,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.slayde.hasenheide.data.근육표
 import com.slayde.hasenheide.data.무게글
@@ -497,7 +498,7 @@ private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modif
                                     .눌림 { 이름고침 = true },
                                 contentAlignment = Alignment.CenterStart,
                             ) { 이름맞춤(x.이름, Modifier, 바탕크기 = 종목치수.이름글, 굵기 = FontWeight.Medium) }
-                            else { if (!펼 && 넣기 == null && 즐겨) 별(true, 16.dp, c.즐겨, Modifier.padding(end = 2.dp))   // 10-11: 종목 탭엔 체크 상자가 없으니 이름 앞 노란 별
+                            else { if (!펼 && 넣기 == null && 즐겨) 별(true, 15.dp, c.즐겨, Modifier.padding(end = 2.dp))   // 10-11: 종목 탭엔 체크 상자가 없으니 이름 앞 노란 별
                             이름맞춤(x.이름, Modifier.weight(1f, fill = false), 바탕크기 = 종목치수.이름글, 굵기 = FontWeight.Medium, 두줄촘촘 = !펼, 자간넓힘폭 = if (체크보임) 넣기값.체크옆넓힘 else 0.dp) }
                             if (번 > 0 || 플.isNotEmpty()) Row(Modifier.offset(x = 부품치수.딱지겹침), horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
                                 번호딱지(번)
@@ -535,7 +536,7 @@ private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modif
                     근육읽기(상태, x.이름)
                 }
             }
-            if (t != null) 넣은사진줄(상태, t)
+            if (t != null && t.사진.isNotEmpty()) 넣은사진줄(상태, t)
         } }
     }
 }
@@ -704,10 +705,13 @@ private fun 넣기체크(이름: String, 수: Int, 즐겨: Boolean, 누름: () -
         contentAlignment = Alignment.CenterStart,
     ) {
         if (즐겨) {
-            // 10-11 홍겸 님: 즐겨찾기 종목은 네모 체크 상자 대신 노란 별 — 넣으면 별 가운데에 파란 체크 (둘 이상이면 오른쪽에 ×수)
-            Row(Modifier.padding(start = 넣기값.체크옆).graphicsLayer { scaleX = 깊이.value; scaleY = 깊이.value }, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                별(true, 넣기값.체크 + 6.dp, c.즐겨, 체크 = 들어감, 체크색 = c.강조)
-                if (수 > 1) Text("×$수", style = 글꼴.보통(크기.작게, FontWeight.Bold), color = c.강조, maxLines = 1, softWrap = false)
+            // 10-11 홍겸 님: 즐겨찾기 종목은 네모 체크 상자 대신 별 — 넣기 전엔 속이 빈 별 · 넣으면 노랗게 칠해지고 파란 체크 (둘 이상이면 체크 대신 수). 일반 체크 상자와 같은 한 칸·같은 누름
+            Box(
+                Modifier.padding(start = 넣기값.체크옆).graphicsLayer { scaleX = 깊이.value; scaleY = 깊이.value },
+                contentAlignment = Alignment.Center,
+            ) {
+                별(들어감, 넣기값.체크 + 2.dp, c.즐겨, 체크 = 수 == 1, 체크색 = c.강조)
+                if (수 > 1) Text("$수", Modifier.offset(y = 1.dp), style = 글꼴.보통(크기.작게 * 0.8f, FontWeight.Bold).copy(letterSpacing = (-0.05).em), color = c.강조, maxLines = 1, softWrap = false)
             }
         } else Box(
             Modifier.padding(start = 넣기값.체크옆).graphicsLayer { scaleX = 깊이.value; scaleY = 깊이.value }.heightIn(min = 넣기값.체크).widthIn(min = 넣기값.체크).clip(상자)
@@ -716,7 +720,7 @@ private fun 넣기체크(이름: String, 수: Int, 즐겨: Boolean, 누름: () -
                 .padding(horizontal = 간격.아주좁게),
             contentAlignment = Alignment.Center,
         ) {
-            if (들어감) Text(체크글(수), style = 글꼴.보통(크기.작게, FontWeight.Bold), color = c.강조글, maxLines = 1, softWrap = false)
+            if (들어감) Text(체크글(수), style = 글꼴.보통(크기.작게 * 0.85f, FontWeight.Bold).copy(letterSpacing = (-0.08).em), color = c.강조글, maxLines = 1, softWrap = false)
         }
     }
 }
@@ -755,7 +759,8 @@ private fun 종목고치기(상태: 앱상태, t: 종목, 플랜있음: Boolean,
     }
     // 10-09 홍겸 님: 근육 그림 2장 (글 없음) — 어디를 눌러도 근육 고르기 팝업 (근육 조각이면 그 부위 줄 강조)
     근육두장(v.근육, d.설정.색표, { 키들 -> v = if (키들.isEmpty()) v.팝빈열기() else v.팝열기(키들) })
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(간격.좁게), verticalAlignment = Alignment.CenterVertically) {
+        사진넣는칸(상태, t, Modifier.size(높이.보통))   // 10-11 홍겸 님: 사진 ＋ 칸은 [저장] 줄 맨 왼쪽 · 크기는 줄 높이
         버튼("저장", { 저장() }, Modifier.weight(1f), 주요 = 바뀜, 작게 = true)
         버튼("취소", { v = 처음; 저장뒤() }, 작게 = true, 글색 = if (바뀜) c.나쁨 else c.옅음)
     }
@@ -886,7 +891,7 @@ private fun 세트표줄(
 
 /** 펼친 상자 머리의 사진 칸 28 — 첫 사진 · 없으면 점선 ＋. 누르면 사진 넣기 (시안 `.사진넣칸`) */
 @Composable
-private fun 사진넣는칸(상태: 앱상태, t: 종목) {
+private fun 사진넣는칸(상태: 앱상태, t: 종목, 크기: Modifier = Modifier.size(그림칸.사진)) {
     val c = Local색.current
     val ctx = LocalContext.current
     val 일꾼 = rememberCoroutineScope()
@@ -906,7 +911,7 @@ private fun 사진넣는칸(상태: 앱상태, t: 종목) {
     val 모양 = RoundedCornerShape(그림칸.모서리)
     val 첫: String? = null   // 10-11 홍겸 님: 머리 사진 칸은 즐겨찾기 별로 — 사진 넣기는 아래 사진 줄 맨 앞 [＋] 칸
     Box(
-        Modifier.size(그림칸.사진).clip(모양)
+        크기.clip(모양)
             .then(if (첫 == null) Modifier.background(c.면2).border(선굵기.보통, c.속선, 모양) else Modifier)
             .눌림 {
                 if (넣는중) return@눌림
@@ -931,7 +936,7 @@ private fun 즐겨칸(상태: 앱상태, t: 종목) {
             .눌림 { 발자취.적기("즐겨찾기 ${if (켬) "끔" else "켬"} · ${t.이름}"); 상태.바꿈 { it.즐겨바꿈(t.id) } }
             .semantics { contentDescription = "${t.이름} 즐겨찾기 ${if (켬) "끄기" else "켜기"}"; role = Role.Switch },
         contentAlignment = Alignment.Center,
-    ) { 별(켬, 28.dp, if (켬) c.즐겨 else c.옅음) }
+    ) { 별(켬, 22.dp, if (켬) c.즐겨 else c.옅음) }
 }
 
 /** 넣은 사진 줄 72 — 누르면 '지우기' 표시 · 한 번 더 누르면 지운다(되돌리기 띠) (시안 `.사진줄` · '사진지움') */
@@ -942,7 +947,6 @@ private fun 넣은사진줄(상태: 앱상태, t: 종목) {
     val 모양 = RoundedCornerShape(그림칸.모서리)
     val 넘김 = rememberScrollState()
     Row(Modifier.fillMaxWidth().오른끝흐림(넘김).horizontalScroll(넘김), horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
-        사진넣는칸(상태, t)
         t.사진.forEachIndexed { j, 이름 ->
             key(이름) {
                 Box(
@@ -1253,7 +1257,7 @@ internal fun 즐겨칩(상태: 앱상태) {
             .눌림 { 상태.바꿈 { d -> d.copy(설정 = d.설정.copy(즐겨먼저 = !d.설정.즐겨먼저)) } }
             .semantics { contentDescription = "즐겨찾기 먼저 보기 ${if (켬) "끄기" else "켜기"}"; role = Role.Switch },
         contentAlignment = Alignment.Center,
-    ) { 별(켬, 24.dp, if (켬) c.즐겨 else c.흐림) }
+    ) { 별(켬, 18.dp, if (켬) c.즐겨 else c.흐림) }
 }
 
 // ═════════════════════ 순수 계산 (시험: test/…/ui/ExerciseTest.kt) ═════════════════════

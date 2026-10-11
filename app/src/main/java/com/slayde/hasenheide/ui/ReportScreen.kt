@@ -731,21 +731,24 @@ private fun ColumnScope.보고본문(
         묶음들.forEachIndexed { q, l -> l.forEach { 묶음칸[값.칸들[it].번호] = q } }
         val 딱칸 = 묶음들.map { l -> l.first { it % 2 == 1 } }.toSet()   // 묶음 맨 윗줄 오른쪽 칸 — [슈퍼] 딱지
         val 자리 = remember { androidx.compose.runtime.mutableStateMapOf<Int, Rect>() }
+        val 줄자리 = remember { androidx.compose.runtime.mutableStateMapOf<Int, Rect>() }
         val 격자틀 = remember { arrayOfNulls<androidx.compose.ui.layout.LayoutCoordinates>(1) }
         val 주 = c.슈퍼
         Column(
             Modifier.fillMaxWidth().onGloballyPositioned { 격자틀[0] = it }
                 .drawWithContent {
                     drawContent()
-                    val g = 2.2.dp.toPx()
+                    // 10-11 홍겸 님: 그린 선을 따라가지 않고 **상자 테두리를 그대로** — 묶인 칸의 줄 높이 사각형을 틈 절반만큼 키워 맞붙이고(경계가 사라진다) 바깥 둘레만 한 번 긋는다
+                    val g = 간격.아주좁게.toPx() / 2f + 0.5f
                     묶음들.forEach { l ->
                         var 합: androidx.compose.ui.graphics.Path? = null
                         l.forEach { i ->
                             val r = 자리[값.칸들[i].번호] ?: return@forEach
-                            val q = androidx.compose.ui.graphics.Path().apply { addRoundRect(androidx.compose.ui.geometry.RoundRect(r.inflate(g), CornerRadius(모서리.작게.toPx()))) }
+                            val 줄 = 줄자리[i / 2] ?: return@forEach
+                            val q = androidx.compose.ui.graphics.Path().apply { addRect(Rect(r.left - g, 줄.top - g, r.right + g, 줄.bottom + g)) }
                             합 = 합?.let { a -> androidx.compose.ui.graphics.Path.combine(androidx.compose.ui.graphics.PathOperation.Union, a, q) } ?: q
                         }
-                        합?.let { drawPath(it, 주, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 선굵기.굵게.toPx(), pathEffect = androidx.compose.ui.graphics.PathEffect.cornerPathEffect(모서리.작게.toPx() + g))) }
+                        합?.let { drawPath(it, 주, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 선굵기.굵게.toPx(), pathEffect = androidx.compose.ui.graphics.PathEffect.cornerPathEffect(모서리.작게.toPx()))) }
                     }
                 },
             verticalArrangement = Arrangement.spacedBy(간격.아주좁게),
@@ -754,7 +757,16 @@ private fun ColumnScope.보고본문(
             val 열린 = 줄.firstOrNull { it.번호 == 펼침 }
             val 보기 = remember { BringIntoViewRequester() }
             Column(Modifier.fillMaxWidth().bringIntoViewRequester(보기), verticalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
+                Row(
+                    Modifier.fillMaxWidth().then(if (묶음들.isEmpty()) Modifier else Modifier.onGloballyPositioned { co ->
+                        val 기 = 격자틀[0]
+                        if (기 != null && 기.isAttached && co.isAttached) {
+                            val r = Rect(기.localPositionOf(co, Offset.Zero), Size(co.size.width.toFloat(), co.size.height.toFloat()))
+                            if (줄자리[줄번] != r) 줄자리[줄번] = r
+                        }
+                    }),
+                    horizontalArrangement = Arrangement.spacedBy(간격.아주좁게),
+                ) {
                     줄.forEach { k ->
                         val 다 = 값.칸들.indexOf(k)
                         Box(
