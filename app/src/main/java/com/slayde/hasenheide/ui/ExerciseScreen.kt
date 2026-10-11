@@ -193,7 +193,9 @@ fun 종목화면(상태: 앱상태) {
     // 새 종목 시트 — null 닫힘 · "" 새 종목 · 그 밖 = 편집할 종목 id
     var 새시트 by remember { mutableStateOf<String?>(null) }
 
-    val 판 = d.종목탭판(고른칸, d.설정.즐겨먼저)
+    // 10-11 홍겸 님: 펼친 동안은 즐겨찾기를 눌러도 순서를 바꾸지 않는다 (펼친 상자가 튀어 화면이 어긋났다) — 접으면 반영
+    val 즐겨고정 = remember(펼친 != null) { if (펼친 != null) d.종목표.filter { it.즐겨 }.map { it.id }.toSet() else null }
+    val 판 = d.종목탭판(고른칸, d.설정.즐겨먼저, 즐겨고정)
     // 10-07 홍겸 님: 꾹 눌러 끌어 종목 순서 바꾸기 — 같은 카테고리 안에서만 (넣기 시트와 같은 차례 = 종목표 차례)
     val 넘김 = rememberScrollState()
     val 끌판 = remember격자끌기판({ a, b, 뒤 ->
@@ -1273,13 +1275,13 @@ internal data class 종목칸값(val 이름: String, val 칸: String, val 종목
 internal data class 종목판(val 칸들: List<String>, val 고름: String, val 묶음: List<Pair<String, List<종목칸값>>>)
 
 /** 시안 `종목탭` — 플랜만 남은 종목은 '기타' (카테고리에 '기타' 가 있으면 거기에 더한다) */
-internal fun 앱데이터.종목탭판(고른칸: String, 즐겨먼저: Boolean = false): 종목판 {
+internal fun 앱데이터.종목탭판(고른칸: String, 즐겨먼저: Boolean = false, 즐겨고정: Set<String>? = null): 종목판 {
     val 남은 = 플랜들.map { it.종목 }.distinct().filter { n -> 종목표.none { it.이름 == n } }.map { 종목칸값(it, "기타", null) }
     val 칸들 = if (남은.isNotEmpty() && "기타" !in 카테고리) 카테고리 + "기타" else 카테고리
     val 고 = if (고른칸 in 칸들) 고른칸 else "전체"
     val 묶 = (if (고 == "전체") 칸들 else listOf(고)).map { c ->
         // 10-11 홍겸 님: 즐겨찾기를 켜 두면 즐겨찾은 종목이 (카테고리마다) 맨 앞 — 나머지는 그대로 모두 보인다 (안정 정렬)
-        val 칸종목 = 종목표.filter { it.칸 == c }.let { l -> if (즐겨먼저) l.sortedByDescending { it.즐겨 } else l }
+        val 칸종목 = 종목표.filter { it.칸 == c }.let { l -> if (즐겨먼저) l.sortedByDescending { if (즐겨고정 != null) it.id in 즐겨고정 else it.즐겨 } else l }
         c to (칸종목.map { 종목칸값(it.이름, it.칸, it) } + (if (c == "기타") 남은 else emptyList()))
     }.filter { it.second.isNotEmpty() }
     return 종목판(칸들, 고, 묶)
