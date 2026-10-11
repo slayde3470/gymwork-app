@@ -108,6 +108,7 @@ import com.slayde.hasenheide.data.근육표
 import com.slayde.hasenheide.data.무게글
 import com.slayde.hasenheide.data.앱데이터
 import com.slayde.hasenheide.data.이름추천
+import com.slayde.hasenheide.data.즐겨바꿈
 import com.slayde.hasenheide.data.종목
 import com.slayde.hasenheide.data.종목근육
 import com.slayde.hasenheide.data.종목기본세트
