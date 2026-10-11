@@ -82,6 +82,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.animation.core.Animatable
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.graphics.graphicsLayer
@@ -156,6 +160,8 @@ internal object 종목치수 {
     const val 열휴식 = 79f
     /** 10-09 홍겸 님: 종목을 펼치면 펼친 상자 밖을 어둡게 — 시트 가림막(Common.kt `시트`)과 같은 값 */
     val 가림 = Color.Black.copy(alpha = 0.35f)   // [11_UI지침에 올릴 값]
+    /** 10-11 홍겸 님: 종목 넣기 시트는 펼친 상자 말고 전부(칩 줄 · 목록 상자들) 더 어둡게 */
+    val 넣기가림 = Color.Black.copy(alpha = 0.6f)   // [11_UI지침에 올릴 값]
 }
 
 /**
@@ -260,12 +266,17 @@ internal class 종목넣기손(
     val 플랜카드: Boolean,
 )
 
+/** 10-11 홍겸 님: 접은 뒤 '방금 누른 상자' — 그 상자가 한 번 반짝이고, 부르는 쪽은 [틀] 로 그 자리를 알아 화면 안으로 되돌린다 */
+internal class 마지막누름(val 열쇠: String, val 틀: (LayoutCoordinates) -> Unit)
+
 /** 카테고리 묶음들 — 종목 탭과 [운동 종목 추가] 시트가 같이 쓴다 (10-08 홍겸 님 — 두 목록은 같은 화면이어야 한다) */
 @Composable
 internal fun 종목묶음들(
     상태: 앱상태, 판: 종목판, 끌판: 격자끌기판, 펼친: String?, 펼침: (String) -> Unit, 넣기: 종목넣기손? = null,
     /** 10-09 홍겸 님: 펼친 상자의 자리를 알려 준다 (종목 탭이 그 둘레를 어둡게) — 넣기 시트는 안 쓴다 */
     펼침틀: ((LayoutCoordinates) -> Unit)? = null,
+    /** 10-11 홍겸 님: 방금 접은 상자 (넣기 시트만 쓴다) */
+    마지막: 마지막누름? = null,
 ) {
     val c = Local색.current
     // 10-09 홍겸 님: [루틴] 없음 → 안내 글 (두 줄 이상이 될 수 있어 줄 = 3)
@@ -274,7 +285,7 @@ internal fun 종목묶음들(
         key(칸이름) {
             Column(verticalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
                 if (판.고름 == "전체") 이름표(칸이름, Modifier.padding(start = 간격.아주좁게, top = 간격.아주좁게))
-                종목격자(상태, l, 칸이름, 끌판, 펼친, 펼침, 넣기, 펼침틀)
+                종목격자(상태, l, 칸이름, 끌판, 펼친, 펼침, 넣기, 펼침틀, 마지막)
             }
         }
     }
@@ -282,7 +293,7 @@ internal fun 종목묶음들(
 
 /** 2열 격자 — 접힌 상자는 한 칸, 펼친 상자는 줄 전체. 줄마다 접힌 이름이 두 줄이면 옆 상자도 같은 높이 */
 @Composable
-private fun 종목격자(상태: 앱상태, l: List<종목칸값>, 무리: String, 끌판: 격자끌기판, 펼친: String?, 펼침: (String) -> Unit, 넣기: 종목넣기손?, 펼침틀: ((LayoutCoordinates) -> Unit)?) {
+private fun 종목격자(상태: 앱상태, l: List<종목칸값>, 무리: String, 끌판: 격자끌기판, 펼친: String?, 펼침: (String) -> Unit, 넣기: 종목넣기손?, 펼침틀: ((LayoutCoordinates) -> Unit)?, 마지막: 마지막누름? = null) {
     val 줄들 = 격자줄(l.map { it.열쇠 == 펼친 })
     val 두줄높이 = with(LocalDensity.current) { (크기.본문 * 1.4f * 2).toDp() }
     Column(verticalArrangement = Arrangement.spacedBy(간격.좁게)) {
@@ -293,7 +304,14 @@ private fun 종목격자(상태: 앱상태, l: List<종목칸값>, 무리: Strin
                 else {
                     val 높이맞춤 = if (줄.any { 이름줄수(l[it].이름) > 1 }) 두줄높이 else 0.dp
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
-                        줄.forEach { i -> key(l[i].열쇠) { 종목상자(상태, l[i], false, Modifier.weight(1f).끌기칸(끌판, l[i], 무리), 높이맞춤, 끌판, 펼침, 넣기) } }
+                        줄.forEach { i -> key(l[i].열쇠) {
+                            val 이것 = 마지막?.takeIf { it.열쇠 == l[i].열쇠 }
+                            종목상자(
+                                상태, l[i], false,
+                                Modifier.weight(1f).끌기칸(끌판, l[i], 무리).then(if (이것 != null) Modifier.onGloballyPositioned { 이것.틀(it) } else Modifier),
+                                높이맞춤, 끌판, 펼침, 넣기, 이것,
+                            )
+                        } }
                         if (줄.size == 1) Box(Modifier.weight(1f))
                     }
                 }
@@ -314,7 +332,7 @@ private fun Modifier.끌기칸(끌판: 격자끌기판, x: 종목칸값, 무리:
  * [넣기] 가 있으면(종목 넣기 시트) 오른쪽 끝에 체크 상자 — 누르면 넣기 / 들어 있으면 하나 빼기 · 꾹 = 하나 더
  */
 @Composable
-private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modifier: Modifier, 이름높이: androidx.compose.ui.unit.Dp, 끌판: 격자끌기판, 펼침: (String) -> Unit, 넣기: 종목넣기손?) {
+private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modifier: Modifier, 이름높이: androidx.compose.ui.unit.Dp, 끌판: 격자끌기판, 펼침: (String) -> Unit, 넣기: 종목넣기손?, 마지막: 마지막누름? = null) {
     val c = Local색.current
     val d = 상태.d
     val t = x.종목
@@ -329,6 +347,9 @@ private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modif
         if (접는중) { delay(움직임.펼침.toLong()); if (펼최신) 펼침(x.열쇠) }
     }
     val 모양 = RoundedCornerShape(모서리.작게)
+    // 10-11 홍겸 님: 방금 접은 상자는 한 번 반짝인다 (어느 종목을 눌렀는지 알 수 있게) — 그리는 단계에서만 값을 읽는다
+    val 깜 = remember { Animatable(0f) }
+    LaunchedEffect(마지막, 펼) { if (마지막 != null && !펼) { 깜.snapTo(1f); 깜.animateTo(0f, tween(1400)) } }
     val 수 = if (넣기 != null && 넣기.됨(x)) 넣기.수(x) else -1   // -1 = 체크 상자 없음
     val 들어감 = 수 > 0
     // 10-09 홍겸 님: 플랜이 있는 종목(플랜 카드가 보이는 곳)의 펼친 상자는 플랜이 세팅한다 — 기본 세팅 · [저장][취소] · [삭제] 없음
@@ -342,7 +363,17 @@ private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modif
     if (시트펼침) LaunchedEffect(Unit) { 들어옴 = true }
     Column(
         modifier.clip(모양).background(상자바탕)
-            .border(if (시트펼침) 선굵기.굵게 else 선굵기.보통, 상자테, 모양).padding(간격.좁게),
+            .border(if (시트펼침) 선굵기.굵게 else 선굵기.보통, 상자테, 모양)
+            .then(if (마지막 != null && !펼) Modifier.drawWithContent {
+                drawContent()
+                val a = 깜.value
+                if (a > 0f) {
+                    val r = CornerRadius(모서리.작게.toPx())
+                    drawRoundRect(c.강조, cornerRadius = r, alpha = a * 0.22f)
+                    drawRoundRect(c.강조, cornerRadius = r, alpha = a, style = Stroke(width = 선굵기.굵게.toPx()))
+                }
+            } else Modifier)
+            .padding(간격.좁게),
     ) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(간격.좁게), verticalAlignment = Alignment.Top) {
             // 10-08 홍겸 님: 펼친 상자 머리에는 체크 상자를 두지 않는다 (접힌 줄에만)
@@ -413,10 +444,10 @@ private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modif
  * 어두운 곳을 누르면 [접기]. 끌어서 스크롤하는 것은 막지 않는다. 좌표는 부르는 쪽 칸(스크롤 속) 안쪽 px
  */
 @Composable
-internal fun 펼침가림막(구멍: Rect, 접기: () -> Unit, modifier: Modifier) {
+internal fun 펼침가림막(구멍: Rect, 접기: () -> Unit, modifier: Modifier, 색: Color = 종목치수.가림) {
     val 밀도 = LocalDensity.current
     fun dp(px: Float) = with(밀도) { px.coerceAtLeast(0f).toDp() }
-    val 칠 = Modifier.background(종목치수.가림).눌림(접기)
+    val 칠 = Modifier.background(색).눌림(접기)
     Column(modifier) {
         Box(Modifier.fillMaxWidth().height(dp(구멍.top)).then(칠))
         Row(Modifier.fillMaxWidth().height(dp(구멍.height))) {

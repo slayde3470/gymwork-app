@@ -68,8 +68,10 @@ object 떠있는동그라미 {
             PixelFormat.TRANSLUCENT,
         ).apply {
             gravity = Gravity.TOP or Gravity.START
-            x = if (마지막x >= 0) 마지막x else app.resources.displayMetrics.widthPixels - 칸 - (동그라미치수.옆 * 밀도).toInt()
-            y = if (마지막y >= 0) 마지막y else (동그라미치수.처음위 * 밀도).toInt()
+            // 10-11 홍겸 님: 화면 밖으로 끌려 나가 안 눌리는 일이 없게 — 저장된 자리도 화면 안으로 다시 넣는다
+            val 화면 = app.resources.displayMetrics
+            x = (if (마지막x >= 0) 마지막x else 화면.widthPixels - 칸 - (동그라미치수.옆 * 밀도).toInt()).coerceIn(0, (화면.widthPixels - 칸).coerceAtLeast(0))
+            y = (if (마지막y >= 0) 마지막y else (동그라미치수.처음위 * 밀도).toInt()).coerceIn(0, (화면.heightPixels - 칸).coerceAtLeast(0))
         }
         val v = 동그라미뷰(app, 값, p, wm)
         try { wm.addView(v, p); 뷰 = v; v.시작() } catch (_: Exception) { }
@@ -166,6 +168,10 @@ object 떠있는동그라미 {
         private val 틈 = ViewConfiguration.get(ctx).scaledTouchSlop
         private var 아래x = 0f; private var 아래y = 0f; private var 처음x = 0; private var 처음y = 0; private var 끌었 = false
 
+        // 10-11 홍겸 님: 끝으로 끌어도 창이 화면 밖으로 나가지 않는다 (나가면 눌리지 않았다)
+        private fun 안쪽x(x: Int) = x.coerceIn(0, (resources.displayMetrics.widthPixels - p.width).coerceAtLeast(0))
+        private fun 안쪽y(y: Int) = y.coerceIn(0, (resources.displayMetrics.heightPixels - p.height).coerceAtLeast(0))
+
         @SuppressLint("ClickableViewAccessibility")
         override fun onTouchEvent(e: MotionEvent): Boolean {
             when (e.actionMasked) {
@@ -173,7 +179,7 @@ object 떠있는동그라미 {
                 MotionEvent.ACTION_MOVE -> {
                     val dx = e.rawX - 아래x; val dy = e.rawY - 아래y
                     if (!끌었 && (abs(dx) > 틈 || abs(dy) > 틈)) 끌었 = true
-                    if (끌었) { p.x = 처음x + dx.toInt(); p.y = 처음y + dy.toInt(); try { wm.updateViewLayout(this, p) } catch (_: Exception) { } }
+                    if (끌었) { p.x = 안쪽x(처음x + dx.toInt()); p.y = 안쪽y(처음y + dy.toInt()); try { wm.updateViewLayout(this, p) } catch (_: Exception) { } }
                 }
                 MotionEvent.ACTION_UP -> if (!끌었) {
                     try {
@@ -190,10 +196,10 @@ object 떠있는동그라미 {
 
 /** 떠 있는 동그라미 치수 (dp · ms) [11_UI지침에 올릴 값] */
 private object 동그라미치수 {
-    const val 칸 = 95f        // 창 크기 (퍼지는 고리 자리 포함) · 10-11 홍겸 님 20% 키운 뒤 5% 줄임 (100 →)
-    const val 반지름 = 34.2f  // 동그라미 · 5% 줄임 (36 →)
-    const val 고리 = 3.4f     // 퍼지는 고리 굵기 · 5% 줄임 (3.6 →)
-    const val 글 = 19f        // 남은 시간 글자 (sp 처럼 쓴다) · 5% 줄임 (20 →)
+    const val 칸 = 92.15f     // 창 크기 (퍼지는 고리 자리 포함) · 10-11 홍겸 님 20% 키운 뒤 5% · 3% 줄임 (95 →)
+    const val 반지름 = 33.17f // 동그라미 · 3% 줄임 (34.2 →)
+    const val 고리 = 3.3f     // 퍼지는 고리 굵기 · 3% 줄임 (3.4 →)
+    const val 글 = 18.4f      // 남은 시간 글자 (sp 처럼 쓴다) · 3% 줄임 (19 →)
     const val 띠늘림 = 1.25f  // 휴식 줄어드는 띠 굵기 배수 — 바깥 가장자리는 그대로, 안쪽으로만 굵어진다 (10-11 홍겸 님 · 바깥 동그라미 숨쉬기가 보이게)
     const val 숨폭 = 0.05f    // 바깥 동그라미 숨쉬기 — 1.0배 ~ 1.05배 (10-11 홍겸 님)
     const val 옆 = 12f        // 처음 자리 — 오른쪽에서

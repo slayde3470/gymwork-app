@@ -114,6 +114,13 @@ private object 근육그림함 {
     }
 }
 
+/** 10-11 홍겸 님: 근육 그림 처음 읽기(그림 두 장 · 화소 훑기)가 첫 펼침 때 렉을 만든다 → 앱을 켜자마자 뒤에서 미리 읽어 둔다 */
+internal fun 근육그림미리읽기(ctx: Context) {
+    val app = ctx.applicationContext
+    Thread { try { 근육그림함.얻기(app, "01"); 근육그림함.얻기(app, "02") } catch (_: Throwable) { } }
+        .apply { priority = Thread.MIN_PRIORITY }.start()
+}
+
 // ─────────────── 맞춤 — 그리기와 누르기가 같은 자리를 쓴다 ───────────────
 
 /** 상자들을 가로로 나란히 칸에 맞춘다 (가운데 · 비율 유지) → (배율, 왼쪽 시작, 위 시작) */

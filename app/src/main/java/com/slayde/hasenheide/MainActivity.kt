@@ -28,6 +28,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import com.slayde.hasenheide.ui.앱
 import com.slayde.hasenheide.ui.작은창
+import com.slayde.hasenheide.ui.근육그림미리읽기
 import com.slayde.hasenheide.ui.물음창
 import com.slayde.hasenheide.ui.Local번호
 import androidx.compose.runtime.CompositionLocalProvider
@@ -150,6 +151,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        근육그림미리읽기(this)   // 10-11: 첫 종목 펼침 렉 — 근육 그림을 뒤에서 미리 읽어 둔다
         // 화면 가장자리(상태바·내비게이션바)까지 앱이 그려지게 한다
         enableEdgeToEdge()
         처음물음확인()
