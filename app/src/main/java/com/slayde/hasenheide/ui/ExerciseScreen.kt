@@ -497,7 +497,7 @@ private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modif
                                     .semantics(mergeDescendants = true) { contentDescription = "${x.이름} 이름 고치기" }
                                     .눌림 { 이름고침 = true },
                                 contentAlignment = Alignment.CenterStart,
-                            ) { 이름맞춤(x.이름, Modifier, 바탕크기 = 종목치수.이름글, 굵기 = FontWeight.Medium) }
+                            ) { 이름맞춤(x.이름, Modifier, 바탕크기 = 종목치수.이름글 * 1.25f, 굵기 = FontWeight.Bold) }   // 10-11 홍겸 님: 펼친 머리 이름 키우고 굵게
                             else { if (!펼 && 넣기 == null && 즐겨) 별(true, 15.dp, c.즐겨, Modifier.padding(end = 2.dp))   // 10-11: 종목 탭엔 체크 상자가 없으니 이름 앞 노란 별
                             이름맞춤(x.이름, Modifier.weight(1f, fill = false), 바탕크기 = 종목치수.이름글, 굵기 = FontWeight.Medium, 두줄촘촘 = !펼, 자간넓힘폭 = if (체크보임) 넣기값.체크옆넓힘 else 0.dp) }
                             if (번 > 0 || 플.isNotEmpty()) Row(Modifier.offset(x = 부품치수.딱지겹침), horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
@@ -932,7 +932,7 @@ private fun 즐겨칸(상태: 앱상태, t: 종목) {
     val 모양 = RoundedCornerShape(그림칸.모서리)
     val 켬 = 상태.d.종목표.firstOrNull { it.id == t.id }?.즐겨 ?: t.즐겨
     Box(
-        Modifier.size(그림칸.작은사진)
+        Modifier.width(26.dp).height(그림칸.작은사진)   // 10-11: 별과 이름 사이 좁힘
             .눌림 { 발자취.적기("즐겨찾기 ${if (켬) "끔" else "켬"} · ${t.이름}"); 상태.바꿈 { it.즐겨바꿈(t.id) } }
             .semantics { contentDescription = "${t.이름} 즐겨찾기 ${if (켬) "끄기" else "켜기"}"; role = Role.Switch },
         contentAlignment = Alignment.Center,
