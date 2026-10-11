@@ -78,6 +78,7 @@ import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.contentDescription
@@ -840,16 +841,25 @@ private fun 종목상자(
         // 10-11 홍겸 님: 번호 좌우 7 · 세트 수는 이름 바로 아래 작게(50%) · 휴지통은 머리에서 빼고 펼치면 손잡이 자리에 굵게 · ∨ 와 손잡이 사이 7
         상자머리(시작 = 7.dp, 끝 = 2.dp) {
             Row(
-                Modifier.weight(1f).heightIn(min = 높이.낮게).then(끌기길)
+                Modifier.weight(1f).heightIn(min = 38.dp).then(끌기길)
                     .semantics(mergeDescendants = true) { contentDescription = "${e.이름} ${e.세트}세트 ${if (펼침) "접기" else "펼치기"}" }
                     .눌림(on펼침),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(7.dp),
             ) {
                 상자번호(번호, 좁게 = true)
-                Column(Modifier.weight(1f, fill = false)) {
-                    종목이름딱지(상태.d, e.종id, e.이름, Modifier)
-                    Text("${e.세트}세트", Modifier.padding(top = 2.dp), style = 글꼴.보통(크기.조금작게 * 0.5f).copy(fontFeatureSettings = "tnum"), color = c.흐림, maxLines = 1, softWrap = false)
+                // 10-11 홍겸 님: 이름은 줄 가운데 · 세트 수는 이름 아래에 (자리를 내주지 않고 겹쳐 내려 앉는다 — 이름 아래 3)
+                val 틈 = with(LocalDensity.current) { 3.dp.roundToPx() }
+                Layout(
+                    content = {
+                        종목이름딱지(상태.d, e.종id, e.이름, Modifier)
+                        Text("${e.세트}세트", style = 글꼴.보통(크기.조금작게 * 0.5f).copy(fontFeatureSettings = "tnum"), color = c.흐림, maxLines = 1, softWrap = false)
+                    },
+                    modifier = Modifier.weight(1f, fill = false),
+                ) { ms, cs ->
+                    val n = ms[0].measure(cs.copy(minWidth = 0, minHeight = 0))
+                    val l = ms[1].measure(androidx.compose.ui.unit.Constraints(maxWidth = cs.maxWidth))
+                    layout(maxOf(n.width, l.width), n.height) { n.place(0, 0); l.place(0, n.height + 틈) }
                 }
                 if (묶음글 != null) Text(묶음글, style = 글꼴.보통(크기.조금작게).copy(fontFeatureSettings = "tnum"), color = c.흐림, maxLines = 1, softWrap = false)
             }
