@@ -5,6 +5,8 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
 import android.os.SystemClock
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -331,11 +333,23 @@ private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modif
     val 들어감 = 수 > 0
     // 10-09 홍겸 님: 플랜이 있는 종목(플랜 카드가 보이는 곳)의 펼친 상자는 플랜이 세팅한다 — 기본 세팅 · [저장][취소] · [삭제] 없음
     val 플랜모양 = 펼 && 플.isNotEmpty() && (넣기 == null || 넣기.플랜카드)
+    // 10-11 홍겸 님: [넣기 시트] 에서 펼친 상자는 체크 여부와 상관없이 접힌 상자(면 · 강조옅음)와 다른 색 — 바탕 면2 · 굵은 테 흐림. 종목 탭은 그대로
+    val 시트펼침 = 펼 && 넣기 != null
+    val 상자바탕 = if (시트펼침) c.면2 else if (들어감) c.강조옅음 else c.면
+    val 상자테 = if (시트펼침) c.흐림 else if (들어감) c.강조 else if (펼) c.속선 else c.선
+    // 10-11 홍겸 님: [넣기 시트] 에서 펼칠 때 속이 늘어나며 나타난다 (처음엔 접힌 채 그렸다가 바로 펼침). 종목 탭은 전처럼 바로 보인다
+    var 들어옴 by remember(x.열쇠, 펼) { mutableStateOf(!시트펼침) }
+    if (시트펼침) LaunchedEffect(Unit) { 들어옴 = true }
     Column(
-        modifier.clip(모양).background(if (들어감) c.강조옅음 else c.면)
-            .border(선굵기.보통, if (들어감) c.강조 else if (펼) c.속선 else c.선, 모양).padding(간격.좁게),
+        modifier.clip(모양).background(상자바탕)
+            .border(if (시트펼침) 선굵기.굵게 else 선굵기.보통, 상자테, 모양).padding(간격.좁게),
     ) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(간격.좁게), verticalAlignment = Alignment.Top) {
+            // 10-08 홍겸 님: 펼친 상자 머리에는 체크 상자를 두지 않는다 (접힌 줄에만)
+            // 10-11 홍겸 님: 체크 상자는 이름 왼쪽 맨 앞 (전: 오른쪽 끝)
+            if (!펼 && 넣기 != null && 수 >= 0) 넣기체크(x.이름, 수,
+                누름 = { if (넣기.수(x) > 0) 넣기.빼기(x) else { 넣기.넣기(x); 꾹안내(상태) } },   // 10-09 홍겸 님: 눌러 넣을 때 '꾸욱 누르면…' 토스트
+                꾹 = { 넣기.넣기(x) })
             if (펼 && t != null) 사진넣는칸(상태, t)
             // 10-07 꾹 눌러 끌기 — 손은 누름보다 안쪽(먼저 받아야 끊기지 않는다). 꾹 누르고 떼어도 펼치지 않게 길게 누름은 빈 동작
             Column(Modifier.weight(1f).눌림길게({ 펼침(x.열쇠) }, { }).격자끌기손(끌판, x.종목?.id ?: x.열쇠, x.이름, 켬 = x.종목 != null)) {
@@ -368,13 +382,10 @@ private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modif
             }
             // 10-08 홍겸 님: [편집] 자리 = [삭제] (묻지 않고 지우고 되돌리기 띠 · U5-4)
             if (펼 && t != null && !플랜모양) 버튼("삭제", { 종목삭제(상태, t) }, 낮게 = true, 글색 = c.나쁨)   // 10-09 홍겸 님: 플랜 종목은 삭제 없음
-            // 10-08 홍겸 님: 펼친 상자 머리에는 체크 상자를 두지 않는다 (접힌 줄에만)
-            if (!펼 && 넣기 != null && 수 >= 0) 넣기체크(x.이름, 수,
-                누름 = { if (넣기.수(x) > 0) 넣기.빼기(x) else { 넣기.넣기(x); 꾹안내(상태) } },   // 10-09 홍겸 님: 눌러 넣을 때 '꾸욱 누르면…' 토스트
-                꾹 = { 넣기.넣기(x) })
         }
         if (펼) AnimatedVisibility(
-            visible = !접는중,
+            visible = 들어옴 && !접는중,
+            enter = expandVertically(tween(움직임.펼침)) + fadeIn(tween(움직임.펼침)),
             exit = shrinkVertically(tween(움직임.펼침)) + fadeOut(tween(움직임.펼침)),
             label = "상자접힘",
         ) { Column(Modifier.padding(top = 간격.좁게), verticalArrangement = Arrangement.spacedBy(간격.좁게)) {
@@ -402,7 +413,7 @@ private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modif
  * 어두운 곳을 누르면 [접기]. 끌어서 스크롤하는 것은 막지 않는다. 좌표는 부르는 쪽 칸(스크롤 속) 안쪽 px
  */
 @Composable
-private fun 펼침가림막(구멍: Rect, 접기: () -> Unit, modifier: Modifier) {
+internal fun 펼침가림막(구멍: Rect, 접기: () -> Unit, modifier: Modifier) {
     val 밀도 = LocalDensity.current
     fun dp(px: Float) = with(밀도) { px.coerceAtLeast(0f).toDp() }
     val 칠 = Modifier.background(종목치수.가림).눌림(접기)
@@ -538,17 +549,8 @@ private fun 넣기체크(이름: String, 수: Int, 누름: () -> Unit, 꾹: () -
     val 꾹최신 by rememberUpdatedState(꾹)
     val 진동 = LocalHapticFeedback.current
     Box(
-        // 10-08 홍겸 님: ∨ 와의 눈에 보이는 간격을 35% 줄이고(12 → 7.8) 체크 상자를 오른쪽으로 4 옮긴다.
-        //  누르는 칸 28 은 그대로 — 차지하는 폭만 줄여, 같은 줄의 이름 칸이 그만큼 넓어진다 (∨ 가 오른쪽으로 간다)
-        Modifier.layout { m, cons ->
-            val p = m.measure(cons)
-            val 여백 = (높이.아주낮게 - 넣기값.체크).roundToPx() / 2                       // 누르는 칸 안 쪽 여백 (4)
-            val 옛간격 = 간격.좁게.roundToPx() + 여백                                     // ∨ ↔ 체크 상자 (12)
-            val 시작 = (옛간격 * (1f - 넣기값.체크간격줄임)).roundToInt() - 간격.좁게.roundToPx()   // 상자 왼쪽 끝 (줄 사이 8 기준)
-            val 폭 = p.width - 2 * 여백
-            val 쓸폭 = (시작 + 폭 - (넣기값.체크옮김.roundToPx() - 여백)).coerceAtLeast(0)
-            layout(쓸폭, p.height) { p.place(시작 - 여백, 0) }
-        }.heightIn(min = 높이.아주낮게).widthIn(min = 높이.아주낮게).clip(RoundedCornerShape(모서리.작게))
+        // 10-11 홍겸 님: 맨 앞으로 옮겼다 — 전 오른쪽 끝용 폭 줄임(∨ 와의 간격 35% · 오른쪽 4)은 뺐다. 누르는 칸 28
+        Modifier.heightIn(min = 높이.아주낮게).widthIn(min = 높이.아주낮게).clip(RoundedCornerShape(모서리.작게))
             .semantics(mergeDescendants = true) {
                 contentDescription = "$이름 · ${수}개 들어 있음 · ${if (들어감) "누르면 하나 빼기" else "누르면 넣기"}, 꾹 누르면 하나 더"
                 onClick { 누름최신(); true }

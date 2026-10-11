@@ -69,6 +69,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.slayde.hasenheide.data.근육계산
 import com.slayde.hasenheide.data.날기록
 import com.slayde.hasenheide.data.날짜만
@@ -284,6 +285,12 @@ internal fun 캘요일글(k: String): String = "일월화수목금토"[LocalDate
 
 /** 달력 칸 높이 (시안 `.칸날` 64 · 날짜 13 + 루틴 11 + 상태 11 이 들어간다) [Theme 에 없는 새 값 — 합칠 때 Theme.kt 로] */
 private val 칸높이 = 64.dp
+/** 달력 한 달 전체 높이 — 6줄 기준으로 고정. 5줄 · 4줄인 달은 같은 높이를 줄 수로 균등하게 나눈다 (10-11 홍겸 님) */
+private const val 기본줄수 = 6
+private val 달력높이 = 칸높이 * 기본줄수
+/** 날짜 판 띠(선택한 날) 글 크기 — 띠글 18 에서 날짜 2sp · 요일 4sp 만 낮춘다 (10-11 홍겸 님) [Theme 에 없는 새 값 — 합칠 때 Theme.kt 로] */
+private val 중간날짜크기 = 16.sp
+private val 중간요일크기 = 14.sp
 /** 날짜 판 기록 이름은 줄의 이만큼까지 (시안 `.예이름 max-width:40%`) */
 private const val 이름폭비 = 0.4f
 /** 칸 안 글 옆 · 요일 줄 위아래 (시안 `.칸날` padding 4px 2px · `.요일` padding 2px 0) */
@@ -456,6 +463,7 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
                         밀기.animateTo(0f, tween(움직임.달))
                     }
                 }
+                Box(Modifier.fillMaxWidth()) {
                 Column(
                     Modifier.graphicsLayer {
                         translationX = 밀기.value * size.width * 움직임.달밀기
@@ -471,9 +479,11 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
                         on끌 = { 양 -> 손.value = 손.value?.plus(양) },
                         on놓음 = { 위 -> 끌어놓음(위) })
                 }
+                // 10-11 홍겸 님: [오늘] 은 캘린더 우측 하단에 고정 — 달을 넘기는 밀기 밖에 둬서 자리가 안 변한다 (다른 달을 볼 때만 보임 · 전과 같음)
+                if (보는달 != 이번달) 흰칩("오늘", { 보는달 = 이번달; 날고름(오늘) }, Modifier.align(Alignment.BottomEnd).padding(end = 간격.보통, bottom = 간격.아주좁게))
+                }
                 날판(
-                    상태, 고른날, 다른달 = 보는달 != 이번달, 록골 = 록골, 지움모드 = 지움모드, 예펼침 = 예펼침,
-                    on오늘 = { 보는달 = 이번달; 날고름(오늘) },
+                    상태, 고른날, 록골 = 록골, 지움모드 = 지움모드, 예펼침 = 예펼침,
                     on록고름 = { rk -> 록골 = if (rk in 록골) 록골 - rk else 록골 + rk },
                     on펼침 = { 키 -> 예펼침 = if (예펼침 == 키) null else 키 },
                     modifier = Modifier.weight(1f),
@@ -582,7 +592,7 @@ private fun 흰칩(글자: String, onClick: () -> Unit, modifier: Modifier = Mod
         modifier.height(높이.아주낮게).배율(배).clip(RoundedCornerShape(모서리.작게)).background(c.강조글)
             .눌림손(손, onClick).padding(horizontal = 간격.좁게),
         contentAlignment = Alignment.Center,
-    ) { 글(글자, 크기값 = 크기.조금작게, 색 = c.강조, 굵기 = FontWeight.Bold) }
+    ) { 글(글자, 크기값 = 크기.조금작게, 색 = c.강조, 굵기 = FontWeight.Normal) }   // 10-11 홍겸 님: 볼드 아님
 }
 
 // ─────────────── 달력 ───────────────
@@ -629,7 +639,7 @@ private fun 달력(
     fun 어느날(): String? = 손최신?.value?.let { p -> 칸틀.entries.firstOrNull { p in it.value }?.key }
     val 위 = if (집은날 != null) 어느날() else null   // 손이 움직일 때마다 다시 그려진다(손 상태를 여기서 읽는다)
     Box(modifier.fillMaxWidth()) {
-        Column(Modifier.fillMaxWidth().pointerInput(Unit) {
+        Column(Modifier.fillMaxWidth().height(달력높이).pointerInput(Unit) {
             // 가로로 달달 끌기 — 왼쪽으로 끌면 다음 달 · 오른쪽으로 끌면 이전 달. 가로가 세로보다 클 때만
             val 거리 = 달스와이프거리.toPx()
             var 가로 = 0f; var 세로 = 0f
@@ -641,7 +651,7 @@ private fun 달력(
             )
         }) {
             for (줄 in 0 until 줄수) {
-                Row(Modifier.fillMaxWidth().height(칸높이)) {
+                Row(Modifier.fillMaxWidth().weight(1f)) {   // 6줄 높이를 줄 수로 균등하게
                     for (칸 in 0 until 7) {
                         val n = 줄 * 7 + 칸 - 앞빈칸 + 1
                         val 칸모양 = Modifier.weight(1f).fillMaxHeight()
@@ -750,8 +760,8 @@ private fun Modifier.윗선(켬: Boolean, 색: Color): Modifier =
  */
 @Composable
 private fun 날판(
-    상태: 앱상태, k: String, 다른달: Boolean, 록골: Set<String>, 지움모드: Boolean, 예펼침: String?,
-    on오늘: () -> Unit, on록고름: (String) -> Unit, on펼침: (String) -> Unit,
+    상태: 앱상태, k: String, 록골: Set<String>, 지움모드: Boolean, 예펼침: String?,
+    on록고름: (String) -> Unit, on펼침: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val c = Local색.current
@@ -764,14 +774,21 @@ private fun 날판(
     val 넘김 = rememberScrollState()
     LaunchedEffect(k) { 넘김.scrollTo(0) }
     Column(modifier.fillMaxWidth().번호("캘1")) {
-        // ── 띠 — 오른쪽 끝: 다른 달을 볼 때만 [오늘] (10-08: [변경] · [루틴 넣기] 는 없앴다 — 아래 단추 줄이 한다) ──
+        // ── 띠 — 고른 날 · 요일 (10-11: [오늘] 은 달력 우측 하단으로 옮겼다. 10-08: [변경] · [루틴 넣기] 는 없앴다 — 아래 단추 줄이 한다) ──
         Row(
             Modifier.padding(horizontal = 간격.보통).fillMaxWidth().heightIn(min = 높이.보통)   // 10-09: 좌우 여백 12 · 모서리 8
                 .clip(RoundedCornerShape(모서리.작게)).background(c.강조).padding(horizontal = 간격.보통, vertical = 부품치수.띠세로여백),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.좁게),
         ) {
-            띠글("${캘날글(k)} (${캘요일글(k)})${if (k == 오늘) " · 오늘" else ""}", Modifier.weight(1f))
-            if (다른달) 흰칩("오늘", on오늘)
+            // 10-11 홍겸 님: 날짜 글 18 → 16 (2sp ↓) · 요일 글 18 → 14 (4sp ↓). 모양은 띠글(굵게 · 강조글)과 같다
+            Text(
+                buildAnnotatedString {
+                    append("${캘날글(k)} ")
+                    withStyle(SpanStyle(fontSize = 중간요일크기)) { append("(${캘요일글(k)})") }
+                    if (k == 오늘) append(" · 오늘")
+                },
+                Modifier.weight(1f), style = 글꼴.제목(중간날짜크기), color = c.강조글, maxLines = 1, overflow = TextOverflow.Ellipsis,
+            )
         }
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(넘김).padding(horizontal = 간격.보통, vertical = 간격.좁게), verticalArrangement = Arrangement.spacedBy(간격.좁게)) {
             var 앞것 = false

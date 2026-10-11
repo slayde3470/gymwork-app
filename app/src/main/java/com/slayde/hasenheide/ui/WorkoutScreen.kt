@@ -46,6 +46,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
@@ -71,6 +72,7 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.layout.layout
@@ -202,8 +204,21 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
     if (n == 0) { 빈운동(상태); return }
 
     // 보는 종목 — 이 운동(시작 시각) 동안 기억한다. 탭을 오가도 그대로 (시안 `U.본`)
-    val 본 = if (운보기.세션 == S.시작시각 && 운보기.본 in S.종목들.indices) 운보기.본 else S.i.coerceIn(0, n - 1)
-    SideEffect { 운보기.세션 = S.시작시각; 운보기.본 = 본 }
+    val 목표본 = if (운보기.세션 == S.시작시각 && 운보기.본 in S.종목들.indices) 운보기.본 else S.i.coerceIn(0, n - 1)
+    SideEffect { 운보기.세션 = S.시작시각; 운보기.본 = 목표본 }
+    // 10-11 홍겸 님: 종목을 넘기면 책장 넘기듯 — 화면에 그리는 종목(본)은 '나가는 효과가 끝날 때' 목표본으로 바뀐다.
+    //  그릴 화면은 언제나 한 벌이다(두 벌 겹치지 않음 → 터치 · 스크롤 · 입력 칸 상태가 둘이 되지 않는다). 첫 그림에는 효과가 없다
+    var 표시본 by remember(S.시작시각) { mutableIntStateOf(목표본) }
+    val 본 = 표시본.coerceIn(0, n - 1)
+    val 책장 = remember(S.시작시각) { Animatable(0f) }   // 0 = 평평 · −1 = 왼쪽으로 나감 · +1 = 오른쪽으로 나감(또는 오른쪽에서 들어오기 전)
+    LaunchedEffect(S.시작시각, 목표본) {
+        if (목표본 == 표시본) { 책장.animateTo(0f, tween(운치수.책장들어옴, easing = 움직임.부드럽게)); return@LaunchedEffect }
+        val 방향 = if (목표본 > 표시본) 1f else -1f   // 다음 = 오른쪽 → 왼쪽 · 이전 = 왼쪽 → 오른쪽
+        책장.animateTo(-방향, tween(운치수.책장나감, easing = LinearEasing))   // 나가는 쪽 (화면 밖에서 끝난다 — 속이 바뀌는 순간이 안 보인다)
+        표시본 = 목표본
+        책장.snapTo(방향)   // 반대편 바깥에서
+        책장.animateTo(0f, tween(운치수.책장들어옴, easing = 움직임.부드럽게))   // 들어오는 쪽
+    }
     val e = S.종목들[본]
     // 칸 줄을 '보는 칸 맨 앞' 으로 다시 맞추라는 신호 (시안 `운자리.당김`)
     var 당김 by remember { mutableIntStateOf(0) }
@@ -254,7 +269,25 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
     val 뒤로 = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
 
     Box(Modifier.fillMaxSize()) {
-        Column(Modifier.fillMaxSize()) {
+        // 책장 넘김 — 맨 아래 탭줄(App)만 빼고 이 화면 전부(띠 · 그림 · 세트 · 진행 칸 · 단추)가 한 장으로 같이 넘어간다. 시트는 이 바깥
+        BoxWithConstraints(Modifier.fillMaxSize()) {
+        val 폭px = constraints.maxWidth.toFloat()
+        Column(
+            Modifier.fillMaxSize()
+                .graphicsLayer {
+                    val v = 책장.value   // 그리기에서만 읽는다 — 다시 짜지 않고 자리도 다시 재지 않는다
+                    translationX = v * 폭px
+                    rotationY = -v * 운치수.책장각
+                    transformOrigin = TransformOrigin(if (v < 0f) 0f else 1f, 0.5f)   // 축 = 화면 가운데 쪽을 보는 가장자리
+                    cameraDistance = 운치수.책장카메라 * density
+                }
+                .drawWithContent {
+                    val v = 책장.value
+                    if (v != 0f) drawRect(c.바탕)   // 넘어가는 동안만 종이처럼 바탕을 깐다 (평소 모양은 그대로)
+                    drawContent()
+                    if (v != 0f) drawRect(c.글, alpha = abs(v) * 운치수.책장그늘)   // 접히며 어두워지는 옅은 그림자
+                },
+        ) {
             운머리(상태, S, 본, e, 지금, 그림보기 = if (그림켬 && 그림숨김) ({ 발자취.적기("그림 칸 다시 보임"); 그림칸기억.숨긴운동 = "" }) else null) {
                 // ‹ = 캘린더로 나가기 (운동은 그대로 이어진다) — 앱의 뒤로가기와 같은 길
                 발자취.적기("운동 화면 나가기"); 뒤로?.onBackPressed()
@@ -268,6 +301,15 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
                 주 = { 발자취.적기("큰 단추 ${운주상태(S, 본).글}"); 함 { s -> 운주누름(s, 운보기.본, System.currentTimeMillis()) }; 당김++ },
                 끝내기 = { 발자취.적기("오늘 운동 끝내기"); 바꿈 { it.끝냄(System.currentTimeMillis()) } },
             )
+        }
+        // 넘어가는 동안(약 0.35초)은 화면이 반쯤 바뀐 채라 누른 것이 엉뚱한 종목에 가지 않게 터치를 막는다
+        if (책장.isRunning || 표시본 != 목표본) Box(
+            Modifier.fillMaxSize().pointerInput(Unit) {
+                awaitPointerEventScope {
+                    while (true) { awaitPointerEvent(PointerEventPass.Initial).changes.forEach { it.consume() } }
+                }
+            },
+        )
         }
         // [＋] 종목 넣기 — 루틴과 같은 시트 (속은 RT 도우미 몫). 누름 = 넣기 / 들어간 것 누름 = 맨 뒤 하나 빼기 / 꾹 = 하나 더
         if (넣기열림) 종목넣기시트(
@@ -351,6 +393,11 @@ private object 운치수 {
     const val 더동그라미비 = 0.95f   // 10-09: 세트 줄 아래 [＋ 세트] 동그라미 = 번호 동그라미 × 0.95 [11_UI지침에 올릴 값]
     const val 값그림배 = 0.97f       // 10-09: 세트 줄 − ＋ 그림 3% 작게 (16 → 15.52 · 누르는 칸 20 은 그대로) [11_UI지침에 올릴 값]
     val 칸여유 = 4.dp               // 10-09: 세트 줄 kg · 회 · 휴식 칸 = 단추 둘 + 테 둘 + 잰 글자 폭 + 이 여유
+    const val 책장나감 = 150          // 10-11 홍겸 님: 책장 넘김 — 나가는 시간(ms). 나감 + 들어옴 = 0.35초 [11_UI지침에 올릴 값]
+    const val 책장들어옴 = 200        // 들어오는 시간(ms)
+    const val 책장각 = 35f            // 접히는 각도(도) — 가장자리를 축으로
+    const val 책장카메라 = 12f        // 원근 거리 = 이 값 × density
+    const val 책장그늘 = 0.3f         // 접히며 깔리는 그림자 농도(최대) — 지금은 색표 글 색을 씀. 새 이름 '책장그림자' 제안
     val 밀기 = 48.dp                // 10-09 홍겸 님: 화면을 좌우로 이만큼 밀면 이전 · 다음 종목 [11_UI지침에 올릴 값]
     val 점선 = 3.dp                 // [＋] 점선 테
     val 칸번호위 = 9.dp             // 칸 오른쪽 위 번호 딱지 (위 4 + 딱지가 스스로 올라가는 5)

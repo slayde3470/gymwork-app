@@ -39,7 +39,9 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
@@ -49,6 +51,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.coerceAtLeast
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import com.slayde.hasenheide.data.같은이름번호
@@ -77,7 +80,7 @@ import kotlin.math.roundToInt
  *
  * 10-08 홍겸 님: 이 시트의 목록은 **종목 탭 목록(11번)과 같은 화면**이다 — [종목묶음들](ExerciseScreen.kt)을 그대로 부른다.
  *  · 위끝 고정 · 머리 = 띠 · 띠 오른쪽 [확인](= 닫기) · 칩줄은 고정, 목록만 스크롤
- *  · 상자 오른쪽 끝 체크 상자 = 넣기(들어 있으면 하나 빼기 · 꾹 = 하나 더) · 들어간 상자는 강조옅음 바탕 + 강조 테
+ *  · 상자 맨 앞(이름 왼쪽) 체크 상자 = 넣기(들어 있으면 하나 빼기 · 꾹 = 하나 더) · 들어간 상자는 강조옅음 바탕 + 강조 테
  *  · 상자를 누르면 펼침(종목 탭과 같다 — 기본 세팅 · 근육을 고치고 [저장]) · 꾹 눌러 끌면 순서 옮김
  *  · 오른쪽 아래 구석에 떠 있는 [+ 새 종목 만들기] → [새종목시트]. 저장하면 그 종목을 바로 [넣기] 로 넣고 칩 = [전체]
  *
@@ -131,7 +134,7 @@ private class 플랜손(val 개수: (String) -> Int, val 넣기: (String) -> Uni
 
 /**
  * 시트 속 (10-08 홍겸 님) — **종목 탭 목록(11번 화면)을 그대로** 쓴다: 칩줄 · 카테고리 이름표 · 2열 격자 · 펼침(12번 — 기본 세팅 고치기).
- * 다른 점은 상자마다 오른쪽 끝 체크 상자(누름 = 넣기 / 들어 있으면 하나 빼기 · 꾹 = 하나 더)와 들어간 상자의 강조옅음 바탕뿐.
+ * 다른 점은 상자마다 맨 앞(이름 왼쪽) 체크 상자(누름 = 넣기 / 들어 있으면 하나 빼기 · 꾹 = 하나 더)와 들어간 상자의 강조옅음 바탕뿐.
  * 칩줄은 그대로 두고 목록만 스크롤한다 (시안 v18 D ⑤) — 공용 [시트] 는 속을 통째로 넘기므로 목록 칸의 높이를 여기서 잰다:
  * 시트 판 안쪽 높이 − 이 칸의 위끝 = 남은 자리. 재지 못하면(시트 모양이 바뀌면) 시트가 넘기는 대로 둔다.
  */
@@ -152,6 +155,17 @@ private fun 넣기속(
     var 칸높이 by remember { mutableStateOf<Dp?>(null) }
     var 못잼 by remember { mutableStateOf(false) }
     var 펼친 by remember { mutableStateOf<String?>(null) }
+    // 10-11 홍겸 님: 펼치면 펼친 상자 말고 나머지를 어둡게 (종목 탭 [펼침가림막] 을 그대로 쓴다) · 어두운 곳을 누르면 접힌다.
+    //  펼친 상자 자리([구멍])는 스크롤 속 칸 기준으로 재서 스크롤해도 안 변한다. 한 번에 하나만 펼침은 전부터 그랬다([펼친] 하나)
+    val 구멍틀 = remember { arrayOfNulls<LayoutCoordinates>(2) }   // [0] 스크롤 속 칸 · [1] 펼친 상자
+    var 구멍 by remember { mutableStateOf<Rect?>(null) }
+    var 보임px by remember { mutableIntStateOf(0) }   // 목록이 보이는 칸의 높이 (어둡게 · 스크롤 여유에 쓴다)
+    fun 구멍재기() {
+        val 속 = 구멍틀[0]; val 상 = 구멍틀[1]
+        구멍 = if (속 != null && 상 != null && 속.isAttached && 상.isAttached) 속.localBoundingBoxOf(상, clipBounds = false) else null
+    }
+    val 접기 = { 펼친 = null }
+    val 판톡 = remember루톡(true)
     val 판 = d.종목탭판(칸고름)
     // 꾹 눌러 끌어 종목 순서 바꾸기 — 종목 탭과 같은 판 (같은 카테고리 안 · 종목표 차례)
     val 끌판 = remember격자끌기판({ a, b, 뒤 ->
@@ -176,27 +190,61 @@ private fun 넣기속(
             },
     ) {
         Column(Modifier.fillMaxWidth().then(if (쓸 != null) Modifier.fillMaxHeight() else Modifier)) {
-            칩줄(listOf(넣기전체) + 판.칸들, 판.고름, { 칸바꿈(it) })
+            Box(Modifier.fillMaxWidth()) {
+                칩줄(listOf(넣기전체) + 판.칸들, 판.고름, { 칸바꿈(it) })
+                if (펼친 != null) Box(Modifier.matchParentSize().background(종목치수.가림).눌림(접기))   // 칩줄도 어둡게 (누르면 접힌다)
+            }
             Spacer(Modifier.height(간격.좁게))
             // 칩을 바꾸면 맨 위부터 (시안 v18 D ⑤) · 칸을 눌러 다시 그려도 보던 자리 그대로
             key(판.고름) {
                 val 넘김 = rememberScrollState()
+                // 10-11 홍겸 님: 펼침이 끝난 뒤(애니메이션 중에는 재지 않는다) 펼친 상자 맨 위(= 접힌 때의 이름 줄)가 목록 맨 위에 오도록 **한 번만** 스크롤.
+                //  접힐 때는 구멍만 비운다. 다른 종목으로 바꾸면 이 효과가 다시 돌아 새 자리로 한 번 움직인다
+                LaunchedEffect(펼친) {
+                    if (펼친 == null) { 구멍틀[1] = null; 구멍 = null }
+                    else {
+                        delay(움직임.펼침.toLong() + 50L)
+                        구멍재기()
+                        구멍?.let { 넘김.animateScrollTo(it.top.roundToInt().coerceAtLeast(0)) }
+                    }
+                }
                 if (쓸 == null && !못잼) {
                     // 재는 중 — 한 번만 비워 둔다 (긴 목록을 먼저 그렸다가 줄이지 않게 · U5-6)
                     Spacer(Modifier.height(1.dp))
-                } else Column(
-                    Modifier.fillMaxWidth()
-                        .then(if (쓸 != null) Modifier.weight(1f).격자끌기틀(끌판, 넘김).verticalScroll(넘김) else Modifier)
-                        // 떠 있는 [새 종목] 단추 자리만큼 아래 여백 (시안 v19 C ②)
-                        .padding(bottom = if (새종목만들기) 높이.낮게 + 간격.좁게 else 간격.좁게),
-                    verticalArrangement = Arrangement.spacedBy(간격.좁게),
-                ) {
-                    종목묶음들(상태, 판, 끌판, 펼친, { k -> 펼친 = if (펼친 == k) null else k }, 손)
+                } else {
+                    // 떠 있는 [새 종목] 단추 자리만큼 아래 여백 (시안 v19 C ②) — 펼쳤을 때는 단추가 목록 맨 끝으로 가므로 뺀다
+                    val 아래여백 = if (새종목만들기 && 펼친 == null) 높이.낮게 + 간격.좁게 else 간격.좁게
+                    val 보임 = with(밀도) { 보임px.toDp() }
+                    val 구멍높이 = 구멍?.let { with(밀도) { it.height.toDp() } } ?: 0.dp
+                    Column(
+                        Modifier.fillMaxWidth()
+                            .then(if (쓸 != null) Modifier.weight(1f).onSizeChanged { 보임px = it.height }.격자끌기틀(끌판, 넘김).verticalScroll(넘김) else Modifier)
+                            .padding(bottom = 아래여백),
+                    ) {
+                        // 스크롤 속 칸 하나 — 목록이 짧아도 보이는 칸 끝까지 어둡게 하려고 보이는 높이 이상으로 둔다
+                        Box(Modifier.fillMaxWidth().heightIn(min = (보임 - 아래여백).coerceAtLeast(0.dp)).onGloballyPositioned { 구멍틀[0] = it; 구멍재기() }) {
+                            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(간격.좁게)) {
+                                종목묶음들(상태, 판, 끌판, 펼친, { k -> 펼친 = if (펼친 == k) null else k }, 손,
+                                    펼침틀 = { 구멍틀[1] = it; 구멍재기() })
+                                if (펼친 != null) {
+                                    if (새종목만들기) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                                        버튼(
+                                            "새 종목 만들기", { 판톡.톡(); 발자취.적기("넣기 · 새 종목 만들기"); 새로열기() },
+                                            Modifier.루톡(판톡), 주요 = true, 낮게 = true, 그림 = 아이콘.더하기,
+                                        )
+                                    }
+                                    // 펼친 상자를 맨 위로 올릴 수 있게 아래를 비워 둔다 (펼친 상자가 보이는 칸보다 작을 때만)
+                                    if (보임 > 구멍높이) Spacer(Modifier.height(보임 - 구멍높이))
+                                }
+                            }
+                            val h = 구멍
+                            if (펼친 != null && h != null) 펼침가림막(h, 접기, Modifier.matchParentSize())
+                        }
+                    }
                 }
             }
         }
-        if (새종목만들기) {
-            val 판톡 = remember루톡(true)
+        if (새종목만들기 && 펼친 == null) {
             버튼(
                 "새 종목 만들기", { 판톡.톡(); 발자취.적기("넣기 · 새 종목 만들기"); 새로열기() },
                 Modifier.align(Alignment.BottomEnd).루톡(판톡), 주요 = true, 낮게 = true, 그림 = 아이콘.더하기,
@@ -255,9 +303,6 @@ internal object 넣기값 {
     const val 말진하기 = 0.85f  // .넣기말 opacity
     val 연필폭 = 24.dp          // v22 ⑦ .넣기편집 누르는 칸 24 × 28
     val 연필그림 = 16.dp        // .넣기편집 svg 16
-    // 10-08 홍겸 님 [11_UI지침에 올릴 값]
-    const val 체크간격줄임 = 0.35f  // 접힌 줄: ∨ ↔ 체크 상자 눈에 보이는 간격(12)을 35% 줄인다 (→ 7.8)
-    val 체크옮김 = 4.dp         // 접힌 줄: 체크 상자를 오른쪽으로 (띄어쓰기 한 칸)
 }
 
 // ═════════════════════ 순수 계산 (시험: ui/RoutineTest.kt) ═════════════════════

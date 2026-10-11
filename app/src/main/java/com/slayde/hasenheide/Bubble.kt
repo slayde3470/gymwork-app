@@ -23,9 +23,7 @@ import android.view.WindowManager
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.content.ContextCompat
 import com.slayde.hasenheide.ui.theme.밝은색표
-import kotlin.math.PI
 import kotlin.math.abs
-import kotlin.math.sin
 
 /**
  * 떠 있는 동그라미 (10-08 홍겸 님) — 운동 중에 앱을 벗어나면 다른 앱(유튜브 작은 창 등) 위에 작은 동그라미를 띄운다.
@@ -37,7 +35,8 @@ import kotlin.math.sin
  */
 object 떠있는동그라미 {
     /** 보여 줄 값 — [쉼남은초] null = 운동 중(아이콘), 아니면 휴식 남은 초 */
-    data class 값(val 쉼남은초: Int?, val 쉼총초: Int)
+    /** [쉼끝시각] = 휴식이 끝나는 시각(ms) — 고리가 초 단위로 뚝뚝 줄지 않고 매끄럽게 줄게 하려고 (10-11 홍겸 님) */
+    data class 값(val 쉼남은초: Int?, val 쉼총초: Int, val 쉼끝시각: Long = 0L)
 
     private var 뷰: 동그라미뷰? = null
     private var 마지막x = -1
@@ -122,8 +121,7 @@ object 떠있는동그라미 {
                 붓.style = Paint.Style.STROKE; 붓.strokeWidth = 동그라미치수.고리 * 밀도; 붓.strokeCap = Paint.Cap.BUTT
                 붓.color = 좋음; 붓.alpha = ((1f - t) * 200).toInt()
                 c.drawCircle(cx, cy, r + 퍼짐 * t, 붓)
-                val 숨 = 1f + 0.04f * sin(t * 2 * PI).toFloat()
-                c.save(); c.scale(숨, 숨, cx, cy)
+                // 10-11 홍겸 님: 가운데(시간 · 고리 · 옅은 띠)는 줄어들면 싸구려 같다 → 크기 고정, 바깥 파문만 퍼진다
                 붓.style = Paint.Style.FILL; 붓.color = 좋음; 붓.alpha = 255
                 c.drawCircle(cx, cy, r, 붓)
                 val 굵 = 동그라미치수.고리 * 밀도
@@ -132,12 +130,13 @@ object 떠있는동그라미 {
                 붓.color = 강조글; 붓.alpha = 70
                 c.drawArc(고리칸, 0f, 360f, false, 붓)
                 붓.alpha = 255
-                val 비 = if (v.쉼총초 > 0) (남.toFloat() / v.쉼총초).coerceIn(0f, 1f) else 1f
+                // 10-11 홍겸 님: 초마다 뚝뚝 줄지 않고 매끄럽게 — 남은 시간을 밀리초로 계산한다 (끝시각이 없으면 초 단위)
+                val 남밀리 = if (v.쉼끝시각 > 0L) (v.쉼끝시각 - System.currentTimeMillis()).coerceAtLeast(0L).toFloat() else 남 * 1000f
+                val 비 = if (v.쉼총초 > 0) (남밀리 / (v.쉼총초 * 1000f)).coerceIn(0f, 1f) else 1f
                 // 10-09 홍겸 님: 시계 방향으로 줄어든다 — 끝은 12시에 두고 시작점이 시계 방향으로 따라간다
                 c.drawArc(고리칸, -90f + 360f * (1f - 비), 360f * 비, false, 붓)
                 val 글 = "%d:%02d".format(남 / 60, 남 % 60)
                 c.drawText(글, cx, cy - (글붓.descent() + 글붓.ascent()) / 2, 글붓)
-                c.restore()
             } else {
                 // 운동 중 — 바깥으로 퍼지며 옅어지는 고리 (누를 수 있다는 표시) + 앱 아이콘
                 val t = (SystemClock.uptimeMillis() % 동그라미치수.한바퀴).toFloat() / 동그라미치수.한바퀴
@@ -145,8 +144,8 @@ object 떠있는동그라미 {
                 붓.style = Paint.Style.STROKE; 붓.strokeWidth = 동그라미치수.고리 * 밀도
                 붓.color = 강조; 붓.alpha = ((1f - t) * 200).toInt()
                 c.drawCircle(cx, cy, r + 퍼짐 * t, 붓)
-                val 숨 = 1f + 0.04f * sin(t * 2 * PI).toFloat()
-                c.save(); c.scale(숨, 숨, cx, cy)
+                // 10-11 홍겸 님: 로고도 크기 고정 — 바깥 파문만 퍼진다
+                c.save()
                 붓.style = Paint.Style.FILL; 붓.color = 강조; 붓.alpha = 255
                 c.drawCircle(cx, cy, r, 붓)
                 동그길.reset(); 동그길.addCircle(cx, cy, r, Path.Direction.CW)
@@ -184,10 +183,10 @@ object 떠있는동그라미 {
 
 /** 떠 있는 동그라미 치수 (dp · ms) [11_UI지침에 올릴 값] */
 private object 동그라미치수 {
-    const val 칸 = 83f        // 창 크기 (퍼지는 고리 자리 포함) · 10-09 홍겸 님 15% 키움 (72 →)
-    const val 반지름 = 30f    // 동그라미 · 10-09 15% 키움 (26 →)
-    const val 고리 = 3f       // 고리 굵기
-    const val 글 = 17f        // 남은 시간 글자 (sp 처럼 쓴다) · 10-09 15% 키움 (15 →)
+    const val 칸 = 100f       // 창 크기 (퍼지는 고리 자리 포함) · 10-11 홍겸 님 20% 키움 (83 →)
+    const val 반지름 = 36f    // 동그라미 · 10-11 20% 키움 (30 →)
+    const val 고리 = 3.6f     // 고리 굵기 · 10-11 20% 키움 (3 →)
+    const val 글 = 20f        // 남은 시간 글자 (sp 처럼 쓴다) · 10-11 20% 키움 (17 →)
     const val 옆 = 12f        // 처음 자리 — 오른쪽에서
     const val 처음위 = 160f   // 처음 자리 — 위에서
     const val 한바퀴 = 1600L  // 퍼지는 고리 한 번
