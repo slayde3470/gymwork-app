@@ -30,6 +30,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -203,9 +204,12 @@ private fun 넣기속(
                 LaunchedEffect(펼친) {
                     if (펼친 == null) { 구멍틀[1] = null; 구멍 = null }
                     else {
-                        delay(움직임.펼침.toLong() + 50L)
+                        // 10-11 홍겸 님(2차): 펼친 뒤에 움직이면 렉처럼 보인다 → 펼침과 동시에, 새 자리를 바로(애니메이션 없이) 맞춘다.
+                        //  이름 줄이 맨 위에 와서 위 카테고리는 화면 밖 · 상자는 거기서 위 → 아래로 펼쳐진다. 이전 상자는 바로 접히므로 두 프레임 뒤 한 번만 잰다
+                        withFrameNanos { }
+                        withFrameNanos { }
                         구멍재기()
-                        구멍?.let { 넘김.animateScrollTo(it.top.roundToInt().coerceAtLeast(0)) }
+                        구멍?.let { 넘김.scrollTo(it.top.roundToInt().coerceAtLeast(0)) }
                     }
                 }
                 if (쓸 == null && !못잼) {

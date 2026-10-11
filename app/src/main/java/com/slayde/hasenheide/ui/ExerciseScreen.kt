@@ -385,8 +385,8 @@ private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modif
         }
         if (펼) AnimatedVisibility(
             visible = 들어옴 && !접는중,
-            enter = expandVertically(tween(움직임.펼침)) + fadeIn(tween(움직임.펼침)),
-            exit = shrinkVertically(tween(움직임.펼침)) + fadeOut(tween(움직임.펼침)),
+            enter = expandVertically(tween(움직임.펼침), expandFrom = Alignment.Top) + fadeIn(tween(움직임.펼침)),   // 10-11 홍겸 님: 위에서 아래로 쭉 펼친다 (기본은 아래에서 올라옴)
+            exit = shrinkVertically(tween(움직임.펼침), shrinkTowards = Alignment.Top) + fadeOut(tween(움직임.펼침)),
             label = "상자접힘",
         ) { Column(Modifier.padding(top = 간격.좁게), verticalArrangement = Arrangement.spacedBy(간격.좁게)) {
             if (플랜모양) {
