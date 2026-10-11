@@ -1243,7 +1243,7 @@ internal fun 격자줄(펼침: List<Boolean>): List<List<Int>> {
     val 줄 = mutableListOf<List<Int>>()
     var 구간 = mutableListOf<Int>()
     fun 구간내기(뒤에펼침: Boolean) {
-        val 칸 = if (뒤에펼침 && 구간.size % 2 == 1) listOf(-1) + 구간 else 구간.toList()
+        val 칸 = 구간.toList()   // 10-11: 앞 종목은 제자리(왼쪽 칸) 그대로
         칸.chunked(2).forEach { 줄.add(it) }
         구간 = mutableListOf()
     }
