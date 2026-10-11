@@ -30,6 +30,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.withFrameMillis
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
@@ -59,7 +63,9 @@ import com.slayde.hasenheide.ui.theme.*
 import kotlin.math.PI
 import kotlin.math.sin
 
-private const val 시연휴식ms = 60000   // 휴식중 시연: 1:00 → 0:00 을 실제 속도(60초)로
+private const val 시연운동ms = 1500L
+private const val 시연휴식ms = 2500L
+private const val 시연주기 = 시연운동ms + 시연휴식ms
 
 /** 안내 박스 — '켜기' = 권한 설정으로, '나중에' · 바깥 · 뒤로가기 = 닫기 */
 @Composable
@@ -73,7 +79,13 @@ fun 알림안내창(on켜기: () -> Unit, on나중에: () -> Unit) {
     BackHandler(onBack = { 나중에() })
     val 바퀴 = rememberInfiniteTransition(label = "안내시연")
     val 파도 by 바퀴.animateFloat(0f, 1f, infiniteRepeatable(tween(1600, easing = LinearEasing), RepeatMode.Restart), label = "시연파도")
-    val 남은비 by 바퀴.animateFloat(1f, 0f, infiniteRepeatable(tween(시연휴식ms, easing = LinearEasing), RepeatMode.Restart), label = "시연휴식")
+    // 운동중 1.5초 → 휴식중 2.5초 → 다시 운동중. 휴식중의 줄어드는 시간은 돌아올 때마다 처음으로 가지 않고 이어서 줄어든다 (실제 속도)
+    var 경과 by remember { mutableLongStateOf(0L) }
+    LaunchedEffect(Unit) {
+        val 시작 = withFrameMillis { it }
+        while (true) withFrameMillis { 경과 = it - 시작 }
+    }
+    val 휴식중 by remember { derivedStateOf { 경과 % 시연주기 >= 시연운동ms } }
     AnimatedVisibility(visibleState = 보임, enter = fadeIn(tween(움직임.물음)), exit = fadeOut(tween(움직임.물음)), label = "알림안내") {
         Box(
             Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.35f)).눌림 { 나중에() },
@@ -84,18 +96,25 @@ fun 알림안내창(on켜기: () -> Unit, on나중에: () -> Unit) {
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 제목글("알림을 허용해주세요", 크기값 = 크기.크게)
-                Row(
-                    Modifier.padding(top = 간격.보통).fillMaxWidth().clip(RoundedCornerShape(모서리.보통)).background(c.면2).padding(vertical = 간격.보통),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
+                Box(
+                    Modifier.padding(top = 간격.보통).fillMaxWidth().height(153.dp).clip(RoundedCornerShape(모서리.보통)).background(c.면2),
+                    contentAlignment = Alignment.Center,
                 ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        시연동그라미(false, { 1f }, { 파도 }, Modifier.size(104.dp))
-                        글("운동중", Modifier.padding(top = 간격.아주좁게), 크기값 = 크기.버튼, 색 = c.강조, 굵기 = FontWeight.Bold)
-                    }
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        시연동그라미(true, { 남은비 }, { 파도 }, Modifier.size(104.dp))
-                        글("휴식중", Modifier.padding(top = 간격.아주좁게), 크기값 = 크기.버튼, 색 = c.좋음, 굵기 = FontWeight.Bold)
-                    }
+                    시연동그라미(
+                        휴식중,
+                        {
+                            val 위 = 경과 % 시연주기
+                            val 쉰ms = (경과 / 시연주기) * 시연휴식ms + (if (위 >= 시연운동ms) 위 - 시연운동ms else 0L)
+                            1f - (쉰ms % 60000L) / 60000f
+                        },
+                        { 파도 },
+                        Modifier.size(135.dp).offset(y = (-8).dp),
+                    )
+                    글(
+                        if (휴식중) "휴식중" else "운동중",
+                        Modifier.align(Alignment.BottomCenter).padding(bottom = 간격.좁게), 크기값 = 크기.버튼,
+                        색 = if (휴식중) c.좋음 else c.강조, 굵기 = FontWeight.Bold,
+                    )
                 }
                 Column(Modifier.padding(top = 간격.보통).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(간격.좁게)) {
                     글("· 운동/휴식 중에 앱 밖으로 나가면 활성화 돼요", 크기값 = 크기.버튼, 줄 = 2)

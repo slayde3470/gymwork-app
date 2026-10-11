@@ -806,6 +806,7 @@ fun 시트(
     속늦춤: Boolean = false,
     /** 10-11: 펼친 상자 자리(창 좌표) — 있으면 시트 전체(머리 띠 · 둘레 여백 포함)를 어둡게 칠하고 이 자리만 비운다 (종목 넣기) */
     가림구멍: State<androidx.compose.ui.geometry.Rect?>? = null,
+    가림농도: () -> Float = { 1f },
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val c = Local색.current
@@ -850,7 +851,7 @@ fun 시트(
                             val o = 판창.value
                             val l = (h.left - o.x).coerceIn(0f, size.width); val t = (h.top - o.y).coerceIn(0f, size.height)
                             val r = (h.right - o.x).coerceIn(0f, size.width); val b = (h.bottom - o.y).coerceIn(0f, size.height)
-                            val 색 = 종목치수.넣기가림
+                            val 색 = 종목치수.넣기가림.copy(alpha = 종목치수.넣기가림.alpha * 가림농도().coerceIn(0f, 1f))
                             drawRect(색, Offset(0f, 0f), Size(size.width, t))
                             drawRect(색, Offset(0f, b), Size(size.width, size.height - b))
                             drawRect(색, Offset(0f, t), Size(l, b - t))

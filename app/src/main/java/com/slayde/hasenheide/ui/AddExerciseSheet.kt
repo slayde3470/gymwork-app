@@ -2,6 +2,7 @@ package com.slayde.hasenheide.ui
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -124,8 +125,9 @@ fun 종목넣기시트(
     } else {
         val 플랜길 = if (플랜개수 != null && 플랜넣기 != null && 플랜빼기 != null) 플랜손(플랜개수, 플랜넣기, 플랜빼기) else null
         val 창구멍 = remember { mutableStateOf<Rect?>(null) }
-        시트(제목, 닫기, 위끝고정 = true, 닫기글 = "확인", 겹 = 겹, 속늦춤 = true, 가림구멍 = 창구멍) {
-            넣기속(상태, 칸고름, { 칸고름 = it }, 개수, 넣기, 빼기, 새종목만들기, { 새로 = true }, 플랜길, 창구멍)
+        val 어둠 = remember { androidx.compose.animation.core.Animatable(0f) }   // 0 ~ 1 — 펼침 · 접힘과 같이 움직이는 어둠 농도
+        시트(제목, 닫기, 위끝고정 = true, 닫기글 = "확인", 겹 = 겹, 속늦춤 = true, 가림구멍 = 창구멍, 가림농도 = { 어둠.value }) {
+            넣기속(상태, 칸고름, { 칸고름 = it }, 개수, 넣기, 빼기, 새종목만들기, { 새로 = true }, 플랜길, 창구멍, 어둠)
         }
     }
 }
@@ -153,6 +155,7 @@ private fun 넣기속(
     새로열기: () -> Unit,
     플랜길: 플랜손?,
     창구멍: androidx.compose.runtime.MutableState<Rect?>,
+    어둠: androidx.compose.animation.core.Animatable<Float, androidx.compose.animation.core.AnimationVector1D>,
 ) {
     val d = 상태.d
     val 밀도 = LocalDensity.current
@@ -167,15 +170,21 @@ private fun 넣기속(
     var 마지막 by remember { mutableStateOf<마지막누름?>(null) }   // 10-11 홍겸 님: 방금 접은 종목 — 반짝이고 화면 밖이면 안으로 되돌린다
     val 마지막틀 = remember { arrayOfNulls<LayoutCoordinates>(1) }
     var 접힘정리 by remember { mutableStateOf(false) }
+    var 접는키 by remember { mutableStateOf<String?>(null) }   // 10-11 홍겸 님: 접는 중인 상자 — 속이 줄어드는 동안 어둠 · 스크롤도 같이 돌아온다
+    val 기억높이 = remember { floatArrayOf(0f) }   // 접는 동안 아래 빈칸이 갑자기 줄지 않게 마지막으로 잰 펼친 상자 높이
     val 펼치전 = remember { intArrayOf(-1) }   // 10-11 홍겸 님: 펼치기 직전 스크롤 자리 — 접으면 거기로 돌아간다
     var 보임px by remember { mutableIntStateOf(0) }   // 목록이 보이는 칸의 높이 (어둡게 · 스크롤 여유에 쓴다)
     fun 구멍재기() {
         val 속 = 구멍틀[0]; val 상 = 구멍틀[1]
         구멍 = if (속 != null && 상 != null && 속.isAttached && 상.isAttached) 속.localBoundingBoxOf(상, clipBounds = false) else null
         // 10-11 홍겸 님: 시트 전체를 어둡게 칠하려고 창 좌표로도 알린다 (시트 [가림구멍])
-        창구멍.value = if (상 != null && 상.isAttached) Rect(상.localToWindow(Offset.Zero), androidx.compose.ui.geometry.Size(상.size.width.toFloat(), 상.size.height.toFloat())) else null
+        if (상 != null && 상.isAttached) {
+            창구멍.value = Rect(상.localToWindow(Offset.Zero), androidx.compose.ui.geometry.Size(상.size.width.toFloat(), 상.size.height.toFloat()))
+            기억높이[0] = 상.size.height.toFloat()
+        }
     }
-    val 접기 = { 펼친?.let { k -> 마지막 = 마지막누름(k) { c -> 마지막틀[0] = c } }; 펼친 = null }
+    // 접기 = 펼친 상자의 속이 줄어드는 것 · 어두운 곳이 걷히는 것 · 화면이 펼치기 전 자리로 돌아가는 것이 한꺼번에 (아래 LaunchedEffect(접는키))
+    val 접기 = { 펼친?.let { k -> if (접는키 == null) { 마지막 = 마지막누름(k) { c -> 마지막틀[0] = c }; 접힘정리 = true; 접는키 = k } }; Unit }
     val 판톡 = remember루톡(true)
     val 판 = d.종목탭판(칸고름)
     // 꾹 눌러 끌어 종목 순서 바꾸기 — 종목 탭과 같은 판 (같은 카테고리 안 · 종목표 차례)
@@ -211,9 +220,24 @@ private fun 넣기속(
                 val 넘김 = rememberScrollState()
                 // 10-11 홍겸 님: 펼침이 끝난 뒤(애니메이션 중에는 재지 않는다) 펼친 상자 맨 위(= 접힌 때의 이름 줄)가 목록 맨 위에 오도록 **한 번만** 스크롤.
                 //  접힐 때는 구멍만 비운다. 다른 종목으로 바꾸면 이 효과가 다시 돌아 새 자리로 한 번 움직인다
+                LaunchedEffect(접는키) {
+                    val k = 접는키 ?: return@LaunchedEffect
+                    kotlinx.coroutines.coroutineScope {
+                        launch {
+                            val 돌아감 = 펼치전[0]; 펼치전[0] = -1
+                            if (돌아감 >= 0 && 돌아감 != 넘김.value) 넘김.animateScrollTo(돌아감.coerceAtMost(넘김.maxValue), tween(움직임.펼침))
+                        }
+                        launch { kotlinx.coroutines.delay(움직임.펼침.toLong()); if (펼친 == k) 펼친 = null }
+                    }
+                    접는키 = null; 접힘정리 = false
+                }
+                LaunchedEffect(펼친 != null && 접는키 == null) {
+                    어둠.animateTo(if (펼친 != null && 접는키 == null) 1f else 0f, tween(움직임.펼침))
+                    if (펼친 == null) 창구멍.value = null
+                }
                 LaunchedEffect(펼친) {
                     if (펼친 == null) {
-                        구멍틀[1] = null; 구멍 = null; 창구멍.value = null
+                        구멍틀[1] = null; 구멍 = null
                         // 10-11 홍겸 님: 접은 뒤 방금 누른 상자가 화면 밖으로 나가 있으면 안으로 부드럽게 되돌린다 (그 상자는 반짝인다)
                         if (마지막 != null) {
                             접힘정리 = true
@@ -269,8 +293,8 @@ private fun 넣기속(
                                 Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(간격.좁게)) {
                                     종목묶음들(
                                         상태, 판, 끌판, 펼친,
-                                        { k -> if (펼친 == k) 접기() else { 마지막 = null; 마지막틀[0] = null; 펼친 = k } },
-                                        손, 펼침틀 = { 구멍틀[1] = it; 구멍재기() }, 마지막 = 마지막,
+                                        { k -> if (접는키 != null) Unit else if (펼친 == k) 접기() else { 마지막 = null; 마지막틀[0] = null; 펼친 = k } },
+                                        손, 펼침틀 = { 구멍틀[1] = it; 구멍재기() }, 마지막 = 마지막, 접는키 = 접는키,
                                     )
                                     if (펼친 != null && 새종목만들기) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                                         버튼(
@@ -282,7 +306,7 @@ private fun 넣기속(
                                 // 펼친 상자를 맨 위로 올릴 수 있게 아래를 비워 둔다 (펼친 상자가 보이는 칸보다 작을 때만) · 접은 직후 화면을 되돌리는 동안도 유지
                                 Box(
                                     Modifier.fillMaxWidth().layout { _, c ->
-                                        val h = if (펼친 != null || 접힘정리) (보임px - (구멍상태.value?.height ?: 0f).roundToInt()).coerceAtLeast(0) else 0
+                                        val h = if (펼친 != null || 접힘정리) (보임px - (구멍상태.value?.height ?: 기억높이[0]).roundToInt()).coerceAtLeast(0) else 0
                                         layout(if (c.hasBoundedWidth) c.maxWidth else 0, h) { }
                                     },
                                 )

@@ -277,6 +277,8 @@ internal fun 종목묶음들(
     펼침틀: ((LayoutCoordinates) -> Unit)? = null,
     /** 10-11 홍겸 님: 방금 접은 상자 (넣기 시트만 쓴다) */
     마지막: 마지막누름? = null,
+    /** 10-11 홍겸 님: 접히는 중인 상자 (넣기 시트) — 속이 줄어든 뒤에 시트가 펼침을 푼다 */
+    접는키: String? = null,
 ) {
     val c = Local색.current
     // 10-09 홍겸 님: [루틴] 없음 → 안내 글 (두 줄 이상이 될 수 있어 줄 = 3)
@@ -285,7 +287,7 @@ internal fun 종목묶음들(
         key(칸이름) {
             Column(verticalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
                 if (판.고름 == "전체") 이름표(칸이름, Modifier.padding(start = 간격.아주좁게, top = 간격.아주좁게))
-                종목격자(상태, l, 칸이름, 끌판, 펼친, 펼침, 넣기, 펼침틀, 마지막)
+                종목격자(상태, l, 칸이름, 끌판, 펼친, 펼침, 넣기, 펼침틀, 마지막, 접는키)
             }
         }
     }
@@ -293,14 +295,14 @@ internal fun 종목묶음들(
 
 /** 2열 격자 — 접힌 상자는 한 칸, 펼친 상자는 줄 전체. 줄마다 접힌 이름이 두 줄이면 옆 상자도 같은 높이 */
 @Composable
-private fun 종목격자(상태: 앱상태, l: List<종목칸값>, 무리: String, 끌판: 격자끌기판, 펼친: String?, 펼침: (String) -> Unit, 넣기: 종목넣기손?, 펼침틀: ((LayoutCoordinates) -> Unit)?, 마지막: 마지막누름? = null) {
+private fun 종목격자(상태: 앱상태, l: List<종목칸값>, 무리: String, 끌판: 격자끌기판, 펼친: String?, 펼침: (String) -> Unit, 넣기: 종목넣기손?, 펼침틀: ((LayoutCoordinates) -> Unit)?, 마지막: 마지막누름? = null, 접는키: String? = null) {
     val 줄들 = 격자줄(l.map { it.열쇠 == 펼친 })
     val 두줄높이 = with(LocalDensity.current) { (크기.본문 * 1.4f * 2).toDp() }
     Column(verticalArrangement = Arrangement.spacedBy(간격.좁게)) {
         줄들.forEach { 줄 ->
             val 첫 = l[줄[0]]
             key(첫.열쇠) {
-                if (줄.size == 1 && 첫.열쇠 == 펼친) 종목상자(상태, 첫, true, Modifier.fillMaxWidth().끌기칸(끌판, 첫, 무리).then(if (펼침틀 != null) Modifier.onGloballyPositioned { 펼침틀(it) } else Modifier), 0.dp, 끌판, 펼침, 넣기)
+                if (줄.size == 1 && 첫.열쇠 == 펼친) 종목상자(상태, 첫, true, Modifier.fillMaxWidth().끌기칸(끌판, 첫, 무리).then(if (펼침틀 != null) Modifier.onGloballyPositioned { 펼침틀(it) } else Modifier), 0.dp, 끌판, 펼침, 넣기, 접는키 = 접는키)
                 else {
                     val 높이맞춤 = if (줄.any { 이름줄수(l[it].이름) > 1 }) 두줄높이 else 0.dp
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
@@ -332,7 +334,7 @@ private fun Modifier.끌기칸(끌판: 격자끌기판, x: 종목칸값, 무리:
  * [넣기] 가 있으면(종목 넣기 시트) 오른쪽 끝에 체크 상자 — 누르면 넣기 / 들어 있으면 하나 빼기 · 꾹 = 하나 더
  */
 @Composable
-private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modifier: Modifier, 이름높이: androidx.compose.ui.unit.Dp, 끌판: 격자끌기판, 펼침: (String) -> Unit, 넣기: 종목넣기손?, 마지막: 마지막누름? = null) {
+private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modifier: Modifier, 이름높이: androidx.compose.ui.unit.Dp, 끌판: 격자끌기판, 펼침: (String) -> Unit, 넣기: 종목넣기손?, 마지막: 마지막누름? = null, 접는키: String? = null) {
     val c = Local색.current
     val d = 상태.d
     val t = x.종목
@@ -341,15 +343,19 @@ private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modif
     val 곁 = if (플.size > 1) "플랜 ${플.size}개" else ""   // 10-08 홍겸 님: '플랜 가능' 글은 없앴다
     var 이름고침 by remember(x.열쇠, 펼) { mutableStateOf(false) }   // 10-08 홍겸 님: 펼친 상자에서 이름을 누르면 그 자리에서 고친다
     // 10-09 홍겸 님: [저장] 을 누르면 속이 줄어들며(펼침 시간) 접힌다 — 상자가 접힌 꼴로 바뀌면 이 상자는 새로 그려져 움직임이 끊기므로, 속을 먼저 접고 그 뒤에 접는다
-    var 접는중 by remember(x.열쇠, 펼) { mutableStateOf(false) }
+    var 접는중내부 by remember(x.열쇠, 펼) { mutableStateOf(false) }
+    val 접는중 = 접는중내부 || (펼 && 접는키 == x.열쇠)   // 10-11: 시트가 접으라고 한 상자도 속부터 줄어든다
     val 펼최신 by rememberUpdatedState(펼)
-    LaunchedEffect(접는중) {
-        if (접는중) { delay(움직임.펼침.toLong()); if (펼최신) 펼침(x.열쇠) }
+    LaunchedEffect(접는중내부) {
+        if (접는중내부) { delay(움직임.펼침.toLong()); if (펼최신) 펼침(x.열쇠) }
     }
     val 모양 = RoundedCornerShape(모서리.작게)
     // 10-11 홍겸 님: 방금 접은 상자는 한 번 반짝인다 (어느 종목을 눌렀는지 알 수 있게) — 그리는 단계에서만 값을 읽는다
     val 깜 = remember { Animatable(0f) }
     LaunchedEffect(마지막, 펼) { if (마지막 != null && !펼) { 깜.snapTo(1f); 깜.animateTo(0f, tween(1400)) } }
+    // 10-11 홍겸 님: 체크를 누르거나 풀면 상자가 살짝 오목해졌다 돌아온다
+    val 오목 = remember { Animatable(1f) }
+    val 오목범위 = rememberCoroutineScope()
     val 수 = if (넣기 != null && 넣기.됨(x)) 넣기.수(x) else -1   // -1 = 체크 상자 없음
     val 들어감 = 수 > 0
     // 10-09 홍겸 님: 플랜이 있는 종목(플랜 카드가 보이는 곳)의 펼친 상자는 플랜이 세팅한다 — 기본 세팅 · [저장][취소] · [삭제] 없음
@@ -362,7 +368,7 @@ private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modif
     var 들어옴 by remember(x.열쇠, 펼) { mutableStateOf(!시트펼침) }
     if (시트펼침) LaunchedEffect(Unit) { 들어옴 = true }
     Column(
-        modifier.clip(모양).background(상자바탕)
+        modifier.graphicsLayer { scaleX = 오목.value; scaleY = 오목.value }.clip(모양).background(상자바탕)
             .border(if (시트펼침) 선굵기.굵게 else 선굵기.보통, 상자테, 모양)
             .then(if (마지막 != null && !펼) Modifier.drawWithContent {
                 drawContent()
@@ -380,7 +386,8 @@ private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modif
             // 10-11 홍겸 님: 체크 상자는 이름 왼쪽 맨 앞 (전: 오른쪽 끝)
             if (!펼 && 넣기 != null && 수 >= 0) 넣기체크(x.이름, 수,
                 누름 = { if (넣기.수(x) > 0) 넣기.빼기(x) else { 넣기.넣기(x); 꾹안내(상태) } },   // 10-09 홍겸 님: 눌러 넣을 때 '꾸욱 누르면…' 토스트
-                꾹 = { 넣기.넣기(x) })
+                꾹 = { 넣기.넣기(x) },
+                눌렀다 = { 오목범위.launch { 오목.animateTo(0.955f, tween(90)); 오목.animateTo(1f, androidx.compose.animation.core.spring(dampingRatio = 0.5f, stiffness = 400f)) } })
             if (펼 && t != null) 사진넣는칸(상태, t)
             // 10-07 꾹 눌러 끌기 — 손은 누름보다 안쪽(먼저 받아야 끊기지 않는다). 꾹 누르고 떼어도 펼치지 않게 길게 누름은 빈 동작
             Column(Modifier.weight(1f).눌림길게({ 펼침(x.열쇠) }, { }).격자끌기손(끌판, x.종목?.id ?: x.열쇠, x.이름, 켬 = x.종목 != null)) {
@@ -428,7 +435,7 @@ private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modif
                     if (t != null) key(t.id) { 플랜종목근육(상태, t) } else 근육읽기(상태, x.이름)
                 })
             } else {
-                if (t != null) key(t.id) { 종목고치기(상태, t, 플.isNotEmpty(), 저장뒤 = { 접는중 = true }) }
+                if (t != null) key(t.id) { 종목고치기(상태, t, 플.isNotEmpty(), 저장뒤 = { if (넣기 != null) 펼침(x.열쇠) else 접는중내부 = true }) }
                 else {
                     종목세팅(상태, x.이름, 플.isNotEmpty())
                     근육읽기(상태, x.이름)
@@ -572,8 +579,12 @@ private fun 꾹안내(상태: 앱상태) {
  * 그래서 한 번 만든 손([pointerInput] · detectTapGestures)이 최신 동작만 불러 주는 꼴로 바꿨다. 꾹이 먹히면 짧게 떨린다 (상자 머리의 꾹 = 끌기와 같은 느낌)
  */
 @Composable
-private fun 넣기체크(이름: String, 수: Int, 누름: () -> Unit, 꾹: () -> Unit) {
+private fun 넣기체크(이름: String, 수: Int, 누름: () -> Unit, 꾹: () -> Unit, 눌렀다: () -> Unit = {}) {
     val c = Local색.current
+    val 깊이 = remember { Animatable(1f) }   // 10-11: 체크 상자도 오목해졌다 돌아온다
+    val 깊이범위 = rememberCoroutineScope()
+    val 눌렀다최신 by rememberUpdatedState(눌렀다)
+    fun 오목() { 눌렀다최신(); 깊이범위.launch { 깊이.animateTo(0.76f, tween(90)); 깊이.animateTo(1f, androidx.compose.animation.core.spring(dampingRatio = 0.45f, stiffness = 400f)) } }
     val 들어감 = 수 > 0
     val 상자 = RoundedCornerShape(넣기값.체크모서리)
     val 누름최신 by rememberUpdatedState(누름)
@@ -584,19 +595,19 @@ private fun 넣기체크(이름: String, 수: Int, 누름: () -> Unit, 꾹: () -
         Modifier.heightIn(min = 높이.아주낮게).widthIn(min = 높이.아주낮게).clip(RoundedCornerShape(모서리.작게))
             .semantics(mergeDescendants = true) {
                 contentDescription = "$이름 · ${수}개 들어 있음 · ${if (들어감) "누르면 하나 빼기" else "누르면 넣기"}, 꾹 누르면 하나 더"
-                onClick { 누름최신(); true }
-                onLongClick { 꾹최신(); true }
+                onClick { 오목(); 누름최신(); true }
+                onLongClick { 오목(); 꾹최신(); true }
             }
             .pointerInput(Unit) {
                 detectTapGestures(
-                    onLongPress = { 진동.performHapticFeedback(HapticFeedbackType.LongPress); 꾹최신() },
-                    onTap = { 누름최신() },
+                    onLongPress = { 진동.performHapticFeedback(HapticFeedbackType.LongPress); 오목(); 꾹최신() },
+                    onTap = { 오목(); 누름최신() },
                 )
             },
         contentAlignment = Alignment.Center,
     ) {
         Box(
-            Modifier.heightIn(min = 넣기값.체크).widthIn(min = 넣기값.체크).clip(상자)
+            Modifier.graphicsLayer { scaleX = 깊이.value; scaleY = 깊이.value }.heightIn(min = 넣기값.체크).widthIn(min = 넣기값.체크).clip(상자)
                 .background(if (들어감) c.강조 else c.면)
                 .border(선굵기.보통, if (들어감) c.강조 else c.속선, 상자)
                 .padding(horizontal = 간격.아주좁게),

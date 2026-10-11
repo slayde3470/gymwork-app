@@ -54,6 +54,7 @@ import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.key
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -235,6 +236,7 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
     val 끌림x = remember { mutableFloatStateOf(0f) }   // 손가락을 따라 끌려오는 거리(px) — 그릴 때만 읽는다
     val 옛시작 = remember { mutableFloatStateOf(0f) }   // 손을 뗀 자리 — 옛 쪽 그림이 여기서부터 밀려 나간다
     val 끌범위 = rememberCoroutineScope()
+    val 이웃방향 by remember { derivedStateOf { if (끌림x.floatValue < 0f) 1 else if (끌림x.floatValue > 0f) -1 else 0 } }   // 구성은 부호가 바뀔 때만 다시 짠다
     LaunchedEffect(S.시작시각, 목표본) {
         if (목표본 == 표시본) return@LaunchedEffect
         val 방식 = 넘김방식[0]; 넘김방식[0] = 0
@@ -359,6 +361,29 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
                         if (전환중 && 막방식 == 0) Box(Modifier.fillMaxSize().터치삼킴())   // 반쯤 바뀐 채 누른 것이 엉뚱한 종목에 가지 않게
                     }
                     진행상자(상태, S, 본, 당김, Modifier.번호("운띠"), 함 = ::함, 고름 = { i -> 운보기.본 = i; 당김++ }, 넣기 = { 넣기열림 = true })
+                }
+                // 10-11 홍겸 님: 끌려오는 동안 다음(이전) 화면이 옆에서 같이 보인다 — 끌기 시작할 때만 한 벌 더 그린다 (눌림은 삼킨다)
+                val 이웃 = 이웃방향
+                val 이웃본 = 본 + 이웃
+                if (이웃 != 0 && 옛그림 == null && 이웃본 in 0 until n) {
+                    Box(
+                        Modifier.fillMaxSize().clipToBounds()
+                            .graphicsLayer { translationX = 끌림x.floatValue + 이웃 * size.width },
+                    ) {
+                        Column(Modifier.fillMaxSize()) {
+                            운머리아랫줄(상태, S, 이웃본, S.종목들[이웃본], null)
+                            Box(Modifier.weight(1f).clipToBounds()) {
+                                Column(Modifier.fillMaxSize()) {
+                                    AnimatedVisibility(visible = 그림켬 && !그림숨김) {
+                                        Box { 운동그림칸(상태, S.copy(i = 이웃본), 지금) { } }
+                                    }
+                                    세트목록(상태, S, 이웃본, 지금, Modifier.weight(1f), 함 = ::함, 바꿈 = ::바꿈, 당김 = { })
+                                }
+                            }
+                            진행상자(상태, S, 이웃본, 당김, Modifier, 함 = ::함, 고름 = { }, 넣기 = { })
+                        }
+                        Box(Modifier.fillMaxSize().터치삼킴())
+                    }
                 }
                 val 책그림 = 옛그림
                 if (책그림 != null && 옛방식 == 1) 책장옛쪽(책그림, 옛방향, { 옛시작.floatValue }) { 진행.value }
