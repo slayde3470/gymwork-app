@@ -738,17 +738,30 @@ private fun ColumnScope.보고본문(
             Modifier.fillMaxWidth().onGloballyPositioned { 격자틀[0] = it }
                 .drawWithContent {
                     drawContent()
-                    // 10-11 홍겸 님: 그린 선을 따라가지 않고 **상자 테두리를 그대로** — 묶인 칸의 줄 높이 사각형을 틈 절반만큼 키워 맞붙이고(경계가 사라진다) 바깥 둘레만 한 번 긋는다
-                    val g = 간격.아주좁게.toPx() / 2f + 0.5f
+                    // 10-11 홍겸 님: 묶인 칸의 **상자 테두리 바로 바깥(1dp)** 을 따라 한 줄 — 칸 사이 틈은 다리(사각형)로 이어 경계를 없앤다.
+                    //  선이 틈 한가운데가 아니라 제 칸 곁에 붙으니 이웃한 다른 슈퍼세트 선과 겹치지 않는다
+                    val e = 1.dp.toPx()
+                    fun 사각(r: Rect) = androidx.compose.ui.graphics.Path().apply { addRect(r) }
                     묶음들.forEach { l ->
-                        var 합: androidx.compose.ui.graphics.Path? = null
+                        val R = HashMap<Int, Rect>()
                         l.forEach { i ->
                             val r = 자리[값.칸들[i].번호] ?: return@forEach
                             val 줄 = 줄자리[i / 2] ?: return@forEach
-                            val q = androidx.compose.ui.graphics.Path().apply { addRect(Rect(r.left - g, 줄.top - g, r.right + g, 줄.bottom + g)) }
-                            합 = 합?.let { a -> androidx.compose.ui.graphics.Path.combine(androidx.compose.ui.graphics.PathOperation.Union, a, q) } ?: q
+                            R[i] = Rect(r.left, 줄.top, r.right, 줄.bottom)
                         }
-                        합?.let { drawPath(it, 주, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 선굵기.굵게.toPx() * 0.7f, pathEffect = androidx.compose.ui.graphics.PathEffect.cornerPathEffect(모서리.작게.toPx()))) }   // 10-11 홍겸 님: 통짜 둘레 그대로(통째로 한 선) · 다른 슈퍼세트와 겹치지 않게 굵기만 70%
+                        val 조각 = ArrayList<Rect>()
+                        R.values.forEach { 조각.add(Rect(it.left - e, it.top - e, it.right + e, it.bottom + e)) }
+                        l.forEach { i ->
+                            val a1 = R[i] ?: return@forEach
+                            R[i + 1]?.let { b1 ->
+                                if (i / 2 == (i + 1) / 2) 조각.add(Rect(a1.right - e, a1.top - e, b1.left + e, a1.bottom + e))   // 같은 줄 옆 칸
+                                else 조각.add(Rect(b1.right - 3 * e, a1.bottom - 3 * e, a1.left + 3 * e, b1.top + 3 * e))   // 줄 바꿈(대각선)
+                            }
+                            R[i + 2]?.let { c1 -> 조각.add(Rect(a1.left - e, a1.bottom - e, a1.right + e, c1.top + e)) }   // 아래 칸
+                        }
+                        var 합: androidx.compose.ui.graphics.Path? = null
+                        조각.forEach { q -> 합 = 합?.let { x -> androidx.compose.ui.graphics.Path.combine(androidx.compose.ui.graphics.PathOperation.Union, x, 사각(q)) } ?: 사각(q) }
+                        합?.let { drawPath(it, 주, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 선굵기.굵게.toPx() * 0.7f, pathEffect = androidx.compose.ui.graphics.PathEffect.cornerPathEffect(모서리.작게.toPx()))) }
                     }
                 },
             verticalArrangement = Arrangement.spacedBy(간격.아주좁게),

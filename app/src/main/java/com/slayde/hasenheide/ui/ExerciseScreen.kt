@@ -709,20 +709,20 @@ private fun 넣기체크(이름: String, 수: Int, 즐겨: Boolean, 누름: () -
         if (즐겨) {
             // 10-11 홍겸 님: 즐겨찾기 종목은 네모 체크 상자 대신 별 — 넣기 전엔 속이 빈 별 · 넣으면 노랗게 칠해지고 파란 체크 (둘 이상이면 체크 대신 수). 일반 체크 상자와 같은 한 칸·같은 누름
             Box(
-                Modifier.padding(start = 넣기값.체크옆).graphicsLayer { scaleX = 깊이.value; scaleY = 깊이.value },
+                Modifier.padding(start = 넣기값.체크옆).넘쳐도폭없이(넣기값.체크 + 2.dp).graphicsLayer { scaleX = 깊이.value; scaleY = 깊이.value },
                 contentAlignment = Alignment.Center,
             ) {
                 별(들어감, 넣기값.체크 + 2.dp, c.즐겨)
-                if (들어감) Text(체크글(수), style = 글꼴.보통(크기.작게 * (if (수 >= 3) 0.7f else 0.85f), FontWeight.Bold).copy(letterSpacing = (-0.1).em), color = c.강조, maxLines = 1, softWrap = false, modifier = Modifier.offset(y = 1.dp))
+                if (들어감) Text(체크글(수), style = 글꼴.보통(크기.작게 * (if (수 >= 3) 0.8f else 0.95f), FontWeight.Bold).copy(letterSpacing = (-0.1).em), color = c.강조, maxLines = 1, softWrap = false, modifier = Modifier.offset(y = 1.dp))
             }
         } else Box(
-            Modifier.padding(start = 넣기값.체크옆).graphicsLayer { scaleX = 깊이.value; scaleY = 깊이.value }.heightIn(min = 넣기값.체크).widthIn(min = 넣기값.체크).clip(상자)
+            Modifier.padding(start = 넣기값.체크옆).넘쳐도폭없이(넣기값.체크).graphicsLayer { scaleX = 깊이.value; scaleY = 깊이.value }.heightIn(min = 넣기값.체크).widthIn(min = 넣기값.체크).clip(상자)
                 .background(if (들어감) c.강조 else c.면)
                 .border(선굵기.보통, if (들어감) c.강조 else c.속선, 상자)
-                .padding(horizontal = if (수 >= 3) 1.dp else 간격.아주좁게),   // 10-11: ✓×3 이상은 좌우 안쪽 여백을 줄여 상자 너비를 줄인다
+                .padding(horizontal = 간격.아주좁게),
             contentAlignment = Alignment.Center,
         ) {
-            if (들어감) Text(체크글(수), style = 글꼴.보통(크기.작게 * (if (수 >= 3) 0.7f else 0.85f), FontWeight.Bold).copy(letterSpacing = (-0.1).em), color = c.강조글, maxLines = 1, softWrap = false)
+            if (들어감) Text(체크글(수), style = 글꼴.보통(크기.작게 * (if (수 >= 3) 0.8f else 0.95f), FontWeight.Bold).copy(letterSpacing = (-0.1).em), color = c.강조글, maxLines = 1, softWrap = false)
         }
     }
 }
@@ -1360,3 +1360,10 @@ internal fun 앱데이터.종목사진더함(id: String, 이름들: List<String>
 
 internal fun 앱데이터.종목사진뺌(id: String, 이름: String): 앱데이터 =
     copy(종목표 = 종목표.map { if (it.id == id) it.copy(사진 = it.사진 - 이름) else it })
+
+/** 10-11 홍겸 님: 상자가 글(✓×4)에 맞춰 넓어져도 자리(폭)는 [기준]까지만 차지한다 — 이름 글을 밀지 않고 가운데에서 양옆 여백으로 넘친다 */
+private fun Modifier.넘쳐도폭없이(기준: androidx.compose.ui.unit.Dp): Modifier = this.layout { m, cc ->
+    val p = m.measure(cc)
+    val w = minOf(p.width, 기준.roundToPx())
+    layout(w, p.height) { p.place(-(p.width - w) / 2, 0) }
+}
