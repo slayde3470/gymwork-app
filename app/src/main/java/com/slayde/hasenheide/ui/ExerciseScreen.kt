@@ -707,14 +707,14 @@ private fun 넣기체크(이름: String, 수: Int, 즐겨: Boolean, 누름: () -
         if (즐겨) {
             // 10-11 홍겸 님: 즐겨찾기 종목은 네모 체크 상자 대신 별 — 넣기 전엔 속이 빈 별 · 넣으면 노랗게 칠해지고 파란 체크 (둘 이상이면 체크 대신 수). 일반 체크 상자와 같은 한 칸·같은 누름
             Box(
-                Modifier.padding(start = 넣기값.체크옆).graphicsLayer { scaleX = 깊이.value; scaleY = 깊이.value },
+                Modifier.padding(start = 넣기값.체크옆 - if (수 >= 3) 1.dp else 0.dp).graphicsLayer { scaleX = 깊이.value; scaleY = 깊이.value },
                 contentAlignment = Alignment.Center,
             ) {
-                별(들어감, 넣기값.체크 + 2.dp, c.즐겨, 체크 = 수 == 1, 체크색 = c.강조)
-                if (수 > 1) Text("$수", Modifier.offset(y = 1.dp), style = 글꼴.보통(크기.작게 * 0.8f, FontWeight.Bold).copy(letterSpacing = (-0.05).em), color = c.강조, maxLines = 1, softWrap = false)
+                별(들어감, 넣기값.체크 + 2.dp, c.즐겨)
+                if (들어감) Text(체크글(수), style = 글꼴.보통(크기.작게 * 0.85f, FontWeight.Bold).copy(letterSpacing = (-0.08).em), color = c.강조, maxLines = 1, softWrap = false, modifier = Modifier.offset(y = 1.dp))
             }
         } else Box(
-            Modifier.padding(start = 넣기값.체크옆).graphicsLayer { scaleX = 깊이.value; scaleY = 깊이.value }.heightIn(min = 넣기값.체크).widthIn(min = 넣기값.체크).clip(상자)
+            Modifier.padding(start = 넣기값.체크옆 - if (수 >= 3) 1.dp else 0.dp).graphicsLayer { scaleX = 깊이.value; scaleY = 깊이.value }.heightIn(min = 넣기값.체크).widthIn(min = 넣기값.체크).clip(상자)
                 .background(if (들어감) c.강조 else c.면)
                 .border(선굵기.보통, if (들어감) c.강조 else c.속선, 상자)
                 .padding(horizontal = 간격.아주좁게),
@@ -1254,6 +1254,7 @@ internal fun 즐겨칩(상태: 앱상태) {
     val 켬 = 상태.d.설정.즐겨먼저
     Box(
         Modifier.height(높이.낮게).widthIn(min = 높이.낮게)
+            .layout { m, cc -> val p = m.measure(cc); layout(p.width - 5.dp.roundToPx(), p.height) { p.place(0, 0) } }   // 10-11 홍겸 님: 오른쪽 여백 35%↓
             .눌림 { 상태.바꿈 { d -> d.copy(설정 = d.설정.copy(즐겨먼저 = !d.설정.즐겨먼저)) } }
             .semantics { contentDescription = "즐겨찾기 먼저 보기 ${if (켬) "끄기" else "켜기"}"; role = Role.Switch },
         contentAlignment = Alignment.Center,

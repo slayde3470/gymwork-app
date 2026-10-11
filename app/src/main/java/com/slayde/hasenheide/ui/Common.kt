@@ -350,7 +350,7 @@ fun 별(켬: Boolean, 크기: Dp, 색: Color, modifier: Modifier = Modifier, 체
             if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
         }
         path.close()
-        val 굵 = w * 0.075f
+        val 굵 = w * 0.056f
         if (켬) drawPath(path, 색, style = androidx.compose.ui.graphics.drawscope.Fill)
         drawPath(path, 색, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 굵, join = androidx.compose.ui.graphics.StrokeJoin.Round, cap = androidx.compose.ui.graphics.StrokeCap.Round))
         if (체크) {

@@ -284,7 +284,7 @@ internal fun 캘요일글(k: String): String = "일월화수목금토"[LocalDate
 // ─────────────── 화면 값 ───────────────
 
 /** 달력 칸 높이 (시안 `.칸날` 64 · 날짜 13 + 루틴 11 + 상태 11 이 들어간다) [Theme 에 없는 새 값 — 합칠 때 Theme.kt 로] */
-private val 칸높이 = 54.dp   // 10-11 홍겸 님: 64 → 54 (날짜 판에 예정 종목 10개가 들어가게)
+private val 칸높이 = 52.dp   // 10-11 홍겸 님: 64 → 54 (날짜 판에 예정 종목 10개가 들어가게)
 /** 달력 한 달 전체 높이 — 6줄 기준으로 고정. 5줄 · 4줄인 달은 같은 높이를 줄 수로 균등하게 나눈다 (10-11 홍겸 님) */
 private const val 기본줄수 = 6
 private val 달력높이 = 칸높이 * 기본줄수
@@ -792,7 +792,7 @@ private fun 날판(
                 Modifier.weight(1f), style = 글꼴.제목(중간날짜크기), color = c.강조글, maxLines = 1, overflow = TextOverflow.Ellipsis,
             )
         }
-        Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(넘김).padding(horizontal = 간격.보통, vertical = 간격.좁게), verticalArrangement = Arrangement.spacedBy(간격.좁게)) {
+        Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(넘김).padding(horizontal = 간격.보통, vertical = 2.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {   // 10-11 홍겸 님: 머리 줄 위아래 줄여 10칸이 다 보이게
             var 앞것 = false
             록.forEach { (rk, rec) ->
                 기록머리(d, rec, 켬 = rk in 록골, 선위 = 앞것, 지움모드 = 지움모드) { on록고름(rk) }
