@@ -303,7 +303,17 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
             val 막방식 = if (옛그림 != null) 옛방식 else 넘김방식[0]   // 터치를 막는 영역: 1 = A 전체 · 0 = B 만
             val 전환중 = 옛그림 != null || 표시본 != 목표본
             Box(Modifier.weight(1f).clipToBounds()) {   // 영역 A
-                Column(Modifier.fillMaxSize().기록층(층A)) {
+                Column(
+                    Modifier.fillMaxSize()
+                        .graphicsLayer {
+                            // 좌우 밀기 — 새 쪽이 밀려 들어온다 (옛 쪽 그림이 같이 밀려 나간다). 그리기 단계에서만 값을 읽는다
+                            if (옛그림 != null && 옛방식 == 1) {
+                                val v = 움직임.부드럽게.transform(진행.value.coerceIn(0f, 1f))
+                                translationX = 옛방향 * size.width * (1f - v)
+                            } else translationX = 0f
+                        }
+                        .기록층(층A),
+                ) {
                     운머리아랫줄(상태, S, 본, e, if (그림켬 && 그림숨김) ({ 발자취.적기("그림 칸 다시 보임"); 그림칸기억.숨긴운동 = "" }) else null)
                     Box(Modifier.weight(1f).clipToBounds()) {   // 영역 B
                         Column(
@@ -406,49 +416,17 @@ private fun Modifier.터치삼킴(): Modifier = pointerInput(Unit) {
     }
 }
 
-/**
- * 책장 넘김의 옛 쪽 (방식 1) — 새 쪽 위에 옛 쪽 그림이 책등을 축으로 넘어간다. 다음(+1) = 왼쪽 가장자리가 책등 · 이전(−1) = 오른쪽 가장자리.
- * 넘어갈수록 어두워지고, 넘어가는 가장자리 옆 새 쪽 위에 그림자가 깔린다. 마지막 10% 는 서서히 지운다
- */
+/** 좌우 밀기의 옛 쪽 (방식 1) — 새 쪽과 붙어서 같이 밀려 나간다 (다음 = 왼쪽으로 · 이전 = 오른쪽으로) */
 @Composable
 private fun 책장옛쪽(그림: ImageBitmap, 방향: Int, 진행값: () -> Float) {
-    val c = Local색.current
-    Box(Modifier.fillMaxSize()) {
-        // 새 쪽 위의 그림자 (옛 쪽보다 아래층)
-        Box(
-            Modifier.fillMaxSize().drawBehind {
-                val e = 운치수.책장곡선.transform(진행값().coerceIn(0f, 1f))
-                val 흐림 = 1f - ((e - 0.9f) / 0.1f).coerceIn(0f, 1f)
-                val w = size.width
-                val 폭 = w * 운치수.책장그림자폭
-                val 코 = cos(Math.PI / 2.0 * e).toFloat()
-                val 짙음 = Color.Black.copy(alpha = 운치수.책장그림자 * (1f - e) * 흐림)
-                if (방향 > 0) {
-                    val x0 = w * 코   // 넘어가는 가장자리 — 그 오른쪽(새 쪽)에
-                    drawRect(Brush.horizontalGradient(listOf(짙음, Color.Transparent), startX = x0, endX = x0 + 폭), Offset(x0, 0f), Size(폭, size.height))
-                } else {
-                    val x1 = w - w * 코   // 그 왼쪽(새 쪽)에
-                    drawRect(Brush.horizontalGradient(listOf(Color.Transparent, 짙음), startX = x1 - 폭, endX = x1), Offset(x1 - 폭, 0f), Size(폭, size.height))
-                }
-            },
-        )
-        Box(
-            Modifier.fillMaxSize()
-                .graphicsLayer {
-                    val e = 운치수.책장곡선.transform(진행값().coerceIn(0f, 1f))
-                    rotationY = (if (방향 > 0) -90f else 90f) * e
-                    transformOrigin = TransformOrigin(if (방향 > 0) 0f else 1f, 0.5f)
-                    cameraDistance = 운치수.책장카메라 * density
-                    alpha = 1f - ((e - 0.9f) / 0.1f).coerceIn(0f, 1f)
-                }
-                .drawBehind {
-                    val e = 운치수.책장곡선.transform(진행값().coerceIn(0f, 1f))
-                    drawRect(c.바탕)   // 그림 뒤가 비어 있어도 새 쪽이 비치지 않게 종이 바탕
-                    drawImage(그림, dstSize = IntSize(size.width.roundToInt(), size.height.roundToInt()))
-                    drawRect(Color.Black, alpha = e * 운치수.책장어둠)
-                },
-        )
-    }
+    Box(
+        Modifier.fillMaxSize()
+            .graphicsLayer {
+                val v = 움직임.부드럽게.transform(진행값().coerceIn(0f, 1f))
+                translationX = -방향 * size.width * v
+            }
+            .drawBehind { drawImage(그림, dstSize = IntSize(size.width.roundToInt(), size.height.roundToInt())) },
+    )
 }
 
 /** 밀기의 옛 쪽 (방식 0 · 영역 B) — 옆으로 물러나며 사라진다. 새 쪽은 반대편에서 들어온다(살아 있는 내용 쪽 graphicsLayer) */
@@ -493,7 +471,7 @@ private object 운치수 {
     const val 더동그라미비 = 0.95f   // 10-09: 세트 줄 아래 [＋ 세트] 동그라미 = 번호 동그라미 × 0.95 [11_UI지침에 올릴 값]
     const val 값그림배 = 0.97f       // 10-09: 세트 줄 − ＋ 그림 3% 작게 (16 → 15.52 · 누르는 칸 20 은 그대로) [11_UI지침에 올릴 값]
     val 칸여유 = 4.dp               // 10-09: 세트 줄 kg · 회 · 휴식 칸 = 단추 둘 + 테 둘 + 잰 글자 폭 + 이 여유
-    const val 책장시간 = 520          // 10-11 홍겸 님: 좌우 밀기 책장 넘김(ms) — 새 쪽이 아래에 깔리고 옛 쪽이 책등을 축으로 넘어간다 [11_UI지침에 올릴 값]
+    const val 책장시간 = 300          // 10-11 홍겸 님: 좌우 밀기 책장 넘김(ms) — 새 쪽이 아래에 깔리고 옛 쪽이 책등을 축으로 넘어간다 [11_UI지침에 올릴 값]
     const val 밀기시간 = 380          // 버튼 · 자동 · 칸 고르기로 넘어갈 때 옆으로 밀려 바뀌는 시간(ms)
     const val 밀기폭 = 0.28f          // 밀려나는 거리 = 영역 폭 × 이만큼
     const val 책장어둠 = 0.35f        // 넘어가는 옛 쪽이 어두워지는 최대 농도 (검정)
