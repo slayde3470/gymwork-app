@@ -54,6 +54,7 @@ import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.key
 import androidx.compose.runtime.getValue
@@ -363,26 +364,30 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
                     진행상자(상태, S, 본, 당김, Modifier.번호("운띠"), 함 = ::함, 고름 = { i -> 운보기.본 = i; 당김++ }, 넣기 = { 넣기열림 = true })
                 }
                 // 10-11 홍겸 님: 끌려오는 동안 다음(이전) 화면이 옆에서 같이 보인다 — 끌기 시작할 때만 한 벌 더 그린다 (눌림은 삼킨다)
-                val 이웃 = 이웃방향
-                val 이웃본 = 본 + 이웃
-                if (이웃 != 0 && 옛그림 == null && 이웃본 in 0 until n) {
-                    Box(
-                        Modifier.fillMaxSize().clipToBounds()
-                            .graphicsLayer { translationX = 끌림x.floatValue + 이웃 * size.width },
-                    ) {
-                        Column(Modifier.fillMaxSize()) {
-                            운머리아랫줄(상태, S, 이웃본, S.종목들[이웃본], null)
-                            Box(Modifier.weight(1f).clipToBounds()) {
-                                Column(Modifier.fillMaxSize()) {
-                                    AnimatedVisibility(visible = 그림켬 && !그림숨김) {
-                                        Box { 운동그림칸(상태, S.copy(i = 이웃본), 지금) { } }
+                // 가만히 있을 때(0.3초 뒤)부터 양옆 화면을 미리 그려 둔다 — 끌 때 새로 그리지 않고 옆에서 꺼내 온다
+                val 이웃준비 by produceState(false, 표시본) { value = false; delay(300); value = true }
+                if (옛그림 == null) for (이웃 in intArrayOf(-1, 1)) {
+                    val 이웃본 = 본 + 이웃
+                    if (이웃본 !in 0 until n || !(이웃준비 || 이웃 == 이웃방향)) continue
+                    key(이웃본) {
+                        Box(
+                            Modifier.fillMaxSize().clipToBounds()
+                                .graphicsLayer { translationX = 끌림x.floatValue + 이웃 * size.width },
+                        ) {
+                            Column(Modifier.fillMaxSize()) {
+                                운머리아랫줄(상태, S, 이웃본, S.종목들[이웃본], null)
+                                Box(Modifier.weight(1f).clipToBounds()) {
+                                    Column(Modifier.fillMaxSize()) {
+                                        AnimatedVisibility(visible = 그림켬 && !그림숨김) {
+                                            Box { 운동그림칸(상태, S.copy(i = 이웃본), 지금) { } }
+                                        }
+                                        세트목록(상태, S, 이웃본, 지금, Modifier.weight(1f), 함 = ::함, 바꿈 = ::바꿈, 당김 = { })
                                     }
-                                    세트목록(상태, S, 이웃본, 지금, Modifier.weight(1f), 함 = ::함, 바꿈 = ::바꿈, 당김 = { })
                                 }
+                                진행상자(상태, S, 이웃본, 당김, Modifier, 함 = ::함, 고름 = { }, 넣기 = { })
                             }
-                            진행상자(상태, S, 이웃본, 당김, Modifier, 함 = ::함, 고름 = { }, 넣기 = { })
+                            Box(Modifier.fillMaxSize().터치삼킴())
                         }
-                        Box(Modifier.fillMaxSize().터치삼킴())
                     }
                 }
                 val 책그림 = 옛그림

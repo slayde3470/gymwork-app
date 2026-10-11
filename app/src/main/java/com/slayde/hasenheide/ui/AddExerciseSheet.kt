@@ -126,7 +126,7 @@ fun 종목넣기시트(
         val 플랜길 = if (플랜개수 != null && 플랜넣기 != null && 플랜빼기 != null) 플랜손(플랜개수, 플랜넣기, 플랜빼기) else null
         val 창구멍 = remember { mutableStateOf<Rect?>(null) }
         val 어둠 = remember { androidx.compose.animation.core.Animatable(0f) }   // 0 ~ 1 — 펼침 · 접힘과 같이 움직이는 어둠 농도
-        시트(제목, 닫기, 위끝고정 = true, 닫기글 = "확인", 겹 = 겹, 속늦춤 = true, 가림구멍 = 창구멍, 가림농도 = { 어둠.value }) {
+        시트(제목, 닫기, 위끝고정 = true, 닫기글 = "확인", 겹 = 겹, 가림구멍 = 창구멍, 가림농도 = { 어둠.value }) {
             넣기속(상태, 칸고름, { 칸고름 = it }, 개수, 넣기, 빼기, 새종목만들기, { 새로 = true }, 플랜길, 창구멍, 어둠)
         }
     }
@@ -218,6 +218,12 @@ private fun 넣기속(
             // 칩을 바꾸면 맨 위부터 (시안 v18 D ⑤) · 칸을 눌러 다시 그려도 보던 자리 그대로
             key(판.고름) {
                 val 넘김 = rememberScrollState()
+                // 10-11 홍겸 님: 목록을 한꺼번에 그리면 멈칫 — 처음 한 화면 분량만 그리고 나머지는 프레임마다 조금씩 채운다
+                var 한도 by remember { mutableIntStateOf(12) }
+                val 판최신 by rememberUpdatedState(판)
+                LaunchedEffect(Unit) {
+                    while (한도 < 판최신.묶음.sumOf { it.second.size }) { withFrameNanos { }; 한도 += 8 }
+                }
                 // 10-11 홍겸 님: 펼침이 끝난 뒤(애니메이션 중에는 재지 않는다) 펼친 상자 맨 위(= 접힌 때의 이름 줄)가 목록 맨 위에 오도록 **한 번만** 스크롤.
                 //  접힐 때는 구멍만 비운다. 다른 종목으로 바꾸면 이 효과가 다시 돌아 새 자리로 한 번 움직인다
                 LaunchedEffect(접는키) {
@@ -263,7 +269,7 @@ private fun 넣기속(
                         withFrameNanos { }
                         withFrameNanos { }
                         구멍재기()
-                        구멍?.let { 넘김.scrollTo(it.top.roundToInt().coerceAtLeast(0)) }
+                        구멍?.let { 넘김.animateScrollTo(it.top.roundToInt().coerceAtLeast(0), tween(움직임.펼침)) }   // 10-11: 펼쳐지는 것과 같은 시간에 같이 움직인다 (전: 한 번에 확 건너뜀)
                     }
                 }
                 if (쓸 == null && !못잼) {
@@ -294,7 +300,7 @@ private fun 넣기속(
                                     종목묶음들(
                                         상태, 판, 끌판, 펼친,
                                         { k -> if (접는키 != null) Unit else if (펼친 == k) 접기() else { 마지막 = null; 마지막틀[0] = null; 펼친 = k } },
-                                        손, 펼침틀 = { 구멍틀[1] = it; 구멍재기() }, 마지막 = 마지막, 접는키 = 접는키,
+                                        손, 펼침틀 = { 구멍틀[1] = it; 구멍재기() }, 마지막 = 마지막, 접는키 = 접는키, 한도 = if (펼친 != null) Int.MAX_VALUE else 한도,
                                     )
                                     if (펼친 != null && 새종목만들기) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                                         버튼(

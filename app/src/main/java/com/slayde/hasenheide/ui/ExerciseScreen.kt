@@ -192,11 +192,20 @@ fun 종목화면(상태: 앱상태) {
     //  펼친 상자 자리([구멍])는 스크롤 안쪽 좌표로 재서(스크롤해도 안 변한다) 가림막 네 조각이 둘러싼다. 아래 탭줄은 App 이 그려서 못 어둡게 한다
     val 구멍틀 = remember { arrayOfNulls<LayoutCoordinates>(2) }   // [0] 스크롤 속 칸 · [1] 펼친 상자
     var 구멍 by remember { mutableStateOf<Rect?>(null) }
+    val 구멍기억 = remember { arrayOfNulls<Rect>(1) }
     fun 구멍재기() {
         val 속 = 구멍틀[0]; val 상 = 구멍틀[1]
         구멍 = if (속 != null && 상 != null && 속.isAttached && 상.isAttached) 속.localBoundingBoxOf(상, clipBounds = false) else null
+        구멍?.let { 구멍기억[0] = it }
     }
     LaunchedEffect(펼친) { if (펼친 == null) { 구멍틀[1] = null; 구멍 = null } }
+    // 10-11 홍겸 님: 어두워질 때 · 밝아질 때 확 바뀌지 않고 페이드 (밝아질 때는 마지막으로 잰 구멍을 그대로 둔다)
+    val 어둠 = remember { Animatable(0f) }
+    var 어둠켬 by remember { mutableStateOf(false) }
+    LaunchedEffect(펼친 != null) {
+        if (펼친 != null) { 어둠켬 = true; 어둠.animateTo(1f, tween(움직임.펼침)) }
+        else { 어둠.animateTo(0f, tween(움직임.펼침)); 어둠켬 = false }
+    }
     val 접기 = { 펼친 = null }
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
@@ -205,7 +214,7 @@ fun 종목화면(상태: 앱상태) {
                     // 앱에만 있는 카테고리 관리 — 시안 띠에는 없다 (보고서 '시안과 다르게 한 것')
                     아이콘버튼(아이콘.설정, "카테고리 관리", { 카테고리시트 = true }, 칠함 = false, 색 = c.강조글)
                 })
-                if (펼친 != null) Box(Modifier.matchParentSize().background(종목치수.가림).눌림(접기))
+                if (어둠켬) Box(Modifier.matchParentSize().graphicsLayer { alpha = 어둠.value }.background(종목치수.가림).눌림(접기))
             }
             당겨새로고침({ }, Modifier.weight(1f)) {
                 BoxWithConstraints(Modifier.fillMaxSize()) {
@@ -226,8 +235,8 @@ fun 종목화면(상태: 앱상태) {
                                     버튼("+ 새 종목 만들기", { if (새시트 == null) 새시트 = "" }, 주요 = true)
                                 }
                             }
-                            val h = 구멍
-                            if (펼친 != null && h != null) 펼침가림막(h, 접기, Modifier.matchParentSize())
+                            val h = 구멍 ?: 구멍기억[0]
+                            if (어둠켬 && h != null) 펼침가림막(h, 접기, Modifier.matchParentSize().graphicsLayer { alpha = 어둠.value })
                         }
                     }
                 }
@@ -279,11 +288,17 @@ internal fun 종목묶음들(
     마지막: 마지막누름? = null,
     /** 10-11 홍겸 님: 접히는 중인 상자 (넣기 시트) — 속이 줄어든 뒤에 시트가 펼침을 푼다 */
     접는키: String? = null,
+    /** 10-11: 이만큼 칸만 그린다 (넣기 시트가 목록을 조금씩 채울 때) */
+    한도: Int = Int.MAX_VALUE,
 ) {
     val c = Local색.current
     // 10-09 홍겸 님: [루틴] 없음 → 안내 글 (두 줄 이상이 될 수 있어 줄 = 3)
     if (판.묶음.isEmpty()) 글("현재 만들어진 운동이 없습니다. 새 종목 추가하기 버튼을 눌러 운동을 추가해주세요.", 크기값 = 크기.조금작게, 색 = c.옅음, 줄 = 3)
-    판.묶음.forEach { (칸이름, l) ->
+    var 남음 = 한도
+    판.묶음.forEach { (칸이름, 전체l) ->
+        if (남음 <= 0) return@forEach
+        val l = if (남음 >= 전체l.size) 전체l else 전체l.take(남음)
+        남음 -= l.size
         key(칸이름) {
             Column(verticalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
                 if (판.고름 == "전체") 이름표(칸이름, Modifier.padding(start = 간격.아주좁게, top = 간격.아주좁게))
@@ -387,7 +402,7 @@ private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modif
             if (!펼 && 넣기 != null && 수 >= 0) 넣기체크(x.이름, 수,
                 누름 = { if (넣기.수(x) > 0) 넣기.빼기(x) else { 넣기.넣기(x); 꾹안내(상태) } },   // 10-09 홍겸 님: 눌러 넣을 때 '꾸욱 누르면…' 토스트
                 꾹 = { 넣기.넣기(x) },
-                눌렀다 = { 오목범위.launch { 오목.animateTo(0.955f, tween(90)); 오목.animateTo(1f, androidx.compose.animation.core.spring(dampingRatio = 0.5f, stiffness = 400f)) } })
+                눌렀다 = { 오목범위.launch { 오목.animateTo(0.91f, tween(110)); 오목.animateTo(1f, androidx.compose.animation.core.spring(dampingRatio = 0.5f, stiffness = 400f)) } })
             if (펼 && t != null) 사진넣는칸(상태, t)
             // 10-07 꾹 눌러 끌기 — 손은 누름보다 안쪽(먼저 받아야 끊기지 않는다). 꾹 누르고 떼어도 펼치지 않게 길게 누름은 빈 동작
             Column(Modifier.weight(1f).눌림길게({ 펼침(x.열쇠) }, { }).격자끌기손(끌판, x.종목?.id ?: x.열쇠, x.이름, 켬 = x.종목 != null)) {
@@ -584,7 +599,7 @@ private fun 넣기체크(이름: String, 수: Int, 누름: () -> Unit, 꾹: () -
     val 깊이 = remember { Animatable(1f) }   // 10-11: 체크 상자도 오목해졌다 돌아온다
     val 깊이범위 = rememberCoroutineScope()
     val 눌렀다최신 by rememberUpdatedState(눌렀다)
-    fun 오목() { 눌렀다최신(); 깊이범위.launch { 깊이.animateTo(0.76f, tween(90)); 깊이.animateTo(1f, androidx.compose.animation.core.spring(dampingRatio = 0.45f, stiffness = 400f)) } }
+    fun 오목() { 눌렀다최신(); 깊이범위.launch { 깊이.animateTo(0.55f, tween(110)); 깊이.animateTo(1f, androidx.compose.animation.core.spring(dampingRatio = 0.45f, stiffness = 400f)) } }
     val 들어감 = 수 > 0
     val 상자 = RoundedCornerShape(넣기값.체크모서리)
     val 누름최신 by rememberUpdatedState(누름)
