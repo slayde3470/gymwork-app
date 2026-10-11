@@ -59,8 +59,7 @@ import com.slayde.hasenheide.ui.theme.*
 import kotlin.math.PI
 import kotlin.math.sin
 
-private const val 시연한바퀴 = 7000   // 운동중 2.8초 → 휴식중(60초부터 줄어듦) 4.2초
-private const val 운동몫 = 0.4f
+private const val 시연휴식ms = 5000   // 휴식중 시연: 1:00 → 0:00 을 5초에
 
 /** 안내 박스 — '켜기' = 권한 설정으로, '나중에' · 바깥 · 뒤로가기 = 닫기 */
 @Composable
@@ -73,9 +72,8 @@ fun 알림안내창(on켜기: () -> Unit, on나중에: () -> Unit) {
     LaunchedEffect(보임.isIdle, 보임.currentState) { if (닫는중 && 보임.isIdle && !보임.currentState) 나중최신() }
     BackHandler(onBack = { 나중에() })
     val 바퀴 = rememberInfiniteTransition(label = "안내시연")
-    val 위치 by 바퀴.animateFloat(0f, 1f, infiniteRepeatable(tween(시연한바퀴, easing = LinearEasing), RepeatMode.Restart), label = "시연위치")
     val 파도 by 바퀴.animateFloat(0f, 1f, infiniteRepeatable(tween(1600, easing = LinearEasing), RepeatMode.Restart), label = "시연파도")
-    val 휴식중 by remember { derivedStateOf { 위치 >= 운동몫 } }
+    val 남은비 by 바퀴.animateFloat(1f, 0f, infiniteRepeatable(tween(시연휴식ms, easing = LinearEasing), RepeatMode.Restart), label = "시연휴식")
     AnimatedVisibility(visibleState = 보임, enter = fadeIn(tween(움직임.물음)), exit = fadeOut(tween(움직임.물음)), label = "알림안내") {
         Box(
             Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.35f)).눌림 { 나중에() },
@@ -85,24 +83,28 @@ fun 알림안내창(on켜기: () -> Unit, on나중에: () -> Unit) {
                 Modifier.fillMaxWidth(0.9f).clip(RoundedCornerShape(모서리.보통)).background(c.면).눌림 { }.padding(간격.넓게),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                제목글("알림을 켜면 이렇게 보여요", 크기값 = 크기.크게)
-                Box(
-                    Modifier.padding(top = 간격.보통).fillMaxWidth().height(170.dp).clip(RoundedCornerShape(모서리.보통)).background(c.면2),
-                    contentAlignment = Alignment.Center,
-                ) { 시연동그라미({ 위치 }, { 파도 }, Modifier.size(150.dp)) }
-                글(
-                    if (휴식중) "휴식중 · 60초부터 남은 시간이 줄어들어요" else "운동중 · 눌러 보라는 듯 숨을 쉬어요",
-                    Modifier.padding(top = 간격.좁게), 크기값 = 크기.버튼, 색 = c.강조, 굵기 = FontWeight.Bold, 가운데 = true,
-                )
-                Column(Modifier.padding(top = 간격.보통).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(간격.좁게)) {
-                    글("· 유튜브나 다른 앱을 보다가도 화면 위에 이 단추가 떠 있어요", 크기값 = 크기.버튼, 줄 = 2)
-                    글("· 앱 밖에서 바로 단추를 누르고 운동으로 돌아올 수 있어요", 크기값 = 크기.버튼, 줄 = 2)
-                    글("· 휴식이 끝나는 순간도 놓치지 않아요", 크기값 = 크기.버튼, 줄 = 2)
+                제목글("알림을 허용해주세요", 크기값 = 크기.크게)
+                Row(
+                    Modifier.padding(top = 간격.보통).fillMaxWidth().clip(RoundedCornerShape(모서리.보통)).background(c.면2).padding(vertical = 간격.보통),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        시연동그라미(false, { 1f }, { 파도 }, Modifier.size(104.dp))
+                        글("운동중", Modifier.padding(top = 간격.아주좁게), 크기값 = 크기.버튼, 색 = c.강조, 굵기 = FontWeight.Bold)
+                    }
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        시연동그라미(true, { 남은비 }, { 파도 }, Modifier.size(104.dp))
+                        글("휴식중", Modifier.padding(top = 간격.아주좁게), 크기값 = 크기.버튼, 색 = c.좋음, 굵기 = FontWeight.Bold)
+                    }
                 }
-                글("켜야만 보여요 · 설정에서 언제든 끌 수 있어요", Modifier.padding(top = 간격.좁게), 크기값 = 크기.버튼, 색 = c.흐림, 줄 = 2)
+                Column(Modifier.padding(top = 간격.보통).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(간격.좁게)) {
+                    글("· 운동/휴식 중에 앱 밖으로 나가면 활성화 돼요", 크기값 = 크기.버튼, 줄 = 2)
+                    글("· 단추를 눌러 화면으로 돌아올 수 있어요", 크기값 = 크기.버튼, 줄 = 2)
+                    글("· 설정에서 언제든 On/Off 할 수 있어요", 크기값 = 크기.버튼, 줄 = 2)
+                }
                 Row(Modifier.padding(top = 간격.넓게), horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
                     버튼("나중에", { 나중에() }, Modifier.weight(1f), 작게 = true)
-                    버튼("켜기", on켜기, Modifier.weight(1f), 작게 = true, 주요 = true)
+                    버튼("허용하기", on켜기, Modifier.weight(1f), 작게 = true, 주요 = true)
                 }
             }
         }
@@ -111,7 +113,7 @@ fun 알림안내창(on켜기: () -> Unit, on나중에: () -> Unit) {
 
 /** 떠다니는 단추(Bubble.kt)와 같은 그림 — 숨 쉬는 동그라미 · 퍼지는 고리 · 줄어드는 띠 */
 @Composable
-private fun 시연동그라미(위치: () -> Float, 파도: () -> Float, modifier: Modifier) {
+private fun 시연동그라미(휴식: Boolean, 비값: () -> Float, 파도: () -> Float, modifier: Modifier) {
     val c = Local색.current
     val ctx = LocalContext.current
     val 로고 = remember { try { ContextCompat.getDrawable(ctx, R.mipmap.ic_launcher) } catch (_: Exception) { null } }
@@ -122,10 +124,9 @@ private fun 시연동그라미(위치: () -> Float, 파도: () -> Float, modifie
         val 굵 = 칸 * (3.3f / 92.15f)
         val 중심 = Offset(size.width / 2, size.height / 2)
         val t = 파도()
-        val p = 위치()
         val 숨 = 1f + 0.025f + 0.025f * sin(t * 2 * PI).toFloat()
         val 퍼짐 = 칸 / 2f - r
-        if (p < 운동몫) {
+        if (!휴식) {
             drawCircle(c.강조.copy(alpha = (1f - t) * 0.78f), r + 퍼짐 * t, 중심, style = Stroke(굵))
             drawCircle(c.강조, r * 숨, 중심)
             val 길 = Path().apply { addOval(Rect(중심, r)) }
@@ -135,7 +136,7 @@ private fun 시연동그라미(위치: () -> Float, 파도: () -> Float, modifie
                 }
             }
         } else {
-            val 비 = 1f - (p - 운동몫) / (1f - 운동몫)   // 1 → 0
+            val 비 = 비값()   // 1 → 0
             drawCircle(c.좋음.copy(alpha = (1f - t) * 0.78f), r + 퍼짐 * t, 중심, style = Stroke(굵))
             drawCircle(c.좋음, r * 숨, 중심)
             val 옛굵 = 굵

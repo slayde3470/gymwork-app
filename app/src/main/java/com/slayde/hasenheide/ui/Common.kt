@@ -256,19 +256,21 @@ fun 버튼(
     낮게: Boolean = false,
     /** 10-08 홍겸 님: 글이 넘치면 글자를 줄인다 (맞춤글 — 캘린더 아래 단추 줄) */
     줄임: Boolean = false,
+    /** 10-11 홍겸 님: 높이를 고정하지 않고 글 위아래 이만큼만 두고 줄인다 (캘린더 아래 단추 줄) */
+    세로여백: Dp? = null,
 ) {
     val c = Local색.current
     val 손 = remember { MutableInteractionSource() }
     val 배 = 눌림배율(손)   // 10-02: 누르면 살짝 작아진다
     Row(
         modifier
-            .height(if (낮게) 높이.낮게 else if (작게) 높이.보통 else 높이.높게)
+            .then(if (세로여백 != null) Modifier else Modifier.height(if (낮게) 높이.낮게 else if (작게) 높이.보통 else 높이.높게))
             .배율(배)
             .clip(RoundedCornerShape(모서리.작게))
             .background(if (주요) c.강조 else c.면)
             .then(if (주요) Modifier else Modifier.border(1.dp, c.속선, RoundedCornerShape(모서리.작게)))
             .눌림손(손, onClick)
-            .padding(horizontal = if (낮게) 8.dp else 12.dp),
+            .padding(horizontal = if (낮게) 8.dp else 12.dp, vertical = 세로여백 ?: 0.dp),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -798,6 +800,8 @@ fun 시트(
     제목칸: (@Composable RowScope.() -> Unit)? = null,
     /** 10-11: 속이 무거운 시트(종목 목록) — 올라오는 움직임이 끝난 뒤에 속을 그린다 (속을 먼저 그리면 그 시간만큼 움직임이 먹힌다) */
     속늦춤: Boolean = false,
+    /** 10-11: 머리(손잡이 · 띠)를 어둡게 — 종목 넣기에서 상자를 펼쳤을 때 */
+    머리가림: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val c = Local색.current
@@ -831,7 +835,6 @@ fun 시트(
                     .fillMaxWidth()
                     .then(if (위끝고정) Modifier.fillMaxHeight(1f - 위끝) else Modifier.heightIn(max = 620.dp))
                     .graphicsLayer { translationY = 끌림 }
-                    .쪽겹(겹, 모서리.크게)
                     .clip(RoundedCornerShape(topStart = 모서리.크게, topEnd = 모서리.크게))
                     .background(c.면)
                     .눌림 { }
@@ -843,7 +846,7 @@ fun 시트(
             ) {
                 // 머리 — 손잡이 막대 + 제목 줄. 여기를 잡고 끌어내린다 (시트 안 스크롤과 겹치지 않는다)
                 Column(
-                    Modifier.fillMaxWidth().pointerInput(Unit) {
+                    Modifier.fillMaxWidth().drawWithContent { drawContent(); if (머리가림) drawRect(종목치수.넣기가림) }.pointerInput(Unit) {
                         detectVerticalDragGestures(
                             onVerticalDrag = { ch, dy -> ch.consume(); 끌림 = (끌림 + dy).coerceAtLeast(0f) },
                             onDragEnd = {

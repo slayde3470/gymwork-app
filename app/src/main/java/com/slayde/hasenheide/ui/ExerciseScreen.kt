@@ -159,9 +159,9 @@ internal object 종목치수 {
     const val 열횟수 = 70f
     const val 열휴식 = 79f
     /** 10-09 홍겸 님: 종목을 펼치면 펼친 상자 밖을 어둡게 — 시트 가림막(Common.kt `시트`)과 같은 값 */
-    val 가림 = Color.Black.copy(alpha = 0.42f)   // [11_UI지침에 올릴 값]
+    val 가림 = Color.Black.copy(alpha = 0.39f)   // [11_UI지침에 올릴 값]
     /** 10-11 홍겸 님: 종목 넣기 시트는 펼친 상자 말고 전부(칩 줄 · 목록 상자들) 더 어둡게 */
-    val 넣기가림 = Color.Black.copy(alpha = 0.72f)   // [11_UI지침에 올릴 값]
+    val 넣기가림 = Color.Black.copy(alpha = 0.66f)   // [11_UI지침에 올릴 값]
 }
 
 /**
@@ -643,7 +643,7 @@ private fun 종목고치기(상태: 앱상태, t: 종목, 플랜있음: Boolean,
     근육두장(v.근육, d.설정.색표, { 키들 -> v = if (키들.isEmpty()) v.팝빈열기() else v.팝열기(키들) })
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
         버튼("저장", { 저장() }, Modifier.weight(1f), 주요 = 바뀜, 작게 = true)
-        버튼("취소", { v = 처음 }, 작게 = true, 글색 = if (바뀜) c.나쁨 else c.옅음)
+        버튼("취소", { v = 처음; 저장뒤() }, 작게 = true, 글색 = if (바뀜) c.나쁨 else c.옅음)
     }
     if (v.팝 != null) 근육팝(v, { f -> v = f(v) }, d.설정.색표, d.카테고리)
 }

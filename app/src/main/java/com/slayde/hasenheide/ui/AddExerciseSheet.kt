@@ -123,8 +123,9 @@ fun 종목넣기시트(
         })
     } else {
         val 플랜길 = if (플랜개수 != null && 플랜넣기 != null && 플랜빼기 != null) 플랜손(플랜개수, 플랜넣기, 플랜빼기) else null
-        시트(제목, 닫기, 위끝고정 = true, 닫기글 = "확인", 겹 = 겹, 속늦춤 = true) {
-            넣기속(상태, 칸고름, { 칸고름 = it }, 개수, 넣기, 빼기, 새종목만들기, { 새로 = true }, 플랜길)
+        var 펼침 by remember { mutableStateOf(false) }
+        시트(제목, 닫기, 위끝고정 = true, 닫기글 = "확인", 겹 = 겹, 속늦춤 = true, 머리가림 = 펼침) {
+            넣기속(상태, 칸고름, { 칸고름 = it }, 개수, 넣기, 빼기, 새종목만들기, { 새로 = true }, 플랜길, { 펼침 = it })
         }
     }
 }
@@ -151,12 +152,15 @@ private fun 넣기속(
     새종목만들기: Boolean,
     새로열기: () -> Unit,
     플랜길: 플랜손?,
+    펼침바뀜: (Boolean) -> Unit = {},
 ) {
     val d = 상태.d
     val 밀도 = LocalDensity.current
     var 칸높이 by remember { mutableStateOf<Dp?>(null) }
     var 못잼 by remember { mutableStateOf(false) }
     var 펼친 by remember { mutableStateOf<String?>(null) }
+    val 펼침최신 by rememberUpdatedState(펼침바뀜)
+    LaunchedEffect(펼친 != null) { 펼침최신(펼친 != null) }   // 10-11: 시트 머리 띠도 같이 어둡게
     // 10-11 홍겸 님: 펼치면 펼친 상자 말고 나머지를 어둡게 (종목 탭 [펼침가림막] 을 그대로 쓴다) · 어두운 곳을 누르면 접힌다.
     //  펼친 상자 자리([구멍])는 스크롤 속 칸 기준으로 재서 스크롤해도 안 변한다. 한 번에 하나만 펼침은 전부터 그랬다([펼친] 하나)
     val 구멍틀 = remember { arrayOfNulls<LayoutCoordinates>(2) }   // [0] 스크롤 속 칸 · [1] 펼친 상자
@@ -165,6 +169,7 @@ private fun 넣기속(
     var 마지막 by remember { mutableStateOf<마지막누름?>(null) }   // 10-11 홍겸 님: 방금 접은 종목 — 반짝이고 화면 밖이면 안으로 되돌린다
     val 마지막틀 = remember { arrayOfNulls<LayoutCoordinates>(1) }
     var 접힘정리 by remember { mutableStateOf(false) }
+    val 펼치전 = remember { intArrayOf(-1) }   // 10-11 홍겸 님: 펼치기 직전 스크롤 자리 — 접으면 거기로 돌아간다
     var 보임px by remember { mutableIntStateOf(0) }   // 목록이 보이는 칸의 높이 (어둡게 · 스크롤 여유에 쓴다)
     fun 구멍재기() {
         val 속 = 구멍틀[0]; val 상 = 구멍틀[1]
@@ -214,17 +219,23 @@ private fun 넣기속(
                             접힘정리 = true
                             withFrameNanos { }
                             withFrameNanos { }
-                            val 속 = 구멍틀[0]; val 틀 = 마지막틀[0]
-                            if (속 != null && 틀 != null && 속.isAttached && 틀.isAttached) {
-                                val r = 속.localBoundingBoxOf(틀, clipBounds = false)
-                                val 위 = 넘김.value
-                                if (r.top < 위 || r.bottom > 위 + 보임px) 넘김.animateScrollTo((r.top - 보임px * 0.25f).roundToInt().coerceAtLeast(0))
+                            val 돌아감 = 펼치전[0]; 펼치전[0] = -1
+                            if (돌아감 >= 0) {
+                                if (돌아감 != 넘김.value) 넘김.animateScrollTo(돌아감.coerceAtMost(넘김.maxValue))
+                            } else {
+                                val 속 = 구멍틀[0]; val 틀 = 마지막틀[0]
+                                if (속 != null && 틀 != null && 속.isAttached && 틀.isAttached) {
+                                    val r = 속.localBoundingBoxOf(틀, clipBounds = false)
+                                    val 위 = 넘김.value
+                                    if (r.top < 위 || r.bottom > 위 + 보임px) 넘김.animateScrollTo((r.top - 보임px * 0.25f).roundToInt().coerceAtLeast(0))
+                                }
                             }
                             접힘정리 = false
                         }
                     } else {
                         // 10-11 홍겸 님(2차): 펼친 뒤에 움직이면 렉처럼 보인다 → 펼침과 동시에, 새 자리를 바로(애니메이션 없이) 맞춘다.
                         //  이름 줄이 맨 위에 와서 위 카테고리는 화면 밖 · 상자는 거기서 위 → 아래로 펼쳐진다. 이전 상자는 바로 접히므로 두 프레임 뒤 한 번만 잰다
+                        if (펼치전[0] < 0) 펼치전[0] = 넘김.value
                         withFrameNanos { }
                         withFrameNanos { }
                         구멍재기()

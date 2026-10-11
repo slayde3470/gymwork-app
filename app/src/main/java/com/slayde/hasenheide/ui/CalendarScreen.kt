@@ -289,8 +289,8 @@ private val 칸높이 = 64.dp
 private const val 기본줄수 = 6
 private val 달력높이 = 칸높이 * 기본줄수
 /** 날짜 판 띠(선택한 날) 글 크기 — 띠글 18 에서 날짜 2sp · 요일 4sp 만 낮춘다 (10-11 홍겸 님) [Theme 에 없는 새 값 — 합칠 때 Theme.kt 로] */
-private val 중간날짜크기 = 16.sp
-private val 중간요일크기 = 14.sp
+private val 중간날짜크기 = 12.sp   // 10-11 홍겸 님: 16 → 12 (25%↓)
+private val 중간요일크기 = 9.1.sp   // 14 → 9.1 (35%↓) · [오늘] 도 같은 크기
 /** 날짜 판 기록 이름은 줄의 이만큼까지 (시안 `.예이름 max-width:40%`) */
 private const val 이름폭비 = 0.4f
 /** 칸 안 글 옆 · 요일 줄 위아래 (시안 `.칸날` padding 4px 2px · `.요일` padding 2px 0) */
@@ -776,16 +776,18 @@ private fun 날판(
     Column(modifier.fillMaxWidth().번호("캘1")) {
         // ── 띠 — 고른 날 · 요일 (10-11: [오늘] 은 달력 우측 하단으로 옮겼다. 10-08: [변경] · [루틴 넣기] 는 없앴다 — 아래 단추 줄이 한다) ──
         Row(
-            Modifier.padding(horizontal = 간격.보통).fillMaxWidth().heightIn(min = 높이.보통)   // 10-09: 좌우 여백 12 · 모서리 8
-                .clip(RoundedCornerShape(모서리.작게)).background(c.강조).padding(horizontal = 간격.보통, vertical = 부품치수.띠세로여백),
+            Modifier.padding(horizontal = 간격.보통).fillMaxWidth()   // 10-09: 좌우 여백 12 · 모서리 8 · 10-11: 높이 = 글 위아래 7
+                .clip(RoundedCornerShape(모서리.작게)).background(c.강조).padding(horizontal = 간격.보통, vertical = 7.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.좁게),
         ) {
             // 10-11 홍겸 님: 날짜 글 18 → 16 (2sp ↓) · 요일 글 18 → 14 (4sp ↓). 모양은 띠글(굵게 · 강조글)과 같다
             Text(
                 buildAnnotatedString {
                     append("${캘날글(k)} ")
-                    withStyle(SpanStyle(fontSize = 중간요일크기)) { append("(${캘요일글(k)})") }
-                    if (k == 오늘) append(" · 오늘")
+                    withStyle(SpanStyle(fontSize = 중간요일크기, color = c.강조글.copy(alpha = 0.65f))) {
+                        append("(${캘요일글(k)})")
+                        if (k == 오늘) append(" · 오늘")
+                    }
                 },
                 Modifier.weight(1f), style = 글꼴.제목(중간날짜크기), color = c.강조글, maxLines = 1, overflow = TextOverflow.Ellipsis,
             )
@@ -994,26 +996,27 @@ private fun 판단추(
     val r = d.예정루틴(k)
     val 운동예정 = r != null && !r.휴식일
     if (록.isEmpty() && k < 오늘) return   // 지난 날 · 기록 없음 = 단추 없음
+    if (록.isEmpty() && k == 오늘 && d.세션 != null) return   // 10-11 홍겸 님: 운동 중에는 [운동 시작] · [초기화] 를 없앤다 (그 자리에 [돌아가기] 가 있다)
     Row(
         Modifier.fillMaxWidth().background(c.바탕).padding(horizontal = 간격.보통, vertical = 간격.좁게),
         horizontalArrangement = Arrangement.spacedBy(간격.좁게),
     ) {
         if (록.isNotEmpty() && 지움모드) {
             val 꺼짐 = 록.none { it.first in 록골 }
-            버튼("취소", { on지움모드(false) }, Modifier.weight(1f), 작게 = true)
-            버튼("기록 삭제", { if (!꺼짐) 지움(k) }, Modifier.weight(1f).alpha(if (꺼짐) 꺼짐투명 else 1f), 작게 = true, 글색 = c.나쁨)
+            버튼("취소", { on지움모드(false) }, Modifier.weight(1f), 작게 = true, 세로여백 = 7.dp)
+            버튼("기록 삭제", { if (!꺼짐) 지움(k) }, Modifier.weight(1f).alpha(if (꺼짐) 꺼짐투명 else 1f), 작게 = true, 세로여백 = 7.dp, 글색 = c.나쁨)
         } else if (록.isNotEmpty()) {
             val 끝 = 록.last().second
-            버튼("운동 보고서", { 상태.d.캘기록목록(k).lastOrNull()?.let { (kk, rr) -> 보고서(kk, rr) } }, Modifier.weight(1f).번호("캘3"), 작게 = true)
+            버튼("운동 보고서", { 상태.d.캘기록목록(k).lastOrNull()?.let { (kk, rr) -> 보고서(kk, rr) } }, Modifier.weight(1f).번호("캘3"), 작게 = true, 세로여백 = 7.dp)
             val 다시 = if (k == 오늘) d.루틴(끝.루틴id)?.takeIf { !it.휴식일 } else null
             if (다시 != null) 버튼("한 번 더 운동하기", {
                 // 측정일이면 플랜 줄 앞에 워밍업 (20 B-3 · 조절해시작과 같은 함수). 저장하면 그 날 '~2' 기록으로 따로 남는다
                 val dd = 상태.d
                 val rr = dd.루틴(다시.id)
                 시작(rr?.let { 운동시작(dd.측정워밍업붙임(dd.플랜줄채움(it)), System.currentTimeMillis()) })
-            }, Modifier.weight(판단추폭.넓게), 주요 = true, 작게 = true, 줄임 = true)
+            }, Modifier.weight(판단추폭.넓게), 주요 = true, 작게 = true, 세로여백 = 7.dp, 줄임 = true)
             // 10-08 홍겸 님: '기록 삭제' 로 줄이고 폭을 줄인다 — 줄어든 만큼 [한 번 더 운동하기] 가 넓어진다. 누르면 지움 모드
-            버튼("기록 삭제", { on지움모드(true) }, Modifier.weight(판단추폭.좁게), 작게 = true, 글색 = c.나쁨, 줄임 = true)
+            버튼("기록 삭제", { on지움모드(true) }, Modifier.weight(판단추폭.좁게), 작게 = true, 세로여백 = 7.dp, 글색 = c.나쁨, 줄임 = true)
         } else {
             // 10-08 홍겸 님: 기록 없는 오늘 이후. 휴식 예정이 있어도 [초기화] 는 오른쪽에 둔다
             val 초기화있음 = r != null
@@ -1024,12 +1027,12 @@ private fun 판단추(
                     val 지금r = dd.예정루틴(k)
                     if (지금r == null || 지금r.휴식일) return@버튼
                     시작(dd.조절해시작(지금r, k, System.currentTimeMillis()))
-                }, Modifier.weight(큰폭).번호("캘3"), 주요 = true, 작게 = true, 줄임 = true)
+                }, Modifier.weight(큰폭).번호("캘3"), 주요 = true, 작게 = true, 세로여백 = 7.dp, 줄임 = true)
             } else {
                 // 10-09 홍겸 님: 내일 이후 · 운동 예정이 있어도 이름은 [운동 계획 만들기] 로 통일
-                버튼("운동 계획 만들기", { 계획(k) }, Modifier.weight(큰폭).번호("캘3"), 주요 = true, 작게 = true, 줄임 = true)
+                버튼("운동 계획 만들기", { 계획(k) }, Modifier.weight(큰폭).번호("캘3"), 주요 = true, 작게 = true, 세로여백 = 7.dp, 줄임 = true)
             }
-            if (초기화있음) 버튼("초기화", { 초기화(k) }, Modifier.weight(판단추폭.초기화), 작게 = true, 글색 = c.나쁨, 줄임 = true)
+            if (초기화있음) 버튼("초기화", { 초기화(k) }, Modifier.weight(판단추폭.초기화), 작게 = true, 세로여백 = 7.dp, 글색 = c.나쁨, 줄임 = true)
         }
     }
 }
