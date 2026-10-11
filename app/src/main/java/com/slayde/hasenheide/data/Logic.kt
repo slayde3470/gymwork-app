@@ -1626,3 +1626,7 @@ fun 앱데이터.보고끝(오늘: String, 지금: Long): 앱데이터 {
  */
 val 앱데이터.저장전: 앱데이터
     get() = if (세션?.저장 == null) this else 저장되감기().first.copy(세션 = 세션)
+
+/** 즐겨찾기 켜기 · 끄기 (10-11 홍겸 님) — 종목 id 하나의 [종목.즐겨] 만 뒤집는다. 없는 id 는 그대로 */
+fun 앱데이터.즐겨바꿈(id: String): 앱데이터 =
+    if (종목표.none { it.id == id }) this else copy(종목표 = 종목표.map { if (it.id == id) it.copy(즐겨 = !it.즐겨) else it })

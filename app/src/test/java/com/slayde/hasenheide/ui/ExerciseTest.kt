@@ -4,6 +4,8 @@ import com.slayde.hasenheide.data.루틴
 import com.slayde.hasenheide.data.루틴종목
 import com.slayde.hasenheide.data.앱데이터
 import com.slayde.hasenheide.data.종목
+import com.slayde.hasenheide.data.저장소
+import com.slayde.hasenheide.data.즐겨바꿈
 import com.slayde.hasenheide.data.종목기본세트
 import com.slayde.hasenheide.data.종목사전
 import com.slayde.hasenheide.data.종목세트
@@ -75,6 +77,30 @@ class ExerciseTest {
         assertEquals(1, d.상자플랜(가슴[0]).size)
         assertEquals(0, d.상자플랜(가슴[1]).size)
         assertEquals(둘째.id, 가슴[1].열쇠)
+    }
+
+    // ─────────────── 즐겨찾기 (10-11) ───────────────
+
+    @Test fun 즐겨_바꿈은_그_종목만_뒤집고_없는id는그대로() {
+        val d = 바탕()
+        val 켠 = d.즐겨바꿈("턱걸이")
+        assertTrue(켠.종목표.first { it.id == "턱걸이" }.즐겨)
+        assertFalse(켠.종목표.first { it.id == "벤치프레스" }.즐겨)
+        assertFalse(켠.즐겨바꿈("턱걸이").종목표.first { it.id == "턱걸이" }.즐겨)
+        assertEquals(d, d.즐겨바꿈("없는id"))
+    }
+
+    @Test fun 즐겨_먼저면_카테고리마다_맨앞_나머지는_그대로() {
+        val d = 앱데이터(종목표 = listOf(종목("A", "가슴"), 종목("B", "가슴"), 종목("C", "가슴"), 종목("D", "등"))).즐겨바꿈("C")
+        assertEquals(listOf("A", "B", "C"), d.종목탭판("전체").묶음.first().second.map { it.이름 })   // 끄면 그대로
+        assertEquals(listOf("C", "A", "B"), d.종목탭판("전체", true).묶음.first().second.map { it.이름 })
+        assertEquals(listOf("C", "A", "B"), d.종목탭판("가슴", true).묶음.single().second.map { it.이름 })   // 가슴만 골라도 모두 보이고 즐겨찾기가 앞
+    }
+
+    @Test fun 즐겨_저장왕복_옛파일은_꺼짐() {
+        val d = 앱데이터(종목표 = listOf(종목("A", "가슴"), 종목("B", "등"))).즐겨바꿈("B")
+        val e = 저장소.글에서(저장소.글로(d))
+        assertEquals(listOf(false, true), e.종목표.map { it.즐겨 })
     }
 
     // ─────────────── 세트 줄 ───────────────

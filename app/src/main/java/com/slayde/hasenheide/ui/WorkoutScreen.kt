@@ -761,7 +761,7 @@ private fun 세트목록(
             줄들.forEachIndexed { r, (jj, k) ->
                 val ej = S.종목들[jj]
                 운세트줄(
-                    S, jj, k, if (묶음) (if (jj == S.i) 첫빈칸(ej) else -1) else 지금k, 폭, 글크기, 지금, 무게폭,
+                    S, jj, k, if (묶음) (if (jj == (S.휴식?.다음i?.takeIf { it in 식구 } ?: S.i)) 첫빈칸(ej) else -1) else 지금k, 폭, 글크기, 지금, 무게폭,
                     Modifier.새줄효과(r >= 앞).onPlaced { 자.위[r] = it.positionInParent().y.roundToInt(); 자.높이 = it.size.height },
                     체크 = {
                         val 전 = 상태.d.세션?.종목들?.getOrNull(jj)
@@ -1440,7 +1440,8 @@ internal fun 운체크(S: 운동세션, j: Int, k: Int, 지금: Long): 운동세
 
 /** 슈퍼세트 — 지금 · 쉬는 줄이 보는 칸과 같은 묶음 안 다른 종목이면 보는 칸이 따라간다 (묶음이 아니면 그대로) */
 internal fun 본따라감(S: 운동세션, 본: Int): Int {
-    val 갈 = 쉬는종목(S) ?: S.i
+    // 10-11 홍겸 님: 한 바퀴를 끝내고 쉬는 동안엔 이름 · 예정 줄이 쉬는 마지막 종목이 아니라 **다음 차례 종목**
+    val 갈 = S.휴식?.다음i?.takeIf { it in S.식구(본) && it in S.종목들.indices } ?: 쉬는종목(S) ?: S.i
     return if (갈 != 본 && 갈 in S.종목들.indices && 본 in S.종목들.indices && 갈 in S.식구(본)) 갈 else 본
 }
 

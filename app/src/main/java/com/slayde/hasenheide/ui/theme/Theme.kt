@@ -70,6 +70,9 @@ data class 색표(
     val 슈퍼: Color = Color(0xFFE8820C),
     val 슈퍼옅음: Color = Color(0xFFFFF0DC),
     val 슈퍼글: Color = Color(0xFFFFB04D),
+    // 10-11 홍겸 님: 즐겨찾기 — 노란 별 · 연한 노랑 상자
+    val 즐겨: Color = Color(0xFFF5B800),
+    val 즐겨옅음: Color = Color(0xFFFFF8D9),
 )
 
 /**

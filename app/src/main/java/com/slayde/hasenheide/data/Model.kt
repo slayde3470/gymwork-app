@@ -40,6 +40,8 @@ data class 종목(
      * 열쇠는 세부 부위 id (chest_mid · lats · glutes …, [종목사전.세부부위])
      */
     val 근육: Map<String, String> = emptyMap(),
+    /** 즐겨찾기 (10-11 홍겸 님) — 종목 목록에서 앞으로 오고 노란 별 · 연한 노랑 상자. 옛 파일은 false */
+    val 즐겨: Boolean = false,
 )
 
 /** 시안의 '칸'(종목 카테고리 — 가슴 · 등 · 하체 · 어깨 · 팔 · 맨몸) = 앱의 [종목.부위] 와 같은 것. 이름만 맞춰 둔다 */

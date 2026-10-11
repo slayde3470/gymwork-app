@@ -88,6 +88,7 @@ object 저장소 {
         .also { if (e.참고url != null) it.put("참고url", e.참고url) }
         .also { if (e.참고글 != null) it.put("참고글", e.참고글) }
         .also { if (e.목표1RM != null) it.put("목표1RM", e.목표1RM) }
+        .also { if (e.즐겨) it.put("즐겨", true) }   // 10-11 — 켠 것만 적는다 (옛 파일 = false)
         // 10-02 (스키마 13): 종목 사진 — 파일 **이름만** 적는다. 사진 파일은 백업에 들어가지 않는다 (filesDir/photos 에 그대로)
         .also { if (e.사진.isNotEmpty()) it.put("사진", JSONArray().also { a -> e.사진.forEach { a.put(it) } }) }
         // 스키마 15 (10-05): 종목 id · 근육 역할 (P · Y)
@@ -216,7 +217,7 @@ object 저장소 {
                     .copy(사진 = 목록(it.optJSONArray("사진")) { x, j -> x.getString(j) },   // 스키마 13 (10-02) — 옛 파일은 빈 목록
                         // 스키마 15 (10-05) — 옛 파일은 id = 이름 · 역할 없음. 옛 "S"(보조) 는 "Y"(협응) 로, 모르는 값은 버린다
                         id = 글또는널(it, "id")?.takeIf { x -> x.isNotBlank() } ?: it.getString("이름"),
-                        근육 = 역할읽기(it.optJSONObject("근육"))) }
+                        근육 = 역할읽기(it.optJSONObject("근육")), 즐겨 = it.optBoolean("즐겨")) }
             }.id겹침풀기(),
             카테고리 = if (o.has("카테고리")) 목록(o.optJSONArray("카테고리")) { a, i -> a.getString(i) } else 앱데이터.기본카테고리,
             루틴들 = 목록(o.optJSONArray("루틴들")) { a, i -> 루틴from(a.getJSONObject(i)) },

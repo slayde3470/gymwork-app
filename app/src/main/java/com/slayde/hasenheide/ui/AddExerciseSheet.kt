@@ -190,7 +190,7 @@ private fun 넣기속(
     // 접기 = 펼친 상자의 속이 줄어드는 것 · 어두운 곳이 걷히는 것 · 화면이 펼치기 전 자리로 돌아가는 것이 한꺼번에 (아래 LaunchedEffect(접는키))
     val 접기 = { 펼친?.let { k -> if (접는키 == null) { 마지막 = 마지막누름(k) { c -> 마지막틀[0] = c }; 접힘정리 = true; 접는키 = k } }; Unit }
     val 판톡 = remember루톡(true)
-    val 판 = d.종목탭판(칸고름)
+    val 판 = d.종목탭판(칸고름, 즐겨기억.먼저)
     // 꾹 눌러 끌어 종목 순서 바꾸기 — 종목 탭과 같은 판 (같은 카테고리 안 · 종목표 차례)
     val 끌판 = remember격자끌기판({ a, b, 뒤 ->
         발자취.적기("넣기 · 종목 순서 옮김")
@@ -215,7 +215,7 @@ private fun 넣기속(
     ) {
         Column(Modifier.fillMaxWidth().then(if (쓸 != null) Modifier.fillMaxHeight() else Modifier)) {
             Box(Modifier.fillMaxWidth()) {
-                칩줄(listOf(넣기전체) + 판.칸들, 판.고름, { 칸바꿈(it) }, 사이 = 7.dp)
+                칩줄(listOf(넣기전체) + 판.칸들, 판.고름, { 칸바꿈(it) }, 사이 = 7.dp, 앞 = { 즐겨칩() })
                 if (펼친 != null) Box(Modifier.matchParentSize().눌림(접기))   // 어둡게 칠하는 건 시트가 한다 — 여기는 누름만   // 칩줄도 어둡게 (누르면 접힌다)
             }
             Spacer(Modifier.height(간격.좁게))

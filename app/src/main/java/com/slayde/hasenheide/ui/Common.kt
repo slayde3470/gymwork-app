@@ -295,6 +295,8 @@ fun 칩줄(
     목록: List<String>, 선택: String?, onSelect: (String) -> Unit, modifier: Modifier = Modifier,
     /** 10-11: 칩 사이 간격 (기본 8 · 종목 넣기 = 7) */
     사이: Dp = 8.dp,
+    /** 10-11: 맨 앞에 끼우는 칩 (즐겨찾기 별) */
+    앞: (@Composable () -> Unit)? = null,
     /** 10-05: 밖에서 넘김을 쥘 때 (양끝 ‹ › 단추 — Parts.kt 화살칩줄). null 이면 전처럼 안에서 */
     밖넘김: androidx.compose.foundation.ScrollState? = null,
 ) {
@@ -305,6 +307,7 @@ fun 칩줄(
         modifier.fillMaxWidth().오른끝흐림(넘김).horizontalScroll(넘김),
         horizontalArrangement = Arrangement.spacedBy(사이),
     ) {
+        if (앞 != null) 앞()
         목록.forEach { p -> key(p) {
             val 켬 = p == 선택
             // 10-02: 누르면 살짝 작아지고, 고르면 색이 옮겨 간다 (켠 칩의 테두리는 바탕과 같은 색이라 보이지 않는다 — 전과 같은 모양)

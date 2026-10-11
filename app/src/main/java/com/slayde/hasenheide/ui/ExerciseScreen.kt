@@ -11,6 +11,8 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.onLongClick
 import kotlinx.coroutines.delay
@@ -188,7 +190,7 @@ fun 종목화면(상태: 앱상태) {
     // 새 종목 시트 — null 닫힘 · "" 새 종목 · 그 밖 = 편집할 종목 id
     var 새시트 by remember { mutableStateOf<String?>(null) }
 
-    val 판 = d.종목탭판(고른칸)
+    val 판 = d.종목탭판(고른칸, 즐겨기억.먼저)
     // 10-07 홍겸 님: 꾹 눌러 끌어 종목 순서 바꾸기 — 같은 카테고리 안에서만 (넣기 시트와 같은 차례 = 종목표 차례)
     val 넘김 = rememberScrollState()
     val 끌판 = remember격자끌기판({ a, b, 뒤 ->
@@ -238,7 +240,7 @@ fun 종목화면(상태: 앱상태) {
                                     .padding(start = 간격.보통, end = 간격.보통, top = 간격.보통, bottom = if (펼친 != null) 간격.보통 else 종목치수.뜸자리),
                                 verticalArrangement = Arrangement.spacedBy(간격.좁게),
                             ) {
-                                칩줄(listOf("전체") + 판.칸들, 판.고름, { 고른칸 = it })
+                                칩줄(listOf("전체") + 판.칸들, 판.고름, { 고른칸 = it }, 앞 = { 즐겨칩() })
                                 종목묶음들(상태, 판, 끌판, 펼친, { k -> 펼친 = if (펼친 == k) null else k },
                                     펼침틀 = { 구멍틀[1] = it; 구멍재기() })
                                 // 10-09 홍겸 님: 펼쳤을 때는 [새 종목 만들기] 가 따라다니지 않고 목록 맨 끝에 놓인다 (가림막 아래라 어둡다 · 누르면 접힌다)
@@ -449,7 +451,8 @@ private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modif
     val 플랜모양 = 펼 && 플.isNotEmpty() && (넣기 == null || 넣기.플랜카드)
     // 10-11 홍겸 님: [넣기 시트] 에서 펼친 상자는 체크 여부와 상관없이 접힌 상자(면 · 강조옅음)와 다른 색 — 바탕 면2 · 굵은 테 흐림. 종목 탭은 그대로
     val 시트펼침 = 펼 && 넣기 != null
-    val 상자바탕 = if (시트펼침) c.면2 else if (들어감) c.강조옅음 else c.면
+    val 즐겨 = t?.즐겨 == true
+    val 상자바탕 = if (시트펼침) c.면2 else if (즐겨) c.즐겨옅음 else if (들어감) c.강조옅음 else c.면   // 10-11 홍겸 님: 즐겨찾기는 연한 노랑
     val 상자테 = if (시트펼침) c.흐림 else if (들어감) c.강조 else if (펼) c.속선 else c.선
     // 10-11 홍겸 님: [넣기 시트] 에서 펼칠 때 속이 늘어나며 나타난다 (처음엔 접힌 채 그렸다가 바로 펼침). 종목 탭은 전처럼 바로 보인다
     var 들어옴 by remember(x.열쇠, 펼) { mutableStateOf(!시트펼침) }
@@ -472,11 +475,11 @@ private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modif
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(if (체크보임) 0.dp else 간격.좁게), verticalAlignment = Alignment.Top) {
             // 10-08 홍겸 님: 펼친 상자 머리에는 체크 상자를 두지 않는다 (접힌 줄에만)
             // 10-11 홍겸 님: 체크 상자는 이름 왼쪽 맨 앞 (전: 오른쪽 끝)
-            if (!펼 && 넣기 != null && 수 >= 0) 넣기체크(x.이름, 수,
+            if (!펼 && 넣기 != null && 수 >= 0) 넣기체크(x.이름, 수, 즐겨,
                 누름 = { if (넣기.수(x) > 0) 넣기.빼기(x) else { 넣기.넣기(x); 꾹안내(상태) } },   // 10-09 홍겸 님: 눌러 넣을 때 '꾸욱 누르면…' 토스트
                 꾹 = { 넣기.넣기(x) },
                 눌렀다 = { 오목범위.launch { 오목.animateTo(0.91f, tween(110)); 오목.animateTo(1f, androidx.compose.animation.core.spring(dampingRatio = 0.5f, stiffness = 400f)) } })
-            if (펼 && t != null) 사진넣는칸(상태, t)
+            if (펼 && t != null) 즐겨칸(상태, t)
             // 10-07 꾹 눌러 끌기 — 손은 누름보다 안쪽(먼저 받아야 끊기지 않는다). 꾹 누르고 떼어도 펼치지 않게 길게 누름은 빈 동작
             Column(Modifier.weight(1f).눌림길게({ 펼침(x.열쇠) }, { }).격자끌기손(끌판, x.종목?.id ?: x.열쇠, x.이름, 켬 = false)) {
                 Row(
@@ -492,7 +495,8 @@ private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modif
                                     .눌림 { 이름고침 = true },
                                 contentAlignment = Alignment.CenterStart,
                             ) { 이름맞춤(x.이름, Modifier, 바탕크기 = 종목치수.이름글, 굵기 = FontWeight.Medium) }
-                            else 이름맞춤(x.이름, Modifier.weight(1f, fill = false), 바탕크기 = 종목치수.이름글, 굵기 = FontWeight.Medium, 두줄촘촘 = !펼, 자간넓힘폭 = if (체크보임) 넣기값.체크옆넓힘 else 0.dp)
+                            else { if (!펼 && 넣기 == null && 즐겨) Text("★", Modifier.padding(end = 2.dp), style = 글꼴.보통(종목치수.이름글, FontWeight.Bold), color = c.즐겨, maxLines = 1, softWrap = false)   // 10-11: 종목 탭엔 체크 상자가 없으니 이름 앞 노란 별
+                            이름맞춤(x.이름, Modifier.weight(1f, fill = false), 바탕크기 = 종목치수.이름글, 굵기 = FontWeight.Medium, 두줄촘촘 = !펼, 자간넓힘폭 = if (체크보임) 넣기값.체크옆넓힘 else 0.dp) }
                             if (번 > 0 || 플.isNotEmpty()) Row(Modifier.offset(x = 부품치수.딱지겹침), horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
                                 번호딱지(번)
                                 if (플.isNotEmpty()) 플랜딱지()
@@ -529,7 +533,7 @@ private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modif
                     근육읽기(상태, x.이름)
                 }
             }
-            if (t != null && t.사진.isNotEmpty()) 넣은사진줄(상태, t)
+            if (t != null) 넣은사진줄(상태, t)
         } }
     }
 }
@@ -667,7 +671,7 @@ private fun 꾹안내(상태: 앱상태) {
  * 그래서 한 번 만든 손([pointerInput] · detectTapGestures)이 최신 동작만 불러 주는 꼴로 바꿨다. 꾹이 먹히면 짧게 떨린다 (상자 머리의 꾹 = 끌기와 같은 느낌)
  */
 @Composable
-private fun 넣기체크(이름: String, 수: Int, 누름: () -> Unit, 꾹: () -> Unit, 눌렀다: () -> Unit = {}) {
+private fun 넣기체크(이름: String, 수: Int, 즐겨: Boolean, 누름: () -> Unit, 꾹: () -> Unit, 눌렀다: () -> Unit = {}) {
     val c = Local색.current
     val 깊이 = remember { Animatable(1f) }   // 10-11: 체크 상자도 오목해졌다 돌아온다
     val 깊이범위 = rememberCoroutineScope()
@@ -697,7 +701,13 @@ private fun 넣기체크(이름: String, 수: Int, 누름: () -> Unit, 꾹: () -
             },
         contentAlignment = Alignment.CenterStart,
     ) {
-        Box(
+        if (즐겨) {
+            // 10-11 홍겸 님: 즐겨찾기 종목은 네모 체크 상자 대신 노란 별 — 넣으면 별 가운데에 파란 체크
+            Box(Modifier.padding(start = 넣기값.체크옆).graphicsLayer { scaleX = 깊이.value; scaleY = 깊이.value }.size(넣기값.체크 + 4.dp), contentAlignment = Alignment.Center) {
+                Text("★", style = 글꼴.보통(크기.크게 * 1.1f, FontWeight.Bold).copy(lineHeight = 크기.크게 * 1.1f), color = c.즐겨, maxLines = 1, softWrap = false, overflow = TextOverflow.Visible)
+                if (들어감) Text(체크글(수), style = 글꼴.보통(크기.아주작게, FontWeight.Bold), color = c.강조, maxLines = 1, softWrap = false, modifier = Modifier.padding(top = 1.dp))
+            }
+        } else Box(
             Modifier.padding(start = 넣기값.체크옆).graphicsLayer { scaleX = 깊이.value; scaleY = 깊이.value }.heightIn(min = 넣기값.체크).widthIn(min = 넣기값.체크).clip(상자)
                 .background(if (들어감) c.강조 else c.면)
                 .border(선굵기.보통, if (들어감) c.강조 else c.속선, 상자)
@@ -892,9 +902,9 @@ private fun 사진넣는칸(상태: 앱상태, t: 종목) {
         }
     }
     val 모양 = RoundedCornerShape(그림칸.모서리)
-    val 첫 = t.사진.firstOrNull()
+    val 첫: String? = null   // 10-11 홍겸 님: 머리 사진 칸은 즐겨찾기 별로 — 사진 넣기는 아래 사진 줄 맨 앞 [＋] 칸
     Box(
-        Modifier.size(그림칸.작은사진).clip(모양)
+        Modifier.size(그림칸.사진).clip(모양)
             .then(if (첫 == null) Modifier.background(c.면2).border(선굵기.보통, c.속선, 모양) else Modifier)
             .눌림 {
                 if (넣는중) return@눌림
@@ -908,6 +918,20 @@ private fun 사진넣는칸(상태: 앱상태, t: 종목) {
     }
 }
 
+/** 펼친 상자 머리 맨 앞 — 즐겨찾기 별 (10-11 홍겸 님: 사진 칸 자리 · 빈 별 · 켜면 테두리와 별이 노랗게) */
+@Composable
+private fun 즐겨칸(상태: 앱상태, t: 종목) {
+    val c = Local색.current
+    val 모양 = RoundedCornerShape(그림칸.모서리)
+    val 켬 = 상태.d.종목표.firstOrNull { it.id == t.id }?.즐겨 ?: t.즐겨
+    Box(
+        Modifier.size(그림칸.작은사진).clip(모양).background(c.면2).border(선굵기.보통, if (켬) c.즐겨 else c.속선, 모양)
+            .눌림 { 발자취.적기("즐겨찾기 ${if (켬) "끔" else "켬"} · ${t.이름}"); 상태.바꿈 { it.즐겨바꿈(t.id) } }
+            .semantics { contentDescription = "${t.이름} 즐겨찾기 ${if (켬) "끄기" else "켜기"}"; role = Role.Switch },
+        contentAlignment = Alignment.Center,
+    ) { Text("☆", style = 글꼴.보통(크기.크게, FontWeight.Bold), color = if (켬) c.즐겨 else c.옅음, maxLines = 1, softWrap = false) }
+}
+
 /** 넣은 사진 줄 72 — 누르면 '지우기' 표시 · 한 번 더 누르면 지운다(되돌리기 띠) (시안 `.사진줄` · '사진지움') */
 @Composable
 private fun 넣은사진줄(상태: 앱상태, t: 종목) {
@@ -916,6 +940,7 @@ private fun 넣은사진줄(상태: 앱상태, t: 종목) {
     val 모양 = RoundedCornerShape(그림칸.모서리)
     val 넘김 = rememberScrollState()
     Row(Modifier.fillMaxWidth().오른끝흐림(넘김).horizontalScroll(넘김), horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
+        사진넣는칸(상태, t)
         t.사진.forEachIndexed { j, 이름 ->
             key(이름) {
                 Box(
@@ -1216,6 +1241,24 @@ fun 장비고르기(상태: 앱상태, 선택: String, on선택: (String) -> Uni
     }
 }
 
+/** 즐겨찾기 먼저 보기 — 켜 두는 것이 기본 (10-11 홍겸 님). 종목 탭 · 넣기 시트가 같이 쓴다 */
+internal object 즐겨기억 { var 먼저 by mutableStateOf(true) }
+
+/** 칩 줄 맨 앞 노란 별 — 켜면 노랗게 · 끄면 흐리게 (10-11 홍겸 님) */
+@Composable
+internal fun 즐겨칩() {
+    val c = Local색.current
+    val 켬 = 즐겨기억.먼저
+    Box(
+        Modifier.height(높이.낮게).widthIn(min = 높이.낮게).clip(CircleShape)
+            .background(if (켬) c.즐겨옅음 else c.강조.copy(alpha = 0f))
+            .border(1.dp, if (켬) c.즐겨 else c.속선, CircleShape)
+            .눌림 { 즐겨기억.먼저 = !즐겨기억.먼저 }
+            .semantics { contentDescription = "즐겨찾기 먼저 보기 ${if (켬) "끄기" else "켜기"}"; role = Role.Switch },
+        contentAlignment = Alignment.Center,
+    ) { Text("★", style = 글꼴.보통(크기.버튼, FontWeight.Bold), color = if (켬) c.즐겨 else c.흐림) }
+}
+
 // ═════════════════════ 순수 계산 (시험: test/…/ui/ExerciseTest.kt) ═════════════════════
 
 /** 상자 하나 — [종목] null = 종목표에 없고 플랜만 남은 종목('기타' 칸) */
@@ -1228,12 +1271,14 @@ internal data class 종목칸값(val 이름: String, val 칸: String, val 종목
 internal data class 종목판(val 칸들: List<String>, val 고름: String, val 묶음: List<Pair<String, List<종목칸값>>>)
 
 /** 시안 `종목탭` — 플랜만 남은 종목은 '기타' (카테고리에 '기타' 가 있으면 거기에 더한다) */
-internal fun 앱데이터.종목탭판(고른칸: String): 종목판 {
+internal fun 앱데이터.종목탭판(고른칸: String, 즐겨먼저: Boolean = false): 종목판 {
     val 남은 = 플랜들.map { it.종목 }.distinct().filter { n -> 종목표.none { it.이름 == n } }.map { 종목칸값(it, "기타", null) }
     val 칸들 = if (남은.isNotEmpty() && "기타" !in 카테고리) 카테고리 + "기타" else 카테고리
     val 고 = if (고른칸 in 칸들) 고른칸 else "전체"
     val 묶 = (if (고 == "전체") 칸들 else listOf(고)).map { c ->
-        c to (종목표.filter { it.칸 == c }.map { 종목칸값(it.이름, it.칸, it) } + (if (c == "기타") 남은 else emptyList()))
+        // 10-11 홍겸 님: 즐겨찾기를 켜 두면 즐겨찾은 종목이 (카테고리마다) 맨 앞 — 나머지는 그대로 모두 보인다 (안정 정렬)
+        val 칸종목 = 종목표.filter { it.칸 == c }.let { l -> if (즐겨먼저) l.sortedByDescending { it.즐겨 } else l }
+        c to (칸종목.map { 종목칸값(it.이름, it.칸, it) } + (if (c == "기타") 남은 else emptyList()))
     }.filter { it.second.isNotEmpty() }
     return 종목판(칸들, 고, 묶)
 }
