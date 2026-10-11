@@ -973,8 +973,6 @@ private fun 접기칸(펼침: Boolean, 남은: Int, onClick: () -> Unit) {
 
 /** 날짜 판 목록 한 줄 높이 — 왼쪽·오른쪽 칸 줄이 같은 높이로 맞는다 (글이 줄어도 · '외 N종목' 칸이어도) */
 private val 목록줄높이 = 30.dp
-/** 날짜 판 목록 한 줄 높이 — 왼쪽·오른쪽 칸 줄이 같은 높이로 맞는다 */
-private val 목록줄높이 = 30.dp
 private val 그림보통 = 18.dp   // 11 지침 U3-6 기본 아이콘
 private val 그림작게 = 16.dp   // 11 지침 U3-6 글 옆 · 체크 안
 
