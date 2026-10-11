@@ -103,6 +103,14 @@ class ExerciseTest {
         assertEquals(listOf(false, true), e.종목표.map { it.즐겨 })
     }
 
+    @Test fun 즐겨먼저_끄면_저장되고_옛파일은_켜짐() {
+        val d = 앱데이터()
+        assertTrue(저장소.글에서(저장소.글로(d)).설정.즐겨먼저)
+        val 끈 = d.copy(설정 = d.설정.copy(즐겨먼저 = false))
+        assertFalse(저장소.글에서(저장소.글로(끈)).설정.즐겨먼저)
+        assertTrue(저장소.글에서("{}").설정.즐겨먼저)   // 처음 깔았거나 옛 파일 = 켜짐
+    }
+
     // ─────────────── 세트 줄 ───────────────
 
     @Test fun 세트_값바꿈_끝을넘지않음() {

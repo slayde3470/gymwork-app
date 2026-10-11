@@ -192,7 +192,7 @@ fun 종목화면(상태: 앱상태) {
     // 새 종목 시트 — null 닫힘 · "" 새 종목 · 그 밖 = 편집할 종목 id
     var 새시트 by remember { mutableStateOf<String?>(null) }
 
-    val 판 = d.종목탭판(고른칸, 즐겨기억.먼저)
+    val 판 = d.종목탭판(고른칸, d.설정.즐겨먼저)
     // 10-07 홍겸 님: 꾹 눌러 끌어 종목 순서 바꾸기 — 같은 카테고리 안에서만 (넣기 시트와 같은 차례 = 종목표 차례)
     val 넘김 = rememberScrollState()
     val 끌판 = remember격자끌기판({ a, b, 뒤 ->
@@ -242,7 +242,7 @@ fun 종목화면(상태: 앱상태) {
                                     .padding(start = 간격.보통, end = 간격.보통, top = 간격.보통, bottom = if (펼친 != null) 간격.보통 else 종목치수.뜸자리),
                                 verticalArrangement = Arrangement.spacedBy(간격.좁게),
                             ) {
-                                칩줄(listOf("전체") + 판.칸들, 판.고름, { 고른칸 = it }, 앞 = { 즐겨칩() })
+                                칩줄(listOf("전체") + 판.칸들, 판.고름, { 고른칸 = it }, 앞 = { 즐겨칩(상태) })
                                 종목묶음들(상태, 판, 끌판, 펼친, { k -> 펼친 = if (펼친 == k) null else k },
                                     펼침틀 = { 구멍틀[1] = it; 구멍재기() })
                                 // 10-09 홍겸 님: 펼쳤을 때는 [새 종목 만들기] 가 따라다니지 않고 목록 맨 끝에 놓인다 (가림막 아래라 어둡다 · 누르면 접힌다)
@@ -497,7 +497,7 @@ private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modif
                                     .눌림 { 이름고침 = true },
                                 contentAlignment = Alignment.CenterStart,
                             ) { 이름맞춤(x.이름, Modifier, 바탕크기 = 종목치수.이름글, 굵기 = FontWeight.Medium) }
-                            else { if (!펼 && 넣기 == null && 즐겨) Text("★", Modifier.padding(end = 2.dp), style = 글꼴.보통(종목치수.이름글, FontWeight.Bold), color = c.즐겨, maxLines = 1, softWrap = false)   // 10-11: 종목 탭엔 체크 상자가 없으니 이름 앞 노란 별
+                            else { if (!펼 && 넣기 == null && 즐겨) 별(true, 16.dp, c.즐겨, Modifier.padding(end = 2.dp))   // 10-11: 종목 탭엔 체크 상자가 없으니 이름 앞 노란 별
                             이름맞춤(x.이름, Modifier.weight(1f, fill = false), 바탕크기 = 종목치수.이름글, 굵기 = FontWeight.Medium, 두줄촘촘 = !펼, 자간넓힘폭 = if (체크보임) 넣기값.체크옆넓힘 else 0.dp) }
                             if (번 > 0 || 플.isNotEmpty()) Row(Modifier.offset(x = 부품치수.딱지겹침), horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
                                 번호딱지(번)
@@ -689,7 +689,7 @@ private fun 넣기체크(이름: String, 수: Int, 즐겨: Boolean, 누름: () -
         Modifier.zIndex(1f).layout { m, c ->
                 // 10-11 홍겸 님: 누르는 범위 +15% — 오른쪽으로 늘리되 자리는 그대로(이름 칸을 밀지 않는다 · 위로 올려 먼저 받는다)
                 val p = m.measure(c); layout(p.width - 넣기값.체크늘림.roundToPx(), p.height) { p.place(0, 0) }
-            }.heightIn(min = 높이.아주낮게).width(넣기값.체크 + 넣기값.체크옆 * 2 + 넣기값.체크늘림).clip(RoundedCornerShape(모서리.작게))
+            }.heightIn(min = 높이.아주낮게).widthIn(min = 넣기값.체크 + 넣기값.체크옆 * 2 + 넣기값.체크늘림).clip(RoundedCornerShape(모서리.작게))
             .semantics(mergeDescendants = true) {
                 contentDescription = "$이름 · ${수}개 들어 있음 · ${if (들어감) "누르면 하나 빼기" else "누르면 넣기"}, 꾹 누르면 하나 더"
                 onClick { 오목(); 누름최신(); true }
@@ -704,10 +704,10 @@ private fun 넣기체크(이름: String, 수: Int, 즐겨: Boolean, 누름: () -
         contentAlignment = Alignment.CenterStart,
     ) {
         if (즐겨) {
-            // 10-11 홍겸 님: 즐겨찾기 종목은 네모 체크 상자 대신 노란 별 — 넣으면 별 가운데에 파란 체크
-            Box(Modifier.padding(start = 넣기값.체크옆).graphicsLayer { scaleX = 깊이.value; scaleY = 깊이.value }.size(넣기값.체크 + 4.dp), contentAlignment = Alignment.Center) {
-                Text("★", style = 글꼴.보통(크기.크게 * 1.1f, FontWeight.Bold).copy(lineHeight = 크기.크게 * 1.1f), color = c.즐겨, maxLines = 1, softWrap = false, overflow = TextOverflow.Visible)
-                if (들어감) Text(체크글(수), style = 글꼴.보통(크기.아주작게, FontWeight.Bold), color = c.강조, maxLines = 1, softWrap = false, modifier = Modifier.padding(top = 1.dp))
+            // 10-11 홍겸 님: 즐겨찾기 종목은 네모 체크 상자 대신 노란 별 — 넣으면 별 가운데에 파란 체크 (둘 이상이면 오른쪽에 ×수)
+            Row(Modifier.padding(start = 넣기값.체크옆).graphicsLayer { scaleX = 깊이.value; scaleY = 깊이.value }, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                별(true, 넣기값.체크 + 6.dp, c.즐겨, 체크 = 들어감, 체크색 = c.강조)
+                if (수 > 1) Text("×$수", style = 글꼴.보통(크기.작게, FontWeight.Bold), color = c.강조, maxLines = 1, softWrap = false)
             }
         } else Box(
             Modifier.padding(start = 넣기값.체크옆).graphicsLayer { scaleX = 깊이.value; scaleY = 깊이.value }.heightIn(min = 넣기값.체크).widthIn(min = 넣기값.체크).clip(상자)
@@ -927,11 +927,11 @@ private fun 즐겨칸(상태: 앱상태, t: 종목) {
     val 모양 = RoundedCornerShape(그림칸.모서리)
     val 켬 = 상태.d.종목표.firstOrNull { it.id == t.id }?.즐겨 ?: t.즐겨
     Box(
-        Modifier.size(그림칸.작은사진).clip(모양).background(c.면2).border(선굵기.보통, if (켬) c.즐겨 else c.속선, 모양)
+        Modifier.size(그림칸.작은사진)
             .눌림 { 발자취.적기("즐겨찾기 ${if (켬) "끔" else "켬"} · ${t.이름}"); 상태.바꿈 { it.즐겨바꿈(t.id) } }
             .semantics { contentDescription = "${t.이름} 즐겨찾기 ${if (켬) "끄기" else "켜기"}"; role = Role.Switch },
         contentAlignment = Alignment.Center,
-    ) { Text("☆", style = 글꼴.보통(크기.크게, FontWeight.Bold), color = if (켬) c.즐겨 else c.옅음, maxLines = 1, softWrap = false) }
+    ) { 별(켬, 28.dp, if (켬) c.즐겨 else c.옅음) }
 }
 
 /** 넣은 사진 줄 72 — 누르면 '지우기' 표시 · 한 번 더 누르면 지운다(되돌리기 띠) (시안 `.사진줄` · '사진지움') */
@@ -1243,22 +1243,17 @@ fun 장비고르기(상태: 앱상태, 선택: String, on선택: (String) -> Uni
     }
 }
 
-/** 즐겨찾기 먼저 보기 — 켜 두는 것이 기본 (10-11 홍겸 님). 종목 탭 · 넣기 시트가 같이 쓴다 */
-internal object 즐겨기억 { var 먼저 by mutableStateOf(true) }
-
-/** 칩 줄 맨 앞 노란 별 — 켜면 노랗게 · 끄면 흐리게 (10-11 홍겸 님) */
+/** 칩 줄 맨 앞 별 — 켜면 노란 별 · 끄면 속이 빈 별 (10-11 홍겸 님: 박스 없이 별만 · 켠 채로 두는 것이 기본 · 껐다 켜도 그대로 = 설정에 저장) */
 @Composable
-internal fun 즐겨칩() {
+internal fun 즐겨칩(상태: 앱상태) {
     val c = Local색.current
-    val 켬 = 즐겨기억.먼저
+    val 켬 = 상태.d.설정.즐겨먼저
     Box(
-        Modifier.height(높이.낮게).widthIn(min = 높이.낮게).clip(CircleShape)
-            .background(if (켬) c.즐겨옅음 else c.강조.copy(alpha = 0f))
-            .border(1.dp, if (켬) c.즐겨 else c.속선, CircleShape)
-            .눌림 { 즐겨기억.먼저 = !즐겨기억.먼저 }
+        Modifier.height(높이.낮게).widthIn(min = 높이.낮게)
+            .눌림 { 상태.바꿈 { d -> d.copy(설정 = d.설정.copy(즐겨먼저 = !d.설정.즐겨먼저)) } }
             .semantics { contentDescription = "즐겨찾기 먼저 보기 ${if (켬) "끄기" else "켜기"}"; role = Role.Switch },
         contentAlignment = Alignment.Center,
-    ) { Text("★", style = 글꼴.보통(크기.버튼, FontWeight.Bold), color = if (켬) c.즐겨 else c.흐림) }
+    ) { 별(켬, 24.dp, if (켬) c.즐겨 else c.흐림) }
 }
 
 // ═════════════════════ 순수 계산 (시험: test/…/ui/ExerciseTest.kt) ═════════════════════

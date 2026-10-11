@@ -78,6 +78,8 @@ import androidx.compose.ui.layout.FirstBaseline
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
@@ -713,38 +715,66 @@ private fun ColumnScope.보고본문(
         if (값.칸들.isEmpty()) {
             Text("체크한 세트가 없습니다", Modifier.padding(horizontal = 간격.아주좁게, vertical = 간격.좁게), style = 글꼴.보통(크기.조금작게), color = c.옅음)
         }
-        // 10-11 홍겸 님: 슈퍼세트는 주황으로 묶어 보인다 — 두 칸 격자에서 묶음이 줄 사이에 걸치면 빈 칸을 하나 끼워 줄 맨 앞에서 시작
-        val 슬롯 = ArrayList<보고칸?>()
-        값.칸들.forEachIndexed { i, k ->
-            val 첫 = k.묶음 != null && 값.칸들.getOrNull(i - 1)?.묶음 != k.묶음
-            if (첫 && 슬롯.size % 2 == 1 && 값.칸들.getOrNull(i + 1)?.묶음 == k.묶음) 슬롯.add(null)
-            슬롯.add(k)
+        // 10-11 홍겸 님: 슈퍼세트 = 읽는 차례로 이어진 칸들을 **통짜** 주황 굵은 테두리 하나로 (줄 사이에 걸쳐도 그대로 · 칸 하나하나에 두르지 않는다)
+        val 묶음들 = ArrayList<List<Int>>()   // 칸 차례(index) 묶음 — 두 칸 이상만
+        run {
+            var i = 0
+            while (i < 값.칸들.size) {
+                val g = 값.칸들[i].묶음
+                var j = i
+                while (g != null && j + 1 < 값.칸들.size && 값.칸들[j + 1].묶음 == g) j++
+                if (g != null && j > i) 묶음들.add((i..j).toList())
+                i = j + 1
+            }
         }
-        슬롯.chunked(2).forEachIndexed { 줄번, 줄0 -> val 줄 = 줄0.filterNotNull(); key(줄.firstOrNull()?.번호 ?: -줄번 - 1) {
+        val 묶음칸 = HashMap<Int, Int>()   // 칸 번호 → 묶음 차례
+        묶음들.forEachIndexed { q, l -> l.forEach { 묶음칸[값.칸들[it].번호] = q } }
+        val 딱칸 = 묶음들.map { l -> l.first { it % 2 == 1 } }.toSet()   // 묶음 맨 윗줄 오른쪽 칸 — [슈퍼] 딱지
+        val 자리 = remember { androidx.compose.runtime.mutableStateMapOf<Int, Rect>() }
+        val 격자틀 = remember { arrayOfNulls<androidx.compose.ui.layout.LayoutCoordinates>(1) }
+        val 주 = c.슈퍼
+        Column(
+            Modifier.fillMaxWidth().onGloballyPositioned { 격자틀[0] = it }
+                .drawWithContent {
+                    drawContent()
+                    val g = 2.2.dp.toPx()
+                    묶음들.forEach { l ->
+                        var 합: androidx.compose.ui.graphics.Path? = null
+                        l.forEach { i ->
+                            val r = 자리[값.칸들[i].번호] ?: return@forEach
+                            val q = androidx.compose.ui.graphics.Path().apply { addRoundRect(androidx.compose.ui.geometry.RoundRect(r.inflate(g), CornerRadius(모서리.작게.toPx()))) }
+                            합 = 합?.let { a -> androidx.compose.ui.graphics.Path.combine(androidx.compose.ui.graphics.PathOperation.Union, a, q) } ?: q
+                        }
+                        합?.let { drawPath(it, 주, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 선굵기.굵게.toPx(), pathEffect = androidx.compose.ui.graphics.PathEffect.cornerPathEffect(모서리.작게.toPx() + g))) }
+                    }
+                },
+            verticalArrangement = Arrangement.spacedBy(간격.아주좁게),
+        ) {
+        값.칸들.chunked(2).forEachIndexed { 줄번, 줄 -> key(줄.first().번호) {
             val 열린 = 줄.firstOrNull { it.번호 == 펼침 }
             val 보기 = remember { BringIntoViewRequester() }
             Column(Modifier.fillMaxWidth().bringIntoViewRequester(보기), verticalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
-                    줄0.forEach { k ->
-                        if (k == null) { Box(Modifier.weight(1f)); return@forEach }
-                        val 묶 = k.묶음
-                        val 다 = 슬롯.indexOf(k)
-                        // 묶음의 맨 윗줄 오른쪽 칸에 [슈퍼] 딱지
-                        val 딱 = 묶 != null && 다 % 2 == 1 && 슬롯.getOrNull(다 - 1)?.묶음 == 묶 && 슬롯.getOrNull(다 - 2)?.묶음 != 묶
-                        val 주 = c.슈퍼
+                    줄.forEach { k ->
+                        val 다 = 값.칸들.indexOf(k)
                         Box(
-                            Modifier.weight(1f).then(if (묶 == null) Modifier else Modifier.drawBehind {
-                                val g = 3.dp.toPx()
-                                drawRoundRect(주, Offset(-g, -g), Size(size.width + g * 2, size.height + g * 2), CornerRadius(모서리.작게.toPx() + g))
+                            Modifier.weight(1f).then(if (묶음칸[k.번호] == null) Modifier else Modifier.onGloballyPositioned { co ->
+                                val 기 = 격자틀[0]
+                                if (기 != null && 기.isAttached && co.isAttached) {
+                                    val p0 = 기.localPositionOf(co, Offset.Zero)
+                                    val r = Rect(p0, Size(co.size.width.toFloat(), co.size.height.toFloat()))
+                                    if (자리[k.번호] != r) 자리[k.번호] = r
+                                }
                             }),
                         ) {
                             종목칸(d, k, k.번호 == 펼침, 움직, 키, 찍는용, 상자p, Modifier.fillMaxWidth()) { on펼침(k.번호) }
-                            if (딱) Box(
+                            if (다 in 딱칸) Box(
                                 Modifier.align(Alignment.TopEnd).offset(x = 3.dp, y = (-3).dp).clip(RoundedCornerShape(bottomStart = 모서리.작게))
                                     .background(주).padding(horizontal = 간격.아주좁게),
                             ) { Text("슈퍼", style = 글꼴.보통(크기.작게 * 0.9f, FontWeight.Bold), color = c.강조, maxLines = 1, softWrap = false) }
                         }
                     }
+                    if (줄.size == 1) Box(Modifier.weight(1f))
                 }
                 if (열린 != null) {
                     // 상세는 옅게 → 진하게. 다 그린 뒤 그 줄 + 상세가 보이게 올린다 (시안 ya8r — 움직임 중에 자리를 재지 않는다)
@@ -760,6 +790,7 @@ private fun ColumnScope.보고본문(
                 }
             }
         } }
+        }
     }
 }
 

@@ -583,7 +583,8 @@ private fun 운머리윗줄(S: 운동세션, 지금: Long, 나가기: () -> Unit
             Text(S.루틴이름, Modifier.weight(1f), style = 글꼴.보통(크기.버튼 * 1.3f, FontWeight.Bold), color = c.강조글, maxLines = 1, overflow = TextOverflow.Ellipsis)
             val 작 = 글꼴.보통(크기.작게 * 0.9f).copy(fontFeatureSettings = "tnum")
             fun 값(앞: String, b: String, 뒤: String = "") = buildAnnotatedString {
-                append(앞); withStyle(SpanStyle(color = c.강조글, fontWeight = FontWeight.Bold, fontSize = 크기.작게 * 0.9f * 0.75f)) { append(b) }; append(뒤)
+                append(앞); withStyle(SpanStyle(color = c.강조글, fontWeight = FontWeight.Bold, fontSize = 크기.작게 * 0.9f * 0.75f)) { append(b) }
+                if (뒤.isNotEmpty()) withStyle(SpanStyle(fontSize = 크기.작게 * 0.9f * 0.75f)) { append(뒤) }   // 10-11: '/700' 도 앞 숫자와 같은 크기
             }
             val 라벨색 = c.강조글.copy(alpha = 운치수.띠라벨투명)
             Text(값("종목 ", "$끝종/$n"), style = 작, color = 라벨색, maxLines = 1, softWrap = false)
@@ -669,7 +670,7 @@ private fun 운이름(d: 앱데이터, S: 운동세션, 본: Int, e: 세션종�
     )
     Text(
         글, modifier, color = c.강조글, inlineContent = 붙임,
-        style = 글꼴.제목(크기.크게 * 0.8f),
+        style = 글꼴.제목(크기.크게 * 0.8f * 0.85f),
     )
 }
 

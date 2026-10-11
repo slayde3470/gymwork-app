@@ -330,6 +330,38 @@ fun 칩줄(
     }
 }
 
+/**
+ * 둥근 별 (10-11 홍겸 님) — 끝이 뾰족하지 않고 둥글다. 켬 = 속을 칠한다 · 끔 = 속이 빈 테두리. 박스 없이 별만.
+ * [체크] = 별 가운데 체크(색은 [체크색]) — 즐겨찾기 종목을 넣었을 때
+ */
+@Composable
+fun 별(켬: Boolean, 크기: Dp, 색: Color, modifier: Modifier = Modifier, 체크: Boolean = false, 체크색: Color = Color.Unspecified) {
+    androidx.compose.foundation.Canvas(modifier.size(크기)) {
+        val w = size.minDimension
+        val 큰 = w * 0.5f * 0.80f
+        val 작 = 큰 * 0.56f
+        val cx = size.width / 2f
+        val cy = size.height / 2f + 큰 * 0.095f   // 별의 위아래 한가운데
+        val path = androidx.compose.ui.graphics.Path()
+        for (i in 0 until 10) {
+            val a = -Math.PI / 2 + i * Math.PI / 5
+            val r = if (i % 2 == 0) 큰 else 작
+            val x = cx + (Math.cos(a) * r).toFloat(); val y = cy + (Math.sin(a) * r).toFloat()
+            if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+        }
+        path.close()
+        val 굵 = w * 0.15f
+        if (켬) drawPath(path, 색, style = androidx.compose.ui.graphics.drawscope.Fill)
+        drawPath(path, 색, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 굵, join = androidx.compose.ui.graphics.StrokeJoin.Round, cap = androidx.compose.ui.graphics.StrokeCap.Round))
+        if (체크) {
+            val k = androidx.compose.ui.graphics.Path().apply {
+                moveTo(cx - 큰 * 0.34f, cy + 큰 * 0.0f); lineTo(cx - 큰 * 0.08f, cy + 큰 * 0.28f); lineTo(cx + 큰 * 0.38f, cy - 큰 * 0.24f)
+            }
+            drawPath(k, 체크색, style = androidx.compose.ui.graphics.drawscope.Stroke(width = w * 0.11f, join = androidx.compose.ui.graphics.StrokeJoin.Round, cap = androidx.compose.ui.graphics.StrokeCap.Round))
+        }
+    }
+}
+
 /** 시트 안에서 시트를 (내려가는 움직임과 함께) 닫는다 — 종목 넣기의 [확인] */
 val Local시트닫기 = androidx.compose.runtime.staticCompositionLocalOf<() -> Unit> { {} }
 

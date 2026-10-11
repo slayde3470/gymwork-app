@@ -127,7 +127,7 @@ fun 종목넣기시트(
         val 플랜길 = if (플랜개수 != null && 플랜넣기 != null && 플랜빼기 != null) 플랜손(플랜개수, 플랜넣기, 플랜빼기) else null
         val 창구멍 = remember { mutableStateOf<Rect?>(null) }
         val 어둠 = remember { androidx.compose.animation.core.Animatable(0f) }   // 0 ~ 1 — 펼침 · 접힘과 같이 움직이는 어둠 농도
-        시트(제목, 닫기, 위끝고정 = true, 닫기글 = "", 위틈 = 9.dp, 겹 = 겹, 가림구멍 = 창구멍, 가림농도 = { 어둠.value }) {
+        시트(제목, 닫기, 위끝고정 = true, 닫기글 = "", 위틈 = 7.65.dp, 겹 = 겹, 가림구멍 = 창구멍, 가림농도 = { 어둠.value }) {
             넣기속(상태, 칸고름, { 칸고름 = it }, 개수, 넣기, 빼기, 새종목만들기, { 새로 = true }, 플랜길, 창구멍, 어둠)
         }
     }
@@ -190,7 +190,7 @@ private fun 넣기속(
     // 접기 = 펼친 상자의 속이 줄어드는 것 · 어두운 곳이 걷히는 것 · 화면이 펼치기 전 자리로 돌아가는 것이 한꺼번에 (아래 LaunchedEffect(접는키))
     val 접기 = { 펼친?.let { k -> if (접는키 == null) { 마지막 = 마지막누름(k) { c -> 마지막틀[0] = c }; 접힘정리 = true; 접는키 = k } }; Unit }
     val 판톡 = remember루톡(true)
-    val 판 = d.종목탭판(칸고름, 즐겨기억.먼저)
+    val 판 = d.종목탭판(칸고름, d.설정.즐겨먼저)
     // 꾹 눌러 끌어 종목 순서 바꾸기 — 종목 탭과 같은 판 (같은 카테고리 안 · 종목표 차례)
     val 끌판 = remember격자끌기판({ a, b, 뒤 ->
         발자취.적기("넣기 · 종목 순서 옮김")
@@ -215,9 +215,11 @@ private fun 넣기속(
     ) {
         Column(Modifier.fillMaxWidth().then(if (쓸 != null) Modifier.fillMaxHeight() else Modifier)) {
             Box(Modifier.fillMaxWidth()) {
-                칩줄(listOf(넣기전체) + 판.칸들, 판.고름, { 칸바꿈(it) }, 사이 = 7.dp, 앞 = { 즐겨칩() })
+                칩줄(listOf(넣기전체) + 판.칸들, 판.고름, { 칸바꿈(it) }, 사이 = 5.dp, 앞 = { 즐겨칩(상태) })
                 if (펼친 != null) Box(Modifier.matchParentSize().눌림(접기))   // 어둡게 칠하는 건 시트가 한다 — 여기는 누름만   // 칩줄도 어둡게 (누르면 접힌다)
             }
+            // 10-11 홍겸 님: 카테고리 칩 줄 아래 파란 경계선 (칩 줄은 흰 바탕으로 고정 · 목록만 스크롤)
+            Box(Modifier.padding(top = 간격.좁게).fillMaxWidth().height(선굵기.굵게).background(Local색.current.강조))
             Spacer(Modifier.height(간격.좁게))
             // 칩을 바꾸면 맨 위부터 (시안 v18 D ⑤) · 칸을 눌러 다시 그려도 보던 자리 그대로
             key(판.고름) {
@@ -295,7 +297,7 @@ private fun 넣기속(
                     Spacer(Modifier.height(1.dp))
                 } else {
                     // 떠 있는 [새 종목] 단추 자리만큼 아래 여백 (시안 v19 C ②) — 펼쳤을 때는 단추가 목록 맨 끝으로 가므로 뺀다
-                    val 아래여백 = 높이.낮게 + 간격.좁게 * 3   // 10-11: 아래에 고정된 줄([새 종목 만들기] · [확인]) 자리
+                    val 아래여백 = if (펼친 == null) 높이.낮게 + 간격.좁게 * 2 else 간격.좁게   // 10-11: 아래에 떠 있는 줄([새 종목 만들기] · [확인]) 자리 — 펼치면 줄이 없다
                     val 아래여백px = with(밀도) { 아래여백.roundToPx() }
                     Column(
                         Modifier.fillMaxWidth()
@@ -320,6 +322,13 @@ private fun 넣기속(
                                         { k -> if (접는키 != null) Unit else if (펼친 == k) 접기() else { 마지막 = null; 마지막틀[0] = null; 펼친 = k } },
                                         손, 펼침틀 = { 구멍틀[1] = it; 구멍재기() }, 마지막 = 마지막, 접는키 = 접는키, 한도 = if (펼친 != null) Int.MAX_VALUE else 한도,
                                     )
+                                    // 펼쳤을 때는 아래 떠 있는 줄이 없고, [새 종목 만들기] 가 목록 맨 끝에 놓인다 (가림막 아래라 어둡다)
+                                    if (펼친 != null && 새종목만들기) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                                        버튼(
+                                            "새 종목 만들기", { 판톡.톡(); 발자취.적기("넣기 · 새 종목 만들기"); 새로열기() },
+                                            Modifier.루톡(판톡), 주요 = true, 낮게 = true, 그림 = 아이콘.더하기,
+                                        )
+                                    }
                                 }
                                 // 펼친 상자를 맨 위로 올릴 수 있게 아래를 비워 둔다 (펼친 상자가 보이는 칸보다 작을 때만) · 접은 직후 화면을 되돌리는 동안도 유지
                                 Box(
@@ -335,13 +344,10 @@ private fun 넣기속(
                 }
             }
         }
-        // 10-11 홍겸 님: 아래 고정 줄 — [새 종목 만들기] 가운데 · [확인] 오른쪽 (파란 박스 · 흰 글) · 줄 아래는 파란 선으로 경계
+        // 10-11 홍겸 님: 아래에 떠 있는 줄 — [새 종목 만들기] 가운데 · [확인] 오른쪽 (파란 박스 · 흰 글). 바탕은 칠하지 않는다(목록이 가려지지 않게) · 펼치면 없다
         val 닫기 = Local시트닫기.current
-        val 줄색 = Local색.current
-        Box(
-            Modifier.align(Alignment.BottomCenter).fillMaxWidth().background(줄색.면)
-                .drawBehind { drawRect(줄색.강조, Offset(0f, size.height - 4.dp.toPx()), androidx.compose.ui.geometry.Size(size.width, 4.dp.toPx())) }
-                .padding(top = 간격.좁게, bottom = 간격.좁게 + 4.dp),
+        if (펼친 == null) Box(
+            Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(bottom = 간격.좁게),
             contentAlignment = Alignment.Center,
         ) {
             if (새종목만들기) 버튼(

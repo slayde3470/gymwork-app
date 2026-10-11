@@ -898,7 +898,7 @@ private fun 슈퍼상자(
                     Text("${합}세트", Modifier.padding(top = 2.dp), style = 글꼴.보통((크기.조금작게.value * 0.5f + 1f).sp).copy(fontFeatureSettings = "tnum"), color = c.흐림, maxLines = 1, softWrap = false)
                 }
             }
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(1.5.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.5.dp)) {
                 val 각 by androidx.compose.animation.core.animateFloatAsState(if (펼침) 180f else 0f, tween(움직임.펼침), label = "슈퍼펼침단추")
                 Box(Modifier.width(18.dp).height(높이.낮게).눌림(on펼침), contentAlignment = Alignment.Center) {
                     Icon(아이콘.아래, if (펼침) "접기" else "펼치기", Modifier.size(18.dp).graphicsLayer { rotationZ = 각 }, tint = c.슈퍼)
@@ -1026,7 +1026,7 @@ private fun 종목상자(
                 }
                 if (묶음글 != null) Text(묶음글, style = 글꼴.보통(크기.조금작게).copy(fontFeatureSettings = "tnum"), color = c.흐림, maxLines = 1, softWrap = false)
             }
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(1.5.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.5.dp)) {
                 // ∨ 그림 안쪽 여백 4.5 + 손잡이 점 안쪽 여백 5 − 겹침 2.5 = 눈에 보이는 간격 7
                 val 각 by androidx.compose.animation.core.animateFloatAsState(if (펼침) 180f else 0f, tween(움직임.펼침), label = "종목펼침단추")
                 Box(Modifier.width(18.dp).height(높이.낮게).눌림(on펼침), contentAlignment = Alignment.Center) {
@@ -1120,7 +1120,8 @@ private fun 세트칸줄(
         Box(Modifier.weight(루틴값.무게몫), contentAlignment = Alignment.Center) { 무게() }
         Box(Modifier.weight(루틴값.횟수몫), contentAlignment = Alignment.Center) { 횟수() }
         Box(Modifier.weight(루틴값.휴식몫), contentAlignment = Alignment.Center) { 휴식() }
-        Box(Modifier.width(높이.아주낮게), contentAlignment = Alignment.Center) { 끝() }
+        // 10-11 홍겸 님: 휴식 칸과 휴지통 사이 25% 줄임 (4 → 3) — 휴지통 칸을 1 넓히고 1 당긴다
+        Box(Modifier.width(높이.아주낮게 + 1.dp).offset(x = (-1).dp), contentAlignment = Alignment.Center) { 끝() }
     }
 }
 
@@ -1366,7 +1367,7 @@ internal object 루틴값 {
     val 상자번호폭 = 20.dp      // 상세 종목 상자 머리의 번호 칸 (두 자리까지)
     val 자동띠 = 4.dp           // .루틴카드.자동 border-left 4
     val 카드줄틈 = 2.dp         // .루틴카드 gap 2
-    val 이름칸최소 = 96.dp       // 10-11 홍겸 님: 이름 칸은 글이 늘면 같이 늘어난다 (최소 폭)
+    val 이름칸최소 = 72.dp       // 10-11 홍겸 님: 이름 칸은 글이 늘면 같이 늘어난다 (최소 폭)
     val 띠단추폭 = 72.dp        // 상세 띠 [‹ 뒤로] 폭 = 오른쪽 빈자리 폭 (이름 칸 가운데 맞춤)
     val 연필그림 = 16.dp        // 이름 끝 연필 (글 옆 16)
     val 스위치폭 = 46.dp        // 공용 스위치와 같은 값
