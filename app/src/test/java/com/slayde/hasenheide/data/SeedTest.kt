@@ -183,7 +183,8 @@ class SeedTest {
         assertEquals(listOf(옛, 워), e.기록["2026-10-12"]!!.종목들.first { it.이름 == "벤치프레스" }.세트들)
         // 거리가 없으면 옛 모양 그대로 적는다 (옛 앱이 읽어도 안 깨진다)
         val 글 = 저장소.글로(앱데이터(기록 = mapOf("2026-10-12" to 날기록("r1", "등", true, listOf(종목기록("벤치프레스", listOf(옛)))))))
-        assertTrue(글.contains("[60,8]") || 글.contains("[60.0,8]"), 글)
+        val 붙임 = 글.replace(Regex("\\s"), "")
+        assertTrue(붙임.contains("[60,8]") || 붙임.contains("[60.0,8]"), 붙임)
     }
 
     @Test fun 비슷한글자_검색() {
