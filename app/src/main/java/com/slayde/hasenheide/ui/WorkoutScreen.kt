@@ -92,6 +92,7 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.layout.positionInParent
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalView
@@ -130,6 +131,11 @@ import com.slayde.hasenheide.data.기록방식표
 import com.slayde.hasenheide.data.무게칸있음
 import com.slayde.hasenheide.data.시간칸
 import com.slayde.hasenheide.data.시간한칸
+import com.slayde.hasenheide.data.기록방식
+import com.slayde.hasenheide.data.시간최대
+import com.slayde.hasenheide.data.시간최소
+import com.slayde.hasenheide.data.거리칸
+import com.slayde.hasenheide.data.거리한칸
 import com.slayde.hasenheide.data.방식
 import com.slayde.hasenheide.data.분초
 import com.slayde.hasenheide.data.세기더함
@@ -510,6 +516,47 @@ private fun 밀기옛쪽(그림: ImageBitmap, 방향: Int, 진행값: () -> Floa
 
 /** 지금 치고 있는 kg · 회 칸 — 다른 행동을 하기 전에 친 값을 넣는다 (한 번에 하나) */
 private object 운입력 { var 확정: (() -> Unit)? = null }
+
+/**
+ * 3단계 시간 타이머 · 유산소 스톱워치 (10-12 홍겸 님) — 한 번에 하나. 시간(버티기)은 [목표]초에서 줄어들다 0 이면 진동 + 자동 체크 ·
+ * 유산소는 [목표] 0 으로 올라간다(스톱워치). 시계는 지금 시각 차이로 세므로 화면이 꺼졌다 켜져도 맞다 (끝 진동은 화면이 켜져 있을 때만).
+ */
+private object 운타이머 {
+    var 세션 by mutableLongStateOf(0L)          // 운동 세션의 시작 시각 — 다른 운동의 같은 자리에 되살아나지 않게
+    var 줄 by mutableStateOf<Pair<Int, Int>?>(null)   // (종목 번호 j, 세트 칸 k)
+    var 시작 by mutableLongStateOf(0L)
+    var 목표 by mutableIntStateOf(0)
+}
+
+/** 타이머 끝 진동 — 짧게 세 번 (진동 권한은 이미 있다) */
+private fun 진동울림(맥락: android.content.Context) {
+    try {
+        val v = 맥락.getSystemService(android.os.Vibrator::class.java) ?: return
+        v.vibrate(android.os.VibrationEffect.createWaveform(longArrayOf(0, 250, 120, 250, 120, 400), -1))
+    } catch (_: Exception) { }
+}
+
+/** ▶ 시작 · ■ 멈춤 단추 — 칸 높이 정사각, 돌아가는 동안은 강조로 채운다 */
+@Composable
+private fun 타이머단추(돌아감: Boolean, onClick: () -> Unit) {
+    val c = Local색.current
+    val 모양 = RoundedCornerShape(모서리.작게)
+    Box(
+        Modifier.size(높이.아주낮게).clip(모양).background(if (돌아감) c.강조 else Color.Transparent).border(선굵기.보통, c.강조, 모양)
+            .눌림 { onClick() }.semantics { contentDescription = if (돌아감) "타이머 멈춤" else "타이머 시작" },
+        contentAlignment = Alignment.Center,
+    ) { Icon(if (돌아감) 아이콘.멈춤 else 아이콘.재생, null, Modifier.size(16.dp), tint = if (돌아감) c.강조글 else c.강조) }
+}
+
+/** 돌아가는 동안 시간 칸 자리에 보이는 큰 글 (− ＋ 없음) */
+@Composable
+private fun 타이머칸(글: String, 글크기: TextUnit, modifier: Modifier) {
+    val c = Local색.current
+    val 모양 = RoundedCornerShape(모서리.작게)
+    Box(modifier.height(높이.아주낮게).clip(모양).border(선굵기.보통, c.강조, 모양), contentAlignment = Alignment.Center) {
+        Text(글, style = 글꼴.보통(글크기, FontWeight.Bold).copy(fontFeatureSettings = "tnum"), color = c.강조, maxLines = 1, softWrap = false, textAlign = TextAlign.Center)
+    }
+}
 
 /** 운동 화면에만 쓰는 값 (시안 v9 ~ v21) — 11 지침에 아직 이름이 없는 것. 합칠 때 Theme.kt `부품치수` 로 옮긴다 */
 private object 운치수 {
@@ -892,28 +939,71 @@ private fun 운세트줄(
                 Modifier.width(폭[1] + 폭[2] + 폭[3] + 간격.아주좁게 * 2),
             ) { 쉼누름(종류 == 쉼종류.마무리) }
         } else {
-            // 2단계 기록 방식: 횟수만 · 시간은 무게 칸이 없다(자리만 비운다) · 시간은 무게 칸 자리까지 넓은 m:ss 칸 (− ＋ 5초씩)
+            // 2단계 기록 방식: 횟수만 · 시간은 무게 칸이 없다(자리만 비운다) · 시간(버티기)은 무게 칸 자리까지 넓은 m:ss 칸 (− ＋ 5초씩)
+            // 3단계: 유산소는 무게 칸 자리가 거리 km(0.5씩) · 시간 칸은 1분씩. 시간 · 유산소 줄은 ▶ 타이머 (버티기 = 카운트다운 · 유산소 = 스톱워치)
             val 방 = d.방식(e.종id, e.이름)
+            val 버티기 = 방 == 기록방식.시간; val 거리줄 = 방.거리칸()
+            val 타이머줄 = 방.시간칸() && !완료
+            val 돌아감 = 타이머줄 && 운타이머.줄 == (j to k) && 운타이머.세션 == S.시작시각
+            val 경과 = if (돌아감) max(0, ((지금 - 운타이머.시작) / 1000L).toInt()) else 0
+            val 맥락 = LocalContext.current
+            // 체크해 끝난 줄은 타이머를 끈다 (체크를 풀면 다시 살아나지 않게)
+            LaunchedEffect(완료) { if (완료 && 운타이머.줄 == (j to k)) 운타이머.줄 = null }
+            // 카운트다운이 0 이 되면: 진동 + 정한 시간으로 자동 체크
+            if (돌아감 && 버티기 && 경과 >= 운타이머.목표) {
+                LaunchedEffect(운타이머.시작) {
+                    val 목표 = 운타이머.목표
+                    운타이머.줄 = null
+                    진동울림(맥락)
+                    발자취.적기("${e.이름} ${k + 1}세트 타이머 끝 · 자동 체크")
+                    값 { s -> s.값고치기(j, k, 새횟수 = 목표) }
+                    체크()
+                }
+            }
+            val 시작 = {
+                운입력.확정?.invoke()
+                운타이머.세션 = S.시작시각; 운타이머.줄 = j to k; 운타이머.시작 = System.currentTimeMillis()
+                운타이머.목표 = if (버티기) v.r else 0
+                발자취.적기("${e.이름} ${k + 1}세트 타이머 시작")
+            }
+            val 멈춤 = {
+                val 초 = max(1, ((System.currentTimeMillis() - 운타이머.시작) / 1000L).toInt())
+                운타이머.줄 = null
+                발자취.적기("${e.이름} ${k + 1}세트 타이머 멈춤 · ${초}초")
+                값 { s -> s.값고치기(j, k, 새횟수 = 초) }
+                if (버티기) 체크()   // 버티기는 버틴 만큼 바로 기록 · 유산소는 거리를 적고 직접 체크
+            }
+            val 시간칸그림: @Composable (Modifier) -> Unit = { m ->
+                if (돌아감) 타이머칸(분초(if (버티기) max(0, 운타이머.목표 - 경과) else 경과), 글크기, m)
+                else 운휴칸(v.r, 완료, 글크기, m, 최소 = 방.시간최소(), 최대 = 방.시간최대(), 이름 = if (거리줄) "시간 1분" else "시간 5초") { 방향 ->
+                    값 { s -> s.값고치기(j, k, 새횟수 = 시간한칸(s.세트값(s.종목들[j], k).r, 방향, 방)) }
+                }
+            }
             if (방.무게칸있음()) {
                 // 10-12 기록 방식: 맨몸 · 어시스트 줄은 칸 아래에 작게 '= 69kg' (기록에 남는 실제 무게)
                 무게칸아래글(d.실제무게글(e.종id, e.이름, e.플랜id, v.w), Modifier.width(폭[1])) {
-                    운값칸(무게글(v.w), "무게", 소수 = true, 끝남 = 완료, 글크기, Modifier.fillMaxWidth(),
-                        빼기 = { 값 { s -> s.값고치기(j, k, 새무게 = s.세트값(s.종목들[j], k).w - 무게폭) } },
-                        더하기 = { 값 { s -> s.값고치기(j, k, 새무게 = s.세트값(s.종목들[j], k).w + 무게폭) } },
+                    운값칸(무게글(v.w), if (거리줄) "거리" else "무게", 소수 = true, 끝남 = 완료, 글크기, Modifier.fillMaxWidth(),
+                        빼기 = { 값 { s -> s.값고치기(j, k, 새무게 = s.세트값(s.종목들[j], k).w.let { w -> if (거리줄) 거리한칸(w, -1) else w - 무게폭 }) } },
+                        더하기 = { 값 { s -> s.값고치기(j, k, 새무게 = s.세트값(s.종목들[j], k).w.let { w -> if (거리줄) 거리한칸(w, 1) else w + 무게폭 }) } },
                         넣기 = { t -> t.replace(',', '.').toDoubleOrNull()?.let { w -> 값 { s -> s.값고치기(j, k, 새무게 = w) } } })
                 }
             } else if (!방.시간칸()) Spacer(Modifier.width(폭[1]))
-            if (방.시간칸()) 운휴칸(v.r, 완료, 글크기, Modifier.width(폭[1] + 폭[2] + 간격.아주좁게),
-                최소 = 기록방식표.시간최소초, 최대 = 기록방식표.시간최대초, 이름 = "시간 5초") { 방향 ->
-                값 { s -> s.값고치기(j, k, 새횟수 = 시간한칸(s.세트값(s.종목들[j], k).r, 방향)) }
-            }
+            if (버티기) {
+                // 버티기: [▶/■] 단추 + 넓은 시간 칸 (무게 칸 자리까지)
+                Row(Modifier.width(폭[1] + 폭[2] + 간격.아주좁게), horizontalArrangement = Arrangement.spacedBy(간격.아주좁게), verticalAlignment = Alignment.CenterVertically) {
+                    if (타이머줄) 타이머단추(돌아감, if (돌아감) 멈춤 else 시작) else Spacer(Modifier.width(높이.아주낮게))
+                    시간칸그림(Modifier.weight(1f))
+                }
+            } else if (거리줄) 시간칸그림(Modifier.width(폭[2]))
             else 운값칸("${v.r}", "횟수", 소수 = false, 끝남 = 완료, 글크기, Modifier.width(폭[2]),
                 빼기 = { 값 { s -> s.값고치기(j, k, 새횟수 = s.세트값(s.종목들[j], k).r - 1) } },
                 더하기 = { 값 { s -> s.값고치기(j, k, 새횟수 = s.세트값(s.종목들[j], k).r + 1) } },
                 넣기 = { t -> t.toIntOrNull()?.let { r -> 값 { s -> s.값고치기(j, k, 새횟수 = r) } } })
             Box(Modifier.width(폭[3]), contentAlignment = Alignment.Center) {
+                // 유산소: 휴식 칸 자리에 ▶ 스톱워치 단추 (끝난 줄은 휴식 칸)
+                if (거리줄 && 타이머줄) 타이머단추(돌아감, if (돌아감) 멈춤 else 시작)
                 // 슈퍼세트는 마지막 종목 줄에만 휴식 (09-21)
-                if (S.휴식보임(j)) 운휴칸(e.세트휴식(k), 완료, 글크기, Modifier.fillMaxWidth()) { 방향 ->
+                else if (S.휴식보임(j)) 운휴칸(e.세트휴식(k), 완료, 글크기, Modifier.fillMaxWidth()) { 방향 ->
                     값 { s -> s.종목들.getOrNull(j)?.let { x -> s.휴식고치기(j, k, 휴식한칸(x.세트휴식(k), 방향)) } ?: s }
                 }
             }

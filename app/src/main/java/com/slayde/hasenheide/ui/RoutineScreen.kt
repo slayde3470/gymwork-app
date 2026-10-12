@@ -104,6 +104,10 @@ import com.slayde.hasenheide.data.기록방식표
 import com.slayde.hasenheide.data.무게칸있음
 import com.slayde.hasenheide.data.시간칸
 import com.slayde.hasenheide.data.시간한칸
+import com.slayde.hasenheide.data.시간최소
+import com.slayde.hasenheide.data.거리한칸
+import com.slayde.hasenheide.data.거리칸
+import com.slayde.hasenheide.data.기록방식
 import com.slayde.hasenheide.data.방식
 import com.slayde.hasenheide.data.무게반올림
 import com.slayde.hasenheide.data.묶음정리
@@ -934,7 +938,7 @@ private fun 슈퍼상자(
                     { 글(횟수머리글(방들), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true) },
                     { 글("휴식", 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true) },
                     { },
-                    무게있음 = 무게있음, 횟수넓힘 = !무게있음 || 방들.all { it.시간칸() },
+                    무게있음 = 무게있음, 횟수넓힘 = !무게있음 || 방들.all { it == 기록방식.시간 },
                 )
                 for (k in 0 until 최대) {
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
@@ -946,23 +950,23 @@ private fun 슈퍼상자(
                                 if (k >= e.세트) { Spacer(Modifier.height(높이.아주낮게)); return@forEachIndexed }
                                 val v = e.목표(k); val t = e.휴식(k)
                                 val 마지막종목 = q == es.lastIndex
-                                val 방 = 방들[q]; val 시간줄 = 방.시간칸()
+                                val 방 = 방들[q]; val 시간줄 = 방.시간칸(); val 버티기 = 방 == 기록방식.시간; val 거리줄 = 방.거리칸()   // 버티기(시간)만 무게 칸 자리까지 넓다 · 유산소는 무게 칸 자리가 거리
                                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(간격.아주좁게), verticalAlignment = Alignment.CenterVertically) {
                                     // 무게 칸: 무게가 있는 종목만 · 횟수만 줄은 빈 칸(자리는 지킨다) · 시간 줄은 자리째 시간 칸에 내준다
                                     if (무게있음 && 방.무게칸있음()) Box(Modifier.weight(루틴값.무게몫), contentAlignment = Alignment.Center) {
                                         무게칸아래글(상태.d.실제무게글(e.종id, e.이름, e.플랜id, v.w), Modifier.fillMaxWidth()) {
-                                            루값칸(무게글(v.w), "${e.이름} 무게",
-                                                빼기 = { on고침(q) { it.세트고침(k, w = 무게반올림(max(0.0, it.목표(k).w - 폭))) } },
-                                                더하기 = { on고침(q) { it.세트고침(k, w = 무게반올림(it.목표(k).w + 폭)) } },
+                                            루값칸(무게글(v.w), if (거리줄) "${e.이름} 거리" else "${e.이름} 무게",
+                                                빼기 = { on고침(q) { it.세트고침(k, w = if (거리줄) 거리한칸(it.목표(k).w, -1) else 무게반올림(max(0.0, it.목표(k).w - 폭))) } },
+                                                더하기 = { on고침(q) { it.세트고침(k, w = if (거리줄) 거리한칸(it.목표(k).w, 1) else 무게반올림(it.목표(k).w + 폭)) } },
                                                 입력 = { s -> 루무게읽기(s)?.let { x -> on고침(q) { it.세트고침(k, w = x) } } },
                                                 소수 = true, 뺄수있음 = v.w > 0.0)
                                         }
-                                    } else if (무게있음 && !시간줄) Spacer(Modifier.weight(루틴값.무게몫))
-                                    Box(Modifier.weight(if (!무게있음 || 시간줄) 루틴값.무게몫 + 루틴값.횟수몫 else 루틴값.횟수몫), contentAlignment = Alignment.Center) {
+                                    } else if (무게있음 && !버티기) Spacer(Modifier.weight(루틴값.무게몫))
+                                    Box(Modifier.weight(if (!무게있음 || 버티기) 루틴값.무게몫 + 루틴값.횟수몫 else 루틴값.횟수몫), contentAlignment = Alignment.Center) {
                                         if (시간줄) 루값칸(분초(v.r), "${e.이름} 시간",
-                                            빼기 = { on고침(q) { it.세트고침(k, r = 시간한칸(it.목표(k).r, -1)) } },
-                                            더하기 = { on고침(q) { it.세트고침(k, r = 시간한칸(it.목표(k).r, 1)) } },
-                                            입력 = null, 뺄수있음 = v.r > 기록방식표.시간최소초)
+                                            빼기 = { on고침(q) { it.세트고침(k, r = 시간한칸(it.목표(k).r, -1, 방)) } },
+                                            더하기 = { on고침(q) { it.세트고침(k, r = 시간한칸(it.목표(k).r, 1, 방)) } },
+                                            입력 = null, 뺄수있음 = v.r > 방.시간최소())
                                         else 루값칸("${v.r}", "${e.이름} 횟수",
                                             빼기 = { on고침(q) { it.세트고침(k, r = max(1, it.목표(k).r - 1)) } },
                                             더하기 = { on고침(q) { it.세트고침(k, r = it.목표(k).r + 1) } },
@@ -1068,7 +1072,7 @@ private fun 종목상자(
                 verticalArrangement = Arrangement.spacedBy(간격.아주좁게),
             ) {
                 val 방 = 상태.d.방식(e.종id, e.이름)   // 2단계: 횟수만 · 시간은 무게 칸이 없고, 시간은 횟수 칸이 m:ss (5초씩)
-                val 무게있음 = 방.무게칸있음(); val 시간 = 방.시간칸()
+                val 무게있음 = 방.무게칸있음(); val 시간 = 방.시간칸(); val 거리 = 방.거리칸()
                 세트칸줄(
                     { Text("세트", Modifier.wrapContentSize(unbounded = true), style = 글꼴.보통(크기.작게), color = c.옅음, maxLines = 1, softWrap = false, overflow = TextOverflow.Visible) },
                     // 10-12 기록 방식: 맨몸이면 '추가 kg' · 어시스트면 '보조 kg'
@@ -1086,18 +1090,18 @@ private fun 종목상자(
                         { Text("${k + 1}", style = 글꼴.보통(크기.조금작게, FontWeight.Bold).copy(fontFeatureSettings = "tnum"), color = c.글, textAlign = TextAlign.Center, maxLines = 1) },
                         {
                             무게칸아래글(상태.d.실제무게글(e.종id, e.이름, e.플랜id, v.w), Modifier.fillMaxWidth()) {
-                                루값칸(무게글(v.w), "무게",
-                                    빼기 = { on고침 { it.세트고침(k, w = 무게반올림(max(0.0, it.목표(k).w - 폭))) } },
-                                    더하기 = { on고침 { it.세트고침(k, w = 무게반올림(it.목표(k).w + 폭)) } },
+                                루값칸(무게글(v.w), if (거리) "거리" else "무게",
+                                    빼기 = { on고침 { it.세트고침(k, w = if (거리) 거리한칸(it.목표(k).w, -1) else 무게반올림(max(0.0, it.목표(k).w - 폭))) } },
+                                    더하기 = { on고침 { it.세트고침(k, w = if (거리) 거리한칸(it.목표(k).w, 1) else 무게반올림(it.목표(k).w + 폭)) } },
                                     입력 = { s -> 루무게읽기(s)?.let { x -> on고침 { it.세트고침(k, w = x) } } },
                                     소수 = true, 뺄수있음 = v.w > 0.0)
                             }
                         },
                         {
                             if (시간) 루값칸(분초(v.r), "시간",
-                                빼기 = { on고침 { it.세트고침(k, r = 시간한칸(it.목표(k).r, -1)) } },
-                                더하기 = { on고침 { it.세트고침(k, r = 시간한칸(it.목표(k).r, 1)) } },
-                                입력 = null, 뺄수있음 = v.r > 기록방식표.시간최소초)
+                                빼기 = { on고침 { it.세트고침(k, r = 시간한칸(it.목표(k).r, -1, 방)) } },
+                                더하기 = { on고침 { it.세트고침(k, r = 시간한칸(it.목표(k).r, 1, 방)) } },
+                                입력 = null, 뺄수있음 = v.r > 방.시간최소())
                             else 루값칸("${v.r}", "횟수",
                                 빼기 = { on고침 { it.세트고침(k, r = max(1, it.목표(k).r - 1)) } },
                                 더하기 = { on고침 { it.세트고침(k, r = it.목표(k).r + 1) } },

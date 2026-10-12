@@ -7,6 +7,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.slayde.hasenheide.data.기록방식
 import com.slayde.hasenheide.data.무게글
+import com.slayde.hasenheide.data.거리칸
 import com.slayde.hasenheide.data.무게칸있음
 import com.slayde.hasenheide.data.방식
 import com.slayde.hasenheide.data.시간칸
@@ -32,6 +33,7 @@ internal fun 무게머리글(방식들: Collection<기록방식>, 기본: String
         있는.isEmpty() -> ""
         있는.all { it == 기록방식.맨몸 } -> "추가 kg"
         있는.all { it == 기록방식.어시스트 } -> "보조 kg"
+        있는.all { it.거리칸() } -> "거리 km"   // 3단계 유산소: 무게 칸 자리가 거리
         else -> 기본
     }
 }

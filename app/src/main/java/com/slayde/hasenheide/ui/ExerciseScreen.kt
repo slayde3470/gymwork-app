@@ -114,6 +114,7 @@ import com.slayde.hasenheide.data.기록방식표
 import com.slayde.hasenheide.data.무게칸있음
 import com.slayde.hasenheide.data.시간칸
 import com.slayde.hasenheide.data.시간한칸
+import com.slayde.hasenheide.data.거리한칸
 import com.slayde.hasenheide.data.방식
 import com.slayde.hasenheide.data.앱데이터
 import com.slayde.hasenheide.data.이름추천
@@ -839,8 +840,8 @@ private fun 기본세트표(
 ) {
     val c = Local색.current
     // 2단계 기록 방식: 횟수만 · 시간은 무게 칸이 없다 (칸을 감춘다). 시간은 횟수 칸이 '시간(m:ss)'이고 무게 칸 자리까지 넓게
-    val 무게있음 = 방식.무게칸있음(); val 시간 = 방식.시간칸()
-    val 횟수폭 = if (시간) 세트표치수.무게 else 세트표치수.횟수
+    val 무게있음 = 방식.무게칸있음(); val 시간 = 방식.시간칸(); val 넓힘 = 방식 == 기록방식.시간; val 거리 = 방식.거리칸()
+    val 횟수폭 = if (넓힘) 세트표치수.무게 else 세트표치수.횟수
     Column(verticalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
         세트표줄(
             { 글("세트", 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true) },
@@ -863,15 +864,15 @@ private fun 기본세트표(
                     },
                     {
                         무게칸아래글(작은글(x.w), Modifier.fillMaxWidth()) {
-                            세트값칸(무게글(x.w), Modifier.fillMaxWidth(), "${k + 1}세트 무게", x.w > 0,
-                                { 바꿈 { l -> 세트값바꿈(l, k, 'w', -1, 무게폭) } }, { 바꿈 { l -> 세트값바꿈(l, k, 'w', 1, 무게폭) } },
+                            세트값칸(무게글(x.w), Modifier.fillMaxWidth(), if (거리) "${k + 1}세트 거리" else "${k + 1}세트 무게", x.w > 0,
+                                { 바꿈 { l -> 세트값바꿈(l, k, if (거리) 'd' else 'w', -1, 무게폭) } }, { 바꿈 { l -> 세트값바꿈(l, k, if (거리) 'd' else 'w', 1, 무게폭) } },
                                 { g -> 바꿈 { l -> 세트글넣음(l, k, 'w', g) } }, 단추폭 = 세트표치수.단추, 그림크기 = 세트표치수.그림)
                         }
                     },
                     {
-                        if (시간) 세트값칸(분초(x.r), Modifier.fillMaxWidth(), "${k + 1}세트 시간", x.r > 기록방식표.시간최소초,
-                            { 바꿈 { l -> 세트값바꿈(l, k, 't', -1, 무게폭) } }, { 바꿈 { l -> 세트값바꿈(l, k, 't', 1, 무게폭) } },
-                            null, 단추폭 = 세트표치수.단추, 그림크기 = 세트표치수.그림, 더할수있음 = x.r < 기록방식표.시간최대초)
+                        if (시간) 세트값칸(분초(x.r), Modifier.fillMaxWidth(), "${k + 1}세트 시간", x.r > 방식.시간최소(),
+                            { 바꿈 { l -> 세트값바꿈(l, k, if (거리) 'u' else 't', -1, 무게폭) } }, { 바꿈 { l -> 세트값바꿈(l, k, if (거리) 'u' else 't', 1, 무게폭) } },
+                            null, 단추폭 = 세트표치수.단추, 그림크기 = 세트표치수.그림, 더할수있음 = x.r < 방식.시간최대())
                         else 세트값칸("${x.r}", Modifier.fillMaxWidth(), "${k + 1}세트 횟수", x.r > 1,
                             { 바꿈 { l -> 세트값바꿈(l, k, 'r', -1, 무게폭) } }, { 바꿈 { l -> 세트값바꿈(l, k, 'r', 1, 무게폭) } },
                             { g -> 바꿈 { l -> 세트글넣음(l, k, 'r', g) } }, 정수 = true, 단추폭 = 세트표치수.단추, 그림크기 = 세트표치수.그림)
@@ -1026,12 +1027,12 @@ internal fun 세트줄표(
     머리: String = "무게 kg", 작은글: (Double) -> String? = { null }, 방식: 기록방식 = 기록방식.무게,
 ) {
     val c = Local색.current
-    val 무게있음 = 방식.무게칸있음(); val 시간 = 방식.시간칸()   // 2단계 기록 방식 (기본세트표와 같다)
+    val 무게있음 = 방식.무게칸있음(); val 시간 = 방식.시간칸(); val 넓힘 = 방식 == 기록방식.시간; val 거리 = 방식.거리칸()   // 2단계 기록 방식 (기본세트표와 같다)
     Column(verticalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
         Row(horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
             글("세트", Modifier.width(종목치수.번호칸), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)
             if (무게있음) 글(머리, Modifier.weight(종목치수.열무게), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)
-            글(if (시간) "시간" else "횟수", Modifier.weight(if (시간) 종목치수.열무게 else 종목치수.열횟수), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)
+            글(if (시간) "시간" else "횟수", Modifier.weight(if (넓힘) 종목치수.열무게 else 종목치수.열횟수), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)
             글("휴식", Modifier.weight(종목치수.열휴식), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)
             Box(Modifier.width(종목치수.지움칸))
         }
@@ -1042,13 +1043,13 @@ internal fun 세트줄표(
                 Row(Modifier.새줄효과(k >= 앞), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
                     글("${k + 1}", Modifier.width(종목치수.번호칸), 크기값 = 크기.조금작게, 굵기 = FontWeight.Bold, 가운데 = true)
                     if (무게있음) 무게칸아래글(작은글(x.w), Modifier.weight(종목치수.열무게)) {
-                        세트값칸(무게글(x.w), Modifier.fillMaxWidth(), "${k + 1}세트 무게", x.w > 0,
-                            { 바꿈 { l -> 세트값바꿈(l, k, 'w', -1, 무게폭) } }, { 바꿈 { l -> 세트값바꿈(l, k, 'w', 1, 무게폭) } },
+                        세트값칸(무게글(x.w), Modifier.fillMaxWidth(), if (거리) "${k + 1}세트 거리" else "${k + 1}세트 무게", x.w > 0,
+                            { 바꿈 { l -> 세트값바꿈(l, k, if (거리) 'd' else 'w', -1, 무게폭) } }, { 바꿈 { l -> 세트값바꿈(l, k, if (거리) 'd' else 'w', 1, 무게폭) } },
                             { g -> 바꿈 { l -> 세트글넣음(l, k, 'w', g) } })
                     }
-                    if (시간) 세트값칸(분초(x.r), Modifier.weight(종목치수.열무게), "${k + 1}세트 시간", x.r > 기록방식표.시간최소초,
-                        { 바꿈 { l -> 세트값바꿈(l, k, 't', -1, 무게폭) } }, { 바꿈 { l -> 세트값바꿈(l, k, 't', 1, 무게폭) } },
-                        null, 더할수있음 = x.r < 기록방식표.시간최대초)
+                    if (시간) 세트값칸(분초(x.r), Modifier.weight(if (넓힘) 종목치수.열무게 else 종목치수.열횟수), "${k + 1}세트 시간", x.r > 방식.시간최소(),
+                        { 바꿈 { l -> 세트값바꿈(l, k, if (거리) 'u' else 't', -1, 무게폭) } }, { 바꿈 { l -> 세트값바꿈(l, k, if (거리) 'u' else 't', 1, 무게폭) } },
+                        null, 더할수있음 = x.r < 방식.시간최대())
                     else 세트값칸("${x.r}", Modifier.weight(종목치수.열횟수), "${k + 1}세트 횟수", x.r > 1,
                         { 바꿈 { l -> 세트값바꿈(l, k, 'r', -1, 무게폭) } }, { 바꿈 { l -> 세트값바꿈(l, k, 'r', 1, 무게폭) } },
                         { g -> 바꿈 { l -> 세트글넣음(l, k, 'r', g) } }, 정수 = true)
@@ -1356,6 +1357,8 @@ internal fun 세트값바꿈(l: List<종목세트>, k: Int, 칸: Char, 방향: I
         'w' -> x.copy(w = max(0.0, ((x.w + 방향 * 무게폭) * 10).roundToInt() / 10.0))
         'r' -> x.copy(r = max(1, x.r + 방향))
         't' -> x.copy(r = 시간한칸(x.r, 방향))   // 2단계 시간: 5초씩
+        'u' -> x.copy(r = 시간한칸(x.r, 방향, 기록방식.유산소))   // 3단계 유산소 시간: 1분씩
+        'd' -> x.copy(w = 거리한칸(x.w, 방향))   // 3단계 유산소 거리: 0.5km씩 (w 칸을 거리로 쓴다)
         else -> x
     }
     return l.mapIndexed { i, y -> if (i == k) 새 else y }

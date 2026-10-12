@@ -33,6 +33,16 @@ class RecordModeUiTest {
         assertEquals("횟수", 횟수머리글(emptyList()))
     }
 
+    @Test fun 머리글_유산소() {
+        assertEquals("거리 km", 무게머리글(listOf(기록방식.유산소), "무게 kg"))
+        assertEquals("거리 km", 무게머리글(listOf(기록방식.유산소, 기록방식.유산소, 기록방식.시간), "kg"))
+        assertEquals("무게 kg", 무게머리글(listOf(기록방식.유산소, 기록방식.무게), "무게 kg"))   // 섞이면 기본
+        assertEquals("시간", 횟수머리글(listOf(기록방식.유산소)))
+        assertEquals("시간", 횟수머리글(listOf(기록방식.유산소, 기록방식.시간)))
+        assertEquals("횟수", 횟수머리글(listOf(기록방식.유산소, 기록방식.무게)))
+        assertNull(d.실제무게글(null, "러닝", null, 5.0))   // 칸 아래 '= kg' 글은 없다
+    }
+
     @Test fun 머리방식_플랜줄은_뺀다() {
         assertNull(d.머리방식(null, "턱걸이", "플랜1"))
         assertEquals(기록방식.맨몸, d.머리방식(null, "푸시업", null))
