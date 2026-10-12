@@ -114,6 +114,9 @@ import com.slayde.hasenheide.data.기록방식표
 import com.slayde.hasenheide.data.무게칸있음
 import com.slayde.hasenheide.data.시간칸
 import com.slayde.hasenheide.data.시간한칸
+import com.slayde.hasenheide.data.거리칸
+import com.slayde.hasenheide.data.시간최대
+import com.slayde.hasenheide.data.시간최소
 import com.slayde.hasenheide.data.거리한칸
 import com.slayde.hasenheide.data.방식
 import com.slayde.hasenheide.data.앱데이터
