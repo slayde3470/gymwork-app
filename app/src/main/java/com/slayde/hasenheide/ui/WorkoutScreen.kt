@@ -126,6 +126,11 @@ import com.slayde.hasenheide.data.다음회
 import com.slayde.hasenheide.data.저장전
 import com.slayde.hasenheide.data.덜한가
 import com.slayde.hasenheide.data.무게글
+import com.slayde.hasenheide.data.기록방식표
+import com.slayde.hasenheide.data.무게칸있음
+import com.slayde.hasenheide.data.시간칸
+import com.slayde.hasenheide.data.시간한칸
+import com.slayde.hasenheide.data.방식
 import com.slayde.hasenheide.data.분초
 import com.slayde.hasenheide.data.세기더함
 import com.slayde.hasenheide.data.세기이름
@@ -757,7 +762,9 @@ private fun 세트목록(
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
                 // 10-12 기록 방식: 표의 줄이 모두 맨몸이면 '추가 kg' · 모두 어시스트면 '보조 kg' (섞이면 'kg')
                 val 머리무게 = 무게머리글(줄들.map { it.first }.distinct().mapNotNull { jj -> S.종목들.getOrNull(jj)?.let { ej -> 상태.d.머리방식(ej.종id, ej.이름, ej.플랜id) } }, "kg")
-                listOf("세트", 머리무게, "회", "휴식").forEachIndexed { x, t ->
+                // 2단계: 줄이 모두 시간(버티기)이면 '시간' (섞이면 '회')
+                val 머리횟수 = 횟수머리글(줄들.map { it.first }.distinct().mapNotNull { jj -> S.종목들.getOrNull(jj)?.let { ej -> 상태.d.방식(ej.종id, ej.이름) } }, "회")
+                listOf("세트", 머리무게, 머리횟수, "휴식").forEachIndexed { x, t ->
                     Text(t, Modifier.width(폭[x]), style = 글꼴.보통(크기.작게), color = c.옅음, textAlign = TextAlign.Center, maxLines = 1)
                 }
             }
@@ -885,14 +892,22 @@ private fun 운세트줄(
                 Modifier.width(폭[1] + 폭[2] + 폭[3] + 간격.아주좁게 * 2),
             ) { 쉼누름(종류 == 쉼종류.마무리) }
         } else {
-            // 10-12 기록 방식: 맨몸 · 어시스트 줄은 칸 아래에 작게 '= 69kg' (기록에 남는 실제 무게)
-            무게칸아래글(d.실제무게글(e.종id, e.이름, e.플랜id, v.w), Modifier.width(폭[1])) {
-                운값칸(무게글(v.w), "무게", 소수 = true, 끝남 = 완료, 글크기, Modifier.fillMaxWidth(),
-                    빼기 = { 값 { s -> s.값고치기(j, k, 새무게 = s.세트값(s.종목들[j], k).w - 무게폭) } },
-                    더하기 = { 값 { s -> s.값고치기(j, k, 새무게 = s.세트값(s.종목들[j], k).w + 무게폭) } },
-                    넣기 = { t -> t.replace(',', '.').toDoubleOrNull()?.let { w -> 값 { s -> s.값고치기(j, k, 새무게 = w) } } })
+            // 2단계 기록 방식: 횟수만 · 시간은 무게 칸이 없다(자리만 비운다) · 시간은 무게 칸 자리까지 넓은 m:ss 칸 (− ＋ 5초씩)
+            val 방 = d.방식(e.종id, e.이름)
+            if (방.무게칸있음()) {
+                // 10-12 기록 방식: 맨몸 · 어시스트 줄은 칸 아래에 작게 '= 69kg' (기록에 남는 실제 무게)
+                무게칸아래글(d.실제무게글(e.종id, e.이름, e.플랜id, v.w), Modifier.width(폭[1])) {
+                    운값칸(무게글(v.w), "무게", 소수 = true, 끝남 = 완료, 글크기, Modifier.fillMaxWidth(),
+                        빼기 = { 값 { s -> s.값고치기(j, k, 새무게 = s.세트값(s.종목들[j], k).w - 무게폭) } },
+                        더하기 = { 값 { s -> s.값고치기(j, k, 새무게 = s.세트값(s.종목들[j], k).w + 무게폭) } },
+                        넣기 = { t -> t.replace(',', '.').toDoubleOrNull()?.let { w -> 값 { s -> s.값고치기(j, k, 새무게 = w) } } })
+                }
+            } else if (!방.시간칸()) Spacer(Modifier.width(폭[1]))
+            if (방.시간칸()) 운휴칸(v.r, 완료, 글크기, Modifier.width(폭[1] + 폭[2] + 간격.아주좁게),
+                최소 = 기록방식표.시간최소초, 최대 = 기록방식표.시간최대초, 이름 = "시간 5초") { 방향 ->
+                값 { s -> s.값고치기(j, k, 새횟수 = 시간한칸(s.세트값(s.종목들[j], k).r, 방향)) }
             }
-            운값칸("${v.r}", "횟수", 소수 = false, 끝남 = 완료, 글크기, Modifier.width(폭[2]),
+            else 운값칸("${v.r}", "횟수", 소수 = false, 끝남 = 완료, 글크기, Modifier.width(폭[2]),
                 빼기 = { 값 { s -> s.값고치기(j, k, 새횟수 = s.세트값(s.종목들[j], k).r - 1) } },
                 더하기 = { 값 { s -> s.값고치기(j, k, 새횟수 = s.세트값(s.종목들[j], k).r + 1) } },
                 넣기 = { t -> t.toIntOrNull()?.let { r -> 값 { s -> s.값고치기(j, k, 새횟수 = r) } } })
@@ -994,19 +1009,24 @@ private fun 운값칸(
 
 /** 휴식 칸 — kg · 회 와 같은 − 값 ＋ (15초씩 · 0:15 ~ 5:00 · ✎ ypk0 · v9). 값 15 · 끝난 줄은 테 · − ＋ 감춤 */
 @Composable
-private fun 운휴칸(초: Int, 끝남: Boolean, 글크기: TextUnit, modifier: Modifier, 바꿈: (방향: Int) -> Unit) {
+private fun 운휴칸(
+    초: Int, 끝남: Boolean, 글크기: TextUnit, modifier: Modifier,
+    /** 2단계: 시간 칸도 이 부품을 쓴다 — 범위와 설명만 다르다 */
+    최소: Int = 휴식칸값.최소, 최대: Int = 휴식칸값.최대, 이름: String = "휴식 15초",
+    바꿈: (방향: Int) -> Unit,
+) {
     val c = Local색.current
     val 모양 = RoundedCornerShape(모서리.작게)
     Row(
         modifier.height(높이.아주낮게).clip(모양).border(선굵기.보통, if (끝남) Color.Transparent else c.속선, 모양),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        값단추(아이콘.빼기, "휴식 15초 줄이기", !끝남, 초 > 휴식칸값.최소) { 바꿈(-1) }
+        값단추(아이콘.빼기, "$이름 줄이기", !끝남, 초 > 최소) { 바꿈(-1) }
         Text(
             분초(초), Modifier.weight(1f), style = 글꼴.보통(글크기).copy(fontFeatureSettings = "tnum"),
             color = if (끝남) c.흐림 else c.글, maxLines = 1, textAlign = TextAlign.Center, softWrap = false,
         )
-        값단추(아이콘.더하기, "휴식 15초 늘리기", !끝남, 초 < 휴식칸값.최대) { 바꿈(1) }
+        값단추(아이콘.더하기, "$이름 늘리기", !끝남, 초 < 최대) { 바꿈(1) }
     }
 }
 

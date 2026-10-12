@@ -7,7 +7,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.slayde.hasenheide.data.기록방식
 import com.slayde.hasenheide.data.무게글
+import com.slayde.hasenheide.data.무게칸있음
 import com.slayde.hasenheide.data.방식
+import com.slayde.hasenheide.data.시간칸
 import com.slayde.hasenheide.data.실제무게
 import com.slayde.hasenheide.data.앱데이터
 import com.slayde.hasenheide.ui.theme.Local색
@@ -22,12 +24,21 @@ import com.slayde.hasenheide.ui.theme.크기
  * 무게 칸 머리 글. 표의 줄이 모두 맨몸이면 '추가 kg' · 모두 어시스트면 '보조 kg', 그 밖(섞임 · 일반 · 플랜 줄뿐)은 [기본].
  * [방식들] 에는 플랜 줄을 넣지 않는다 (플랜 줄은 바꾸지 않는다)
  */
-internal fun 무게머리글(방식들: Collection<기록방식>, 기본: String): String = when {
-    방식들.isEmpty() -> 기본
-    방식들.all { it == 기록방식.맨몸 } -> "추가 kg"
-    방식들.all { it == 기록방식.어시스트 } -> "보조 kg"
-    else -> 기본
+internal fun 무게머리글(방식들: Collection<기록방식>, 기본: String): String {
+    if (방식들.isEmpty()) return 기본
+    // 횟수만 · 시간 줄은 무게 칸이 없다 — 머리 글은 무게 칸이 있는 줄만 보고 정한다. 모두 없으면 머리도 비운다 (2단계)
+    val 있는 = 방식들.filter { it.무게칸있음() }
+    return when {
+        있는.isEmpty() -> ""
+        있는.all { it == 기록방식.맨몸 } -> "추가 kg"
+        있는.all { it == 기록방식.어시스트 } -> "보조 kg"
+        else -> 기본
+    }
 }
+
+/** 횟수 칸 머리 글 — 줄이 모두 시간(버티기)이면 '시간', 그 밖은 [기본] ('횟수' · '회') */
+internal fun 횟수머리글(방식들: Collection<기록방식>, 기본: String = "횟수"): String =
+    if (방식들.isNotEmpty() && 방식들.all { it.시간칸() }) "시간" else 기본
 
 /** 칸 아래 작은 글 '= 69kg' — 맨몸 · 어시스트 줄이고 체중을 알 때만. 아니면 null (플랜 줄 · 일반 종목 · 체중 0) */
 internal fun 앱데이터.실제무게글(종id: String?, 이름: String, 플랜id: String?, 입력: Double): String? {

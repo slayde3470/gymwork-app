@@ -21,6 +21,18 @@ class RecordModeUiTest {
         assertEquals("무게 kg", 무게머리글(listOf(기록방식.무게), "무게 kg"))
     }
 
+    @Test fun 머리글_무게칸없는_방식() {
+        assertEquals("", 무게머리글(listOf(기록방식.시간), "무게 kg"))
+        assertEquals("", 무게머리글(listOf(기록방식.시간, 기록방식.횟수만), "kg"))
+        assertEquals("추가 kg", 무게머리글(listOf(기록방식.맨몸, 기록방식.시간), "kg"))
+        assertEquals("무게 kg", 무게머리글(listOf(기록방식.무게, 기록방식.횟수만), "무게 kg"))
+        assertEquals("시간", 횟수머리글(listOf(기록방식.시간)))
+        assertEquals("시간", 횟수머리글(listOf(기록방식.시간, 기록방식.시간), "회"))
+        assertEquals("횟수", 횟수머리글(listOf(기록방식.시간, 기록방식.횟수만)))
+        assertEquals("회", 횟수머리글(listOf(기록방식.무게), "회"))
+        assertEquals("횟수", 횟수머리글(emptyList()))
+    }
+
     @Test fun 머리방식_플랜줄은_뺀다() {
         assertNull(d.머리방식(null, "턱걸이", "플랜1"))
         assertEquals(기록방식.맨몸, d.머리방식(null, "푸시업", null))

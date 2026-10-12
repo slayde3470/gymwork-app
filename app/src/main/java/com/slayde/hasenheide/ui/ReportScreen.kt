@@ -108,6 +108,8 @@ import com.slayde.hasenheide.data.두대비
 import com.slayde.hasenheide.data.목표단위
 import com.slayde.hasenheide.data.목표세트
 import com.slayde.hasenheide.data.무게글
+import com.slayde.hasenheide.data.방식
+import com.slayde.hasenheide.data.시간칸
 import com.slayde.hasenheide.data.묶음이름
 import com.slayde.hasenheide.data.볼륨
 import com.slayde.hasenheide.data.분초
@@ -297,7 +299,12 @@ internal fun 앱데이터.보고계산(rec: 날기록, 저장키: String?, 날: 
         val 전 = 지난?.value?.종목들?.filter { 같은줄(it, e.종id, e.이름, e.플랜id) }?.flatMap { 기록세트(it.세트들) } ?: emptyList()
         val 줄1: 보고줄
         val 줄2: 보고줄
-        if (맨) {
+        if (방식(e.종id, e.이름).시간칸()) {
+            // 2단계 기록 방식: 시간(버티기)은 r 이 초 — 'N회' 가 아니라 m:ss. 볼륨 · 1RM 은 없다
+            val 최 = 세.maxOf { it.r }; val 합 = 세.sumOf { it.r }
+            줄1 = 보고줄("최고", 분초(최), if (전.isEmpty()) null else (최 - 전.maxOf { it.r }).toDouble(), "초")
+            줄2 = 보고줄("합계", 분초(합), if (전.isEmpty()) null else (합 - 전.take(m).sumOf { it.r }).toDouble(), "초")
+        } else if (맨) {
             val 최회 = 세.maxOf { it.r }; val 합회 = 세.sumOf { it.r }
             줄1 = 보고줄("최고", "${최회}회", if (전.isEmpty()) null else (최회 - 전.maxOf { it.r }).toDouble(), "회")
             줄2 = 보고줄("합계", "${합회}회", if (전.isEmpty()) null else (합회 - 전.take(m).sumOf { it.r }).toDouble(), "회")
@@ -349,7 +356,8 @@ internal fun 앱데이터.상세계산(칸: 보고칸, 저장키: String?, 날: 
     fun rm(l: List<세트>) = l.maxOfOrNull { 일RM(it.w, it.r) } ?: 0.0
     val rmx = rm(세); val 볼x = 볼륨(세)
     val 좋 = 세.reduceOrNull { a, y -> if (일RM(y.w, y.r) > 일RM(a.w, a.r) || (y.w <= 0 && a.w <= 0 && y.r > a.r)) y else a }
-    fun 세글(y: 세트) = "${if (y.w > 0) "${무게글(y.w)}kg × " else ""}${y.r}회"
+    val 시간 = 방식(칸.종id, 칸.이름).시간칸()   // 2단계: 시간은 'N회' 대신 m:ss
+    fun 세글(y: 세트) = if (시간) 분초(y.r) else "${if (y.w > 0) "${무게글(y.w)}kg × " else ""}${y.r}회"
     return 상세값(
         세.mapIndexed { k, y -> "${k + 1}세트 · ${세글(y)}" },
         좋?.let { "최고 세트 · ${세글(it)}" },

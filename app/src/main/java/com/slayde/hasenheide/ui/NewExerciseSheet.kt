@@ -73,6 +73,15 @@ import com.slayde.hasenheide.data.그날운동도
 import com.slayde.hasenheide.data.근육계산
 import com.slayde.hasenheide.data.근육자료
 import com.slayde.hasenheide.data.무게글
+import com.slayde.hasenheide.data.기록방식
+import com.slayde.hasenheide.data.기록방식표
+import com.slayde.hasenheide.data.무게칸있음
+import com.slayde.hasenheide.data.시간칸
+import com.slayde.hasenheide.data.시간한칸
+import com.slayde.hasenheide.data.방식
+import com.slayde.hasenheide.data.분초
+import com.slayde.hasenheide.data.이름으로방식
+import com.slayde.hasenheide.data.실제무게
 import com.slayde.hasenheide.data.사전종목
 import com.slayde.hasenheide.data.새종목id
 import com.slayde.hasenheide.data.앱데이터
@@ -232,6 +241,12 @@ fun 새종목시트(
         if (v.고름) {
             새부위고르기(상태, v) { f -> v = f(v) }
             // ── 세트 줄 (저장하면 종목설정[id]) — 10-06 홍겸 님: '기본 세팅' 글씨는 뺐다 ──
+            // 2단계: 커스텀 종목만 기록 방식을 고른다 (무게 · 맨몸 · 어시스트 · 횟수만 · 시간). 사전 종목은 이름으로 정해져 있어 안 보인다
+            if (v.방식고름보임()) {
+                이름표("기록 방식", Modifier.padding(top = 간격.좁게, start = 간격.아주좁게))
+                Box(Modifier.height(간격.아주좁게))
+                칩줄(기록방식표.고를수있는, 상태.d.새종목방식(v).name, { n -> v = 상태.d.방식고름(v, 기록방식.valueOf(n)) })
+            }
             Box(Modifier.height(간격.좁게))
             // 10-06 ⑩: 세트를 더해 [+ 세트] 가 스크롤 칸 밑으로 내려가면 그 단추(표의 맨 아래)가 보이게 한 번 올린다.
             //          그린 뒤(두 프레임 기다려 자리가 정해진 다음) 재고 한 번만 움직인다
@@ -251,7 +266,8 @@ fun 새종목시트(
             Box(Modifier.fillMaxWidth().onSizeChanged { 표크기 = it }.bringIntoViewRequester(세트끝)) {
                 // 10-12 기록 방식: 이름으로 방식이 정해진다 — 맨몸 '추가 kg' · 어시스트 '보조 kg' + 칸 아래 '= 69kg'
                 새세트줄표(v.세트, 상태.d.설정.무게폭, { f -> v = v.copy(세트 = f(v.세트)) }, { 상태.알림.토스트(세트최대글) },
-                    머리 = 무게머리글(listOfNotNull(상태.d.머리방식(v.편집, v.이름, null)), "무게 kg"), 작은글 = { w -> 상태.d.실제무게글(v.편집, v.이름, null, w) })
+                    머리 = 무게머리글(listOf(상태.d.새종목방식(v)), "무게 kg"), 작은글 = { w -> 상태.d.새종목실제무게글(v, w) },
+                    방식 = 상태.d.새종목방식(v))
             }
             Box(Modifier.height(간격.보통))
             버튼("저장", { 저장하기() }, Modifier.fillMaxWidth(), 주요 = true)
@@ -370,14 +386,15 @@ internal object 새시트치수 {
 @Composable
 private fun 새세트줄표(
     세트: List<종목세트>, 무게폭: Double, 바꿈: ((List<종목세트>) -> List<종목세트>) -> Unit, 최대알림: () -> Unit,
-    머리: String = "무게 kg", 작은글: (Double) -> String? = { null },
+    머리: String = "무게 kg", 작은글: (Double) -> String? = { null }, 방식: 기록방식 = 기록방식.무게,
 ) {
     val c = Local색.current
+    val 무게있음 = 방식.무게칸있음(); val 시간 = 방식.시간칸()   // 2단계 기록 방식: 횟수만 · 시간은 무게 칸이 없고, 시간은 횟수 칸이 m:ss
     Column(verticalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
         Row(horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
             글("세트", Modifier.width(새시트치수.번호칸), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)
-            글(머리, Modifier.weight(새시트치수.열무게), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)
-            글("횟수", Modifier.weight(종목치수.열횟수), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)
+            if (무게있음) 글(머리, Modifier.weight(새시트치수.열무게), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)
+            글(if (시간) "시간" else "횟수", Modifier.weight(if (시간) 새시트치수.열무게 else 종목치수.열횟수), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)
             글("휴식", Modifier.weight(종목치수.열휴식), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)
             Box(Modifier.width(종목치수.지움칸))
         }
@@ -387,12 +404,15 @@ private fun 새세트줄표(
             key(k) {
                 Row(Modifier.새줄효과(k >= 앞), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
                     글("${k + 1}", Modifier.width(새시트치수.번호칸), 크기값 = 크기.조금작게, 굵기 = FontWeight.Bold, 가운데 = true)
-                    무게칸아래글(작은글(x.w), Modifier.weight(새시트치수.열무게)) {
+                    if (무게있음) 무게칸아래글(작은글(x.w), Modifier.weight(새시트치수.열무게)) {
                         새세트값칸(무게글(x.w), Modifier.fillMaxWidth(), "${k + 1}세트 무게", x.w > 0,
                             { 바꿈 { l -> 세트값바꿈(l, k, 'w', -1, 무게폭) } }, { 바꿈 { l -> 세트값바꿈(l, k, 'w', 1, 무게폭) } },
                             { g -> 바꿈 { l -> 세트글넣음(l, k, 'w', g) } })
                     }
-                    새세트값칸("${x.r}", Modifier.weight(종목치수.열횟수), "${k + 1}세트 횟수", x.r > 1,
+                    if (시간) 새세트값칸(분초(x.r), Modifier.weight(새시트치수.열무게), "${k + 1}세트 시간", x.r > 기록방식표.시간최소초,
+                        { 바꿈 { l -> 세트값바꿈(l, k, 't', -1, 무게폭) } }, { 바꿈 { l -> 세트값바꿈(l, k, 't', 1, 무게폭) } },
+                        null, 더할수있음 = x.r < 기록방식표.시간최대초)
+                    else 새세트값칸("${x.r}", Modifier.weight(종목치수.열횟수), "${k + 1}세트 횟수", x.r > 1,
                         { 바꿈 { l -> 세트값바꿈(l, k, 'r', -1, 무게폭) } }, { 바꿈 { l -> 세트값바꿈(l, k, 'r', 1, 무게폭) } },
                         { g -> 바꿈 { l -> 세트글넣음(l, k, 'r', g) } }, 정수 = true)
                     휴식값칸(x.휴, { 새 -> 바꿈 { l -> 세트휴식(l, k, 새) } }, Modifier.weight(종목치수.열휴식), 칸높이 = 높이.아주낮게)
@@ -418,7 +438,7 @@ private fun 새세트줄표(
 @Composable
 private fun 새세트값칸(
     값글: String, modifier: Modifier, 이름: String, 뺄수있음: Boolean,
-    빼기: () -> Unit, 더하기: () -> Unit, 넣기: (String) -> Unit, 정수: Boolean = false,
+    빼기: () -> Unit, 더하기: () -> Unit, 넣기: ((String) -> Unit)?, 정수: Boolean = false, 더할수있음: Boolean = true,
 ) {
     val c = Local색.current
     val 모양 = RoundedCornerShape(모서리.작게)
@@ -432,7 +452,10 @@ private fun 새세트값칸(
             Icon(아이콘.빼기, "$이름 빼기", Modifier.size(새시트치수.값그림), tint = if (뺄수있음) c.강조 else c.옅음)
         }
         val 판 = 가운데판(초점)
-        key(판.번호) {
+        if (넣기 == null) Text(   // 2단계 시간 칸 — m:ss 는 쳐 넣지 않고 − ＋ (5초씩) 로만 (휴식 칸과 같다)
+            값글, Modifier.weight(1f), style = 글꼴.보통(크기.버튼, FontWeight.Bold).copy(fontFeatureSettings = "tnum"),
+            color = c.글, maxLines = 1, softWrap = false, textAlign = TextAlign.Center,
+        ) else key(판.번호) {
             BasicTextField(
                 value = if (초점 && !버튼값) 친글 else 값글,
                 onValueChange = { t -> 버튼값 = false; 친글 = t; 넣기(t) },
@@ -444,8 +467,8 @@ private fun 새세트값칸(
                 modifier = Modifier.weight(1f).then(판.손).onFocusChanged { 초점 = it.isFocused; if (!it.isFocused) 버튼값 = false },
             )
         }
-        Box(Modifier.width(새시트치수.값단추).fillMaxHeight().눌림 { 버튼값 = true; 더하기() }, contentAlignment = Alignment.Center) {
-            Icon(아이콘.더하기, "$이름 더하기", Modifier.size(새시트치수.값그림), tint = c.강조)
+        Box(Modifier.width(새시트치수.값단추).fillMaxHeight().then(if (더할수있음) Modifier.눌림 { 버튼값 = true; 더하기() } else Modifier), contentAlignment = Alignment.Center) {
+            Icon(아이콘.더하기, "$이름 더하기", Modifier.size(새시트치수.값그림), tint = if (더할수있음) c.강조 else c.옅음)
         }
     }
 }
@@ -506,6 +529,8 @@ internal data class 새종목값(
     /** 편집에서만 — 1RM 목표 · 달력 이름 (앱에만 있는 칸) */
     val 목표글: String = "",
     val 달력글: String = "",
+    /** 커스텀 종목이 고른 기록 방식([기록방식].name) — null 이면 이름으로 자동 (2단계 · 새 종목에서만 고른다) */
+    val 방식: String? = null,
 )
 
 internal fun 근이름(id: String): String = (근육자료.이름[id] ?: id).replace(Regex(" \\(.*\\)"), "")
@@ -612,7 +637,7 @@ internal fun 새종목값.칸고름(k: String): 새종목값 =
 internal fun 새종목값.이름바꿈(t: String): 새종목값 {
     val v = copy(이름 = t, 찾는중 = true)
     if (t == 이름 || 편집 != null) return v
-    val n = v.copy(근육 = emptyMap(), 사전 = null, 정한 = null, 팝 = null)
+    val n = v.copy(근육 = emptyMap(), 사전 = null, 정한 = null, 팝 = null, 방식 = null)   // 이름이 달라지면 고른 방식도 처음(자동)으로
     return n.copy(묶음 = n.기본묶음())
 }
 
@@ -657,10 +682,48 @@ internal fun 앱데이터.저장검사(v: 새종목값): String? = when {
     else -> null
 }
 
+/**
+ * 이 시트의 종목이 쓸 기록 방식 (2단계) — 고른 것이 있으면 그것 · 없으면 이름으로 자동(사전 이름 · '어시스트' · 장비 맨몸).
+ * 편집은 저장된 종목의 방식. 장비는 [장비무게맞춤] · [새종목저장] 과 같은 짐작
+ */
+internal fun 앱데이터.새종목방식(v: 새종목값): 기록방식 {
+    v.방식?.let { n -> 기록방식.values().firstOrNull { it.name == n }?.let { return it } }
+    if (v.편집 != null) return 방식(v.편집, v.이름.trim())
+    val 이름 = v.이름.trim()
+    val 장비 = 종목사전.이름으로(이름)?.let { 종목사전.장비(it) } ?: 이름추천.추측하기(이름).장비 ?: ""
+    return 이름으로방식(이름, 장비)
+}
+
+/** 칸 아래 작은 글 '= 69kg' — 이 시트의 방식이 맨몸 · 어시스트이고 체중을 알 때만 ([실제무게글] 과 같은 뜻, 방식을 시트에서 받는다) */
+internal fun 앱데이터.새종목실제무게글(v: 새종목값, 입력: Double): String? {
+    val 방 = 새종목방식(v)
+    if (몸.체중 <= 0.0 || (방 != 기록방식.맨몸 && 방 != 기록방식.어시스트)) return null
+    return "= ${무게글(실제무게(방, 입력, 몸.체중))}kg"
+}
+
+/** 방식 칩을 보일까 — 새 종목이고 사전에 없는 이름(= 커스텀)일 때만. 사전 종목은 방식이 정해져 있다 (10-12 홍겸 님: 사용자가 누를 일을 만들지 않는다) */
+internal fun 새종목값.방식고름보임(): Boolean = 고름 && 편집 == null && 사전 == null
+
+/**
+ * 방식 칩을 눌렀다 (2단계) — 칸의 뜻이 바뀌므로 세트 값을 처음으로: 무게는 0(무게 방식이면 장비 무게로), 횟수↔시간이 바뀌면 횟수 10 ↔ 시간 30초.
+ * 이미 자동으로 같은 방식이면 고른 값을 비운다(null = 자동)
+ */
+internal fun 앱데이터.방식고름(v: 새종목값, 새: 기록방식): 새종목값 {
+    val 옛 = 새종목방식(v)
+    val 자동 = 새종목방식(v.copy(방식 = null))
+    val 이름표 = if (새 == 자동) null else 새.name
+    if (새 == 옛) return v.copy(방식 = 이름표)
+    val 시간바뀜 = 새.시간칸() != 옛.시간칸()
+    val 값 = v.copy(방식 = 이름표, 세트 = v.세트.map { s -> s.copy(w = 0.0, r = if (시간바뀜) (if (새.시간칸()) 30 else 사전기본횟수) else s.r) })
+    return if (새 == 기록방식.무게) 값.장비무게맞춤(this) else 값
+}
+
 /** 새 종목 저장 — 같은 이름도 새 id (`종목더하기`). 장비는 이름으로 짐작해 채운다(앱 원래 동작 · 시안에는 장비 칸이 없다) */
 internal fun 앱데이터.새종목저장(v: 새종목값, 지금: Long = System.currentTimeMillis()): Pair<앱데이터, 종목> {
     val n = v.이름.trim()
-    val e = 종목(n, v.칸 ?: "", 장비 = 이름추천.추측하기(n).장비 ?: "", id = 새종목id(지금), 근육 = LinkedHashMap(v.근육))
+    // 2단계: 커스텀이 고른 방식 (사전 종목이면 자동이라 비운다)
+    val 방식 = v.방식.takeIf { v.사전 == null }
+    val e = 종목(n, v.칸 ?: "", 장비 = 이름추천.추측하기(n).장비 ?: "", id = 새종목id(지금), 근육 = LinkedHashMap(v.근육), 방식 = 방식)
     val nd = 종목더하기(e, v.세트.ifEmpty { null }, 지금)
     return nd to nd.종목표.last()
 }

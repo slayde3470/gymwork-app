@@ -109,6 +109,12 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.sp
 import com.slayde.hasenheide.data.근육표
 import com.slayde.hasenheide.data.무게글
+import com.slayde.hasenheide.data.기록방식
+import com.slayde.hasenheide.data.기록방식표
+import com.slayde.hasenheide.data.무게칸있음
+import com.slayde.hasenheide.data.시간칸
+import com.slayde.hasenheide.data.시간한칸
+import com.slayde.hasenheide.data.방식
 import com.slayde.hasenheide.data.앱데이터
 import com.slayde.hasenheide.data.이름추천
 import com.slayde.hasenheide.data.즐겨바꿈
@@ -759,7 +765,8 @@ private fun 종목고치기(상태: 앱상태, t: 종목, 플랜있음: Boolean,
         }
         // 10-12 기록 방식: 맨몸 '추가 kg' · 어시스트 '보조 kg' + 칸 아래 '= 69kg'
         기본세트표(v.세트, d.설정.무게폭, { f -> v = v.copy(세트 = f(v.세트)) }, { 상태.알림.토스트(세트최대글) },
-            머리 = 무게머리글(listOfNotNull(d.머리방식(t.id, t.이름, null)), "무게 kg"), 작은글 = { w -> d.실제무게글(t.id, t.이름, null, w) })
+            머리 = 무게머리글(listOfNotNull(d.머리방식(t.id, t.이름, null)), "무게 kg"), 작은글 = { w -> d.실제무게글(t.id, t.이름, null, w) },
+            방식 = d.방식(t.id, t.이름))
     }
     // 10-09 홍겸 님: 근육 그림 2장 (글 없음) — 어디를 눌러도 근육 고르기 팝업 (근육 조각이면 그 부위 줄 강조)
     근육두장(v.근육, d.설정.색표, { 키들 -> v = if (키들.isEmpty()) v.팝빈열기() else v.팝열기(키들) })
@@ -828,16 +835,20 @@ internal object 세트표치수 {
 @Composable
 private fun 기본세트표(
     세트: List<종목세트>, 무게폭: Double, 바꿈: ((List<종목세트>) -> List<종목세트>) -> Unit, 최대알림: () -> Unit,
-    머리: String = "무게 kg", 작은글: (Double) -> String? = { null },
+    머리: String = "무게 kg", 작은글: (Double) -> String? = { null }, 방식: 기록방식 = 기록방식.무게,
 ) {
     val c = Local색.current
+    // 2단계 기록 방식: 횟수만 · 시간은 무게 칸이 없다 (칸을 감춘다). 시간은 횟수 칸이 '시간(m:ss)'이고 무게 칸 자리까지 넓게
+    val 무게있음 = 방식.무게칸있음(); val 시간 = 방식.시간칸()
+    val 횟수폭 = if (시간) 세트표치수.무게 else 세트표치수.횟수
     Column(verticalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
         세트표줄(
             { 글("세트", 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true) },
             { 글(머리, 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true) },
-            { 글("횟수", 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true) },
+            { 글(if (시간) "시간" else "횟수", 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true) },
             { 글("휴식", 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true) },
             { },
+            무게있음 = 무게있음, 횟수폭 = 횟수폭,
         )
         val 하나 = 세트.size <= 1
         val 앞 = 앞줄개수(세트.size)   // 방금 더한 줄은 한 번 점멸 · 눌렸다 제자리
@@ -858,7 +869,10 @@ private fun 기본세트표(
                         }
                     },
                     {
-                        세트값칸("${x.r}", Modifier.fillMaxWidth(), "${k + 1}세트 횟수", x.r > 1,
+                        if (시간) 세트값칸(분초(x.r), Modifier.fillMaxWidth(), "${k + 1}세트 시간", x.r > 기록방식표.시간최소초,
+                            { 바꿈 { l -> 세트값바꿈(l, k, 't', -1, 무게폭) } }, { 바꿈 { l -> 세트값바꿈(l, k, 't', 1, 무게폭) } },
+                            null, 단추폭 = 세트표치수.단추, 그림크기 = 세트표치수.그림, 더할수있음 = x.r < 기록방식표.시간최대초)
+                        else 세트값칸("${x.r}", Modifier.fillMaxWidth(), "${k + 1}세트 횟수", x.r > 1,
                             { 바꿈 { l -> 세트값바꿈(l, k, 'r', -1, 무게폭) } }, { 바꿈 { l -> 세트값바꿈(l, k, 'r', 1, 무게폭) } },
                             { g -> 바꿈 { l -> 세트글넣음(l, k, 'r', g) } }, 정수 = true, 단추폭 = 세트표치수.단추, 그림크기 = 세트표치수.그림)
                     },
@@ -875,7 +889,7 @@ private fun 기본세트표(
                             contentAlignment = Alignment.Center,
                         ) { Icon(아이콘.지우기, "${k + 1}세트 지우기", Modifier.size(종목치수.지움그림), tint = if (하나) c.선 else c.옅음) }
                     },
-                    줄모양 = Modifier.새줄효과(k >= 앞),
+                    줄모양 = Modifier.새줄효과(k >= 앞), 무게있음 = 무게있음, 횟수폭 = 횟수폭,
                 )
             }
         }
@@ -888,11 +902,13 @@ private fun 기본세트표(
 private fun 세트표줄(
     번호: @Composable () -> Unit, 무게: @Composable () -> Unit, 횟수: @Composable () -> Unit,
     휴식: @Composable () -> Unit, 끝: @Composable () -> Unit, 줄모양: Modifier = Modifier,
+    /** 2단계 기록 방식: 횟수만 · 시간은 무게 칸을 뺀다 · 시간은 횟수 칸을 넓게 */
+    무게있음: Boolean = true, 횟수폭: androidx.compose.ui.unit.Dp = 세트표치수.횟수,
 ) {
     Row(줄모양.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
         Box(Modifier.width(세트표치수.번호), contentAlignment = Alignment.Center) { 번호() }
-        Box(Modifier.width(세트표치수.무게), contentAlignment = Alignment.Center) { 무게() }
-        Box(Modifier.width(세트표치수.횟수), contentAlignment = Alignment.Center) { 횟수() }
+        if (무게있음) Box(Modifier.width(세트표치수.무게), contentAlignment = Alignment.Center) { 무게() }
+        Box(Modifier.width(횟수폭), contentAlignment = Alignment.Center) { 횟수() }
         Box(Modifier.width(세트표치수.휴식), contentAlignment = Alignment.Center) { 휴식() }
         Box(Modifier.width(세트표치수.지움), contentAlignment = Alignment.Center) { 끝() }
     }
@@ -994,6 +1010,7 @@ private fun 종목세팅(상태: 앱상태, 열쇠: String, 플랜있음: Boolea
             { f -> 상태.바꿈 { it.종목세트고침(열쇠, f) } },
             { 상태.알림.토스트(세트최대글) },
             머리 = 무게머리글(listOfNotNull(상태.d.머리방식(null, 열쇠, null)), "무게 kg"), 작은글 = { w -> 상태.d.실제무게글(null, 열쇠, null, w) },
+            방식 = 상태.d.방식(null, 열쇠),
         )
     }
 }
@@ -1006,14 +1023,15 @@ private fun 종목세팅(상태: 앱상태, 열쇠: String, 플랜있음: Boolea
 @Composable
 internal fun 세트줄표(
     세트: List<종목세트>, 무게폭: Double, 바꿈: ((List<종목세트>) -> List<종목세트>) -> Unit, 최대알림: () -> Unit,
-    머리: String = "무게 kg", 작은글: (Double) -> String? = { null },
+    머리: String = "무게 kg", 작은글: (Double) -> String? = { null }, 방식: 기록방식 = 기록방식.무게,
 ) {
     val c = Local색.current
+    val 무게있음 = 방식.무게칸있음(); val 시간 = 방식.시간칸()   // 2단계 기록 방식 (기본세트표와 같다)
     Column(verticalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
         Row(horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
             글("세트", Modifier.width(종목치수.번호칸), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)
-            글(머리, Modifier.weight(종목치수.열무게), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)
-            글("횟수", Modifier.weight(종목치수.열횟수), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)
+            if (무게있음) 글(머리, Modifier.weight(종목치수.열무게), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)
+            글(if (시간) "시간" else "횟수", Modifier.weight(if (시간) 종목치수.열무게 else 종목치수.열횟수), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)
             글("휴식", Modifier.weight(종목치수.열휴식), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)
             Box(Modifier.width(종목치수.지움칸))
         }
@@ -1023,12 +1041,15 @@ internal fun 세트줄표(
             key(k) {
                 Row(Modifier.새줄효과(k >= 앞), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
                     글("${k + 1}", Modifier.width(종목치수.번호칸), 크기값 = 크기.조금작게, 굵기 = FontWeight.Bold, 가운데 = true)
-                    무게칸아래글(작은글(x.w), Modifier.weight(종목치수.열무게)) {
+                    if (무게있음) 무게칸아래글(작은글(x.w), Modifier.weight(종목치수.열무게)) {
                         세트값칸(무게글(x.w), Modifier.fillMaxWidth(), "${k + 1}세트 무게", x.w > 0,
                             { 바꿈 { l -> 세트값바꿈(l, k, 'w', -1, 무게폭) } }, { 바꿈 { l -> 세트값바꿈(l, k, 'w', 1, 무게폭) } },
                             { g -> 바꿈 { l -> 세트글넣음(l, k, 'w', g) } })
                     }
-                    세트값칸("${x.r}", Modifier.weight(종목치수.열횟수), "${k + 1}세트 횟수", x.r > 1,
+                    if (시간) 세트값칸(분초(x.r), Modifier.weight(종목치수.열무게), "${k + 1}세트 시간", x.r > 기록방식표.시간최소초,
+                        { 바꿈 { l -> 세트값바꿈(l, k, 't', -1, 무게폭) } }, { 바꿈 { l -> 세트값바꿈(l, k, 't', 1, 무게폭) } },
+                        null, 더할수있음 = x.r < 기록방식표.시간최대초)
+                    else 세트값칸("${x.r}", Modifier.weight(종목치수.열횟수), "${k + 1}세트 횟수", x.r > 1,
                         { 바꿈 { l -> 세트값바꿈(l, k, 'r', -1, 무게폭) } }, { 바꿈 { l -> 세트값바꿈(l, k, 'r', 1, 무게폭) } },
                         { g -> 바꿈 { l -> 세트글넣음(l, k, 'r', g) } }, 정수 = true)
                     휴식값칸(x.휴, { 새 -> 바꿈 { l -> 세트휴식(l, k, 새) } }, Modifier.weight(종목치수.열휴식), 칸높이 = 높이.아주낮게)
@@ -1328,12 +1349,13 @@ internal fun 격자줄(펼침: List<Boolean>): List<List<Int>> {
     return 줄
 }
 
-/** − ＋ 한 번 — 무게는 무게폭씩(0 아래로 안 감 · 0.1 단위로 맞춤), 횟수는 1씩(1 아래로 안 감) */
+/** − ＋ 한 번 — 무게는 무게폭씩(0 아래로 안 감 · 0.1 단위로 맞춤), 횟수는 1씩(1 아래로 안 감), 시간('t')은 5초씩(5초 아래로 안 감) */
 internal fun 세트값바꿈(l: List<종목세트>, k: Int, 칸: Char, 방향: Int, 무게폭: Double): List<종목세트> {
     val x = l.getOrNull(k) ?: return l
     val 새 = when (칸) {
         'w' -> x.copy(w = max(0.0, ((x.w + 방향 * 무게폭) * 10).roundToInt() / 10.0))
         'r' -> x.copy(r = max(1, x.r + 방향))
+        't' -> x.copy(r = 시간한칸(x.r, 방향))   // 2단계 시간: 5초씩
         else -> x
     }
     return l.mapIndexed { i, y -> if (i == k) 새 else y }
