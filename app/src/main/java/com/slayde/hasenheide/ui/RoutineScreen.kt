@@ -9,7 +9,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.awaitTouchSlopOrCancellation
+import androidx.compose.foundation.gestures.awaitLongPressOrCancellation
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.drag
 import androidx.compose.foundation.gestures.scrollBy
@@ -281,7 +281,7 @@ private fun 루틴목록화면(상태: 앱상태, 열기: (String) -> Unit) {
                                 on지우기 = { 루틴지우기(상태, r.id) },
                                 on끌기시작 = { 손 ->
                                     진동.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    끌.시작(i, r.이름, 손.y, 넘김.value, 상태.d.루틴들.size)
+                                    끌.시작(i, r.이름, 손.y, 넘김.value, 상태.d.루틴들.size, 손가락x = 손.x)
                                 },
                                 on끌기끝 = { 놓기() })
                         }
@@ -338,7 +338,7 @@ private fun 루틴카드(
                         val 자리 = 끌.자리[i]
                         시작(Offset((자리?.left ?: 0f) + p.x, (자리?.top ?: 0f) + p.y))
                     },
-                    onDrag = { ch, 양 -> ch.consume(); 끌.y += 양.y; 끌.x = 끌.x?.plus(양.x) },
+                    onDrag = { ch, 양 -> ch.consume(); 끌.움직임(양) },
                     onDragEnd = { 끝() },
                     onDragCancel = { 끌.끝() },
                 )
@@ -394,12 +394,13 @@ private fun 끌기손잡이(끌: 세로끌기, 이름: String, 시작: (Offset) 
                 awaitEachGesture {
                     val 처음 = awaitFirstDown(requireUnconsumed = false)
                     처음.consume()   // 손잡이를 눌러도 줄이 열리지 않게
-                    val 넘음 = awaitTouchSlopOrCancellation(처음.id) { ch, _ -> ch.consume() } ?: return@awaitEachGesture
+                    // 10-12 홍겸 님: 손잡이도 꾹 눌러야 집는다 (스치기만 해도 끌려 가던 것) — 그 전에 움직이면 끌지 않고 놓아 준다
+                    val 눌렸음 = awaitLongPressOrCancellation(처음.id) ?: return@awaitEachGesture
                     if (끌.원 != null) return@awaitEachGesture
-                    시작최신(Offset(틀최신.left + 넘음.position.x, 틀최신.top + 넘음.position.y))
-                    val 끝까지 = drag(넘음.id) { ch ->
+                    시작최신(Offset(틀최신.left + 눌렸음.position.x, 틀최신.top + 눌렸음.position.y))
+                    val 끝까지 = drag(눌렸음.id) { ch ->
                         val 양 = ch.positionChange()
-                        ch.consume(); 끌.y += 양.y; 끌.x = 끌.x?.plus(양.x)
+                        ch.consume(); 끌.움직임(양)
                     }
                     if (끝까지) 놓기최신() else 끌.끝()
                 }
@@ -529,7 +530,7 @@ private fun 루틴상세화면(상태: 앱상태, r: 루틴, 닫기: () -> Unit)
                                 val 끌시작: (Offset) -> Unit = { 손 ->
                                     손댐()
                                     진동.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    끌.시작(j, e.이름, 손.y, 넘김.value, 상태.d.루틴(rid)?.종목?.size ?: 0)
+                                    끌.시작(j, e.이름, 손.y, 넘김.value, 상태.d.루틴(rid)?.종목?.size ?: 0, 손가락x = 손.x)
                                 }
                                 val 끌기길 = 끌기손(끌, rid, j, { 놓기() }, 끌시작)
                                 val 손잡이: @Composable () -> Unit = { 끌기손잡이(끌, e.이름, 끌시작) { 놓기() } }
@@ -852,7 +853,7 @@ private fun 끌기손(끌: 세로끌기, rid: String, j: Int, 놓기: () -> Unit
         .pointerInput(끌, rid, j) {
             detectDragGesturesAfterLongPress(
                 onDragStart = { p -> 시작최신(Offset(틀최신.left + p.x, 틀최신.top + p.y)) },
-                onDrag = { ch, 양 -> ch.consume(); 끌.y += 양.y; 끌.x = 끌.x?.plus(양.x) },
+                onDrag = { ch, 양 -> ch.consume(); 끌.움직임(양) },
                 onDragEnd = { 놓기최신() },
                 onDragCancel = { 끌.끝() },
             )
@@ -1253,6 +1254,8 @@ private class 세로끌기 {
     var y by mutableFloatStateOf(0f)
     /** 손가락 x — 2열 격자에서만 쓴다(null 이면 세로 목록: y 만 본다) */
     var x by mutableStateOf<Float?>(null)
+    /** 이름표가 손가락 위를 따라오게 — 판정에는 안 쓴다 (세로 목록도 늘 갖고 있다) */
+    var 손x by mutableFloatStateOf(0f)
     var 틀 by mutableStateOf(Rect.Zero)
     /** 칸 자리 — 그리기에는 안 쓴다(끌기 시작할 때만) → 상태가 아닌 그냥 표 */
     val 자리 = HashMap<Int, Rect>()
@@ -1271,11 +1274,13 @@ private class 세로끌기 {
         private set
 
     /** [수] = 지금 줄 수 — 그보다 큰 번호의 옛 자리(지운 줄)는 버린다. [손x] · [가로] = 2열 격자 */
-    fun 시작(i: Int, 이름: String, 손y: Float, 넘김: Int, 수: Int, 손x: Float? = null, 가로: Set<Int> = emptySet()) {
+    fun 시작(i: Int, 이름: String, 손y: Float, 넘김: Int, 수: Int, 손x: Float? = null, 가로: Set<Int> = emptySet(), 손가락x: Float = 0f) {
         굳은 = 자리.filterKeys { it < 수 }.map { (k, r) -> 끌칸(k, r.left, r.top, r.right, r.bottom) }
         this.가로 = 가로; 시작넘김 = 넘김
-        this.이름 = 이름; y = 손y; x = 손x; 원 = i
+        this.이름 = 이름; y = 손y; x = 손x; this.손x = 손가락x; 원 = i
     }
+    /** 손가락이 [양] 만큼 움직였다 */
+    fun 움직임(양: Offset) { y += 양.y; x = x?.plus(양.x); 손x += 양.x }
     fun 끝() { 원 = null; 장전 = null; 멈춤?.비움() }
     /** 끄는 동안 16ms 마다 — 손가락이 묶을 수 있는 칸 가운데에서 멈췄나 살펴 [장전] 을 켜고 끈다. 새로 켜지면 true */
     fun 장전살피기(넘김: Int, 지금: Long, 흔들림px: Float): Boolean {
@@ -1343,6 +1348,21 @@ private fun 끌기멈춤살핌(끌: 세로끌기, 넘김: ScrollState, 진동: a
     }
 }
 
+/**
+ * 끌다가 화면 위 · 아래 끝 가까이에 가면 한 번(16ms)에 넘기는 양 — 위쪽 음수 · 아래쪽 양수 · 가운데 0.
+ * 가장자리 띠([끝px]) 안으로 깊이 들어갈수록 빠르다: 띠에 막 들어서면 최대([최대])의 15%, 가장자리(또는 밖)에서 100%
+ */
+internal fun 끌기넘김량(y: Float, 위: Float, 아래: Float, 끝px: Float, 최대: Float): Float {
+    if (끝px <= 0f) return 0f
+    val 위깊이 = (위 + 끝px - y) / 끝px
+    val 아래깊이 = (y - (아래 - 끝px)) / 끝px
+    return when {
+        위깊이 > 0f -> -최대 * (0.15f + 0.85f * min(1f, 위깊이))
+        아래깊이 > 0f -> 최대 * (0.15f + 0.85f * min(1f, 아래깊이))
+        else -> 0f
+    }
+}
+
 /** 화면 위 · 아래 끝 가까이 끌면 저절로 넘긴다 */
 @Composable
 private fun 끌기자동넘김(끌: 세로끌기, 넘김: ScrollState) {
@@ -1351,8 +1371,8 @@ private fun 끌기자동넘김(끌: 세로끌기, 넘김: ScrollState) {
     val 한번 = with(밀도) { 부품치수.끌기넘김.toPx() }
     LaunchedEffect(끌.원 != null) {
         while (끌.원 != null) {
-            val y = 끌.y
-            if (y < 끌.틀.top + 끝px) 넘김.scrollBy(-한번) else if (y > 끌.틀.bottom - 끝px) 넘김.scrollBy(한번)
+            val 양 = 끌기넘김량(끌.y, 끌.틀.top, 끌.틀.bottom, 끝px, 한번)   // 10-12: 가장자리에 깊이 들어갈수록 빠르게 (전에는 늘 같은 빠르기)
+            if (양 != 0f) 넘김.scrollBy(양)
             delay(16)
         }
     }
@@ -1364,10 +1384,14 @@ private fun 끌기이름표(끌: 세로끌기) {
     if (끌.원 == null) return
     val c = Local색.current
     val 밀도 = LocalDensity.current
+    // 10-12 홍겸 님: 이름표가 손가락 위를 가로로도 따라온다 (전에는 왼쪽에 붙박여 어느 칸을 가리키는지 알기 어려웠다) — 아래 끝 = 손가락 위 [이름표위]
+    val 위틈 = with(밀도) { 루틴값.이름표위.toPx() }
     Box(
         Modifier
-            .offset(y = with(밀도) { (끌.y - 끌.틀.top).toDp() } - 루틴값.이름표위)
-            .padding(start = 루틴값.이름표옆)
+            .graphicsLayer {
+                translationX = (끌.손x - 끌.틀.left - size.width / 2f).coerceIn(0f, max(0f, 끌.틀.width - size.width))
+                translationY = 끌.y - 끌.틀.top - size.height - 위틈
+            }
             .clip(CircleShape)
             .background(c.강조)
             .padding(horizontal = 간격.넓게, vertical = 간격.좁게),
@@ -1444,8 +1468,7 @@ internal object 루틴값 {
     val 값단추그림 = 18.dp      // U3-6 − ＋ 는 18
     val 휴지통그림 = 16.dp      // .루지움 svg 16
     val 게이지최소 = 16.dp      // .루플랜게 min-width
-    val 이름표위 = 36.dp        // 끄는 이름표 — 손가락 위
-    val 이름표옆 = 40.dp
+    val 이름표위 = 12.dp        // 끄는 이름표 — 손가락 바로 위 (이름표 아래 끝과 손가락 사이 틈)
     val 톡넘침 = 12.dp
     const val 톡시간 = 200
     const val 볼록 = 1.12f

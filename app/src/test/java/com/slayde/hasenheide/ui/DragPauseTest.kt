@@ -59,4 +59,20 @@ class DragPauseTest {
         assertNull(m.갱신(1, 80f, 100f, 800, 흔들))
         assertEquals(1, m.갱신(1, 80f, 100f, 900, 흔들))
     }
+
+    @Test fun 가장자리_자동넘김은_깊이_들어갈수록_빠르다() {
+        // 화면 틀 위 100 · 아래 900 · 가장자리 띠 80 · 최대 10
+        fun 양(y: Float) = 끌기넘김량(y, 100f, 900f, 80f, 10f)
+        assertEquals(0f, 양(500f))                 // 가운데: 안 넘김
+        assertEquals(0f, 양(180f))                 // 띠 경계(100+80): 아직
+        assertEquals(0f, 양(820f))
+        assertEquals(true, 양(179f) < 0f && 양(179f) > -2f)    // 막 들어섬: 최대의 15% 쯤
+        assertEquals(-10f, 양(100f))               // 가장자리: 최대 (위쪽 = 음수)
+        assertEquals(-10f, 양(50f))                // 밖으로 나가도 최대를 넘지 않는다
+        assertEquals(true, 양(120f) < 양(160f))    // 깊이 들어갈수록 더 음수(빠름)
+        assertEquals(10f, 양(900f))                // 아래쪽 = 양수
+        assertEquals(10f, 양(990f))
+        assertEquals(true, 양(880f) > 양(840f))
+        assertEquals(0f, 끌기넘김량(500f, 0f, 1000f, 0f, 10f))   // 띠 0 이면 안 넘김
+    }
 }
