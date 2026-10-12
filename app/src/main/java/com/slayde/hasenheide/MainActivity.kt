@@ -19,8 +19,6 @@ import android.media.AudioManager
 import android.media.ToneGenerator
 import android.os.Build
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.widget.Toast
@@ -36,9 +34,6 @@ import com.slayde.hasenheide.ui.Local번호
 import androidx.compose.runtime.CompositionLocalProvider
 import com.slayde.hasenheide.ui.앱상태
 import com.slayde.hasenheide.ui.밖에서길게
-import com.slayde.hasenheide.ui.밖본
-import com.slayde.hasenheide.ui.밖본만들기
-import com.slayde.hasenheide.ui.밖안내
 import com.slayde.hasenheide.data.세기더함
 import com.slayde.hasenheide.data.세기이름
 import com.slayde.hasenheide.data.남은초
@@ -161,44 +156,17 @@ class MainActivity : ComponentActivity() {
         } catch (_: Exception) { }
     }
 
-    /**
-     * 10-13 홍겸 님: 앱 밖(동그라미가 떠 있는 동안)에서 세트가 시작되거나 한 종목이 끝나면 화면 가운데에 안내 글을 띄운다.
-     * 화면이 안 그려지는 동안에도 기록은 바뀌므로(동그라미 꾹 누름 · 쉬는 시간 끝) 0.4초마다 기록을 직접 본다
-     */
-    private val 밖손 = Handler(Looper.getMainLooper())
-    private var 밖전: 밖본? = null
-    private val 밖지킴 = object : Runnable {
-        override fun run() {
-            val S = 상태.d.세션
-            if (S == null || S.끝화면) { 밖전 = null; return }   // 운동이 끝났으면 그만 본다
-            val 지금 = 밖본만들기(S, System.currentTimeMillis())
-            val 글 = 밖안내(밖전, 지금, S, 상태.d)
-            밖전 = 지금
-            if (글.isNotEmpty()) 밖알림.띄움(this@MainActivity, 글)
-            밖손.postDelayed(this, 400L)
-        }
-    }
-
     override fun onStart() {
         super.onStart()
-        밖손.removeCallbacks(밖지킴); 밖전 = null
-        밖알림.치움()
         떠있는동그라미.치움()
     }
 
-    override fun onDestroy() {
-        밖손.removeCallbacks(밖지킴)
-        밖알림.치움()
-        super.onDestroy()
-    }
+
 
     override fun onStop() {
         super.onStop()
         // 10-08 홍겸 님: 운동 중에 앱을 벗어나면 다른 앱 위에 동그라미 (유튜브 작은 창과 같이 뜬다)
-        if (!isChangingConfigurations && !(Build.VERSION.SDK_INT >= 26 && isInPictureInPictureMode)) {
-            떠있는동그라미.띄움(this, 길게 = { 동그라미길게() }) { 동그라미값() }
-            상태.d.세션?.takeIf { !it.끝화면 }?.let { 밖전 = 밖본만들기(it, System.currentTimeMillis()); 밖손.removeCallbacks(밖지킴); 밖손.postDelayed(밖지킴, 400L) }
-        }
+        if (!isChangingConfigurations && !(Build.VERSION.SDK_INT >= 26 && isInPictureInPictureMode)) 떠있는동그라미.띄움(this, 길게 = { 동그라미길게() }) { 동그라미값() }
     }
 
     override fun onResume() {
