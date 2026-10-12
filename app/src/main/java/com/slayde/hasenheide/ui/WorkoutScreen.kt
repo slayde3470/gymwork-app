@@ -126,7 +126,6 @@ import com.slayde.hasenheide.data.다음회
 import com.slayde.hasenheide.data.저장전
 import com.slayde.hasenheide.data.덜한가
 import com.slayde.hasenheide.data.무게글
-import com.slayde.hasenheide.data.볼륨
 import com.slayde.hasenheide.data.분초
 import com.slayde.hasenheide.data.세기더함
 import com.slayde.hasenheide.data.세기이름
@@ -142,6 +141,8 @@ import com.slayde.hasenheide.data.식구
 import com.slayde.hasenheide.data.앱데이터
 import com.slayde.hasenheide.data.열쇠
 import com.slayde.hasenheide.data.운동세션
+import com.slayde.hasenheide.data.운동중목표볼륨
+import com.slayde.hasenheide.data.운동중볼륨
 import com.slayde.hasenheide.data.자리로
 import com.slayde.hasenheide.data.종목넣기
 import com.slayde.hasenheide.data.종목되돌리기
@@ -320,7 +321,7 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
         // 10-11 홍겸 님: 띠 윗줄(‹ · 루틴 · 지표 · 시계 · 게이지) 과 맨 아래 단추줄은 고정. 책장은 종목 이름 칸부터 진행 상자까지(영역 A) ·
         //  버튼 · 자동으로 넘어갈 때의 밀기는 근육 지도부터 세트 상자까지(영역 B)
         Column(Modifier.fillMaxSize()) {
-            운머리윗줄(S, 지금) {
+            운머리윗줄(S, d, 지금) {
                 // ‹ = 캘린더로 나가기 (운동은 그대로 이어진다) — 앱의 뒤로가기와 같은 길
                 발자취.적기("운동 화면 나가기"); 뒤로?.onBackPressed()
             }
@@ -563,15 +564,15 @@ private object 운치수 {
  *  · 윗줄: ‹ · 루틴 이름 · (오른쪽 끝에서 왼쪽으로) 시계 · 볼륨 · 세트 · 종목 — 시계 글자는 35% 작게 / 그 아래 전체 진행 게이지
  */
 @Composable
-private fun 운머리윗줄(S: 운동세션, 지금: Long, 나가기: () -> Unit) {
+private fun 운머리윗줄(S: 운동세션, d: 앱데이터, 지금: Long, 나가기: () -> Unit) {
     val c = Local색.current
     // 10-09 홍겸 님: 아래 진행 상자에서 올라온 지표 — 종목 n/m · 세트 a/b · 볼륨 x/y
     val n = S.종목들.size
     val 전 = S.종목들.sumOf { it.총칸() }
     val 끝낸 = S.종목들.sumOf { it.찬것().size }
     val 끝종 = S.종목들.count { it.총칸() > 0 && it.찬것().size >= it.총칸() }
-    val 총볼 = S.종목들.sumOf { 볼륨(it.찬것()) }
-    val 총목 = S.종목들.sumOf { x -> 볼륨((0 until x.총칸()).map { S.세트값(x, it) }) }
+    val 총볼 = d.운동중볼륨(S)       // 10-12 기록 방식: 맨몸 · 어시스트는 실제 무게로 (저장되는 기록의 볼륨과 같은 값)
+    val 총목 = d.운동중목표볼륨(S)
     Column(
         // 10-09 홍겸 님: 띠도 좌우 여백 12 · 모서리 8 (운동 보고서처럼) — 윗줄은 위쪽 모서리만
         Modifier.padding(start = 간격.보통, end = 간격.보통, top = 간격.보통).fillMaxWidth()

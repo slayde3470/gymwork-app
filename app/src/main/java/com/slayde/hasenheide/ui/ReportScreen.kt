@@ -115,6 +115,7 @@ import com.slayde.hasenheide.data.비교
 import com.slayde.hasenheide.data.세션종목
 import com.slayde.hasenheide.data.세트
 import com.slayde.hasenheide.data.세트종류
+import com.slayde.hasenheide.data.실제세트들
 import com.slayde.hasenheide.data.실제진행값
 import com.slayde.hasenheide.data.앱데이터
 import com.slayde.hasenheide.data.운동세션
@@ -256,8 +257,9 @@ internal fun 앱데이터.같은줄(e: 종목기록, 종id: String?, 이름: Str
     if (플랜id != null || e.플랜id != null) e.플랜id == 플랜id else 줄표준(e.종id, e.이름) == 줄표준(종id, 이름)
 
 /** 끝내기 전 세션을 기록 꼴로 (저장하지 않는다) — 빈 종목도 남겨 차례가 세션과 같다 */
-internal fun 세션기록(S: 운동세션, 지금: Long): 날기록 {
-    val 들 = S.종목들.map { e -> 종목기록(e.이름, e.찬것(), e.임시, S.묶음이름(e), 플랜id = e.플랜id, 종id = e.종id) }
+internal fun 세션기록(S: 운동세션, 지금: Long, d: 앱데이터? = null): 날기록 {
+    // 10-12 기록 방식: [d] 를 주면 저장될 기록과 같게 실제 무게로 (맨몸 = 체중 + 추가 · 어시스트 = 체중 − 보조)
+    val 들 = S.종목들.map { e -> 종목기록(e.이름, d?.실제세트들(e.종id, e.이름, e.플랜id, e.찬것()) ?: e.찬것(), e.임시, S.묶음이름(e), 플랜id = e.플랜id, 종id = e.종id) }
     val 끝 = S.끝시각 ?: 지금
     val 걸린 = S.흐른초(지금)
     return 날기록(S.루틴id, S.루틴이름, S.한세트수() >= S.목표세트(), 들, 걸린.toInt(), 끝 - 걸린 * 1000, 끝)
@@ -422,7 +424,7 @@ internal fun 마무리(상태: 앱상태, S: 운동세션, 저장됨: Boolean = 
     val 저장키 = if (저장됨) remember(d.기록, S.루틴id, S.끝시각) { 저장열쇠(d, S) } else 자기
     val 날 = 저장키?.let { 날짜만(it) } ?: S.시작날(상태.오늘)   // 10-10: 시작한 날로 저장하므로 보고서도 그 날 기준
     // 저장된 결과를 보다가 그 기록이 지워져도 세션 값으로 그린다 · 끝내기 전은 늘 세션 값 (빈 종목도 차례대로)
-    val rec = remember(S, 저장키, d.기록) { (if (저장됨) 저장키?.let { d.기록[it] } else null) ?: 세션기록(S, System.currentTimeMillis()) }
+    val rec = remember(S, 저장키, d.기록, d.몸.체중, d.종목표) { (if (저장됨) 저장키?.let { d.기록[it] } else null) ?: 세션기록(S, System.currentTimeMillis(), d) }
     val 총칸들 = remember(S, 저장됨) { if (!저장됨) 세션총칸(S) else null }
     // 10-08 홍겸 님: 저장된 뒤 보는 결과 화면(오래 손대지 않아 저절로 끝난 운동 등)도 [확인] 대신 떠 있는 ‹ (닫기) › (스테이터스)
     보고틀(상태, rec, 저장키, 날, 총칸들, 키 = if (저장됨) 저장키 ?: "결과${S.시작시각}" else "세션${S.시작시각}", 조절됨 = S.조절됨,

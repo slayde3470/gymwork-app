@@ -97,6 +97,7 @@ import com.slayde.hasenheide.data.예정초기화
 import com.slayde.hasenheide.data.운동량
 import com.slayde.hasenheide.data.운동세션
 import com.slayde.hasenheide.data.운동시작
+import com.slayde.hasenheide.data.입력세트들
 import com.slayde.hasenheide.data.한세트수
 import com.slayde.hasenheide.data.목표세트
 import com.slayde.hasenheide.data.조절적용
@@ -258,10 +259,12 @@ internal fun 앱데이터.캘기록세션(rec: 날기록, 날: String): 운동�
         val 웜 = e.세트들.count { it.종류 == 세트종류.워밍업 }
         val 계획 = 짝?.종목?.firstOrNull { 캘같은종목(it.종id, it.이름, e.종id, e.이름) }?.세트
         val 계획세트 = if (rec.달성 || 계획 == null) n else max(n, 계획 + 웜)
-        val 첫 = e.세트들.firstOrNull()
+        // 10-12 기록 방식: 기록은 실제 무게로 남아 있다 → 세션은 입력값(추가 · 보조)으로 거꾸로 (다시 저장 · 계산할 때 두 번 바뀌지 않게)
+        val 입력 = 입력세트들(e.종id, e.이름, e.플랜id, e.세트들)
+        val 첫 = 입력.firstOrNull()
         세션종목(
             e.이름, n, 계획세트, 첫?.w ?: 0.0, 첫?.r ?: 0, 0,
-            기록 = e.세트들, 예정값 = e.세트들, 임시 = e.임시, 슈퍼 = e.묶음, 플랜id = e.플랜id, 종id = e.종id,
+            기록 = 입력, 예정값 = 입력, 임시 = e.임시, 슈퍼 = e.묶음, 플랜id = e.플랜id, 종id = e.종id,
         )
     }
     val 첫 = 들.firstOrNull()
