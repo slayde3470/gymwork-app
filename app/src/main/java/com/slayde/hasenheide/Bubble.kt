@@ -38,10 +38,11 @@ import kotlin.math.sin
  * 권한이 없으면 전처럼 PiP 를 쓴다 (MainActivity).
  */
 object 떠있는동그라미 {
+    /** [보고서] = 모든 운동이 끝나 마무리만 남음 — 아이콘이 '운동보고서'(문서 + 연필 · 글이 써졌다 지워짐)로 바뀌고, 누르면 보고서 화면으로 (10-13 홍겸 님) */
     /** [슈퍼] = 지금 종목이 슈퍼세트 — 아이콘의 흰 그림 · 휴식 글자 · 줄어드는 고리를 주황으로 (10-13 홍겸 님. 파란 바탕 · 초록 바탕은 그대로) */
     /** 보여 줄 값 — [쉼남은초] null = 운동 중(아이콘), 아니면 휴식 남은 초 */
     /** [쉼끝시각] = 휴식이 끝나는 시각(ms) — 고리가 초 단위로 뚝뚝 줄지 않고 매끄럽게 줄게 하려고 (10-11 홍겸 님) */
-    data class 값(val 쉼남은초: Int?, val 쉼총초: Int, val 쉼끝시각: Long = 0L, val 슈퍼: Boolean = false)
+    data class 값(val 쉼남은초: Int?, val 쉼총초: Int, val 쉼끝시각: Long = 0L, val 슈퍼: Boolean = false, val 보고서: Boolean = false)
 
     private var 뷰: 동그라미뷰? = null
     private var 마지막x = -1
@@ -58,7 +59,7 @@ object 떠있는동그라미 {
     }
 
     /** [값] 이 null 을 돌려주면(운동이 끝남) 저절로 치운다 */
-    fun 띄움(ctx: Context, 길게: () -> Unit = {}, 값: () -> 값?) {
+    fun 띄움(ctx: Context, 길게: () -> Unit = {}, 쉼끝: () -> Unit = {}, 값: () -> 값?) {
         if (!됨(ctx) || 뷰 != null || 값() == null) return
         val app = ctx.applicationContext
         val wm = app.getSystemService(WindowManager::class.java) ?: return
@@ -76,7 +77,7 @@ object 떠있는동그라미 {
             x = (if (마지막x >= 0) 마지막x else 화면.widthPixels - 칸 - (동그라미치수.옆 * 밀도).toInt()).coerceIn(-칸 / 2, 화면.widthPixels - 칸 / 2)
             y = (if (마지막y >= 0) 마지막y else (동그라미치수.처음위 * 밀도).toInt()).coerceIn(-칸 / 2, 화면.heightPixels - 칸 / 2)
         }
-        val v = 동그라미뷰(app, 값, 길게, p, wm)
+        val v = 동그라미뷰(app, 값, 길게, 쉼끝, p, wm)
         try { wm.addView(v, p); 뷰 = v; v.시작() } catch (_: Exception) { }
     }
 
@@ -90,18 +91,27 @@ object 떠있는동그라미 {
 
     @SuppressLint("ViewConstructor")
     private class 동그라미뷰(
-        ctx: Context, val 값: () -> 값?, val 길게: () -> Unit, val p: WindowManager.LayoutParams, val wm: WindowManager,
+        ctx: Context, val 값: () -> 값?, val 길게: () -> Unit, val 쉼끝: () -> Unit, val p: WindowManager.LayoutParams, val wm: WindowManager,
     ) : View(ctx) {
         private val 밀도 = ctx.resources.displayMetrics.density
         private val 손 = Handler(Looper.getMainLooper())
+        private var 전쉼중 = false
         private val 틱 = object : Runnable {
             override fun run() {
-                if (값() == null) { 치움(); return }
+                val v = 값()
+                if (v == null) { 치움(); return }
+                // 10-13 홍겸 님: 쉬는 시간이 저절로 끝나면 알려 준다 (동그라미를 눌러 끝낸 것은 기록에 쉼이 이미 없어서 MainActivity 가 거른다)
+                val 쉼중 = (v.쉼남은초 ?: 0) > 0
+                if (전쉼중 && !쉼중) try { 쉼끝() } catch (_: Exception) { }
+                전쉼중 = 쉼중
                 invalidate(); 손.postDelayed(this, 동그라미치수.틱)
             }
         }
         private val 강조 = 밝은색표.강조.toArgb()
         private val 강조글 = 밝은색표.강조글.toArgb()
+        private val 노랑연필 = 밝은색표.노랑.toArgb()
+        private val 분홍지우개 = 0xFFE57368.toInt()
+        private val 나무색 = 0xFFF3D9B1.toInt()
         private val 좋음 = 밝은색표.좋음.toArgb()
         private val 붓 = Paint(Paint.ANTI_ALIAS_FLAG)
         private val 글붓 = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -119,6 +129,12 @@ object 떠있는동그라미 {
         private var 눌림목표 = 1f
         private var 눌림속도 = 0f
         private var 앞시각 = 0L
+        // 10-13 홍겸 님: 운동보고서 아이콘 — 하얀 문서(위에 앱 아이콘의 운동 그림) + 작은 연필, 문서 안의 줄글이 써졌다가 지워진다
+        private val 로고파랑 = try {
+            ContextCompat.getDrawable(ctx, R.drawable.ic_launcher_foreground)?.mutate()?.also { it.setTint(밝은색표.강조.toArgb()) }
+        } catch (_: Exception) { null }
+        private val 쪽칸 = RectF()
+        private val 연필길 = Path()
         private val 동그길 = Path()
         private val 고리칸 = RectF()
 
@@ -196,13 +212,59 @@ object 떠있는동그라미 {
                 c.save()
                 동그길.reset(); 동그길.addCircle(cx, cy, r, Path.Direction.CW)
                 c.clipPath(동그길)
-                if (슈퍼 && 슈퍼그림 != null) {
+                if (v.보고서) 보고서그림(c, cx, cy, r)
+                else if (슈퍼 && 슈퍼그림 != null) {
                     // 어댑티브 아이콘은 앞 그림(108)이 보이는 동그라미(72)의 1.5배로 깔린다 — 같은 크기로 맞춘다
                     val 반 = r * 1.5f
                     슈퍼그림.setBounds((cx - 반).toInt(), (cy - 반).toInt(), (cx + 반).toInt(), (cy + 반).toInt()); 슈퍼그림.draw(c)
                 } else 그림?.let { it.setBounds((cx - r).toInt(), (cy - r).toInt(), (cx + r).toInt(), (cy + r).toInt()); it.draw(c) }
                 c.restore()
             }
+        }
+
+        private fun 보고서그림(c: Canvas, cx: Float, cy: Float, r: Float) {
+            val u = (SystemClock.uptimeMillis() % 동그라미치수.글쓰기ms).toFloat() / 동그라미치수.글쓰기ms
+            val pw = r * 1.05f; val ph = r * 1.38f
+            val px = cx - pw / 2 - r * 0.06f; val py = cy - ph / 2 - r * 0.02f
+            쪽칸.set(px, py, px + pw, py + ph)
+            붓.style = Paint.Style.FILL; 붓.color = 강조글; 붓.alpha = 255
+            c.drawRoundRect(쪽칸, r * 0.14f, r * 0.14f, 붓)
+            // 문서 위쪽: 앱 아이콘의 운동 그림 (문서가 하얘서 파랗게 칠한다)
+            로고파랑?.let {
+                val 반 = pw * 0.62f; val gx = px + pw / 2; val gy = py + ph * 0.30f
+                it.setBounds((gx - 반).toInt(), (gy - 반).toInt(), (gx + 반).toInt(), (gy + 반).toInt())
+                c.save(); c.clipRect(쪽칸); it.draw(c); c.restore()
+            }
+            // 줄글 세 줄 — 쓰는 차례: 1 → 2 → 3, 잠깐 둔 뒤 3 → 2 → 1 거꾸로 지워진다
+            val 왼 = px + pw * 0.14f
+            val 길이 = floatArrayOf(pw * 0.72f, pw * 0.60f, pw * 0.36f)
+            val 높이 = floatArrayOf(py + ph * 0.66f, py + ph * 0.80f, py + ph * 0.93f)
+            val 보임 = FloatArray(3)
+            var 끝x = 왼; var 끝y = 높이[0]
+            for (i in 0..2) {
+                val 쓴 = ((u - (0.06f + 0.17f * i)) / 0.17f).coerceIn(0f, 1f)
+                val 지움 = ((u - (0.80f + 0.06f * (2 - i))) / 0.06f).coerceIn(0f, 1f)
+                보임[i] = minOf(쓴, 1f - 지움)
+                // 연필은 지금 쓰거나 지우는 줄의 끝에 있다
+                if ((쓴 > 0f && 쓴 < 1f) || (지움 > 0f && 지움 < 1f)) { 끝x = 왼 + 길이[i] * 보임[i]; 끝y = 높이[i] }
+                else if (u in 0.57f..0.80f && i == 2) { 끝x = 왼 + 길이[2]; 끝y = 높이[2] }
+            }
+            붓.style = Paint.Style.STROKE; 붓.strokeWidth = r * 0.075f; 붓.strokeCap = Paint.Cap.ROUND
+            붓.color = 강조; 붓.alpha = 210
+            for (i in 0..2) if (보임[i] > 0.01f) c.drawLine(왼, 높이[i], 왼 + 길이[i] * 보임[i], 높이[i], 붓)
+            // 연필 — 끝(심)이 글 끝에 닿고, 몸통은 오른쪽 위로 비스듬히
+            val w = r * 0.17f; val 몸 = r * 0.62f; val 뾰 = r * 0.16f
+            c.save(); c.translate(끝x, 끝y + r * 0.03f); c.rotate(45f)
+            붓.style = Paint.Style.FILL; 붓.alpha = 255
+            붓.color = 노랑연필; c.drawRect(-w / 2, -몸, w / 2, -뾰, 붓)
+            붓.color = 분홍지우개; c.drawRect(-w / 2, -몸, w / 2, -몸 + r * 0.11f, 붓)
+            연필길.reset(); 연필길.moveTo(-w / 2, -뾰); 연필길.lineTo(w / 2, -뾰); 연필길.lineTo(0f, 0f); 연필길.close()
+            붓.color = 나무색; c.drawPath(연필길, 붓)
+            붓.color = 강조; c.drawCircle(0f, -r * 0.01f, r * 0.03f, 붓)
+            붓.style = Paint.Style.STROKE; 붓.strokeWidth = r * 0.025f; 붓.strokeJoin = Paint.Join.ROUND; 붓.color = 강조
+            c.drawRect(-w / 2, -몸, w / 2, -뾰, 붓); c.drawPath(연필길, 붓)
+            c.restore()
+            붓.strokeJoin = Paint.Join.MITER
         }
 
         // ── 끌어서 옮기기 · 누르면 앱으로 ──
@@ -246,7 +308,8 @@ object 떠있는동그라미 {
                     if (!끌었 && !길었) {
                     try {
                         context.startActivity(Intent(context, MainActivity::class.java)
-                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or Intent.FLAG_ACTIVITY_SINGLE_TOP))
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                            .putExtra(MainActivity.보고서열기, 값()?.보고서 == true))   // 10-13: 운동보고서 아이콘이면 보고서 화면까지
                     } catch (_: Exception) { }
                     치움()
                 } }
@@ -267,6 +330,7 @@ private object 동그라미치수 {
     const val 옆 = 12f        // 처음 자리 — 오른쪽에서
     const val 처음위 = 160f   // 처음 자리 — 위에서
     const val 한바퀴 = 1600L  // 퍼지는 고리 한 번
+    const val 글쓰기ms = 4200L // 운동보고서 아이콘의 줄글이 써지고 지워지는 한 바퀴 (10-13 홍겸 님) [추측: 폰에서 보고 조절]
     const val 꾹ms = 680L     // 꾹 누르기 시간 — 10-13 홍겸 님 0.68초 (폰 기본값 0.5초 대신 앱이 정한다 · 처음 0.8 로 했다가 0.68)
     const val 눌림 = 0.8f     // 꾹 누르는 동안 이만큼 작아진다 (10-13 홍겸 님: 0.8 까지 · 아래 단추 눌림 0.96 보다 깊게)
     const val 용수철 = 600f   // 뽀오잉 — 용수철 세기 (클수록 빠르다)

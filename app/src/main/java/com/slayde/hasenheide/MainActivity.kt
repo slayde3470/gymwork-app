@@ -34,6 +34,11 @@ import com.slayde.hasenheide.ui.Local번호
 import androidx.compose.runtime.CompositionLocalProvider
 import com.slayde.hasenheide.ui.앱상태
 import com.slayde.hasenheide.ui.밖에서길게
+import com.slayde.hasenheide.ui.밖보고서열기
+import com.slayde.hasenheide.ui.운동다함
+import com.slayde.hasenheide.ui.쉼남음
+import com.slayde.hasenheide.ui.다음할세트
+import com.slayde.hasenheide.ui.세트안내글
 import com.slayde.hasenheide.data.세기더함
 import com.slayde.hasenheide.data.세기이름
 import com.slayde.hasenheide.data.남은초
@@ -116,10 +121,12 @@ class MainActivity : ComponentActivity() {
         val S = 상태.d.세션 ?: return null
         if (S.끝화면) return null
         val h = S.휴식
+        // 10-13 홍겸 님: 모든 운동이 끝나고 쉬는 시간도 끝났으면 운동보고서 아이콘
+        val 보고서 = 운동다함(S) && !쉼남음(S, System.currentTimeMillis())
         // 10-13 홍겸 님: 지금(쉬는 중이면 다음에 할) 종목이 슈퍼세트면 동그라미 그림을 주황으로
         val 본 = (h?.다음i ?: h?.종목?.takeIf { it >= 0 } ?: S.i).coerceIn(0, maxOf(0, S.종목들.size - 1))
         val 슈퍼 = S.종목들.isNotEmpty() && S.식구(본).size > 1
-        return if (h != null && !h.물음) 떠있는동그라미.값(h.남은초(System.currentTimeMillis()), h.총초, h.끝시각, 슈퍼) else 떠있는동그라미.값(null, 0, 0L, 슈퍼)
+        return if (h != null && !h.물음) 떠있는동그라미.값(h.남은초(System.currentTimeMillis()), h.총초, h.끝시각, 슈퍼, 보고서) else 떠있는동그라미.값(null, 0, 0L, 슈퍼, 보고서)
     }
 
     /**
@@ -130,8 +137,31 @@ class MainActivity : ComponentActivity() {
         val 글 = 상태.밖에서길게() ?: return
         val h = 상태.d.세션?.휴식
         알람맞추기(if (h != null && !h.물음 && 상태.d.설정.소리진동) h.끝시각 else null, 권한묻기 = false)
-        알림글(글)
+        if (글.isNotEmpty()) 알림글(글)
     }
+
+    /** 10-13 홍겸 님: 쉬는 시간이 저절로 끝났을 때(앱 밖) — 다음에 할 세트를 토스트로. 동그라미를 눌러 끝낸 것은 기록에 쉼이 이미 없어서 여기 오지 않는다 */
+    private fun 동그라미쉼끝() {
+        val S = 상태.d.세션 ?: return
+        val h = S.휴식 ?: return
+        if (S.끝화면 || h.끝시각 > System.currentTimeMillis()) return
+        다음할세트(S)?.let { (j, k) -> 알림글(세트안내글(상태.d, S, j, k)) }
+    }
+
+    /** 10-13 홍겸 님: 밖 동그라미의 운동보고서 아이콘을 눌러 들어왔으면 보고서 화면을 연다 */
+    private fun 보고서요청확인(i: Intent?) {
+        if (i?.getBooleanExtra(보고서열기, false) != true) return
+        i.removeExtra(보고서열기)
+        상태.밖보고서열기()
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        보고서요청확인(intent)
+    }
+
+    companion object { const val 보고서열기 = "보고서열기" }
 
     /** 휴식 끝 시각에 알람을 걸고(null 이거나 지났으면 푼다) — 앱 화면 효과와 동그라미 꾹 누름이 같이 쓴다 */
     private fun 알람맞추기(알람끝: Long?, 권한묻기: Boolean = true) {
@@ -166,7 +196,7 @@ class MainActivity : ComponentActivity() {
     override fun onStop() {
         super.onStop()
         // 10-08 홍겸 님: 운동 중에 앱을 벗어나면 다른 앱 위에 동그라미 (유튜브 작은 창과 같이 뜬다)
-        if (!isChangingConfigurations && !(Build.VERSION.SDK_INT >= 26 && isInPictureInPictureMode)) 떠있는동그라미.띄움(this, 길게 = { 동그라미길게() }) { 동그라미값() }
+        if (!isChangingConfigurations && !(Build.VERSION.SDK_INT >= 26 && isInPictureInPictureMode)) 떠있는동그라미.띄움(this, 길게 = { 동그라미길게() }, 쉼끝 = { 동그라미쉼끝() }) { 동그라미값() }
     }
 
     override fun onResume() {
@@ -205,6 +235,7 @@ class MainActivity : ComponentActivity() {
                 알림글("복사했습니다 · Claude 에게 붙여넣으세요")
             },
         )
+        보고서요청확인(intent)
         setContent {
             // 쉬기 시작하면 끝 시각에 알람을 걸고, 휴식이 끝나거나 운동을 마치면 푼다 (09-26 메모: 화면이 꺼져 있어도)
             val h = 상태.d.세션?.휴식
