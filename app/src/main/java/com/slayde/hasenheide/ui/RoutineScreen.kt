@@ -141,6 +141,7 @@ import com.slayde.hasenheide.ui.theme.크기
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -484,6 +485,9 @@ private fun 루틴상세화면(상태: 앱상태, r: 루틴, 닫기: () -> Unit)
     }
     끌기자동넘김(끌, 넘김)
     끌.묶음가능 = { a, b -> 상태.d.루틴(rid)?.묶을수있다(a, b) == true }
+    // 10-12 홍겸 님: 슈퍼세트로 묶기 = 종목 가운데에서 0.5초 멈출 때만 (평소 끌기는 앞 · 뒤 순서 바꾸기만)
+    끌.멈춤 = remember { 묶기멈춤() }
+    끌기멈춤살핌(끌, 넘김, 진동)
     // 10-07 홍겸 님: 상세의 [취소](= 루틴 지우기)는 뺐다 — 지우기는 목록 카드 오른쪽 휴지통
 
     Box(Modifier.fillMaxSize().onGloballyPositioned { 끌.틀 = it.boundsInRoot() }) {
@@ -533,7 +537,7 @@ private fun 루틴상세화면(상태: 앱상태, r: 루틴, 닫기: () -> Unit)
                                 val 식구 = e.슈퍼?.let { g -> r.종목.indices.filter { r.종목[it].슈퍼 == g } } ?: listOf(j)
                                 if (식구.size > 1 && e.플랜id == null) {
                                     // 10-11 홍겸 님: 슈퍼세트는 한 상자 — 맨 앞 종목 자리에서만 그린다 (번호도 맨 앞 종목 것)
-                                    if (j != 식구.first()) return
+                                    if (j != 식구.first()) { 끌.자리.remove(j); return }   // 10-12: 안 그려지는 줄의 옛 자리가 남아 엉뚱한 칸으로 튀던 것
                                     슈퍼상자(상태, 식구, 식구.map { r.종목[it] }, j + 1, j in 펼침, 자리줄, 표시, 끌기길, 손잡이,
                                         on풀기 = {
                                             손댐()
@@ -1257,6 +1261,14 @@ private class 세로끌기 {
     private var 시작넘김 = 0
     /** (집은 번호, 대상 번호) → 가운데에 놓아 묶을 수 있나. 기본은 안 됨(루틴 목록은 묶지 않는다) — 루틴 상세가 정해 준다 */
     var 묶음가능: (Int, Int) -> Boolean = { _, _ -> false }
+    /**
+     * 10-12 홍겸 님: 묶기를 가운데에서 **멈출 때만** 한다 (슈퍼세트 끌기가 너무 예민했다). 값이 있으면 묶기 대상 = 멈춰서 [장전] 된 칸뿐,
+     * 평소 끌기는 앞 · 뒤 순서 바꾸기만. null = 예전처럼 가운데에 있으면 바로 묶기(루틴 목록 합치기)
+     */
+    var 멈춤: 묶기멈춤? = null
+    /** 가운데에서 0.5초 멈춰 묶기 준비가 된 칸 (둘레 테두리가 켜진다) — [멈춤] 이 있을 때만 */
+    var 장전 by mutableStateOf<Int?>(null)
+        private set
 
     /** [수] = 지금 줄 수 — 그보다 큰 번호의 옛 자리(지운 줄)는 버린다. [손x] · [가로] = 2열 격자 */
     fun 시작(i: Int, 이름: String, 손y: Float, 넘김: Int, 수: Int, 손x: Float? = null, 가로: Set<Int> = emptySet()) {
@@ -1264,8 +1276,19 @@ private class 세로끌기 {
         this.가로 = 가로; 시작넘김 = 넘김
         this.이름 = 이름; y = 손y; x = 손x; 원 = i
     }
-    fun 끝() { 원 = null }
-    /** (대상 번호, 뒤에) — 손가락 아래 칸이 없으면 null */
+    fun 끝() { 원 = null; 장전 = null; 멈춤?.비움() }
+    /** 끄는 동안 16ms 마다 — 손가락이 묶을 수 있는 칸 가운데에서 멈췄나 살펴 [장전] 을 켜고 끈다. 새로 켜지면 true */
+    fun 장전살피기(넘김: Int, 지금: Long, 흔들림px: Float): Boolean {
+        val m = 멈춤 ?: return false
+        val a = 원
+        if (a == null) { 장전 = null; return false }
+        val 후보 = 끌가운데(굳은, x, y, (넘김 - 시작넘김).toFloat())?.takeIf { it != a && 묶음가능(a, it) }
+        val 새 = m.갱신(후보, x, y + 넘김, 지금, 흔들림px)
+        val 켜짐 = 새 != null && 장전 == null
+        if (새 != 장전) 장전 = 새
+        return 켜짐
+    }
+ — 손가락 아래 칸이 없으면 null */
     fun 대상(넘김: Int): Pair<Int, Boolean>? {
         if (원 == null) return null
         return 끌대상(굳은, x, y, (넘김 - 시작넘김).toFloat(), 가로)
@@ -1273,6 +1296,7 @@ private class 세로끌기 {
     /** 손가락이 묶을 수 있는 칸의 가운데(위 30% · 아래 30% 를 뺀 40%)에 있으면 그 칸 번호 — 세로 목록에서만 */
     fun 묶기대상(넘김: Int): Int? {
         val a = 원 ?: return null
+        if (멈춤 != null) return 장전?.takeIf { it != a }   // 10-12: 멈춰서 장전된 칸만
         val b = 끌가운데(굳은, x, y, (넘김 - 시작넘김).toFloat()) ?: return null
         return if (b != a && 묶음가능(a, b)) b else null
     }
@@ -1282,6 +1306,40 @@ private class 세로끌기 {
         val t = 대상(넘김) ?: return -1
         if (t.first != i || t.first == 원) return -1
         return if (i in 가로) (if (t.second) 3 else 1) else (if (t.second) 2 else 0)
+    }
+}
+
+/**
+ * 가운데에서 멈췄나 (10-12 홍겸 님) — 같은 칸 가운데에 손가락이 [멈춤ms] 동안 [흔들림px] 안에서 머물면 그 칸 번호를 돌려준다.
+ * 칸이 바뀌거나 후보가 없어지거나 많이 움직이면 다시 센다. x · y 는 목록 안 자리(넘긴 양을 더한 것)라 넘어가도 움직인 것으로 센다
+ */
+internal class 묶기멈춤(private val 멈춤ms: Long = 부품치수.묶기멈춤ms) {
+    private var 후보: Int? = null
+    private var 시각 = 0L
+    private var 기준x = 0f
+    private var 기준y = 0f
+    fun 비움() { 후보 = null }
+    fun 갱신(지금후보: Int?, x: Float?, y: Float, 지금: Long, 흔들림px: Float): Int? {
+        if (지금후보 == null) { 후보 = null; return null }
+        val 움직임 = abs(y - 기준y) > 흔들림px || (x != null && abs(x - 기준x) > 흔들림px)
+        if (지금후보 != 후보 || 움직임) {
+            후보 = 지금후보; 시각 = 지금; 기준x = x ?: 0f; 기준y = y
+            return null
+        }
+        return if (지금 - 시각 >= 멈춤ms) 지금후보 else null
+    }
+}
+
+/** 루틴 상세: 끄는 동안 묶기 멈춤을 살피고, 처음 장전되는 순간 짧게 진동한다 */
+@Composable
+private fun 끌기멈춤살핌(끌: 세로끌기, 넘김: ScrollState, 진동: androidx.compose.ui.hapticfeedback.HapticFeedback) {
+    val 흔들림 = with(LocalDensity.current) { 부품치수.묶기흔들림.toPx() }
+    val 진동최신 by rememberUpdatedState(진동)
+    LaunchedEffect(끌.원 != null) {
+        while (끌.원 != null) {
+            if (끌.장전살피기(넘김.value, System.nanoTime() / 1_000_000L, 흔들림)) 진동최신.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+            delay(16)
+        }
     }
 }
 
