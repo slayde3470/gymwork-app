@@ -16,6 +16,7 @@ import android.os.Looper
 import android.os.SystemClock
 import android.provider.Settings
 import android.view.Gravity
+import android.view.HapticFeedbackConstants
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
@@ -33,6 +34,7 @@ import kotlin.math.sin
  *  · 쉬는 중: 초록 동그라미에 남은 시간 + 줄어드는 고리 + 운동 중처럼 퍼지는 고리 · 숨 쉬는 동그라미 (10-09)
  *  · 운동 중: 앱 아이콘 + 바깥으로 퍼지는 고리(누를 수 있다는 표시)
  *  · 누르면 운동 화면으로 돌아간다 · 끌어서 옮길 수 있다
+ *  · 꾹 누르면 (10-13 홍겸 님) 앱으로 가지 않고 [길게] 를 부른다 — 쉬는 중이면 휴식 끝, 아니면 지금 세트 체크 (MainActivity)
  * 권한이 없으면 전처럼 PiP 를 쓴다 (MainActivity).
  */
 object 떠있는동그라미 {
@@ -55,7 +57,7 @@ object 떠있는동그라미 {
     }
 
     /** [값] 이 null 을 돌려주면(운동이 끝남) 저절로 치운다 */
-    fun 띄움(ctx: Context, 값: () -> 값?) {
+    fun 띄움(ctx: Context, 길게: () -> Unit = {}, 값: () -> 값?) {
         if (!됨(ctx) || 뷰 != null || 값() == null) return
         val app = ctx.applicationContext
         val wm = app.getSystemService(WindowManager::class.java) ?: return
@@ -73,7 +75,7 @@ object 떠있는동그라미 {
             x = (if (마지막x >= 0) 마지막x else 화면.widthPixels - 칸 - (동그라미치수.옆 * 밀도).toInt()).coerceIn(-칸 / 2, 화면.widthPixels - 칸 / 2)
             y = (if (마지막y >= 0) 마지막y else (동그라미치수.처음위 * 밀도).toInt()).coerceIn(-칸 / 2, 화면.heightPixels - 칸 / 2)
         }
-        val v = 동그라미뷰(app, 값, p, wm)
+        val v = 동그라미뷰(app, 값, 길게, p, wm)
         try { wm.addView(v, p); 뷰 = v; v.시작() } catch (_: Exception) { }
     }
 
@@ -87,7 +89,7 @@ object 떠있는동그라미 {
 
     @SuppressLint("ViewConstructor")
     private class 동그라미뷰(
-        ctx: Context, val 값: () -> 값?, val p: WindowManager.LayoutParams, val wm: WindowManager,
+        ctx: Context, val 값: () -> 값?, val 길게: () -> Unit, val p: WindowManager.LayoutParams, val wm: WindowManager,
     ) : View(ctx) {
         private val 밀도 = ctx.resources.displayMetrics.density
         private val 손 = Handler(Looper.getMainLooper())
@@ -110,7 +112,7 @@ object 떠있는동그라미 {
         private val 고리칸 = RectF()
 
         fun 시작() { 손.post(틱) }
-        fun 멈춤() { 손.removeCallbacks(틱) }
+        fun 멈춤() { 손.removeCallbacks(틱); 손.removeCallbacks(길게누름) }
 
         override fun onDraw(c: Canvas) {
             val v = 값() ?: return
@@ -166,7 +168,14 @@ object 떠있는동그라미 {
 
         // ── 끌어서 옮기기 · 누르면 앱으로 ──
         private val 틈 = ViewConfiguration.get(ctx).scaledTouchSlop
-        private var 아래x = 0f; private var 아래y = 0f; private var 처음x = 0; private var 처음y = 0; private var 끌었 = false
+        private var 아래x = 0f; private var 아래y = 0f; private var 처음x = 0; private var 처음y = 0; private var 끌었 = false; private var 길었 = false
+        // 10-13 홍겸 님: 꾹 누르면 앱으로 가지 않고 동작만 한다 (손을 떼도 앱이 열리지 않게 길었 표시)
+        private val 길게누름 = Runnable {
+            if (끌었) return@Runnable
+            길었 = true
+            try { performHapticFeedback(HapticFeedbackConstants.LONG_PRESS) } catch (_: Exception) { }
+            try { 길게() } catch (_: Exception) { }
+        }
 
         // 10-11 홍겸 님: 끝으로 끌어도 창이 화면 밖으로 나가지 않는다 (나가면 눌리지 않았다)
         private fun 안쪽x(x: Int) = x.coerceIn(-p.width / 2, resources.displayMetrics.widthPixels - p.width / 2)
@@ -175,19 +184,23 @@ object 떠있는동그라미 {
         @SuppressLint("ClickableViewAccessibility")
         override fun onTouchEvent(e: MotionEvent): Boolean {
             when (e.actionMasked) {
-                MotionEvent.ACTION_DOWN -> { 아래x = e.rawX; 아래y = e.rawY; 처음x = p.x; 처음y = p.y; 끌었 = false }
+                MotionEvent.ACTION_DOWN -> {
+                    아래x = e.rawX; 아래y = e.rawY; 처음x = p.x; 처음y = p.y; 끌었 = false; 길었 = false
+                    손.removeCallbacks(길게누름); 손.postDelayed(길게누름, ViewConfiguration.getLongPressTimeout().toLong())
+                }
                 MotionEvent.ACTION_MOVE -> {
                     val dx = e.rawX - 아래x; val dy = e.rawY - 아래y
-                    if (!끌었 && (abs(dx) > 틈 || abs(dy) > 틈)) 끌었 = true
+                    if (!길었 && !끌었 && (abs(dx) > 틈 || abs(dy) > 틈)) { 끌었 = true; 손.removeCallbacks(길게누름) }
                     if (끌었) { p.x = 안쪽x(처음x + dx.toInt()); p.y = 안쪽y(처음y + dy.toInt()); try { wm.updateViewLayout(this, p) } catch (_: Exception) { } }
                 }
-                MotionEvent.ACTION_UP -> if (!끌었) {
+                MotionEvent.ACTION_CANCEL -> 손.removeCallbacks(길게누름)
+                MotionEvent.ACTION_UP -> { 손.removeCallbacks(길게누름); if (!끌었 && !길었) {
                     try {
                         context.startActivity(Intent(context, MainActivity::class.java)
                             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or Intent.FLAG_ACTIVITY_SINGLE_TOP))
                     } catch (_: Exception) { }
                     치움()
-                }
+                } }
             }
             return true
         }

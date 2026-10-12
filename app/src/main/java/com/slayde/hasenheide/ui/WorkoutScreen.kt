@@ -1587,6 +1587,38 @@ internal fun 운주누름(S: 운동세션, 본: Int, 지금: Long): 운결과 = 
     운주.완료 -> 운체크(S, 본, 첫빈칸(S.종목들[본]), 지금).let { 운결과(it, 본따라감(it, 본)) }
 }
 
+/**
+ * 10-13 홍겸 님: 앱 밖 떠 있는 동그라미를 꾹 눌렀을 때 — 쉬는 중이면 휴식 끝(건너뛰기와 같다), 아니면 보는 종목(다 했으면 다음 남은 종목)의 첫 빈 세트 체크.
+ * 할 일이 없으면 null
+ */
+internal fun 밖길게(S: 운동세션, 본: Int, 지금: Long): 운결과? {
+    if (S.끝화면) return null
+    if (S.휴식 != null) return 휴식건너뛰기(S, 본, 지금)
+    val b = if (S.종목들.getOrNull(본)?.let(::운남음) == true) 본 else 다음남은(S, 본)
+    val e = S.종목들.getOrNull(b) ?: return null
+    val k = 첫빈칸(e)
+    if (k < 0) return null
+    return 운체크(S, b, k, 지금).let { 운결과(it, 본따라감(it, b)) }
+}
+
+/** 밖 동그라미 꾹 누름을 앱 기록에 반영한다 — 알려 줄 글(없으면 null = 아무 일도 안 함). 화면이 꺼져 있어도 부를 수 있다 */
+internal fun 앱상태.밖에서길게(): String? {
+    var 글: String? = null
+    var 새본: Int? = null
+    바꿈 { dd ->
+        val s = dd.세션 ?: return@바꿈 dd
+        val 본 = (if (운보기.세션 == s.시작시각) 운보기.본 else s.i).coerceIn(0, max(0, s.종목들.size - 1))
+        val 지금 = System.currentTimeMillis()
+        val r = 밖길게(s, 본, 지금) ?: return@바꿈 dd
+        새본 = r.본
+        글 = if (s.휴식 != null) "휴식을 끝냈어요" else "세트를 체크했어요"
+        val 새 = dd.copy(세션 = r.세션.copy(마지막 = 지금))
+        if (r.건너뜀) 새.세기더함(세기이름.연속건너뜀) else 새
+    }
+    새본?.let { b -> d.세션?.let { s -> 운보기.본 = b.coerceIn(0, max(0, s.종목들.size - 1)) } }
+    return 글
+}
+
 /** 지운 세트 — 되돌리기에 쓴다 (시안 `U.운지움`). 그 칸이 목록에 있었는지까지 적어 빼기 → 되돌리기 = 원래 그대로 */
 internal data class 지운세트(
     val j: Int, val 열쇠: String, val k: Int,

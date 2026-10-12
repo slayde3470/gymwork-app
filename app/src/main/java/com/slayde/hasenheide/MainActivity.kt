@@ -33,6 +33,7 @@ import com.slayde.hasenheide.ui.알림안내창
 import com.slayde.hasenheide.ui.Local번호
 import androidx.compose.runtime.CompositionLocalProvider
 import com.slayde.hasenheide.ui.앱상태
+import com.slayde.hasenheide.ui.밖에서길게
 import com.slayde.hasenheide.data.세기더함
 import com.slayde.hasenheide.data.세기이름
 import com.slayde.hasenheide.data.남은초
@@ -117,6 +118,31 @@ class MainActivity : ComponentActivity() {
         return if (h != null && !h.물음) 떠있는동그라미.값(h.남은초(System.currentTimeMillis()), h.총초, h.끝시각) else 떠있는동그라미.값(null, 0)
     }
 
+    /**
+     * 10-13 홍겸 님: 밖 동그라미를 꾹 누르면 — 쉬는 중이면 휴식 끝, 아니면 지금 세트 체크 (앱을 열지 않는다).
+     * 앱이 뒤에 있으면 화면이 안 그려져 아래 휴식 알람 맞춤 효과가 늦게 돌 수 있으므로 여기서 바로 맞춘다.
+     */
+    private fun 동그라미길게() {
+        val 글 = 상태.밖에서길게() ?: return
+        val h = 상태.d.세션?.휴식
+        알람맞추기(if (h != null && !h.물음 && 상태.d.설정.소리진동) h.끝시각 else null, 권한묻기 = false)
+        알림글(글)
+    }
+
+    /** 휴식 끝 시각에 알람을 걸고(null 이거나 지났으면 푼다) — 앱 화면 효과와 동그라미 꾹 누름이 같이 쓴다 */
+    private fun 알람맞추기(알람끝: Long?, 권한묻기: Boolean = true) {
+        if (알람끝 != null && 알람끝 > System.currentTimeMillis()) {
+            if (권한묻기) 알림권한묻기()   // 뒤에 있을 때는 권한 창을 띄우지 않는다
+            휴식알람.맞춤(this, 알람끝, 상태.d.설정.진동세기, 상태.d.설정.진동시간)
+            걸린끝 = 알람끝
+        } else {
+            // 휴식을 일찍 끝냈을 때만 푼다 — 제시각에 끝난 것이면 알람이 울리게 둔다
+            val 전 = 걸린끝
+            if (전 != null && System.currentTimeMillis() < 전 - 1000) 휴식알람.끔(this)
+            걸린끝 = null
+        }
+    }
+
     /** 운동 중 자동 작은 창(PiP) — 떠 있는 동그라미 권한이 있으면 PiP 대신 동그라미를 쓴다 */
     private fun 작은창설정() {
         if (Build.VERSION.SDK_INT < 31) return
@@ -134,7 +160,7 @@ class MainActivity : ComponentActivity() {
     override fun onStop() {
         super.onStop()
         // 10-08 홍겸 님: 운동 중에 앱을 벗어나면 다른 앱 위에 동그라미 (유튜브 작은 창과 같이 뜬다)
-        if (!isChangingConfigurations && !(Build.VERSION.SDK_INT >= 26 && isInPictureInPictureMode)) 떠있는동그라미.띄움(this) { 동그라미값() }
+        if (!isChangingConfigurations && !(Build.VERSION.SDK_INT >= 26 && isInPictureInPictureMode)) 떠있는동그라미.띄움(this, 길게 = { 동그라미길게() }) { 동그라미값() }
     }
 
     override fun onResume() {
@@ -177,18 +203,7 @@ class MainActivity : ComponentActivity() {
             // 쉬기 시작하면 끝 시각에 알람을 걸고, 휴식이 끝나거나 운동을 마치면 푼다 (09-26 메모: 화면이 꺼져 있어도)
             val h = 상태.d.세션?.휴식
             val 알람끝 = if (h != null && !h.물음 && 상태.d.설정.소리진동) h.끝시각 else null
-            LaunchedEffect(알람끝) {
-                if (알람끝 != null && 알람끝 > System.currentTimeMillis()) {
-                    알림권한묻기()
-                    휴식알람.맞춤(this@MainActivity, 알람끝, 상태.d.설정.진동세기, 상태.d.설정.진동시간)
-                    걸린끝 = 알람끝
-                } else {
-                    // 휴식을 일찍 끝냈을 때만 푼다 — 제시각에 끝난 것이면 알람이 울리게 둔다
-                    val 전 = 걸린끝
-                    if (전 != null && System.currentTimeMillis() < 전 - 1000) 휴식알람.끔(this@MainActivity)
-                    걸린끝 = null
-                }
-            }
+            LaunchedEffect(알람끝) { 알람맞추기(알람끝) }
             // 10-01: PiP 가 안 뜨던 것 — [추측] 안드로이드 12 이상 제스처 이동에서는 onUserLeaveHint 가
             //        늦게 오거나 안 와서 작은 창으로 못 들어간다. 운동 중이면 '자동으로 작은 창' 을 켜 둔다
             val 작은창켬 = 상태.d.세션 != null && 상태.d.세션?.끝화면 != true
