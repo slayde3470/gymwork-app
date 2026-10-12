@@ -249,7 +249,9 @@ fun 새종목시트(
                 }
             }
             Box(Modifier.fillMaxWidth().onSizeChanged { 표크기 = it }.bringIntoViewRequester(세트끝)) {
-                새세트줄표(v.세트, 상태.d.설정.무게폭, { f -> v = v.copy(세트 = f(v.세트)) }, { 상태.알림.토스트(세트최대글) })
+                // 10-12 기록 방식: 이름으로 방식이 정해진다 — 맨몸 '추가 kg' · 어시스트 '보조 kg' + 칸 아래 '= 69kg'
+                새세트줄표(v.세트, 상태.d.설정.무게폭, { f -> v = v.copy(세트 = f(v.세트)) }, { 상태.알림.토스트(세트최대글) },
+                    머리 = 무게머리글(listOfNotNull(상태.d.머리방식(v.편집, v.이름, null)), "무게 kg"), 작은글 = { w -> 상태.d.실제무게글(v.편집, v.이름, null, w) })
             }
             Box(Modifier.height(간격.보통))
             버튼("저장", { 저장하기() }, Modifier.fillMaxWidth(), 주요 = true)
@@ -366,12 +368,15 @@ internal object 새시트치수 {
  * 합칠 때 공용 [세트줄표] 로 되돌린다 (원인 · 고칠 곳은 [새세트값칸] 설명)
  */
 @Composable
-private fun 새세트줄표(세트: List<종목세트>, 무게폭: Double, 바꿈: ((List<종목세트>) -> List<종목세트>) -> Unit, 최대알림: () -> Unit) {
+private fun 새세트줄표(
+    세트: List<종목세트>, 무게폭: Double, 바꿈: ((List<종목세트>) -> List<종목세트>) -> Unit, 최대알림: () -> Unit,
+    머리: String = "무게 kg", 작은글: (Double) -> String? = { null },
+) {
     val c = Local색.current
     Column(verticalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
         Row(horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
             글("세트", Modifier.width(새시트치수.번호칸), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)
-            글("무게 kg", Modifier.weight(새시트치수.열무게), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)
+            글(머리, Modifier.weight(새시트치수.열무게), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)
             글("횟수", Modifier.weight(종목치수.열횟수), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)
             글("휴식", Modifier.weight(종목치수.열휴식), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)
             Box(Modifier.width(종목치수.지움칸))
@@ -382,9 +387,11 @@ private fun 새세트줄표(세트: List<종목세트>, 무게폭: Double, 바�
             key(k) {
                 Row(Modifier.새줄효과(k >= 앞), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
                     글("${k + 1}", Modifier.width(새시트치수.번호칸), 크기값 = 크기.조금작게, 굵기 = FontWeight.Bold, 가운데 = true)
-                    새세트값칸(무게글(x.w), Modifier.weight(새시트치수.열무게), "${k + 1}세트 무게", x.w > 0,
-                        { 바꿈 { l -> 세트값바꿈(l, k, 'w', -1, 무게폭) } }, { 바꿈 { l -> 세트값바꿈(l, k, 'w', 1, 무게폭) } },
-                        { g -> 바꿈 { l -> 세트글넣음(l, k, 'w', g) } })
+                    무게칸아래글(작은글(x.w), Modifier.weight(새시트치수.열무게)) {
+                        새세트값칸(무게글(x.w), Modifier.fillMaxWidth(), "${k + 1}세트 무게", x.w > 0,
+                            { 바꿈 { l -> 세트값바꿈(l, k, 'w', -1, 무게폭) } }, { 바꿈 { l -> 세트값바꿈(l, k, 'w', 1, 무게폭) } },
+                            { g -> 바꿈 { l -> 세트글넣음(l, k, 'w', g) } })
+                    }
                     새세트값칸("${x.r}", Modifier.weight(종목치수.열횟수), "${k + 1}세트 횟수", x.r > 1,
                         { 바꿈 { l -> 세트값바꿈(l, k, 'r', -1, 무게폭) } }, { 바꿈 { l -> 세트값바꿈(l, k, 'r', 1, 무게폭) } },
                         { g -> 바꿈 { l -> 세트글넣음(l, k, 'r', g) } }, 정수 = true)

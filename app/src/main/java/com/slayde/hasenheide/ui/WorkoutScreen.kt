@@ -755,7 +755,9 @@ private fun 세트목록(
         ) {
             // 머리 — 세트 · kg · 회 · 휴식 (11 옅음)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
-                listOf("세트", "kg", "회", "휴식").forEachIndexed { x, t ->
+                // 10-12 기록 방식: 표의 줄이 모두 맨몸이면 '추가 kg' · 모두 어시스트면 '보조 kg' (섞이면 'kg')
+                val 머리무게 = 무게머리글(줄들.map { it.first }.distinct().mapNotNull { jj -> S.종목들.getOrNull(jj)?.let { ej -> 상태.d.머리방식(ej.종id, ej.이름, ej.플랜id) } }, "kg")
+                listOf("세트", 머리무게, "회", "휴식").forEachIndexed { x, t ->
                     Text(t, Modifier.width(폭[x]), style = 글꼴.보통(크기.작게), color = c.옅음, textAlign = TextAlign.Center, maxLines = 1)
                 }
             }
@@ -763,7 +765,7 @@ private fun 세트목록(
             줄들.forEachIndexed { r, (jj, k) ->
                 val ej = S.종목들[jj]
                 운세트줄(
-                    S, jj, k, if (묶음) (if (jj == (S.휴식?.다음i?.takeIf { it in 식구 } ?: S.i)) 첫빈칸(ej) else -1) else 지금k, 폭, 글크기, 지금, 무게폭,
+                    S, 상태.d, jj, k, if (묶음) (if (jj == (S.휴식?.다음i?.takeIf { it in 식구 } ?: S.i)) 첫빈칸(ej) else -1) else 지금k, 폭, 글크기, 지금, 무게폭,
                     Modifier.새줄효과(r >= 앞).onPlaced { 자.위[r] = it.positionInParent().y.roundToInt(); 자.높이 = it.size.height },
                     체크 = {
                         val 전 = 상태.d.세션?.종목들?.getOrNull(jj)
@@ -851,7 +853,7 @@ private fun 세트지우기(상태: 앱상태, j: Int, k: Int, 다음: () -> Uni
  */
 @Composable
 private fun 운세트줄(
-    S: 운동세션, j: Int, k: Int, 지금k: Int, 폭: List<Dp>, 글크기: TextUnit, 지금: Long, 무게폭: Double, modifier: Modifier,
+    S: 운동세션, d: 앱데이터, j: Int, k: Int, 지금k: Int, 폭: List<Dp>, 글크기: TextUnit, 지금: Long, 무게폭: Double, modifier: Modifier,
     체크: () -> Unit, 쉼누름: (마무리: Boolean) -> Unit, 값: ((운동세션) -> 운동세션) -> Unit, 지우기: () -> Unit,
 ) {
     val c = Local색.current
@@ -883,10 +885,13 @@ private fun 운세트줄(
                 Modifier.width(폭[1] + 폭[2] + 폭[3] + 간격.아주좁게 * 2),
             ) { 쉼누름(종류 == 쉼종류.마무리) }
         } else {
-            운값칸(무게글(v.w), "무게", 소수 = true, 끝남 = 완료, 글크기, Modifier.width(폭[1]),
-                빼기 = { 값 { s -> s.값고치기(j, k, 새무게 = s.세트값(s.종목들[j], k).w - 무게폭) } },
-                더하기 = { 값 { s -> s.값고치기(j, k, 새무게 = s.세트값(s.종목들[j], k).w + 무게폭) } },
-                넣기 = { t -> t.replace(',', '.').toDoubleOrNull()?.let { w -> 값 { s -> s.값고치기(j, k, 새무게 = w) } } })
+            // 10-12 기록 방식: 맨몸 · 어시스트 줄은 칸 아래에 작게 '= 69kg' (기록에 남는 실제 무게)
+            무게칸아래글(d.실제무게글(e.종id, e.이름, e.플랜id, v.w), Modifier.width(폭[1])) {
+                운값칸(무게글(v.w), "무게", 소수 = true, 끝남 = 완료, 글크기, Modifier.fillMaxWidth(),
+                    빼기 = { 값 { s -> s.값고치기(j, k, 새무게 = s.세트값(s.종목들[j], k).w - 무게폭) } },
+                    더하기 = { 값 { s -> s.값고치기(j, k, 새무게 = s.세트값(s.종목들[j], k).w + 무게폭) } },
+                    넣기 = { t -> t.replace(',', '.').toDoubleOrNull()?.let { w -> 값 { s -> s.값고치기(j, k, 새무게 = w) } } })
+            }
             운값칸("${v.r}", "횟수", 소수 = false, 끝남 = 완료, 글크기, Modifier.width(폭[2]),
                 빼기 = { 값 { s -> s.값고치기(j, k, 새횟수 = s.세트값(s.종목들[j], k).r - 1) } },
                 더하기 = { 값 { s -> s.값고치기(j, k, 새횟수 = s.세트값(s.종목들[j], k).r + 1) } },

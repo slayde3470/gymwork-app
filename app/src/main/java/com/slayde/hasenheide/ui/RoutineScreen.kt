@@ -916,7 +916,8 @@ private fun 슈퍼상자(
             ) {
                 세트칸줄(
                     { Text("세트", Modifier.wrapContentSize(unbounded = true), style = 글꼴.보통(크기.작게), color = c.옅음, maxLines = 1, softWrap = false, overflow = TextOverflow.Visible) },
-                    { 글("무게 kg", 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true) },
+                    // 10-12 기록 방식: 줄이 모두 맨몸이면 '추가 kg' · 모두 어시스트면 '보조 kg'
+                    { 글(무게머리글(es.mapNotNull { x -> 상태.d.머리방식(x.종id, x.이름, x.플랜id) }, "무게 kg"), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true) },
                     { 글("횟수", 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true) },
                     { 글("휴식", 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true) },
                     { },
@@ -933,11 +934,13 @@ private fun 슈퍼상자(
                                 val 마지막종목 = q == es.lastIndex
                                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(간격.아주좁게), verticalAlignment = Alignment.CenterVertically) {
                                     Box(Modifier.weight(루틴값.무게몫), contentAlignment = Alignment.Center) {
-                                        루값칸(무게글(v.w), "${e.이름} 무게",
-                                            빼기 = { on고침(q) { it.세트고침(k, w = 무게반올림(max(0.0, it.목표(k).w - 폭))) } },
-                                            더하기 = { on고침(q) { it.세트고침(k, w = 무게반올림(it.목표(k).w + 폭)) } },
-                                            입력 = { s -> 루무게읽기(s)?.let { x -> on고침(q) { it.세트고침(k, w = x) } } },
-                                            소수 = true, 뺄수있음 = v.w > 0.0)
+                                        무게칸아래글(상태.d.실제무게글(e.종id, e.이름, e.플랜id, v.w), Modifier.fillMaxWidth()) {
+                                            루값칸(무게글(v.w), "${e.이름} 무게",
+                                                빼기 = { on고침(q) { it.세트고침(k, w = 무게반올림(max(0.0, it.목표(k).w - 폭))) } },
+                                                더하기 = { on고침(q) { it.세트고침(k, w = 무게반올림(it.목표(k).w + 폭)) } },
+                                                입력 = { s -> 루무게읽기(s)?.let { x -> on고침(q) { it.세트고침(k, w = x) } } },
+                                                소수 = true, 뺄수있음 = v.w > 0.0)
+                                        }
                                     }
                                     Box(Modifier.weight(루틴값.횟수몫), contentAlignment = Alignment.Center) {
                                         루값칸("${v.r}", "${e.이름} 횟수",
@@ -1046,7 +1049,8 @@ private fun 종목상자(
             ) {
                 세트칸줄(
                     { Text("세트", Modifier.wrapContentSize(unbounded = true), style = 글꼴.보통(크기.작게), color = c.옅음, maxLines = 1, softWrap = false, overflow = TextOverflow.Visible) },
-                    { 글("무게 kg", 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true) },
+                    // 10-12 기록 방식: 맨몸이면 '추가 kg' · 어시스트면 '보조 kg'
+                    { 글(무게머리글(listOfNotNull(상태.d.머리방식(e.종id, e.이름, e.플랜id)), "무게 kg"), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true) },
                     { 글("횟수", 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true) },
                     { 글("휴식", 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true) },
                     { },
@@ -1058,11 +1062,13 @@ private fun 종목상자(
                     세트칸줄(
                         { Text("${k + 1}", style = 글꼴.보통(크기.조금작게, FontWeight.Bold).copy(fontFeatureSettings = "tnum"), color = c.글, textAlign = TextAlign.Center, maxLines = 1) },
                         {
-                            루값칸(무게글(v.w), "무게",
-                                빼기 = { on고침 { it.세트고침(k, w = 무게반올림(max(0.0, it.목표(k).w - 폭))) } },
-                                더하기 = { on고침 { it.세트고침(k, w = 무게반올림(it.목표(k).w + 폭)) } },
-                                입력 = { s -> 루무게읽기(s)?.let { x -> on고침 { it.세트고침(k, w = x) } } },
-                                소수 = true, 뺄수있음 = v.w > 0.0)
+                            무게칸아래글(상태.d.실제무게글(e.종id, e.이름, e.플랜id, v.w), Modifier.fillMaxWidth()) {
+                                루값칸(무게글(v.w), "무게",
+                                    빼기 = { on고침 { it.세트고침(k, w = 무게반올림(max(0.0, it.목표(k).w - 폭))) } },
+                                    더하기 = { on고침 { it.세트고침(k, w = 무게반올림(it.목표(k).w + 폭)) } },
+                                    입력 = { s -> 루무게읽기(s)?.let { x -> on고침 { it.세트고침(k, w = x) } } },
+                                    소수 = true, 뺄수있음 = v.w > 0.0)
+                            }
                         },
                         {
                             루값칸("${v.r}", "횟수",

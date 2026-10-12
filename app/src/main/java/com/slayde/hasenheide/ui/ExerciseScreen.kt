@@ -757,7 +757,9 @@ private fun 종목고치기(상태: 앱상태, t: 종목, 플랜있음: Boolean,
             글("기본 세팅", 크기값 = 크기.조금작게, 굵기 = FontWeight.Bold)
             if (플랜있음) 맞춤글("플랜으로 넣으면 플랜 처방대로", Modifier.weight(1f), 최대 = 크기.작게, 색 = c.옅음)
         }
-        기본세트표(v.세트, d.설정.무게폭, { f -> v = v.copy(세트 = f(v.세트)) }, { 상태.알림.토스트(세트최대글) })
+        // 10-12 기록 방식: 맨몸 '추가 kg' · 어시스트 '보조 kg' + 칸 아래 '= 69kg'
+        기본세트표(v.세트, d.설정.무게폭, { f -> v = v.copy(세트 = f(v.세트)) }, { 상태.알림.토스트(세트최대글) },
+            머리 = 무게머리글(listOfNotNull(d.머리방식(t.id, t.이름, null)), "무게 kg"), 작은글 = { w -> d.실제무게글(t.id, t.이름, null, w) })
     }
     // 10-09 홍겸 님: 근육 그림 2장 (글 없음) — 어디를 눌러도 근육 고르기 팝업 (근육 조각이면 그 부위 줄 강조)
     근육두장(v.근육, d.설정.색표, { 키들 -> v = if (키들.isEmpty()) v.팝빈열기() else v.팝열기(키들) })
@@ -824,12 +826,15 @@ internal object 세트표치수 {
  * 세트 번호는 강조 동그라미. 값 바꾸는 규칙은 [세트줄표] 와 같다(무게폭 · 1회 이상 · 휴식 15초 눈금)
  */
 @Composable
-private fun 기본세트표(세트: List<종목세트>, 무게폭: Double, 바꿈: ((List<종목세트>) -> List<종목세트>) -> Unit, 최대알림: () -> Unit) {
+private fun 기본세트표(
+    세트: List<종목세트>, 무게폭: Double, 바꿈: ((List<종목세트>) -> List<종목세트>) -> Unit, 최대알림: () -> Unit,
+    머리: String = "무게 kg", 작은글: (Double) -> String? = { null },
+) {
     val c = Local색.current
     Column(verticalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
         세트표줄(
             { 글("세트", 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true) },
-            { 글("무게 kg", 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true) },
+            { 글(머리, 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true) },
             { 글("횟수", 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true) },
             { 글("휴식", 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true) },
             { },
@@ -846,9 +851,11 @@ private fun 기본세트표(세트: List<종목세트>, 무게폭: Double, 바�
                         ) { 글("${k + 1}", 크기값 = 크기.조금작게, 색 = c.강조, 굵기 = FontWeight.Bold, 가운데 = true) }
                     },
                     {
-                        세트값칸(무게글(x.w), Modifier.fillMaxWidth(), "${k + 1}세트 무게", x.w > 0,
-                            { 바꿈 { l -> 세트값바꿈(l, k, 'w', -1, 무게폭) } }, { 바꿈 { l -> 세트값바꿈(l, k, 'w', 1, 무게폭) } },
-                            { g -> 바꿈 { l -> 세트글넣음(l, k, 'w', g) } }, 단추폭 = 세트표치수.단추, 그림크기 = 세트표치수.그림)
+                        무게칸아래글(작은글(x.w), Modifier.fillMaxWidth()) {
+                            세트값칸(무게글(x.w), Modifier.fillMaxWidth(), "${k + 1}세트 무게", x.w > 0,
+                                { 바꿈 { l -> 세트값바꿈(l, k, 'w', -1, 무게폭) } }, { 바꿈 { l -> 세트값바꿈(l, k, 'w', 1, 무게폭) } },
+                                { g -> 바꿈 { l -> 세트글넣음(l, k, 'w', g) } }, 단추폭 = 세트표치수.단추, 그림크기 = 세트표치수.그림)
+                        }
                     },
                     {
                         세트값칸("${x.r}", Modifier.fillMaxWidth(), "${k + 1}세트 횟수", x.r > 1,
@@ -986,6 +993,7 @@ private fun 종목세팅(상태: 앱상태, 열쇠: String, 플랜있음: Boolea
             상태.d.종목기본세트(열쇠), 상태.d.설정.무게폭,
             { f -> 상태.바꿈 { it.종목세트고침(열쇠, f) } },
             { 상태.알림.토스트(세트최대글) },
+            머리 = 무게머리글(listOfNotNull(상태.d.머리방식(null, 열쇠, null)), "무게 kg"), 작은글 = { w -> 상태.d.실제무게글(null, 열쇠, null, w) },
         )
     }
 }
@@ -996,12 +1004,15 @@ private fun 종목세팅(상태: 앱상태, 열쇠: String, 플랜있음: Boolea
  * [바꿈] 은 '지금 목록 → 새 목록' 함수를 받는다 (빠르게 연달아 눌러도 가장 새 값에서 계산되게)
  */
 @Composable
-internal fun 세트줄표(세트: List<종목세트>, 무게폭: Double, 바꿈: ((List<종목세트>) -> List<종목세트>) -> Unit, 최대알림: () -> Unit) {
+internal fun 세트줄표(
+    세트: List<종목세트>, 무게폭: Double, 바꿈: ((List<종목세트>) -> List<종목세트>) -> Unit, 최대알림: () -> Unit,
+    머리: String = "무게 kg", 작은글: (Double) -> String? = { null },
+) {
     val c = Local색.current
     Column(verticalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
         Row(horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
             글("세트", Modifier.width(종목치수.번호칸), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)
-            글("무게 kg", Modifier.weight(종목치수.열무게), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)
+            글(머리, Modifier.weight(종목치수.열무게), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)
             글("횟수", Modifier.weight(종목치수.열횟수), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)
             글("휴식", Modifier.weight(종목치수.열휴식), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)
             Box(Modifier.width(종목치수.지움칸))
@@ -1012,9 +1023,11 @@ internal fun 세트줄표(세트: List<종목세트>, 무게폭: Double, 바꿈:
             key(k) {
                 Row(Modifier.새줄효과(k >= 앞), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
                     글("${k + 1}", Modifier.width(종목치수.번호칸), 크기값 = 크기.조금작게, 굵기 = FontWeight.Bold, 가운데 = true)
-                    세트값칸(무게글(x.w), Modifier.weight(종목치수.열무게), "${k + 1}세트 무게", x.w > 0,
-                        { 바꿈 { l -> 세트값바꿈(l, k, 'w', -1, 무게폭) } }, { 바꿈 { l -> 세트값바꿈(l, k, 'w', 1, 무게폭) } },
-                        { g -> 바꿈 { l -> 세트글넣음(l, k, 'w', g) } })
+                    무게칸아래글(작은글(x.w), Modifier.weight(종목치수.열무게)) {
+                        세트값칸(무게글(x.w), Modifier.fillMaxWidth(), "${k + 1}세트 무게", x.w > 0,
+                            { 바꿈 { l -> 세트값바꿈(l, k, 'w', -1, 무게폭) } }, { 바꿈 { l -> 세트값바꿈(l, k, 'w', 1, 무게폭) } },
+                            { g -> 바꿈 { l -> 세트글넣음(l, k, 'w', g) } })
+                    }
                     세트값칸("${x.r}", Modifier.weight(종목치수.열횟수), "${k + 1}세트 횟수", x.r > 1,
                         { 바꿈 { l -> 세트값바꿈(l, k, 'r', -1, 무게폭) } }, { 바꿈 { l -> 세트값바꿈(l, k, 'r', 1, 무게폭) } },
                         { g -> 바꿈 { l -> 세트글넣음(l, k, 'r', g) } }, 정수 = true)
