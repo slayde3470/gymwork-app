@@ -714,7 +714,7 @@ private fun 넣기체크(이름: String, 수: Int, 즐겨: Boolean, 누름: () -
                 contentAlignment = Alignment.Center,
             ) {
                 별(들어감, 넣기값.체크 + 2.dp, c.즐겨)
-                if (들어감) Text(체크글꼴(수, 크기.작게 * (if (수 >= 3) 0.9f else 1.05f)), style = 글꼴.보통(크기.작게 * (if (수 >= 3) 1.0f else 1.15f), FontWeight.Bold).copy(letterSpacing = (-0.1).em), color = c.강조, maxLines = 1, softWrap = false, modifier = Modifier.넘쳐도폭없이().offset(y = 1.dp))
+                if (들어감) Text(체크글꼴(수, 크기.작게 * (if (수 >= 3) 1.0f else 1.15f)), style = 글꼴.보통(크기.작게 * (if (수 >= 3) 1.1f else 1.25f), FontWeight.Bold).copy(letterSpacing = (-0.1).em), color = c.강조, maxLines = 1, softWrap = false, modifier = Modifier.넘쳐도폭없이().offset(y = 1.dp))
             }
         } else Box(
             Modifier.padding(start = 넣기값.체크옆).graphicsLayer { scaleX = 깊이.value; scaleY = 깊이.value }.heightIn(min = 넣기값.체크).widthIn(min = 넣기값.체크),
@@ -722,7 +722,7 @@ private fun 넣기체크(이름: String, 수: Int, 즐겨: Boolean, 누름: () -
         ) {
             // 10-12 홍겸 님: 상자(바탕·테두리)와 글을 다른 층으로 — 테두리가 글 위에 그려져 끝이 잘려 보였다. 글은 상자 위 층
             Box(Modifier.matchParentSize().background(if (들어감) c.강조 else c.면, 상자).border(선굵기.보통, if (들어감) c.강조 else c.속선, 상자))
-            if (들어감) Text(체크글꼴(수, 크기.작게 * (if (수 >= 3) 0.9f else 1.05f)), style = 글꼴.보통(크기.작게 * (if (수 >= 3) 1.0f else 1.15f), FontWeight.Bold).copy(letterSpacing = (-0.1).em), color = c.강조글, maxLines = 1, softWrap = false, modifier = Modifier.넘쳐도폭없이())
+            if (들어감) Text(체크글꼴(수, 크기.작게 * (if (수 >= 3) 1.0f else 1.15f)), style = 글꼴.보통(크기.작게 * (if (수 >= 3) 1.1f else 1.25f), FontWeight.Bold).copy(letterSpacing = (-0.1).em), color = c.강조글, maxLines = 1, softWrap = false, modifier = Modifier.넘쳐도폭없이())
         }
     }
 }

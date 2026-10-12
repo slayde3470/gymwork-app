@@ -167,6 +167,15 @@ class ExerciseTest {
         assertNull(d.저장검사(크런치))
     }
 
+    @Test fun 새_사전다른이름을쳐도친이름그대로() {
+        // 10-12 홍겸 님: '프리처 컬 머신' 이 사전 다른 이름이라 '프리처 컬' 로 바뀌어 같은 이름 2번째가 생겼다
+        val d = 바탕()
+        val v = d.새초기().copy(이름 = "프리처 컬 머신", 찾는중 = true).확인(d).first
+        assertEquals("프리처 컬 머신", v.이름)
+        assertEquals("팔", v.칸)              // 근육 · 칸은 사전 값
+        assertTrue("P" in v.근육.values)
+    }
+
     @Test fun 새_손으로고른칸은사전이비우지않음() {
         val d = 바탕()
         val v = d.새초기().칸고름("복근").copy(이름 = "크런치", 찾는중 = true).확인(d).first
