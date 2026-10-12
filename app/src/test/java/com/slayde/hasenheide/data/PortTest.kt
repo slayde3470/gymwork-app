@@ -440,7 +440,7 @@ class PortTest {
 
     @Test fun 사전() {
         val l = 종목사전.목록
-        assertEquals(129, l.size)
+        assertEquals(130, l.size)   // 10-12 프리처 컬 머신 더함
         assertEquals(l.size, l.map { it.이름 }.toSet().size, "이름 중복")
         val 칸들 = setOf("가슴", "등", "하체", "어깨", "팔", "맨몸")
         assertTrue(l.all { it.칸 in 칸들 })
