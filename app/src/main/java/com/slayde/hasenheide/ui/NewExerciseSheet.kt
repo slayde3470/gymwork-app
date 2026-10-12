@@ -560,7 +560,7 @@ internal fun 새종목값.확인(d: 앱데이터): Pair<새종목값, String?> {
     //  (전에는 `if (!고름)` 이라 한 번 정한 뒤 다른 이름으로 바꾸면 앞 종목 근육이 남았다 — 시안과 같은 원인)
     if (!(고름 && 정한 == n)) {
         val x = 종목사전.목록.firstOrNull { it.이름 == n || n in it.별 }
-        if (x != null) v = v.사전적용(x, d.카테고리).copy(이름 = n)   // 10-12 홍겸 님: 친 이름은 그대로 — 사전은 근육 · 칸만 채운다 ('프리처 컬 머신' 이 '프리처 컬' 로 바뀌던 것)
+        if (x != null) v = v.사전적용(x, d.카테고리)
         else {
             val 있 = d.종목표.firstOrNull { it.이름 == n }
             if (!칸직접) v = v.copy(칸 = 있?.칸?.takeIf { it in d.카테고리 })
