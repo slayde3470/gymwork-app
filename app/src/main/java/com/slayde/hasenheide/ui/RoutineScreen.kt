@@ -1288,7 +1288,7 @@ private class 세로끌기 {
         if (새 != 장전) 장전 = 새
         return 켜짐
     }
- — 손가락 아래 칸이 없으면 null */
+    /** (대상 번호, 뒤에) — 손가락 아래 칸이 없으면 null */
     fun 대상(넘김: Int): Pair<Int, Boolean>? {
         if (원 == null) return null
         return 끌대상(굳은, x, y, (넘김 - 시작넘김).toFloat(), 가로)
