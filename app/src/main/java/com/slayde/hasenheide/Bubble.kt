@@ -117,6 +117,7 @@ object 떠있는동그라미 {
         // 10-13 홍겸 님: 꾹 누르는 동안 오목하게 작아졌다가 떼면 돌아온다 (아래 단추들의 눌림과 같은 느낌 · 작은 동그라미라 조금 더 깊게)
         private var 눌림배 = 1f
         private var 눌림목표 = 1f
+        private var 눌림속도 = 0f
         private var 앞시각 = 0L
         private val 동그길 = Path()
         private val 고리칸 = RectF()
@@ -128,11 +129,17 @@ object 떠있는동그라미 {
             val 지금 = SystemClock.uptimeMillis()
             val 틈ms = if (앞시각 == 0L) 0L else (지금 - 앞시각).coerceIn(0L, 64L)
             앞시각 = 지금
-            if (눌림배 != 눌림목표) {
-                val 걸음 = (1f - 동그라미치수.눌림) * 틈ms / 동그라미치수.눌림ms
-                눌림배 = if (눌림배 < 눌림목표) minOf(눌림목표, 눌림배 + 걸음) else maxOf(눌림목표, 눌림배 - 걸음)
+            // 10-13 홍겸 님: 누르면 오목하게(0.9) → 떼면 '뽀오잉' 볼록하게 튀어나왔다 제자리로 — 용수철로 움직인다 (떼는 순간 속도를 줘서 튀어나오게)
+            if (abs(눌림배 - 눌림목표) > 0.002f || abs(눌림속도) > 0.05f) {
+                var 남 = 틈ms / 1000f
+                val 감쇠 = if (눌림목표 < 1f) 동그라미치수.누름감쇠 else 동그라미치수.튐감쇠
+                while (남 > 0f) {
+                    val dt = minOf(남, 0.008f); 남 -= dt
+                    눌림속도 += (동그라미치수.용수철 * (눌림목표 - 눌림배) - 감쇠 * 눌림속도) * dt
+                    눌림배 += 눌림속도 * dt
+                }
                 postInvalidateOnAnimation()   // 50ms 틱을 기다리지 않고 부드럽게
-            } else 앞시각 = 0L
+            } else { 눌림배 = 눌림목표; 눌림속도 = 0f; 앞시각 = 0L }
             c.save()
             c.scale(눌림배, 눌림배, width / 2f, height / 2f)
             그리기(c)
@@ -213,6 +220,13 @@ object 떠있는동그라미 {
         private fun 안쪽x(x: Int) = x.coerceIn(-p.width / 2, resources.displayMetrics.widthPixels - p.width / 2)
         private fun 안쪽y(y: Int) = y.coerceIn(-p.height / 2, resources.displayMetrics.heightPixels - p.height / 2)
 
+        /** 손을 뗐다 — 눌려 있었으면 바깥으로 튕겨 나가는 속도를 주어 볼록하게 튀었다가 돌아온다 */
+        private fun 놓음() {
+            if (눌림목표 < 1f) 눌림속도 = 동그라미치수.튐속도
+            눌림목표 = 1f
+            앞시각 = 0L
+        }
+
         @SuppressLint("ClickableViewAccessibility")
         override fun onTouchEvent(e: MotionEvent): Boolean {
             when (e.actionMasked) {
@@ -226,8 +240,8 @@ object 떠있는동그라미 {
                     if (!길었 && !끌었 && (abs(dx) > 틈 || abs(dy) > 틈)) { 끌었 = true; 손.removeCallbacks(길게누름); 눌림목표 = 1f; invalidate() }
                     if (끌었) { p.x = 안쪽x(처음x + dx.toInt()); p.y = 안쪽y(처음y + dy.toInt()); try { wm.updateViewLayout(this, p) } catch (_: Exception) { } }
                 }
-                MotionEvent.ACTION_CANCEL -> { 손.removeCallbacks(길게누름); 눌림목표 = 1f; invalidate() }
-                MotionEvent.ACTION_UP -> { 손.removeCallbacks(길게누름); 눌림목표 = 1f; invalidate(); if (!끌었 && !길었) {
+                MotionEvent.ACTION_CANCEL -> { 손.removeCallbacks(길게누름); 놓음(); invalidate() }
+                MotionEvent.ACTION_UP -> { 손.removeCallbacks(길게누름); 놓음(); invalidate(); if (!끌었 && !길었) {
                     try {
                         context.startActivity(Intent(context, MainActivity::class.java)
                             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or Intent.FLAG_ACTIVITY_SINGLE_TOP))
@@ -252,6 +266,9 @@ private object 동그라미치수 {
     const val 처음위 = 160f   // 처음 자리 — 위에서
     const val 한바퀴 = 1600L  // 퍼지는 고리 한 번
     const val 눌림 = 0.9f     // 꾹 누르는 동안 이만큼 작아진다 (10-13 홍겸 님 · 아래 단추 눌림 0.96 보다 깊게 — 작은 동그라미라 보이게)
-    const val 눌림ms = 120f   // 작아지고 돌아오는 시간 (움직임.눌림 과 같다)
+    const val 용수철 = 600f   // 뽀오잉 — 용수철 세기 (클수록 빠르다)
+    const val 누름감쇠 = 49f  // 누를 때 — 튀지 않고 부드럽게 오목해진다 (2×√용수철)
+    const val 튐감쇠 = 14f    // 뗄 때 — 덜 막아서 볼록하게 튀었다 돌아온다
+    const val 튐속도 = 6.5f   // 떼는 순간 바깥으로 주는 속도 (배율/초) — 약 1.1배까지 튄다 [추측: 폰에서 보고 조절]
     const val 틱 = 50L        // 다시 그리는 틈
 }
