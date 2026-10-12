@@ -34,7 +34,7 @@ import kotlin.math.sin
  *  · 쉬는 중: 초록 동그라미에 남은 시간 + 줄어드는 고리 + 운동 중처럼 퍼지는 고리 · 숨 쉬는 동그라미 (10-09)
  *  · 운동 중: 앱 아이콘 + 바깥으로 퍼지는 고리(누를 수 있다는 표시)
  *  · 누르면 운동 화면으로 돌아간다 · 끌어서 옮길 수 있다
- *  · 꾹 누르면 (10-13 홍겸 님) 앱으로 가지 않고 [길게] 를 부른다 — 쉬는 중이면 휴식 끝, 아니면 지금 세트 체크 (MainActivity)
+ *  · 꾹 누르면 (10-13 홍겸 님) 앱으로 가지 않고 [길게] 를 부른다(손을 뗄 때 · 끌지 않았으면) — 쉬는 중이면 휴식 끝, 아니면 지금 세트 체크 (MainActivity)
  * 권한이 없으면 전처럼 PiP 를 쓴다 (MainActivity).
  */
 object 떠있는동그라미 {
@@ -213,7 +213,7 @@ object 떠있는동그라미 {
             if (끌었) return@Runnable
             길었 = true
             try { performHapticFeedback(HapticFeedbackConstants.LONG_PRESS) } catch (_: Exception) { }
-            try { 길게() } catch (_: Exception) { }
+            // 10-13 홍겸 님: 누르고 있는 동안은 넘어가지 않는다 — 위치를 옮기려는 걸 수도 있어서. 손을 '뗄 때' 아직 안 끌었으면 그때 한다
         }
 
         // 10-11 홍겸 님: 끝으로 끌어도 창이 화면 밖으로 나가지 않는다 (나가면 눌리지 않았다)
@@ -237,11 +237,13 @@ object 떠있는동그라미 {
                 }
                 MotionEvent.ACTION_MOVE -> {
                     val dx = e.rawX - 아래x; val dy = e.rawY - 아래y
-                    if (!길었 && !끌었 && (abs(dx) > 틈 || abs(dy) > 틈)) { 끌었 = true; 손.removeCallbacks(길게누름); 눌림목표 = 1f; invalidate() }
+                    if (!끌었 && (abs(dx) > 틈 || abs(dy) > 틈)) { 끌었 = true; 길었 = false; 손.removeCallbacks(길게누름); 눌림목표 = 1f; invalidate() }   // 꾹 누른 뒤라도 끌면 옮기기 (그땐 아무것도 안 한다)
                     if (끌었) { p.x = 안쪽x(처음x + dx.toInt()); p.y = 안쪽y(처음y + dy.toInt()); try { wm.updateViewLayout(this, p) } catch (_: Exception) { } }
                 }
                 MotionEvent.ACTION_CANCEL -> { 손.removeCallbacks(길게누름); 놓음(); invalidate() }
-                MotionEvent.ACTION_UP -> { 손.removeCallbacks(길게누름); 놓음(); invalidate(); if (!끌었 && !길었) {
+                MotionEvent.ACTION_UP -> { 손.removeCallbacks(길게누름); 놓음(); invalidate()
+                    if (!끌었 && 길었) { 길었 = false; try { 길게() } catch (_: Exception) { } }
+                    else if (!끌었) {
                     try {
                         context.startActivity(Intent(context, MainActivity::class.java)
                             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or Intent.FLAG_ACTIVITY_SINGLE_TOP))
@@ -265,10 +267,10 @@ private object 동그라미치수 {
     const val 옆 = 12f        // 처음 자리 — 오른쪽에서
     const val 처음위 = 160f   // 처음 자리 — 위에서
     const val 한바퀴 = 1600L  // 퍼지는 고리 한 번
-    const val 눌림 = 0.9f     // 꾹 누르는 동안 이만큼 작아진다 (10-13 홍겸 님 · 아래 단추 눌림 0.96 보다 깊게 — 작은 동그라미라 보이게)
+    const val 눌림 = 0.8f     // 꾹 누르는 동안 이만큼 작아진다 (10-13 홍겸 님: 0.8 까지 · 아래 단추 눌림 0.96 보다 깊게)
     const val 용수철 = 600f   // 뽀오잉 — 용수철 세기 (클수록 빠르다)
     const val 누름감쇠 = 49f  // 누를 때 — 튀지 않고 부드럽게 오목해진다 (2×√용수철)
     const val 튐감쇠 = 14f    // 뗄 때 — 덜 막아서 볼록하게 튀었다 돌아온다
-    const val 튐속도 = 6.5f   // 떼는 순간 바깥으로 주는 속도 (배율/초) — 약 1.1배까지 튄다 [추측: 폰에서 보고 조절]
+    const val 튐속도 = 4.5f   // 떼는 순간 바깥으로 주는 속도 (배율/초) — 약 1.1배까지 튄다 (0.8 에서 출발하니 속도를 줄였다) [추측: 폰에서 보고 조절]
     const val 틱 = 50L        // 다시 그리는 틈
 }
