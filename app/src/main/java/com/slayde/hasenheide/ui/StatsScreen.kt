@@ -84,6 +84,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.slayde.hasenheide.data.근육계산
 import com.slayde.hasenheide.data.기록세트
+import com.slayde.hasenheide.data.무게칸있음
+import com.slayde.hasenheide.data.방식
 import com.slayde.hasenheide.data.날
 import com.slayde.hasenheide.data.날RM들
 import com.slayde.hasenheide.data.날기록
@@ -486,7 +488,7 @@ internal fun 앱데이터.스탯그래프값(s: 스탯, 단위: String, 오늘: 
     val 줄 = 기록.entries.filter { 날짜만(it.key) <= 오늘 }.sortedBy { it.key }
     fun 든다(e: 종목기록) = 종 == null || 정식이름(e) in 종
     fun 함(r: 날기록) = r.종목들.any { 든다(it) && 기록세트(it.세트들).isNotEmpty() }
-    fun 볼(r: 날기록) = r.종목들.filter { 든다(it) }.sumOf { e -> 기록세트(e.세트들).sumOf { 근육계산.유효무게(it.w, 몸.체중) * it.r } }
+    fun 볼(r: 날기록) = r.종목들.filter { 든다(it) && 방식(it.종id, it.이름).무게칸있음() }.sumOf { e -> 기록세트(e.세트들).sumOf { 근육계산.유효무게(it.w, 몸.체중) * it.r } }
     return 스탯그래프칸들(단위, 오늘).map { c ->
         val 속 = 줄.filter { val d = 날짜만(it.key); d >= c.시 && d <= c.끝 && 함(it.value) }
         val 막 = if (속.isEmpty()) null else 속.sumOf { 볼(it.value) } / 속.size

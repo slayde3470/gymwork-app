@@ -90,6 +90,8 @@ import com.slayde.hasenheide.data.세트종류
 import com.slayde.hasenheide.data.시간글
 import com.slayde.hasenheide.data.앱데이터
 import com.slayde.hasenheide.data.예상초
+import com.slayde.hasenheide.data.무게칸있음
+import com.slayde.hasenheide.data.방식
 import com.slayde.hasenheide.data.예정루틴
 import com.slayde.hasenheide.data.예정옮기기
 import com.slayde.hasenheide.data.예정지우기
@@ -515,7 +517,7 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
                     이름표("루틴 고르기")   // 10-09 홍겸 님: 목록은 펼친 채, 무엇을 고르는지 작은 제목만 다시
                     Box(Modifier.height(간격.아주좁게))
                     d.루틴들.forEach { r ->
-                        val 곁 = (if (r.휴식일) "휴식" else "예상 ${시간글(예상초(d.플랜줄채움(r)))}") + if (r.자동생성) "" else " · 수동"
+                        val 곁 = (if (r.휴식일) "휴식" else "예상 ${시간글(예상초(d.플랜줄채움(r), d))}") + if (r.자동생성) "" else " · 수동"
                         고르기줄(r.이름, 곁, 오른쪽 = if (d.예정[k] == r.id) 아이콘.체크 else null) {
                             열린 = null
                             상태.바꿈 { it.그날만바꾸기(r.id, k, 상태.오늘) }
@@ -907,10 +909,10 @@ private fun 예머리(d: 앱데이터, r: 루틴, 선위: Boolean) {
             FlowRow(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(간격.아주좁게), verticalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
                 if (r.휴식일) 판칩("휴식일") else {
                     // 볼륨 — 맨몸 0kg 은 체중의 60% 로 센다 (시안 `유효무게` · 근육 계산과 같은 값)
-                    val 볼 = r.종목.sumOf { e -> (0 until e.세트).sumOf { i -> e.목표(i).let { s -> 근육계산.유효무게(s.w, d.몸.체중) * s.r } } }
+                    val 볼 = r.종목.filter { e -> d.방식(e.종id, e.이름).무게칸있음() }.sumOf { e -> (0 until e.세트).sumOf { i -> e.목표(i).let { s -> 근육계산.유효무게(s.w, d.몸.체중) * s.r } } }
                     판칩("${총세트(r)}세트")
                     판칩("볼륨 ${콤마(볼)}kg")
-                    판칩("예상 ${시간글(예상초(r))}")
+                    판칩("예상 ${시간글(예상초(r, d))}")
                 }
             }
         }

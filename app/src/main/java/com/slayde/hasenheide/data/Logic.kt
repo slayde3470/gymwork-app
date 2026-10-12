@@ -110,10 +110,14 @@ const val 세트수행초 = 40
 const val 회당초 = 4
 const val 종목전환초 = 60
 
-fun 예상초(r: 루틴?): Int {
+fun 예상초(r: 루틴?, d: 앱데이터? = null): Int {
     if (r == null || r.휴식일) return 0
     // 10-01: 세트 시간을 횟수에 비례시킨다 (전에는 횟수와 상관없이 세트당 40초)
-    val 본 = r.종목.sumOf { e -> (0 until e.세트).sumOf { k -> e.목표(k).r * 회당초 } + (0 until max(0, e.세트 - 1)).sumOf { k -> e.휴식(k) } }
+    // 10-12 기록 방식 2단계: 시간(버티기) 종목은 r 이 이미 초다 — 그대로 센다 ([d] 를 주면)
+    val 본 = r.종목.sumOf { e ->
+        val 초로 = d != null && d.방식(e.종id, e.이름).시간칸()
+        (0 until e.세트).sumOf { k -> if (초로) e.목표(k).r else e.목표(k).r * 회당초 } + (0 until max(0, e.세트 - 1)).sumOf { k -> e.휴식(k) }
+    }
     return 본 + max(0, r.종목.size - 1) * 종목전환초
 }
 fun 시간글(초: Int): String {
@@ -952,7 +956,15 @@ fun 루틴.볼륨올리기(s: 설정값, 방식: (루틴종목) -> 기록방식 
         if (e.플랜id != null) return@map e   // 10-01: 플랜 줄은 플랜이 올린다
         val 목 = (0 until e.세트).map { e.목표(it) }
         if (목.isEmpty()) return@map e
-        val 어시 = 방식(e) == 기록방식.어시스트
+        val 방 = 방식(e)
+        // 10-12 2단계: 시간(초)은 올리지 않는다 — 초가 횟수처럼 +1 되면 안 된다. 횟수만은 무게 칸이 없어 횟수 쪽만 올린다
+        if (방 == 기록방식.시간) return@map e
+        if (방 == 기록방식.횟수만) {
+            if (s.볼륨배분 != "횟수" || 목.none { it.r < s.횟수상한 }) return@map e
+            val 새 = 목.map { 세트(it.w, min(s.횟수상한, it.r + 1)) }
+            return@map e.copy(무게 = 새[0].w, 횟수 = 새[0].r, 세트값 = 새, 휴식값 = (0 until e.세트).map { e.휴식(it) })
+        }
+        val 어시 = 방 == 기록방식.어시스트
         // 부하를 올리는 쪽으로 무게 칸 값을 옮긴다: 일반 · 맨몸(추가 kg) = 더하기 / 어시스트(보조 kg) = 빼기
         fun 올린(w: Double, 더할: Double) = 무게반올림(if (어시) max(0.0, w - 더할) else w + 더할)
         val 새목 = when (s.볼륨배분) {

@@ -360,7 +360,7 @@ private fun 루틴카드(
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(루틴값.카드줄틈)) {
                 Text(r.이름, style = 글꼴.보통(크기.본문, FontWeight.Bold), color = c.글, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 맞춤글(
-                    if (r.휴식일) "휴식일" else "${r.종목.size}종목 · ${총세트(실)}세트 · 예상 ${시간글(예상초(실))}",
+                    if (r.휴식일) "휴식일" else "${r.종목.size}종목 · ${총세트(실)}세트 · 예상 ${시간글(예상초(실, 상태.d))}",
                     최대 = 크기.작게, 색 = c.흐림,
                 )
             }
