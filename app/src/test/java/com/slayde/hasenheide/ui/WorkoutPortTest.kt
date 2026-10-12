@@ -1,6 +1,7 @@
 package com.slayde.hasenheide.ui
 
 import com.slayde.hasenheide.data.날기록
+import com.slayde.hasenheide.data.앱데이터
 import com.slayde.hasenheide.data.다음으로
 import com.slayde.hasenheide.data.세션종목
 import com.slayde.hasenheide.data.세트
@@ -232,5 +233,38 @@ class WorkoutPortTest {
         assertEquals(152, 세트더내림(544, 100, 400, 600, 8))
         assertNull(세트더내림(408, 0, 400, 1, 8))           // 1 이하로만 움직일 때는 그대로
         assertNull(세트더내림(500, 0, 0, 600, 8))           // 아직 안 쟀다
+    }
+
+    // ─────────────── 앱 밖 안내 팝업 (10-13 홍겸 님) ───────────────
+
+    @Test fun 밖안내_마지막세트를_체크하면_다음운동() {
+        val 전S = 세션(줄("A", 2, 1), 줄("B", 3))
+        val 후S = 운체크(전S, 0, 1, 때)
+        val 글 = 밖안내(밖본만들기(전S, 때), 밖본만들기(후S, 때), 후S, 앱데이터())
+        assertEquals("다음 운동은 B입니다.", 글)   // 쉬는 중이라 새 세트 안내는 쉬는 시간이 끝난 뒤
+    }
+
+    @Test fun 밖안내_쉬는시간이_끝나면_다음세트() {
+        val S = 운체크(세션(줄("A", 2, 1), 줄("B", 3)), 0, 1, 때)
+        val 글 = 밖안내(밖본만들기(S, 때), 밖본만들기(S, 때 + 10 * 60_000L), S, 앱데이터())
+        assertEquals("B 1/3 세트. 20kg 10회 진행합니다.", 글)
+    }
+
+    @Test fun 밖안내_마지막_세트는_마지막이라고() {
+        val S = 세션(줄("A", 3, 2))
+        val 글 = 밖안내(밖본(listOf(2), true), 밖본(listOf(2), false), S, 앱데이터())
+        assertEquals("A 마지막 세트입니다. 20kg 10회 진행합니다.", 글)
+    }
+
+    @Test fun 밖안내_쉬는중에는_세트안내가_없다() {
+        val S = 세션(줄("A", 3, 1))
+        assertEquals("", 밖안내(밖본(listOf(0), false), 밖본(listOf(1), true), S, 앱데이터()))
+        assertEquals("", 밖안내(null, 밖본(listOf(1), false), S, 앱데이터()))
+    }
+
+    @Test fun 밖안내_끝낸_종목이_없으면_모두_끝났다() {
+        val 전S = 세션(줄("A", 1))
+        val 후S = 운체크(전S, 0, 0, 때)
+        assertEquals("마지막 운동까지 모두 끝났어요.", 밖안내(밖본만들기(전S, 때), 밖본만들기(후S, 때), 후S, 앱데이터()))
     }
 }

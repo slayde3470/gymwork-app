@@ -127,6 +127,7 @@ import com.slayde.hasenheide.data.다음회
 import com.slayde.hasenheide.data.저장전
 import com.slayde.hasenheide.data.덜한가
 import com.slayde.hasenheide.data.무게글
+import com.slayde.hasenheide.data.거리글
 import com.slayde.hasenheide.data.기록방식표
 import com.slayde.hasenheide.data.무게칸있음
 import com.slayde.hasenheide.data.시간칸
@@ -1599,6 +1600,57 @@ internal fun 밖길게(S: 운동세션, 본: Int, 지금: Long): 운결과? {
     val k = 첫빈칸(e)
     if (k < 0) return null
     return 운체크(S, b, k, 지금).let { 운결과(it, 본따라감(it, b)) }
+}
+
+/** 10-13 홍겸 님: 앱 밖 안내 팝업 — 지켜보는 값. 종목별 끝낸 세트 수 · 지금 쉬는 중인가(쉬는 시간이 아직 남았나) */
+internal data class 밖본(val 칸수: List<Int>, val 쉼중: Boolean)
+
+internal fun 밖본만들기(S: 운동세션, 지금: Long): 밖본 =
+    밖본(S.종목들.map { it.찬것().size }, S.휴식?.let { !it.물음 && it.끝시각 > 지금 } == true)
+
+/** 지금(쉬는 중이면 쉬고 난 뒤) 할 세트 — (종목 번호, 칸 번호). 남은 세트가 없으면 null */
+internal fun 다음할세트(S: 운동세션): Pair<Int, Int>? {
+    if (S.종목들.isEmpty()) return null
+    val 기준 = (S.휴식?.다음i?.takeIf { it in S.종목들.indices } ?: S.i).coerceIn(0, S.종목들.size - 1)
+    val j = if (운남음(S.종목들[기준])) 기준 else 다음남은(S, 기준)
+    val e = S.종목들.getOrNull(j) ?: return null
+    val k = 첫빈칸(e)
+    return if (k < 0) null else j to k
+}
+
+/** 세트 내용 글 — 기록 방식마다 (55kg 12회 · 12회 · 0:30 · 5.5km · 30:00) */
+internal fun 세트내용글(d: 앱데이터, S: 운동세션, e: 세션종목, k: Int): String {
+    val v = S.세트값(e, k)
+    return when (d.방식(e.종id, e.이름)) {
+        기록방식.무게 -> if (v.w > 0.0) "${무게글(v.w)}kg ${v.r}회" else "${v.r}회"
+        기록방식.맨몸 -> if (v.w > 0.0) "추가 ${무게글(v.w)}kg ${v.r}회" else "${v.r}회"
+        기록방식.어시스트 -> "보조 ${무게글(v.w)}kg ${v.r}회"
+        기록방식.횟수만 -> "${v.r}회"
+        기록방식.시간 -> 분초(v.r)
+        기록방식.유산소 -> listOf(거리글(v.w), 분초(v.r)).filter { it.isNotEmpty() }.joinToString(" · ")
+    }
+}
+
+/**
+ * 앱 밖에서 보여 줄 안내 글 (없으면 빈 글).
+ *  · 한 종목의 마지막 세트를 체크했으면 → "다음 운동은 ○○입니다."
+ *  · 새 세트가 시작되면(쉬는 시간이 끝나거나 건너뛰었을 때, 쉬는 시간 없이 체크했을 때) → "○○ 4/5 세트. 55kg 12회 진행합니다." (마지막이면 "○○ 마지막 세트입니다. …")
+ */
+internal fun 밖안내(전: 밖본?, 지금: 밖본, S: 운동세션, d: 앱데이터): String {
+    if (전 == null || S.끝화면 || 전.칸수.size != 지금.칸수.size) return ""
+    val 줄 = mutableListOf<String>()
+    val 체크됨 = 지금.칸수.indices.firstOrNull { 지금.칸수[it] > 전.칸수[it] }
+    if (체크됨 != null && !운남음(S.종목들[체크됨])) {
+        val 다 = 다음남은(S, 체크됨)
+        줄 += if (다 >= 0) "다음 운동은 ${S.종목들[다].이름}입니다." else "마지막 운동까지 모두 끝났어요."
+    }
+    val 시작 = (전.쉼중 && !지금.쉼중) || (체크됨 != null && !지금.쉼중)
+    if (시작) 다음할세트(S)?.let { (j, k) ->
+        val e = S.종목들[j]; val 총 = e.총칸()
+        val 머리 = if (k == 총 - 1) "${e.이름} 마지막 세트입니다." else "${e.이름} ${k + 1}/${총} 세트."
+        줄 += "$머리 ${세트내용글(d, S, e, k)} 진행합니다."
+    }
+    return 줄.joinToString("\n")
 }
 
 /** 밖 동그라미 꾹 누름을 앱 기록에 반영한다 — 알려 줄 글(없으면 null = 아무 일도 안 함). 화면이 꺼져 있어도 부를 수 있다 */
