@@ -37,6 +37,7 @@ import com.slayde.hasenheide.ui.밖에서길게
 import com.slayde.hasenheide.data.세기더함
 import com.slayde.hasenheide.data.세기이름
 import com.slayde.hasenheide.data.남은초
+import com.slayde.hasenheide.data.식구
 import com.slayde.hasenheide.ui.폰기능
 import com.slayde.hasenheide.ui.theme.하젠하이데테마
 import java.io.File
@@ -115,7 +116,10 @@ class MainActivity : ComponentActivity() {
         val S = 상태.d.세션 ?: return null
         if (S.끝화면) return null
         val h = S.휴식
-        return if (h != null && !h.물음) 떠있는동그라미.값(h.남은초(System.currentTimeMillis()), h.총초, h.끝시각) else 떠있는동그라미.값(null, 0)
+        // 10-13 홍겸 님: 지금(쉬는 중이면 다음에 할) 종목이 슈퍼세트면 동그라미 그림을 주황으로
+        val 본 = (h?.다음i ?: h?.종목?.takeIf { it >= 0 } ?: S.i).coerceIn(0, maxOf(0, S.종목들.size - 1))
+        val 슈퍼 = S.종목들.isNotEmpty() && S.식구(본).size > 1
+        return if (h != null && !h.물음) 떠있는동그라미.값(h.남은초(System.currentTimeMillis()), h.총초, h.끝시각, 슈퍼) else 떠있는동그라미.값(null, 0, 0L, 슈퍼)
     }
 
     /**

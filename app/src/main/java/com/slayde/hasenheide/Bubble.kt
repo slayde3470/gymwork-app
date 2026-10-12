@@ -38,9 +38,10 @@ import kotlin.math.sin
  * 권한이 없으면 전처럼 PiP 를 쓴다 (MainActivity).
  */
 object 떠있는동그라미 {
+    /** [슈퍼] = 지금 종목이 슈퍼세트 — 아이콘의 흰 그림 · 휴식 글자 · 줄어드는 고리를 주황으로 (10-13 홍겸 님. 파란 바탕 · 초록 바탕은 그대로) */
     /** 보여 줄 값 — [쉼남은초] null = 운동 중(아이콘), 아니면 휴식 남은 초 */
     /** [쉼끝시각] = 휴식이 끝나는 시각(ms) — 고리가 초 단위로 뚝뚝 줄지 않고 매끄럽게 줄게 하려고 (10-11 홍겸 님) */
-    data class 값(val 쉼남은초: Int?, val 쉼총초: Int, val 쉼끝시각: Long = 0L)
+    data class 값(val 쉼남은초: Int?, val 쉼총초: Int, val 쉼끝시각: Long = 0L, val 슈퍼: Boolean = false)
 
     private var 뷰: 동그라미뷰? = null
     private var 마지막x = -1
@@ -108,6 +109,15 @@ object 떠있는동그라미 {
             textSize = 동그라미치수.글 * 밀도
         }
         private val 그림 = try { ContextCompat.getDrawable(ctx, R.mipmap.ic_launcher) } catch (_: Exception) { null }
+        // 10-13 홍겸 님: 슈퍼세트일 때는 파란 바탕은 두고 흰 그림만 주황 — 앱 아이콘의 앞 그림(흰색 벡터)을 주황으로 칠해 따로 그린다
+        private val 슈퍼그림 = try {
+            ContextCompat.getDrawable(ctx, R.drawable.ic_launcher_foreground)?.mutate()?.also { it.setTint(밝은색표.슈퍼.toArgb()) }
+        } catch (_: Exception) { null }
+        private val 슈퍼글 = 밝은색표.슈퍼글.toArgb()
+        // 10-13 홍겸 님: 꾹 누르는 동안 오목하게 작아졌다가 떼면 돌아온다 (아래 단추들의 눌림과 같은 느낌 · 작은 동그라미라 조금 더 깊게)
+        private var 눌림배 = 1f
+        private var 눌림목표 = 1f
+        private var 앞시각 = 0L
         private val 동그길 = Path()
         private val 고리칸 = RectF()
 
@@ -115,7 +125,23 @@ object 떠있는동그라미 {
         fun 멈춤() { 손.removeCallbacks(틱); 손.removeCallbacks(길게누름) }
 
         override fun onDraw(c: Canvas) {
+            val 지금 = SystemClock.uptimeMillis()
+            val 틈ms = if (앞시각 == 0L) 0L else (지금 - 앞시각).coerceIn(0L, 64L)
+            앞시각 = 지금
+            if (눌림배 != 눌림목표) {
+                val 걸음 = (1f - 동그라미치수.눌림) * 틈ms / 동그라미치수.눌림ms
+                눌림배 = if (눌림배 < 눌림목표) minOf(눌림목표, 눌림배 + 걸음) else maxOf(눌림목표, 눌림배 - 걸음)
+                postInvalidateOnAnimation()   // 50ms 틱을 기다리지 않고 부드럽게
+            } else 앞시각 = 0L
+            c.save()
+            c.scale(눌림배, 눌림배, width / 2f, height / 2f)
+            그리기(c)
+            c.restore()
+        }
+
+        private fun 그리기(c: Canvas) {
             val v = 값() ?: return
+            val 슈퍼 = v.슈퍼
             val cx = width / 2f; val cy = height / 2f
             val r = 동그라미치수.반지름 * 밀도
             val 남 = v.쉼남은초
@@ -137,15 +163,17 @@ object 떠있는동그라미 {
                 val 띠반 = r - 옛굵 / 2f - 굵 / 2f
                 고리칸.set(cx - 띠반, cy - 띠반, cx + 띠반, cy + 띠반)
                 붓.style = Paint.Style.STROKE; 붓.strokeWidth = 굵; 붓.strokeCap = Paint.Cap.ROUND
-                붓.color = 강조글; 붓.alpha = 70
+                붓.color = if (슈퍼) 슈퍼글 else 강조글; 붓.alpha = 70
                 c.drawArc(고리칸, 0f, 360f, false, 붓)
                 붓.alpha = 255
+                if (슈퍼) 붓.color = 슈퍼글   // 줄어드는 고리도 주황 (빈 띠는 위에서 같은 색 · 옅게)
                 // 10-11 홍겸 님: 초마다 뚝뚝 줄지 않고 매끄럽게 — 남은 시간을 밀리초로 계산한다 (끝시각이 없으면 초 단위)
                 val 남밀리 = if (v.쉼끝시각 > 0L) (v.쉼끝시각 - System.currentTimeMillis()).coerceAtLeast(0L).toFloat() else 남 * 1000f
                 val 비 = if (v.쉼총초 > 0) (남밀리 / (v.쉼총초 * 1000f)).coerceIn(0f, 1f) else 1f
                 // 10-09 홍겸 님: 시계 방향으로 줄어든다 — 끝은 12시에 두고 시작점이 시계 방향으로 따라간다
                 c.drawArc(고리칸, -90f + 360f * (1f - 비), 360f * 비, false, 붓)
                 val 글 = "%d:%02d".format(남 / 60, 남 % 60)
+                글붓.color = if (슈퍼) 슈퍼글 else 강조글
                 c.drawText(글, cx, cy - (글붓.descent() + 글붓.ascent()) / 2, 글붓)
             } else {
                 // 운동 중 — 바깥으로 퍼지며 옅어지는 고리 (누를 수 있다는 표시) + 앱 아이콘
@@ -161,7 +189,11 @@ object 떠있는동그라미 {
                 c.save()
                 동그길.reset(); 동그길.addCircle(cx, cy, r, Path.Direction.CW)
                 c.clipPath(동그길)
-                그림?.let { it.setBounds((cx - r).toInt(), (cy - r).toInt(), (cx + r).toInt(), (cy + r).toInt()); it.draw(c) }
+                if (슈퍼 && 슈퍼그림 != null) {
+                    // 어댑티브 아이콘은 앞 그림(108)이 보이는 동그라미(72)의 1.5배로 깔린다 — 같은 크기로 맞춘다
+                    val 반 = r * 1.5f
+                    슈퍼그림.setBounds((cx - 반).toInt(), (cy - 반).toInt(), (cx + 반).toInt(), (cy + 반).toInt()); 슈퍼그림.draw(c)
+                } else 그림?.let { it.setBounds((cx - r).toInt(), (cy - r).toInt(), (cx + r).toInt(), (cy + r).toInt()); it.draw(c) }
                 c.restore()
             }
         }
@@ -186,15 +218,16 @@ object 떠있는동그라미 {
             when (e.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
                     아래x = e.rawX; 아래y = e.rawY; 처음x = p.x; 처음y = p.y; 끌었 = false; 길었 = false
+                    눌림목표 = 동그라미치수.눌림; invalidate()
                     손.removeCallbacks(길게누름); 손.postDelayed(길게누름, ViewConfiguration.getLongPressTimeout().toLong())
                 }
                 MotionEvent.ACTION_MOVE -> {
                     val dx = e.rawX - 아래x; val dy = e.rawY - 아래y
-                    if (!길었 && !끌었 && (abs(dx) > 틈 || abs(dy) > 틈)) { 끌었 = true; 손.removeCallbacks(길게누름) }
+                    if (!길었 && !끌었 && (abs(dx) > 틈 || abs(dy) > 틈)) { 끌었 = true; 손.removeCallbacks(길게누름); 눌림목표 = 1f; invalidate() }
                     if (끌었) { p.x = 안쪽x(처음x + dx.toInt()); p.y = 안쪽y(처음y + dy.toInt()); try { wm.updateViewLayout(this, p) } catch (_: Exception) { } }
                 }
-                MotionEvent.ACTION_CANCEL -> 손.removeCallbacks(길게누름)
-                MotionEvent.ACTION_UP -> { 손.removeCallbacks(길게누름); if (!끌었 && !길었) {
+                MotionEvent.ACTION_CANCEL -> { 손.removeCallbacks(길게누름); 눌림목표 = 1f; invalidate() }
+                MotionEvent.ACTION_UP -> { 손.removeCallbacks(길게누름); 눌림목표 = 1f; invalidate(); if (!끌었 && !길었) {
                     try {
                         context.startActivity(Intent(context, MainActivity::class.java)
                             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or Intent.FLAG_ACTIVITY_SINGLE_TOP))
@@ -218,5 +251,7 @@ private object 동그라미치수 {
     const val 옆 = 12f        // 처음 자리 — 오른쪽에서
     const val 처음위 = 160f   // 처음 자리 — 위에서
     const val 한바퀴 = 1600L  // 퍼지는 고리 한 번
+    const val 눌림 = 0.9f     // 꾹 누르는 동안 이만큼 작아진다 (10-13 홍겸 님 · 아래 단추 눌림 0.96 보다 깊게 — 작은 동그라미라 보이게)
+    const val 눌림ms = 120f   // 작아지고 돌아오는 시간 (움직임.눌림 과 같다)
     const val 틱 = 50L        // 다시 그리는 틈
 }
