@@ -90,7 +90,7 @@ import com.slayde.hasenheide.data.세트종류
 import com.slayde.hasenheide.data.시간글
 import com.slayde.hasenheide.data.앱데이터
 import com.slayde.hasenheide.data.예상초
-import com.slayde.hasenheide.data.무게칸있음
+import com.slayde.hasenheide.data.볼륨있음
 import com.slayde.hasenheide.data.방식
 import com.slayde.hasenheide.data.예정루틴
 import com.slayde.hasenheide.data.예정옮기기
@@ -827,7 +827,7 @@ private fun 날판(
 }
 
 /** 날짜 판에 보이는 그 날 루틴 — 플랜 줄은 지금 회차 처방으로, 그 날만 조절이 있으면 적용 (운동 시작 `조절해시작` 과 같은 차례) */
-private fun 앱데이터.보일루틴(k: String, r: 루틴): 루틴 = 플랜줄채움(r).조절적용(조절[k], 설정.무게폭)
+private fun 앱데이터.보일루틴(k: String, r: 루틴): 루틴 = 플랜줄채움(r).조절적용(조절[k], 설정.무게폭) { e -> 방식(e.종id, e.이름) }
 
 /** 기록의 종목 줄 — '60kg × 9회'. 워밍업은 넣지 않는다. 세트 수는 보이지 않는다 (10-06 홍겸 님 ⑤ — 기록머리 칩에 합계가 있다) */
 private fun 기록줄들(rec: 날기록): List<Pair<String, String>> =
@@ -909,7 +909,7 @@ private fun 예머리(d: 앱데이터, r: 루틴, 선위: Boolean) {
             FlowRow(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(간격.아주좁게), verticalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
                 if (r.휴식일) 판칩("휴식일") else {
                     // 볼륨 — 맨몸 0kg 은 체중의 60% 로 센다 (시안 `유효무게` · 근육 계산과 같은 값)
-                    val 볼 = r.종목.filter { e -> d.방식(e.종id, e.이름).무게칸있음() }.sumOf { e -> (0 until e.세트).sumOf { i -> e.목표(i).let { s -> 근육계산.유효무게(s.w, d.몸.체중) * s.r } } }
+                    val 볼 = r.종목.filter { e -> d.방식(e.종id, e.이름).볼륨있음() }.sumOf { e -> (0 until e.세트).sumOf { i -> e.목표(i).let { s -> 근육계산.유효무게(s.w, d.몸.체중) * s.r } } }
                     판칩("${총세트(r)}세트")
                     판칩("볼륨 ${콤마(볼)}kg")
                     판칩("예상 ${시간글(예상초(r, d))}")

@@ -76,6 +76,7 @@ import com.slayde.hasenheide.data.근육자료
 import com.slayde.hasenheide.data.무게글
 import com.slayde.hasenheide.data.기록방식
 import com.slayde.hasenheide.data.기록방식표
+import com.slayde.hasenheide.data.기본횟수
 import com.slayde.hasenheide.data.무게칸있음
 import com.slayde.hasenheide.data.시간칸
 import com.slayde.hasenheide.data.시간한칸
@@ -714,8 +715,9 @@ internal fun 앱데이터.방식고름(v: 새종목값, 새: 기록방식): 새�
     val 자동 = 새종목방식(v.copy(방식 = null))
     val 이름표 = if (새 == 자동) null else 새.name
     if (새 == 옛) return v.copy(방식 = 이름표)
-    val 시간바뀜 = 새.시간칸() != 옛.시간칸()
-    val 값 = v.copy(방식 = 이름표, 세트 = v.세트.map { s -> s.copy(w = 0.0, r = if (시간바뀜) (if (새.시간칸()) 30 else 사전기본횟수) else s.r) })
+    // 횟수 칸의 뜻(횟수 · 시간 5초 · 유산소 1분)이 바뀌면 그 방식의 처음 값으로 (시간 30초 · 유산소 30분 · 그 밖 10회)
+    val 칸바뀜 = 새.시간칸() != 옛.시간칸() || (새.시간칸() && 새 != 옛)
+    val 값 = v.copy(방식 = 이름표, 세트 = v.세트.map { s -> s.copy(w = 0.0, r = if (칸바뀜) 새.기본횟수() else s.r) })
     return if (새 == 기록방식.무게) 값.장비무게맞춤(this) else 값
 }
 

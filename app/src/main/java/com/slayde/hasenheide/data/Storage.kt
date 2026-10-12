@@ -107,8 +107,11 @@ object 저장소 {
         .also { o -> r.원래예정?.let { o.put("원래예정", it) }; r.원래고정?.let { o.put("원래고정", it) } }   // 10-09 그 날 운동
         .put("종목", JSONArray().also { a -> r.종목.forEach { a.put(루틴종목to(it)) } })
 
-    // 종류는 본운동(0) 이 아닐 때만 적는다 — 옛 파일과 모양이 같아 읽는 쪽이 안 깨진다
-    private fun 세트to(s: 세트) = JSONArray().put(s.w).put(s.r).also { if (s.종류 != 0) it.put(s.종류) }
+    // 종류는 본운동(0) 이 아닐 때만 적는다 · 거리(유산소 km)는 0 이 아닐 때만 네 번째로 적는다 — 옛 파일과 모양이 같아 읽는 쪽이 안 깨진다
+    private fun 세트to(s: 세트) = JSONArray().put(s.w).put(s.r).also {
+        if (s.종류 != 0 || s.거리 != 0.0) it.put(s.종류)
+        if (s.거리 != 0.0) it.put(s.거리)
+    }
 
     private fun 세트들to(l: List<세트?>) = JSONArray().also { a -> l.forEach { a.put(if (it == null) JSONObject.NULL else 세트to(it)) } }
 
@@ -416,7 +419,7 @@ object 저장소 {
         )
     }
 
-    private fun 세트from(a: JSONArray) = 세트(a.getDouble(0), a.getInt(1), if (a.length() > 2) a.optInt(2, 0) else 0)
+    private fun 세트from(a: JSONArray) = 세트(a.getDouble(0), a.getInt(1), if (a.length() > 2) a.optInt(2, 0) else 0, if (a.length() > 3) a.optDouble(3, 0.0) else 0.0)
 
     private fun 세트들from(a: JSONArray?): List<세트?> =
         목록(a) { x, i -> if (x.isNull(i)) null else 세트from(x.getJSONArray(i)) }
