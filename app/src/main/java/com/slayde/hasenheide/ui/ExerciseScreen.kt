@@ -724,7 +724,7 @@ private fun 넣기체크(이름: String, 수: Int, 즐겨: Boolean, 누름: () -
                 contentAlignment = Alignment.Center,
             ) {
                 별(들어감, 넣기값.체크 + 2.dp, c.즐겨)
-                if (들어감) Text(체크글꼴(수, 크기.작게 * (if (수 >= 3) 1.0f else 1.15f)), style = 글꼴.보통(크기.작게 * (if (수 >= 3) 1.1f else 1.25f), FontWeight.Bold).copy(letterSpacing = (-0.1).em), color = c.강조, maxLines = 1, softWrap = false, modifier = Modifier.넘쳐도폭없이().offset(y = 1.dp))
+                if (들어감) 체크글씨(수, c.강조, c.강조, Modifier.offset(y = 1.dp))   // 10-13 홍겸 님: 체크 상자와 같은 글 모양 · 크기 (색은 그대로)
             }
         } else Box(
             Modifier.padding(start = 넣기값.체크옆).graphicsLayer { scaleX = 깊이.value; scaleY = 깊이.value }.heightIn(min = 넣기값.체크).widthIn(min = 넣기값.체크),
@@ -732,15 +732,7 @@ private fun 넣기체크(이름: String, 수: Int, 즐겨: Boolean, 누름: () -
         ) {
             // 10-12 홍겸 님: 상자(바탕·테두리)와 글을 다른 층으로 — 테두리가 글 위에 그려져 끝이 잘려 보였다. 글은 상자 위 층
             Box(Modifier.matchParentSize().background(if (들어감) c.강조 else c.면, 상자).border(선굵기.보통, if (들어감) c.강조 else c.속선, 상자))
-            if (들어감) {
-                // 10-13 홍겸 님: 흰 글씨(✓)에 얇은 테두리를 주동색으로 — 아래 층에 주동색 글 윤곽을 먼저 깔고, 그 위에 흰 글을 얹는다 (글이 가늘어지지 않는다)
-                val 글모양 = 글꼴.보통(크기.작게 * (if (수 >= 3) 1.1f else 1.25f), FontWeight.Bold).copy(letterSpacing = (-0.1).em)
-                val 크기값 = 크기.작게 * (if (수 >= 3) 1.0f else 1.15f)
-                Box(contentAlignment = Alignment.Center) {
-                    Text(체크글꼴(수, 크기값), style = 글모양.copy(drawStyle = androidx.compose.ui.graphics.drawscope.Stroke(width = 넣기값.체크윤곽, join = androidx.compose.ui.graphics.StrokeJoin.Round)), color = c.강조, maxLines = 1, softWrap = false, modifier = Modifier.넘쳐도폭없이())
-                    Text(체크글꼴(수, 크기값, c.강조글), style = 글모양, color = c.강조글, maxLines = 1, softWrap = false, modifier = Modifier.넘쳐도폭없이())
-                }
-            }
+            if (들어감) 체크글씨(수, c.강조글, c.강조)   // 10-13 홍겸 님: 흰 글씨(✓)에 주동색 얇은 테두리
         }
     }
 }
@@ -1414,6 +1406,20 @@ internal fun 앱데이터.종목사진뺌(id: String, 이름: String): 앱데이
 private fun Modifier.넘쳐도폭없이(): Modifier = this.layout { m, _ ->
     val p = m.measure(androidx.compose.ui.unit.Constraints())
     layout(0, p.height) { p.place(-p.width / 2, 0) }
+}
+
+/**
+ * 종목추가 체크 상자 · 별 상자 안의 글(✓ · ×수) — 둘이 같은 모양 · 같은 크기 (체크 상자 기준 · 10-13 홍겸 님). 색만 다르다: [글색] = 글 · [윤곽색] = 둘레 얇은 테두리.
+ * 아래 층에 윤곽 글을 먼저 깔고 그 위에 글을 얹어서 글이 가늘어지지 않는다
+ */
+@Composable
+private fun 체크글씨(수: Int, 글색: Color, 윤곽색: Color, modifier: Modifier = Modifier) {
+    val 글모양 = 글꼴.보통(크기.작게 * (if (수 >= 3) 1.1f else 1.25f), FontWeight.Bold).copy(letterSpacing = (-0.1).em)
+    val 크기값 = 크기.작게 * (if (수 >= 3) 1.0f else 1.15f)
+    Box(modifier, contentAlignment = Alignment.Center) {
+        Text(체크글꼴(수, 크기값), style = 글모양.copy(drawStyle = androidx.compose.ui.graphics.drawscope.Stroke(width = 넣기값.체크윤곽, join = androidx.compose.ui.graphics.StrokeJoin.Round)), color = 윤곽색, maxLines = 1, softWrap = false, modifier = Modifier.넘쳐도폭없이())
+        Text(체크글꼴(수, 크기값, 글색), style = 글모양, color = 글색, maxLines = 1, softWrap = false, modifier = Modifier.넘쳐도폭없이())
+    }
 }
 
 /** 10-11 홍겸 님: ✓ 는 굵게 · 숫자(×4)는 굵기를 풀고 1sp 작게 */
