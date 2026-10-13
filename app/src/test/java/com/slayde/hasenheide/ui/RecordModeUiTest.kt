@@ -49,10 +49,10 @@ class RecordModeUiTest {
     }
 
     @Test fun 칸아래글() {
-        assertEquals("= 75kg", d.실제무게글(null, "푸시업", null, 5.0))
-        assertEquals("= 70kg", d.실제무게글(null, "푸시업", null, 0.0))
-        assertEquals("= 55.5kg", d.실제무게글(null, "어시스트 풀업", null, 14.5))
-        assertEquals("= 0kg", d.실제무게글(null, "어시스트 풀업", null, 90.0))
+        assertNull(d.실제무게글(null, "푸시업", null, 5.0))          // 10-13: 칸 아래 "= kg" 글은 없앴다
+        assertNull(d.실제무게글(null, "푸시업", null, 0.0))
+        assertNull(d.실제무게글(null, "어시스트 풀업", null, 14.5))
+        assertNull(d.실제무게글(null, "어시스트 풀업", null, 90.0))
         assertNull(d.실제무게글(null, "벤치프레스", null, 60.0))        // 일반 종목
         assertNull(d.실제무게글(null, "푸시업", "플랜1", 5.0))          // 플랜 줄
         assertNull(앱데이터().실제무게글(null, "푸시업", null, 5.0))     // 체중 0

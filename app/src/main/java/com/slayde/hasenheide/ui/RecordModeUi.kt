@@ -42,13 +42,12 @@ internal fun 무게머리글(방식들: Collection<기록방식>, 기본: String
 internal fun 횟수머리글(방식들: Collection<기록방식>, 기본: String = "횟수"): String =
     if (방식들.isNotEmpty() && 방식들.all { it.시간칸() }) "시간" else 기본
 
-/** 칸 아래 작은 글 '= 69kg' — 맨몸 · 어시스트 줄이고 체중을 알 때만. 아니면 null (플랜 줄 · 일반 종목 · 체중 0) */
-internal fun 앱데이터.실제무게글(종id: String?, 이름: String, 플랜id: String?, 입력: Double): String? {
-    if (플랜id != null || 몸.체중 <= 0.0) return null
-    val 방 = 방식(종id, 이름)
-    if (방 != 기록방식.맨몸 && 방 != 기록방식.어시스트) return null
-    return "= ${무게글(실제무게(방, 입력, 몸.체중))}kg"
-}
+/**
+ * 칸 아래 작은 글 '= 167kg' — 10-13 홍겸 님: **보이지 않는다.** 줄 높이가 달라져 줄이 안 맞았고, 입력하면 체중에 더하거나 빼서 기록하는 계산(실제무게)만 있으면 된다.
+ * 부르는 곳이 많아 함수는 남기고 늘 null 을 돌려준다 (null 이면 칸만 그려져 높이가 변하지 않는다)
+ */
+@Suppress("UNUSED_PARAMETER")
+internal fun 앱데이터.실제무게글(종id: String?, 이름: String, 플랜id: String?, 입력: Double): String? = null
 
 /** 줄 하나의 방식 (플랜 줄은 null = 머리 글 계산에서 뺀다) */
 internal fun 앱데이터.머리방식(종id: String?, 이름: String, 플랜id: String?): 기록방식? =
