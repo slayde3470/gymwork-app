@@ -270,7 +270,7 @@ class WorkoutPortTest {
     @Test fun 밖토스트_슈퍼세트는_체크하면_다음종목을_바로_알린다() {
         val 전 = 세션(줄("A", 3, 슈퍼 = "g"), 줄("B", 3, 슈퍼 = "g"))
         val r = 밖토스트글(전, 운체크(전, 0, 0, 때), 앱데이터(), 때)
-        assertTrue(r.글.startsWith("A(1/3) 세트 완료 → B(1/3)"), r.글)
+        assertEquals("B(1/3) 20kg 10회", r.글)   // 다음 종목만 (알림이 한 줄)
         assertTrue(r.새종목)
     }
 
