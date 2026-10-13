@@ -4,6 +4,7 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.os.Handler
@@ -67,5 +68,74 @@ object 밖알림 {
     fun 치움(ctx: Context) {
         손.removeCallbacksAndMessages(null)
         try { ctx.getSystemService(NotificationManager::class.java)?.cancel(번호) } catch (_: Exception) { }
+    }
+}
+
+/**
+ * 운동 중 계속 남는 알림 (10-14 홍겸 님) — 앱을 벗어나 있는 동안 알림판 · **잠금 화면**에 남아서, 잠금을 풀지 않고 [세트 완료] / [휴식 끝] 단추를 누를 수 있다.
+ * (다른 앱 위에 뜨는 동그라미는 안드로이드가 잠금 화면 위에는 못 그리게 막아 둔다)
+ *  · 쉬는 중: 제목 = 다음 세트 안내 · 남은 시간은 알림 시계(폰이 알아서 줄어드는 숫자) · 단추 [휴식 끝]
+ *  · 아니면: 제목 = 지금 할 세트 · 단추 [세트 완료]   · 운동이 다 끝나면: "모든 운동이 끝났습니다." (단추 없음)
+ *  · 단추를 누르면 동그라미를 꾹 누른 것과 같다 ([단추눌림] = MainActivity 가 정한다)
+ *  · 소리 · 진동 없는 조용한 알림 · 앱으로 돌아오면 치운다
+ */
+object 운동알림 {
+    private const val 채널 = "운동중"
+    private const val 번호 = 9
+    const val 동작 = "com.slayde.hasenheide.밖단추"
+    var 단추눌림: (() -> Unit)? = null
+
+    fun 올림(ctx: Context, 글: String, 쉼끝시각: Long?, 단추: String?) {
+        try {
+            val app = ctx.applicationContext
+            val nm = app.getSystemService(NotificationManager::class.java) ?: return
+            val ch = NotificationChannel(채널, "운동 중", NotificationManager.IMPORTANCE_LOW).apply {
+                description = "앱을 벗어나 있는 동안 지금 할 세트와 [세트 완료] · [휴식 끝] 단추를 보여 줍니다 (잠금 화면 포함)"
+                setSound(null, null)
+                enableVibration(false)
+                setShowBadge(false)
+                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+            }
+            nm.createNotificationChannel(ch)
+            val 열기 = PendingIntent.getActivity(
+                app, 1,
+                Intent(app, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP),
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+            )
+            val b = Notification.Builder(app, 채널)
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setContentTitle(글)
+                .setCategory(Notification.CATEGORY_PROGRESS)
+                .setVisibility(Notification.VISIBILITY_PUBLIC)
+                .setContentIntent(열기)
+                .setOngoing(true)
+                .setOnlyAlertOnce(true)
+                .setShowWhen(false)
+            if (쉼끝시각 != null) b.setShowWhen(true).setWhen(쉼끝시각).setUsesChronometer(true).setChronometerCountDown(true)
+            if (단추 != null) {
+                val 누름 = PendingIntent.getBroadcast(
+                    app, 2,
+                    Intent(app, 운동알림수신기::class.java).setAction(동작).setPackage(app.packageName),
+                    PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+                )
+                val a = Notification.Action.Builder(null as android.graphics.drawable.Icon?, 단추, 누름)
+                // 안드로이드 12+ : 잠금을 풀지 않고도 누를 수 있게 (폰 설정에서 막혀 있으면 폰이 잠금 해제를 먼저 물을 수 있다)
+                if (android.os.Build.VERSION.SDK_INT >= 31) a.setAuthenticationRequired(false)
+                b.addAction(a.build())
+            }
+            nm.notify(번호, b.build())
+        } catch (_: Exception) { }   // 알림 권한을 거절했으면 알림만 빠진다
+    }
+
+    fun 치움(ctx: Context) {
+        try { ctx.getSystemService(NotificationManager::class.java)?.cancel(번호) } catch (_: Exception) { }
+    }
+}
+
+/** 운동 중 알림의 [세트 완료] · [휴식 끝] 단추를 받는 곳 — 동그라미 꾹 누름과 같은 일을 한다 */
+class 운동알림수신기 : BroadcastReceiver() {
+    override fun onReceive(ctx: Context, intent: Intent) {
+        if (intent.action != 운동알림.동작) return
+        운동알림.단추눌림?.invoke()
     }
 }

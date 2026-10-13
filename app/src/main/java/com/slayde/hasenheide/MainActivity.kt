@@ -40,6 +40,7 @@ import com.slayde.hasenheide.ui.쉼남음
 import com.slayde.hasenheide.ui.다음할세트
 import com.slayde.hasenheide.ui.쉼끝글
 import com.slayde.hasenheide.ui.다음시작글
+import com.slayde.hasenheide.ui.세트안내글
 import com.slayde.hasenheide.ui.쉬는종목
 import com.slayde.hasenheide.data.세기더함
 import com.slayde.hasenheide.data.세기이름
@@ -140,6 +141,29 @@ class MainActivity : ComponentActivity() {
         val h = 상태.d.세션?.휴식
         알람맞추기(if (h != null && !h.물음 && 상태.d.설정.소리진동) h.끝시각 else null, 권한묻기 = false)
         if (글.글.isNotEmpty()) 밖알림.띄움(this, 글.글, 길게 = 글.새종목)   // 10-13: 화면 위 알림 배너 (Notice.kt)
+        운동알림갱신()
+    }
+
+    private val 알림손 = android.os.Handler(android.os.Looper.getMainLooper())
+    private val 알림갱신 = Runnable { 운동알림갱신() }
+
+    /**
+     * 10-14 홍겸 님: 앱 밖(잠금 화면 포함)에 남는 알림 — 지금 할 세트(또는 쉬는 중 다음 세트)와 [세트 완료] / [휴식 끝] 단추.
+     * 쉬는 시간이 끝나는 때 한 번 더 고쳐 단추가 [세트 완료] 로 바뀐다
+     */
+    private fun 운동알림갱신() {
+        알림손.removeCallbacks(알림갱신)
+        val S = 상태.d.세션
+        if (S == null || S.끝화면) { 운동알림.치움(this); return }
+        val 지금 = System.currentTimeMillis()
+        val 쉬는 = 쉼남음(S, 지금)
+        if (운동다함(S) && !쉬는) { 운동알림.올림(this, "모든 운동이 끝났습니다.", null, null); return }
+        val 글 = 다음할세트(S)?.let { (j, k) -> 세트안내글(상태.d, S, j, k) } ?: ""
+        if (쉬는) {
+            val h = S.휴식
+            운동알림.올림(this, "다음 · $글", h?.끝시각, "휴식 끝")
+            if (h != null) 알림손.postDelayed(알림갱신, (h.끝시각 - 지금).coerceAtLeast(0L) + 800L)
+        } else 운동알림.올림(this, "지금 · $글", null, "세트 완료")
     }
 
     /** 10-13 홍겸 님: 쉬는 시간이 저절로 끝났을 때(앱 밖) — 다음에 할 세트를 토스트로. 동그라미를 눌러 끝낸 것은 기록에 쉼이 이미 없어서 여기 오지 않는다 */
@@ -149,6 +173,7 @@ class MainActivity : ComponentActivity() {
         if (S.끝화면 || h.끝시각 > System.currentTimeMillis()) return
         val 글 = 쉼끝글(S, 상태.d)
         if (글.글.isNotEmpty()) 밖알림.띄움(this, 글.글, 길게 = 글.새종목, 휴식끝 = true)   // 휴식 알람의 '휴식 끝' 알림 자리에 다음 세트 안내를 덮어 쓴다
+        운동알림갱신()
     }
 
     /** 10-13 홍겸 님: 밖 동그라미의 운동보고서 아이콘을 눌러 들어왔으면 보고서 화면을 연다 */
@@ -192,6 +217,9 @@ class MainActivity : ComponentActivity() {
     override fun onStart() {
         super.onStart()
         밖알림.치움(this)
+        알림손.removeCallbacks(알림갱신)
+        운동알림.단추눌림 = null
+        운동알림.치움(this)
         떠있는동그라미.치움()
     }
 
@@ -201,6 +229,8 @@ class MainActivity : ComponentActivity() {
         super.onStop()
         // 10-08 홍겸 님: 운동 중에 앱을 벗어나면 다른 앱 위에 동그라미 (유튜브 작은 창과 같이 뜬다)
         if (!isChangingConfigurations && !(Build.VERSION.SDK_INT >= 26 && isInPictureInPictureMode)) 떠있는동그라미.띄움(this, 길게 = { 동그라미길게() }, 쉼끝 = { 동그라미쉼끝() }) { 동그라미값() }
+        // 10-14: 잠금 화면에도 남는 [세트 완료] / [휴식 끝] 알림 (동그라미는 잠금 화면 위에 못 뜬다)
+        if (!isChangingConfigurations && !(Build.VERSION.SDK_INT >= 26 && isInPictureInPictureMode)) { 운동알림.단추눌림 = { 동그라미길게() }; 운동알림갱신() }
     }
 
     override fun onResume() {
