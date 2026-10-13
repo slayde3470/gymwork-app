@@ -34,7 +34,7 @@ import kotlin.math.sin
  *  · 쉬는 중: 초록 동그라미에 남은 시간 + 줄어드는 고리 + 운동 중처럼 퍼지는 고리 · 숨 쉬는 동그라미 (10-09)
  *  · 운동 중: 앱 아이콘 + 바깥으로 퍼지는 고리(누를 수 있다는 표시)
  *  · 누르면 운동 화면으로 돌아간다 · 끌어서 옮길 수 있다
- *  · 꾹 누르면 (10-13 홍겸 님) 앱으로 가지 않고 [길게] 를 부른다(0.68초 누르고 있으면 · 끌지 않았으면) — 쉬는 중이면 휴식 끝, 아니면 지금 세트 체크 (MainActivity)
+ *  · 꾹 누르면 (10-13 홍겸 님) 앱으로 가지 않고 [길게] 를 부른다(0.58초 누르고 있으면 · 끌지 않았으면) — 쉬는 중이면 휴식 끝, 아니면 지금 세트 체크 (MainActivity)
  * 권한이 없으면 전처럼 PiP 를 쓴다 (MainActivity).
  */
 object 떠있는동그라미 {
@@ -222,23 +222,37 @@ object 떠있는동그라미 {
             }
         }
 
+        /**
+         * 운동보고서 아이콘 (10-13 홍겸 님 · 첨부한 클립보드 보고서 모양을 따랐다) — 하얀 판 + 위쪽 집게 + 앱 아이콘의 운동 그림 +
+         * 줄글 세 줄(써졌다가 거꾸로 지워진다) + 작은 연필(글 끝을 따라간다). 연필은 처음 것이 너무 커서 절반쯤으로 줄였다.
+         */
         private fun 보고서그림(c: Canvas, cx: Float, cy: Float, r: Float) {
             val u = (SystemClock.uptimeMillis() % 동그라미치수.글쓰기ms).toFloat() / 동그라미치수.글쓰기ms
-            val pw = r * 1.05f; val ph = r * 1.38f
-            val px = cx - pw / 2 - r * 0.06f; val py = cy - ph / 2 - r * 0.02f
+            val pw = r * 1.0f; val ph = r * 1.32f
+            val px = cx - pw / 2; val py = cy - ph / 2 + r * 0.06f
             쪽칸.set(px, py, px + pw, py + ph)
             붓.style = Paint.Style.FILL; 붓.color = 강조글; 붓.alpha = 255
             c.drawRoundRect(쪽칸, r * 0.14f, r * 0.14f, 붓)
-            // 문서 위쪽: 앱 아이콘의 운동 그림 (문서가 하얘서 파랗게 칠한다)
+            // 집게 — 판 위 가운데에 걸친 둥근 단추 (하얀 몸통 · 파란 테 · 구멍 하나)
+            val 집w = pw * 0.44f; val 집h = r * 0.24f
+            쪽칸.set(cx - 집w / 2, py - 집h * 0.42f, cx + 집w / 2, py - 집h * 0.42f + 집h)
+            붓.style = Paint.Style.FILL; 붓.color = 강조글
+            c.drawRoundRect(쪽칸, r * 0.1f, r * 0.1f, 붓)
+            붓.style = Paint.Style.STROKE; 붓.strokeWidth = r * 0.045f; 붓.color = 강조; 붓.alpha = 255
+            c.drawRoundRect(쪽칸, r * 0.1f, r * 0.1f, 붓)
+            붓.style = Paint.Style.FILL
+            c.drawCircle(cx, 쪽칸.top + 집h * 0.36f, r * 0.04f, 붓)
+            // 위쪽: 앱 아이콘의 운동 그림 (판이 하얘서 파랗게 칠한다)
+            쪽칸.set(px, py, px + pw, py + ph)
             로고파랑?.let {
-                val 반 = pw * 0.62f; val gx = px + pw / 2; val gy = py + ph * 0.30f
+                val 반 = pw * 0.56f; val gx = cx; val gy = py + ph * 0.36f
                 it.setBounds((gx - 반).toInt(), (gy - 반).toInt(), (gx + 반).toInt(), (gy + 반).toInt())
                 c.save(); c.clipRect(쪽칸); it.draw(c); c.restore()
             }
             // 줄글 세 줄 — 쓰는 차례: 1 → 2 → 3, 잠깐 둔 뒤 3 → 2 → 1 거꾸로 지워진다
-            val 왼 = px + pw * 0.14f
-            val 길이 = floatArrayOf(pw * 0.72f, pw * 0.60f, pw * 0.36f)
-            val 높이 = floatArrayOf(py + ph * 0.66f, py + ph * 0.80f, py + ph * 0.93f)
+            val 왼 = px + pw * 0.16f
+            val 길이 = floatArrayOf(pw * 0.68f, pw * 0.56f, pw * 0.34f)
+            val 높이 = floatArrayOf(py + ph * 0.67f, py + ph * 0.80f, py + ph * 0.92f)
             val 보임 = FloatArray(3)
             var 끝x = 왼; var 끝y = 높이[0]
             for (i in 0..2) {
@@ -249,19 +263,19 @@ object 떠있는동그라미 {
                 if ((쓴 > 0f && 쓴 < 1f) || (지움 > 0f && 지움 < 1f)) { 끝x = 왼 + 길이[i] * 보임[i]; 끝y = 높이[i] }
                 else if (u in 0.57f..0.80f && i == 2) { 끝x = 왼 + 길이[2]; 끝y = 높이[2] }
             }
-            붓.style = Paint.Style.STROKE; 붓.strokeWidth = r * 0.075f; 붓.strokeCap = Paint.Cap.ROUND
+            붓.style = Paint.Style.STROKE; 붓.strokeWidth = r * 0.07f; 붓.strokeCap = Paint.Cap.ROUND
             붓.color = 강조; 붓.alpha = 210
             for (i in 0..2) if (보임[i] > 0.01f) c.drawLine(왼, 높이[i], 왼 + 길이[i] * 보임[i], 높이[i], 붓)
-            // 연필 — 끝(심)이 글 끝에 닿고, 몸통은 오른쪽 위로 비스듬히
-            val w = r * 0.17f; val 몸 = r * 0.62f; val 뾰 = r * 0.16f
-            c.save(); c.translate(끝x, 끝y + r * 0.03f); c.rotate(45f)
+            // 연필 — 작게. 심이 글 끝에 닿고 몸통은 오른쪽 위로 비스듬히
+            val w = r * 0.095f; val 몸 = r * 0.34f; val 뾰 = r * 0.095f
+            c.save(); c.translate(끝x, 끝y + r * 0.02f); c.rotate(45f)
             붓.style = Paint.Style.FILL; 붓.alpha = 255
             붓.color = 노랑연필; c.drawRect(-w / 2, -몸, w / 2, -뾰, 붓)
-            붓.color = 분홍지우개; c.drawRect(-w / 2, -몸, w / 2, -몸 + r * 0.11f, 붓)
+            붓.color = 분홍지우개; c.drawRect(-w / 2, -몸, w / 2, -몸 + r * 0.06f, 붓)
             연필길.reset(); 연필길.moveTo(-w / 2, -뾰); 연필길.lineTo(w / 2, -뾰); 연필길.lineTo(0f, 0f); 연필길.close()
             붓.color = 나무색; c.drawPath(연필길, 붓)
-            붓.color = 강조; c.drawCircle(0f, -r * 0.01f, r * 0.03f, 붓)
-            붓.style = Paint.Style.STROKE; 붓.strokeWidth = r * 0.025f; 붓.strokeJoin = Paint.Join.ROUND; 붓.color = 강조
+            붓.color = 강조; c.drawCircle(0f, -r * 0.006f, r * 0.018f, 붓)
+            붓.style = Paint.Style.STROKE; 붓.strokeWidth = r * 0.02f; 붓.strokeJoin = Paint.Join.ROUND; 붓.color = 강조
             c.drawRect(-w / 2, -몸, w / 2, -뾰, 붓); c.drawPath(연필길, 붓)
             c.restore()
             붓.strokeJoin = Paint.Join.MITER
@@ -275,7 +289,7 @@ object 떠있는동그라미 {
             if (끌었) return@Runnable
             길었 = true
             try { performHapticFeedback(HapticFeedbackConstants.LONG_PRESS) } catch (_: Exception) { }
-            // 10-13 홍겸 님: 0.68초 동안 끌지 않고 누르고 있으면 그 자리에서 실행 (옮길 때는 움직이는 순간 이 예약이 취소된다)
+            // 10-13 홍겸 님: 0.58초 동안 끌지 않고 누르고 있으면 그 자리에서 실행 (옮길 때는 움직이는 순간 이 예약이 취소된다)
             try { 길게() } catch (_: Exception) { }
         }
 
@@ -331,7 +345,7 @@ private object 동그라미치수 {
     const val 처음위 = 160f   // 처음 자리 — 위에서
     const val 한바퀴 = 1600L  // 퍼지는 고리 한 번
     const val 글쓰기ms = 4200L // 운동보고서 아이콘의 줄글이 써지고 지워지는 한 바퀴 (10-13 홍겸 님) [추측: 폰에서 보고 조절]
-    const val 꾹ms = 680L     // 꾹 누르기 시간 — 10-13 홍겸 님 0.68초 (폰 기본값 0.5초 대신 앱이 정한다 · 처음 0.8 로 했다가 0.68)
+    const val 꾹ms = 580L     // 꾹 누르기 시간 — 10-13 홍겸 님 0.58초 (폰 기본값 0.5초 대신 앱이 정한다 · 0.8 → 0.68 → 0.58)
     const val 눌림 = 0.8f     // 꾹 누르는 동안 이만큼 작아진다 (10-13 홍겸 님: 0.8 까지 · 아래 단추 눌림 0.96 보다 깊게)
     const val 용수철 = 600f   // 뽀오잉 — 용수철 세기 (클수록 빠르다)
     const val 누름감쇠 = 49f  // 누를 때 — 튀지 않고 부드럽게 오목해진다 (2×√용수철)

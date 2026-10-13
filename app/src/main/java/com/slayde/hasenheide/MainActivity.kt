@@ -137,7 +137,7 @@ class MainActivity : ComponentActivity() {
         val 글 = 상태.밖에서길게() ?: return
         val h = 상태.d.세션?.휴식
         알람맞추기(if (h != null && !h.물음 && 상태.d.설정.소리진동) h.끝시각 else null, 권한묻기 = false)
-        if (글.isNotEmpty()) 알림글(글)
+        if (글.isNotEmpty()) 밖알림.띄움(this, 글)   // 10-13: 기본 토스트는 연달아 누르면 빠져서 직접 띄운다 (Notice.kt)
     }
 
     /** 10-13 홍겸 님: 쉬는 시간이 저절로 끝났을 때(앱 밖) — 다음에 할 세트를 토스트로. 동그라미를 눌러 끝낸 것은 기록에 쉼이 이미 없어서 여기 오지 않는다 */
@@ -145,7 +145,7 @@ class MainActivity : ComponentActivity() {
         val S = 상태.d.세션 ?: return
         val h = S.휴식 ?: return
         if (S.끝화면 || h.끝시각 > System.currentTimeMillis()) return
-        다음할세트(S)?.let { (j, k) -> 알림글(세트안내글(상태.d, S, j, k)) }
+        다음할세트(S)?.let { (j, k) -> 밖알림.띄움(this, 세트안내글(상태.d, S, j, k)) }
     }
 
     /** 10-13 홍겸 님: 밖 동그라미의 운동보고서 아이콘을 눌러 들어왔으면 보고서 화면을 연다 */
@@ -188,6 +188,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
+        밖알림.치움()
         떠있는동그라미.치움()
     }
 

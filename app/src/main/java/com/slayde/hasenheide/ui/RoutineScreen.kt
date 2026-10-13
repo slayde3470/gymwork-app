@@ -1427,16 +1427,16 @@ private fun 끌기이름표(끌: 세로끌기) {
     ) { 글(끌.이름, 크기값 = 크기.버튼, 색 = c.강조글, 굵기 = FontWeight.Bold) }
 }
 
-/** 놓을 자리 — 칸 위 · 아래 끝에 3 강조 선 (U5-5) · 반 폭 상자는 왼쪽 · 오른쪽 끝 (v22 ④ 표시 1 · 3) */
+/** 놓을 자리 — 칸 위 · 아래 끝에 5 강조 선(10-13 홍겸 님: 3 → 5 · 묶기 테두리 2 → 4 로 굵게 — 안 보여서) (U5-5) · 반 폭 상자는 왼쪽 · 오른쪽 끝 (v22 ④ 표시 1 · 3) */
 private fun Modifier.놓을선(표시: Int, 색: androidx.compose.ui.graphics.Color): Modifier =
     if (표시 < 0) this else this.drawWithContent {
         drawContent()
         if (표시 == 4) {   // 가운데 = 2dp 테두리 (11 지침 U5-5)
-            val w = 선굵기.굵게.toPx()
+            val w = 부품치수.루틴묶을테.toPx()
             drawRoundRect(색, Offset(w / 2, w / 2), Size(size.width - w, size.height - w), CornerRadius(모서리.보통.toPx()), style = Stroke(w))
             return@drawWithContent
         }
-        val h = 부품치수.놓을선.toPx()
+        val h = 부품치수.루틴끼울선.toPx()
         if (표시 == 1 || 표시 == 3) drawRect(색, topLeft = Offset(if (표시 == 3) size.width - h else 0f, 0f), size = Size(h, size.height))
         else drawRect(색, topLeft = Offset(0f, if (표시 == 2) size.height - h else 0f), size = Size(size.width, h))
     }
