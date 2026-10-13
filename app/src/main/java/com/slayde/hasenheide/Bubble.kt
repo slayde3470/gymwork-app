@@ -128,6 +128,8 @@ object 떠있는동그라미 {
         private val 슈퍼그림 = try {
             ContextCompat.getDrawable(ctx, R.drawable.ic_launcher_foreground)?.mutate()?.also { it.setTint(밝은색표.슈퍼.toArgb()) }
         } catch (_: Exception) { null }
+        // 10-13 홍겸 님: 운동 중 그림 — 앱 아이콘의 앞 그림(흰색 벡터)만. 파란 바탕은 동그라미가 칠한다
+        private val 운동그림 = try { ContextCompat.getDrawable(ctx, R.drawable.ic_launcher_foreground)?.mutate() } catch (_: Exception) { null }
         private val 슈퍼글 = 밝은색표.슈퍼글.toArgb()
         // 10-13 홍겸 님: 꾹 누르는 동안 오목하게 작아졌다가 떼면 돌아온다 (아래 단추들의 눌림과 같은 느낌 · 작은 동그라미라 조금 더 깊게)
         private var 눌림배 = 1f
@@ -220,9 +222,13 @@ object 떠있는동그라미 {
                 if (v.보고서) 보고서그림(c, cx, cy, r)
                 else if (슈퍼 && 슈퍼그림 != null) {
                     // 어댑티브 아이콘은 앞 그림(108)이 보이는 동그라미(72)의 1.5배로 깔린다 — 같은 크기로 맞춘다
-                    val 반 = r * 1.5f
+                    val 반 = r * 1.5f * 동그라미치수.그림줄임   // 10-13 홍겸 님: 그림만 10% 줄임
                     슈퍼그림.setBounds((cx - 반).toInt(), (cy - 반).toInt(), (cx + 반).toInt(), (cy + 반).toInt()); 슈퍼그림.draw(c)
-                } else 그림?.let { it.setBounds((cx - r).toInt(), (cy - r).toInt(), (cx + r).toInt(), (cy + r).toInt()); it.draw(c) }
+                } else 운동그림?.let {
+                    // 10-13 홍겸 님: 파란 바탕(위에서 이미 칠함)은 두고 앱 아이콘의 흰 운동 그림만 10% 줄여 그린다 (슈퍼세트 그림과 같은 방식)
+                    val 반 = r * 1.5f * 동그라미치수.그림줄임
+                    it.setBounds((cx - 반).toInt(), (cy - 반).toInt(), (cx + 반).toInt(), (cy + 반).toInt()); it.draw(c)
+                }
                 c.restore()
             }
         }
@@ -418,10 +424,11 @@ private class 닫기뷰(ctx: Context) : View(ctx) {
 
 /** 떠 있는 동그라미 치수 (dp · ms) [11_UI지침에 올릴 값] */
 private object 동그라미치수 {
-    const val 칸 = 93.86f     // 창 크기 (퍼지는 고리 자리 포함) · 10-13 홍겸 님 5% 키움 (89.39 →) · 10-11 홍겸 님 20% 키운 뒤 5% · 3% 줄임 (95 →)
-    const val 반지름 = 33.78f // 동그라미 · 3% 줄임 (34.2 →)
-    const val 고리 = 3.36f    // 퍼지는 고리 굵기 · 3% 줄임 (3.4 →)
-    const val 글 = 18.74f      // 남은 시간 글자 (sp 처럼 쓴다) · 3% 줄임 (19 →)
+    const val 칸 = 91.04f     // 창 크기 (퍼지는 고리 자리 포함) · 10-13 홍겸 님 3% 줄임 (93.86 →) · 10-13 홍겸 님 5% 키움 (89.39 →) · 10-11 홍겸 님 20% 키운 뒤 5% · 3% 줄임 (95 →)
+    const val 반지름 = 32.77f // 동그라미 · 10-13 홍겸 님 3% 줄임 (33.78 →) · 3% 줄임 (34.2 →)
+    const val 고리 = 3.26f    // 퍼지는 고리 굵기 · 10-13 홍겸 님 3% 줄임 (3.36 →) · 3% 줄임 (3.4 →)
+    const val 글 = 18.18f      // 남은 시간 글자 (sp 처럼 쓴다) · 10-13 홍겸 님 3% 줄임 (18.74 →) · 3% 줄임 (19 →)
+    const val 그림줄임 = 0.9f  // 동그라미 안 운동 그림(시그니처)만 10% 줄임 — 운동 중 · 슈퍼세트 (10-13 홍겸 님). 파란 동그라미는 그대로
     const val 띠늘림 = 1.25f  // 휴식 줄어드는 띠 굵기 배수 — 바깥 가장자리는 그대로, 안쪽으로만 굵어진다 (10-11 홍겸 님 · 바깥 동그라미 숨쉬기가 보이게)
     const val 숨폭 = 0.05f    // 바깥 동그라미 숨쉬기 — 1.0배 ~ 1.05배 (10-11 홍겸 님)
     const val 옆 = 12f        // 처음 자리 — 오른쪽에서

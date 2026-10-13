@@ -82,7 +82,6 @@ object 휴식알람 {
             val n = Notification.Builder(ctx, 채널)
                 .setSmallIcon(R.mipmap.ic_launcher)
                 .setContentTitle("휴식 끝")
-                .setContentText("다음 세트를 시작하세요")
                 .setCategory(Notification.CATEGORY_ALARM)
                 .setVisibility(Notification.VISIBILITY_PUBLIC)
                 .setContentIntent(앱열기(ctx))

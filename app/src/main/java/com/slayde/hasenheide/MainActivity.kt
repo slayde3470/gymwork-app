@@ -38,6 +38,7 @@ import com.slayde.hasenheide.ui.밖보고서열기
 import com.slayde.hasenheide.ui.운동다함
 import com.slayde.hasenheide.ui.쉼남음
 import com.slayde.hasenheide.ui.다음할세트
+import com.slayde.hasenheide.ui.쉼끝글
 import com.slayde.hasenheide.ui.다음시작글
 import com.slayde.hasenheide.ui.쉬는종목
 import com.slayde.hasenheide.data.세기더함
@@ -146,7 +147,7 @@ class MainActivity : ComponentActivity() {
         val S = 상태.d.세션 ?: return
         val h = S.휴식 ?: return
         if (S.끝화면 || h.끝시각 > System.currentTimeMillis()) return
-        val 글 = 다음시작글(S, 상태.d, 쉬는종목(S))
+        val 글 = 쉼끝글(S, 상태.d)
         if (글.글.isNotEmpty()) 밖알림.띄움(this, 글.글, 길게 = 글.새종목, 휴식끝 = true)   // 휴식 알람의 '휴식 끝' 알림 자리에 다음 세트 안내를 덮어 쓴다
     }
 
