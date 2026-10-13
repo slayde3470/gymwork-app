@@ -12,6 +12,7 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.awaitLongPressOrCancellation
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.drag
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -187,6 +188,19 @@ private object 루틴기억 {
     val 펼침 = mutableStateMapOf<String, Set<Int>>()
     /** 방금 [+ 루틴] 으로 만든 루틴 (id · 처음 이름 · 휴식일 빼고) — [뒤로] 때 아무것도 안 했으면 치운다 (10-07) */
     var 새것: Pair<String, String>? = null
+
+    /**
+     * 10-14 홍겸 님: 종목 편집의 [+ 세트] 를 눌러 단추가 아래 떠 있는 [자동] · [종목 추가] 에 가려질 자리로 내려갔으면 한 번 부드럽게 올린다
+     * (운동 화면 '+ 세트' 와 같은 생각 · 가려지기 전에). [넘김] = 상세 목록 · [아래끝] = 가려지지 않는 맨 아래(화면 좌표)
+     */
+    var 넘김: ScrollState? = null
+    var 아래끝 = 0f
+    suspend fun 보이게(버튼아래: Float) {
+        val s = 넘김 ?: return
+        if (아래끝 <= 0f || 버튼아래 <= 0f) return
+        val 넘칠 = 버튼아래 - 아래끝
+        if (넘칠 > 1f) s.animateScrollBy(넘칠)
+    }
 }
 
 /** 10-07 홍겸 님: [+ 루틴] 뒤 아무것도 안 하고 [뒤로] → 루틴을 남기지 않는다. 종목 0개 · 이름 그대로 · 자동 꺼짐일 때만. 알림 없이 조용히 */
@@ -517,8 +531,11 @@ private fun 루틴상세화면(상태: 앱상태, r: 루틴, 닫기: () -> Unit)
                 당겨새로고침({ 발자취.적기("루틴 새로고침") }, Modifier.weight(1f).fillMaxWidth(), 켬 = 끌.원 == null) {
                     // 10-06 v23 ⑤ 목록 안 [+ 종목 추가](위 · 끝)는 없다 — 오른쪽 아래에 떠 있다.
                     // 목록 아래 여백 = 12 + 40 + 12 (떠 있는 [자동] · [종목 추가] 에 마지막 상자가 가리지 않게)
+                    val 아래가림px = with(LocalDensity.current) { (높이.보통 + 간격.보통 * 2 + 간격.좁게).toPx() }   // 떠 있는 단추 자리 + 단추 아래 조금
                     Column(
-                        Modifier.fillMaxSize().verticalScroll(넘김)
+                        Modifier.fillMaxSize()
+                            .onGloballyPositioned { 루틴기억.넘김 = 넘김; 루틴기억.아래끝 = it.boundsInRoot().bottom - 아래가림px }
+                            .verticalScroll(넘김)
                             .padding(start = 간격.보통, end = 간격.보통, top = 간격.보통, bottom = 간격.보통 + 높이.보통 + 간격.보통),
                     ) {
                         if (r.휴식일) {
@@ -993,11 +1010,12 @@ private fun 슈퍼상자(
                 val 판 = remember루톡(true)
                 val 초점 = LocalFocusManager.current
                 val 범위 = rememberCoroutineScope()
-                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                val 단추아래 = remember { floatArrayOf(0f) }
+                Box(Modifier.fillMaxWidth().onGloballyPositioned { 단추아래[0] = it.boundsInRoot().bottom }, contentAlignment = Alignment.Center) {
                     버튼("세트", {
                         판.톡(); 발자취.적기("슈퍼세트 세트 더하기")
                         초점.clearFocus()
-                        범위.launch { withFrameNanos { }; withFrameNanos { }; on세트더하기() }
+                        범위.launch { withFrameNanos { }; withFrameNanos { }; on세트더하기(); withFrameNanos { }; withFrameNanos { }; 루틴기억.보이게(단추아래[0]) }
                     }, Modifier.fillMaxWidth(0.6f).루톡(판), 낮게 = true, 그림 = 아이콘.더하기)
                 }
                 버튼("슈퍼세트 풀기", on풀기, Modifier.fillMaxWidth(), 낮게 = true)
@@ -1133,11 +1151,12 @@ private fun 종목상자(
                 val 초점 = LocalFocusManager.current
                 val 범위 = rememberCoroutineScope()
                 // 10-11 홍겸 님: 쳐 넣던 칸이 있으면 먼저 초점을 놓아(깜빡임 사라짐 · 값 저장) 그 값으로 세트를 더한다
-                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                val 단추아래 = remember { floatArrayOf(0f) }
+                Box(Modifier.fillMaxWidth().onGloballyPositioned { 단추아래[0] = it.boundsInRoot().bottom }, contentAlignment = Alignment.Center) {
                     버튼("세트", {
                         판.톡(); 발자취.적기("세트 더하기 · ${e.이름}")
                         초점.clearFocus()
-                        범위.launch { withFrameNanos { }; withFrameNanos { }; on고침 { it.세트더하기() } }
+                        범위.launch { withFrameNanos { }; withFrameNanos { }; on고침 { it.세트더하기() }; withFrameNanos { }; withFrameNanos { }; 루틴기억.보이게(단추아래[0]) }
                     }, Modifier.fillMaxWidth(0.6f).루톡(판), 낮게 = true, 그림 = 아이콘.더하기)
                 }
                 if (묶음글 != null) 버튼("슈퍼세트 풀기", on풀기, Modifier.fillMaxWidth(), 낮게 = true)
