@@ -291,7 +291,7 @@ object 떠있는동그라미 {
             try {
                 val v = context.getSystemService(Vibrator::class.java) ?: return
                 if (!v.hasVibrator()) return
-                val 효과 = if (v.hasAmplitudeControl()) VibrationEffect.createWaveform(패턴, IntArray(패턴.size) { if (it % 2 == 1) 200 else 0 }, 반복)
+                val 효과 = if (v.hasAmplitudeControl()) VibrationEffect.createWaveform(패턴, IntArray(패턴.size) { if (it % 2 == 1) 230 else 0 }, 반복)
                 else VibrationEffect.createWaveform(패턴, 반복)
                 val 용도 = AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ALARM).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build()
                 @Suppress("DEPRECATION")
