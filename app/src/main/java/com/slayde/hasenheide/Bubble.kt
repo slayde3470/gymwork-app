@@ -9,11 +9,14 @@ import android.graphics.Path
 import android.graphics.PixelFormat
 import android.graphics.RectF
 import android.graphics.Typeface
+import android.media.AudioAttributes
 import android.net.Uri
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
+import android.os.VibrationEffect
+import android.os.Vibrator
 import android.provider.Settings
 import android.view.Gravity
 import android.view.HapticFeedbackConstants
@@ -283,6 +286,19 @@ object 떠있는동그라미 {
             붓.strokeJoin = Paint.Join.MITER
         }
 
+        /** 직접 울리는 진동 — 패턴(대기, 울림, 대기, 울림…) 알람 용도라 터치 진동을 꺼 둬도 울린다 */
+        private fun 진동(패턴: LongArray, 반복: Int) {
+            try {
+                val v = context.getSystemService(Vibrator::class.java) ?: return
+                if (!v.hasVibrator()) return
+                val 효과 = if (v.hasAmplitudeControl()) VibrationEffect.createWaveform(패턴, IntArray(패턴.size) { if (it % 2 == 1) 200 else 0 }, 반복)
+                else VibrationEffect.createWaveform(패턴, 반복)
+                val 용도 = AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ALARM).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build()
+                @Suppress("DEPRECATION")
+                v.vibrate(효과, 용도)
+            } catch (_: Exception) { }
+        }
+
         // ── 아래쪽 ✕ — 끄는 동안 나타나고, 동그라미를 거기에 놓으면 동그라미가 사라진다 (10-13 홍겸 님) ──
         private var 닫기: 닫기뷰? = null
         private var 닫기자리: WindowManager.LayoutParams? = null
@@ -328,7 +344,7 @@ object 떠있는동그라미 {
         private val 길게누름 = Runnable {
             if (끌었) return@Runnable
             길었 = true
-            try { performHapticFeedback(HapticFeedbackConstants.LONG_PRESS) } catch (_: Exception) { }
+            진동(longArrayOf(0, 70), -1)   // 10-13 홍겸 님: 세트 체크 · 휴식 끝낼 때 진동 (폰 '터치 진동' 설정과 상관없이 직접 울린다)
             // 10-13 홍겸 님: 0.53초 동안 끌지 않고 누르고 있으면 그 자리에서 실행 (옮길 때는 움직이는 순간 이 예약이 취소된다)
             try { 길게() } catch (_: Exception) { }
         }
@@ -359,7 +375,7 @@ object 떠있는동그라미 {
                 }
                 MotionEvent.ACTION_CANCEL -> { 손.removeCallbacks(길게누름); 놓음(); invalidate(); 닫기치움() }
                 MotionEvent.ACTION_UP -> { 손.removeCallbacks(길게누름); 놓음(); invalidate()
-                    if (끌었 && 붙음) { 치움(); return true }   // ✕ 위에 놓았다 → 동그라미를 지운다 (다음에 앱을 벗어나면 다시 뜬다)
+                    if (끌었 && 붙음) { 진동(longArrayOf(0, 60, 70, 110), -1); 치움(); return true }   // ✕ 위에 놓았다 (10-13 홍겸 님: 지울 때 진동 — 두 번 '두둑') → 동그라미를 지운다 (다음에 앱을 벗어나면 다시 뜬다)
                     닫기치움()
                     if (!끌었 && !길었) {
                     try {
