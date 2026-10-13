@@ -732,7 +732,7 @@ private fun 넣기체크(이름: String, 수: Int, 즐겨: Boolean, 누름: () -
         ) {
             // 10-12 홍겸 님: 상자(바탕·테두리)와 글을 다른 층으로 — 테두리가 글 위에 그려져 끝이 잘려 보였다. 글은 상자 위 층
             Box(Modifier.matchParentSize().background(if (들어감) c.강조 else c.면, 상자).border(선굵기.보통, if (들어감) c.강조 else c.속선, 상자))
-            if (들어감) Text(체크글꼴(수, 크기.작게 * (if (수 >= 3) 1.0f else 1.15f)), style = 글꼴.보통(크기.작게 * (if (수 >= 3) 1.1f else 1.25f), FontWeight.Bold).copy(letterSpacing = (-0.1).em), color = c.강조글, maxLines = 1, softWrap = false, modifier = Modifier.넘쳐도폭없이())
+            if (들어감) Text(체크글꼴(수, 크기.작게 * (if (수 >= 3) 1.0f else 1.15f), c.강조글), style = 글꼴.보통(크기.작게 * (if (수 >= 3) 1.1f else 1.25f), FontWeight.Bold).copy(letterSpacing = (-0.1).em), color = c.강조글, maxLines = 1, softWrap = false, modifier = Modifier.넘쳐도폭없이())
         }
     }
 }
@@ -1409,10 +1409,13 @@ private fun Modifier.넘쳐도폭없이(): Modifier = this.layout { m, _ ->
 }
 
 /** 10-11 홍겸 님: ✓ 는 굵게 · 숫자(×4)는 굵기를 풀고 1sp 작게 */
-private fun 체크글꼴(수: Int, 숫자크기: androidx.compose.ui.unit.TextUnit): androidx.compose.ui.text.AnnotatedString =
+private fun 체크글꼴(수: Int, 숫자크기: androidx.compose.ui.unit.TextUnit, 굵게: Color? = null): androidx.compose.ui.text.AnnotatedString =
     androidx.compose.ui.text.buildAnnotatedString {
         for (ch in 체크글(수)) {
-            if (ch == '✓') append(ch)
+            if (ch == '✓') {
+                // 10-13 홍겸 님: 일반 체크 상자의 ✓ 를 더 굵게 — 같은 색 그림자를 옆으로 살짝 겹쳐 획을 두껍게 한다 (별 상자는 그대로)
+                if (굵게 != null) withStyle(androidx.compose.ui.text.SpanStyle(shadow = androidx.compose.ui.graphics.Shadow(굵게, Offset(1.3f, 0f), 0f))) { append(ch) } else append(ch)
+            }
             else withStyle(androidx.compose.ui.text.SpanStyle(fontWeight = FontWeight.Normal, fontSize = 숫자크기)) { append(ch) }
         }
     }

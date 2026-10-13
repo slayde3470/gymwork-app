@@ -380,7 +380,7 @@ object 떠있는동그라미 {
 private class 닫기뷰(ctx: Context) : View(ctx) {
     private val 붓 = Paint(Paint.ANTI_ALIAS_FLAG)
     private var 붙은 = false
-    private val 보통 = 0xCC202020.toInt()
+    private val 보통 = 밝은색표.강조.toArgb()
     private val 빨강 = 밝은색표.나쁨.toArgb()
 
     fun 나타남() { alpha = 0f; scaleX = 0.6f; scaleY = 0.6f; animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(140).start() }
