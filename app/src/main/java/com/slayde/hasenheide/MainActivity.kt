@@ -152,6 +152,13 @@ class MainActivity : ComponentActivity() {
      * 쉬는 시간이 끝나는 때 한 번 더 고쳐 단추가 [세트 완료] 로 바뀐다
      */
     private fun 운동알림갱신() {
+        try { 운동알림갱신본() } catch (e: Throwable) {
+            // 10-14: 글 만들다 터져도 알림은 뜨게 — 오류 이름을 적는다
+            운동알림.올림(this, "운동 중 (오류 " + e.javaClass.simpleName + ")", null, null)
+        }
+    }
+
+    private fun 운동알림갱신본() {
         알림손.removeCallbacks(알림갱신)
         val S = 상태.d.세션
         if (S == null || S.끝화면) { 운동알림.치움(this); return }
@@ -236,6 +243,8 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         작은창설정()
+        알림손.removeCallbacks(알림갱신)
+        운동알림.치움(this)
         휴식알람.앞에있음 = true
         휴식알람.알림치움(this)
     }
@@ -243,6 +252,8 @@ class MainActivity : ComponentActivity() {
     override fun onPause() {
         휴식알람.앞에있음 = false
         super.onPause()
+        // 10-14: 작은 창(PiP) · 화면 잠금처럼 onStop 이 안 불리는 경우에도 알림이 뜨게 — 앱으로 돌아오면(onResume) 치운다
+        if (!isChangingConfigurations && !isFinishing) { 운동알림.단추눌림 = { 동그라미길게() }; 운동알림갱신() }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
