@@ -49,9 +49,14 @@ object 밖알림 {
                 Intent(app, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP),
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
             )
+            // 10-13 홍겸 님: 슈퍼세트 안내("A(4/10) 세트 완료 → B(4/10) 8kg 10회")는 한 줄에 다 안 들어가 → 뒤가 잘렸다 → 윗줄 · 아랫줄로 나눈다
+            val 나눔 = 글.split(" → ", limit = 2)
+            val 윗줄 = 나눔[0]
+            val 아랫줄 = 나눔.getOrNull(1)?.let { "→ $it" }
             val n = Notification.Builder(app, 채널)
                 .setSmallIcon(R.mipmap.ic_launcher)
-                .setContentTitle(글)
+                .setContentTitle(윗줄)
+                .apply { if (아랫줄 != null) setContentText(아랫줄) }
                 .setShowWhen(false)
                 .setCategory(Notification.CATEGORY_STATUS)
                 .setVisibility(Notification.VISIBILITY_PUBLIC)
