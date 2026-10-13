@@ -26,6 +26,8 @@ import androidx.core.content.ContextCompat
 import com.slayde.hasenheide.ui.theme.밝은색표
 import kotlin.math.PI
 import kotlin.math.abs
+import kotlin.math.hypot
+import kotlin.math.min
 import kotlin.math.sin
 
 /**
@@ -34,7 +36,7 @@ import kotlin.math.sin
  *  · 쉬는 중: 초록 동그라미에 남은 시간 + 줄어드는 고리 + 운동 중처럼 퍼지는 고리 · 숨 쉬는 동그라미 (10-09)
  *  · 운동 중: 앱 아이콘 + 바깥으로 퍼지는 고리(누를 수 있다는 표시)
  *  · 누르면 운동 화면으로 돌아간다 · 끌어서 옮길 수 있다
- *  · 꾹 누르면 (10-13 홍겸 님) 앱으로 가지 않고 [길게] 를 부른다(0.58초 누르고 있으면 · 끌지 않았으면) — 쉬는 중이면 휴식 끝, 아니면 지금 세트 체크 (MainActivity)
+ *  · 꾹 누르면 (10-13 홍겸 님) 앱으로 가지 않고 [길게] 를 부른다(0.53초 누르고 있으면 · 끌지 않았으면) — 쉬는 중이면 휴식 끝, 아니면 지금 세트 체크 (MainActivity)
  * 권한이 없으면 전처럼 PiP 를 쓴다 (MainActivity).
  */
 object 떠있는동그라미 {
@@ -139,7 +141,7 @@ object 떠있는동그라미 {
         private val 고리칸 = RectF()
 
         fun 시작() { 손.post(틱) }
-        fun 멈춤() { 손.removeCallbacks(틱); 손.removeCallbacks(길게누름) }
+        fun 멈춤() { 손.removeCallbacks(틱); 손.removeCallbacks(길게누름); 닫기치움() }
 
         override fun onDraw(c: Canvas) {
             val 지금 = SystemClock.uptimeMillis()
@@ -281,6 +283,44 @@ object 떠있는동그라미 {
             붓.strokeJoin = Paint.Join.MITER
         }
 
+        // ── 아래쪽 ✕ — 끄는 동안 나타나고, 동그라미를 거기에 놓으면 동그라미가 사라진다 (10-13 홍겸 님) ──
+        private var 닫기: 닫기뷰? = null
+        private var 닫기자리: WindowManager.LayoutParams? = null
+        private var 붙음 = false
+
+        private fun 닫기보임() {
+            if (닫기 != null) return
+            val 화면 = resources.displayMetrics
+            val 칸 = (동그라미치수.닫기 * 밀도).toInt()
+            val q = WindowManager.LayoutParams(
+                칸, 칸, WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+                PixelFormat.TRANSLUCENT,
+            ).apply {
+                gravity = Gravity.TOP or Gravity.START
+                x = (화면.widthPixels - 칸) / 2
+                y = 화면.heightPixels - 칸 - (동그라미치수.닫기아래 * 밀도).toInt()
+            }
+            val v = 닫기뷰(context)
+            try { wm.addView(v, q); 닫기 = v; 닫기자리 = q; v.나타남() } catch (_: Exception) { }
+        }
+
+        private fun 닫기치움() {
+            닫기?.let { try { wm.removeView(it) } catch (_: Exception) { } }
+            닫기 = null; 닫기자리 = null; 붙음 = false
+        }
+
+        /** 동그라미 가운데가 ✕ 가운데에 가까우면 ✕ 가 커지며 빨개진다 (놓으면 사라진다) */
+        private fun 닫기살핌() {
+            val q = 닫기자리 ?: return
+            val dx = (p.x + p.width / 2f) - (q.x + q.width / 2f); val dy = (p.y + p.height / 2f) - (q.y + q.height / 2f)
+            val 가까움 = hypot(dx, dy) < (동그라미치수.닫기 / 2f + 동그라미치수.반지름 * 0.8f) * 밀도
+            if (가까움 != 붙음) {
+                붙음 = 가까움; 닫기?.붙음(가까움)
+                if (가까움) try { performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK) } catch (_: Exception) { }
+            }
+        }
+
         // ── 끌어서 옮기기 · 누르면 앱으로 ──
         private val 틈 = ViewConfiguration.get(ctx).scaledTouchSlop
         private var 아래x = 0f; private var 아래y = 0f; private var 처음x = 0; private var 처음y = 0; private var 끌었 = false; private var 길었 = false
@@ -289,7 +329,7 @@ object 떠있는동그라미 {
             if (끌었) return@Runnable
             길었 = true
             try { performHapticFeedback(HapticFeedbackConstants.LONG_PRESS) } catch (_: Exception) { }
-            // 10-13 홍겸 님: 0.58초 동안 끌지 않고 누르고 있으면 그 자리에서 실행 (옮길 때는 움직이는 순간 이 예약이 취소된다)
+            // 10-13 홍겸 님: 0.53초 동안 끌지 않고 누르고 있으면 그 자리에서 실행 (옮길 때는 움직이는 순간 이 예약이 취소된다)
             try { 길게() } catch (_: Exception) { }
         }
 
@@ -314,11 +354,13 @@ object 떠있는동그라미 {
                 }
                 MotionEvent.ACTION_MOVE -> {
                     val dx = e.rawX - 아래x; val dy = e.rawY - 아래y
-                    if (!끌었 && (abs(dx) > 틈 || abs(dy) > 틈)) { 끌었 = true; 길었 = false; 손.removeCallbacks(길게누름); 눌림목표 = 1f; invalidate() }   // 꾹 누른 뒤라도 끌면 옮기기 (그땐 아무것도 안 한다)
-                    if (끌었) { p.x = 안쪽x(처음x + dx.toInt()); p.y = 안쪽y(처음y + dy.toInt()); try { wm.updateViewLayout(this, p) } catch (_: Exception) { } }
+                    if (!끌었 && (abs(dx) > 틈 || abs(dy) > 틈)) { 끌었 = true; 길었 = false; 손.removeCallbacks(길게누름); 눌림목표 = 1f; invalidate(); 닫기보임() }   // 꾹 누른 뒤라도 끌면 옮기기 (그땐 아무것도 안 한다)
+                    if (끌었) { p.x = 안쪽x(처음x + dx.toInt()); p.y = 안쪽y(처음y + dy.toInt()); try { wm.updateViewLayout(this, p) } catch (_: Exception) { }; 닫기살핌() }
                 }
-                MotionEvent.ACTION_CANCEL -> { 손.removeCallbacks(길게누름); 놓음(); invalidate() }
+                MotionEvent.ACTION_CANCEL -> { 손.removeCallbacks(길게누름); 놓음(); invalidate(); 닫기치움() }
                 MotionEvent.ACTION_UP -> { 손.removeCallbacks(길게누름); 놓음(); invalidate()
+                    if (끌었 && 붙음) { 치움(); return true }   // ✕ 위에 놓았다 → 동그라미를 지운다 (다음에 앱을 벗어나면 다시 뜬다)
+                    닫기치움()
                     if (!끌었 && !길었) {
                     try {
                         context.startActivity(Intent(context, MainActivity::class.java)
@@ -330,6 +372,31 @@ object 떠있는동그라미 {
             }
             return true
         }
+    }
+}
+
+/** 끌 때 아래에 나타나는 ✕ 단추 — 동그라미를 가까이 가져가면 커지고 빨개진다 (10-13 홍겸 님) */
+@SuppressLint("ViewConstructor")
+private class 닫기뷰(ctx: Context) : View(ctx) {
+    private val 붓 = Paint(Paint.ANTI_ALIAS_FLAG)
+    private var 붙은 = false
+    private val 보통 = 0xCC202020.toInt()
+    private val 빨강 = 밝은색표.나쁨.toArgb()
+
+    fun 나타남() { alpha = 0f; scaleX = 0.6f; scaleY = 0.6f; animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(140).start() }
+    fun 붙음(b: Boolean) {
+        붙은 = b
+        animate().scaleX(if (b) 1.25f else 1f).scaleY(if (b) 1.25f else 1f).setDuration(120).start()
+        invalidate()
+    }
+
+    override fun onDraw(c: Canvas) {
+        val r = min(width, height) / 2f; val cx = width / 2f; val cy = height / 2f
+        붓.style = Paint.Style.FILL; 붓.color = if (붙은) 빨강 else 보통
+        c.drawCircle(cx, cy, r, 붓)
+        붓.style = Paint.Style.STROKE; 붓.strokeWidth = r * 0.11f; 붓.strokeCap = Paint.Cap.ROUND; 붓.color = 0xFFFFFFFF.toInt()
+        val a = r * 0.32f
+        c.drawLine(cx - a, cy - a, cx + a, cy + a, 붓); c.drawLine(cx - a, cy + a, cx + a, cy - a, 붓)
     }
 }
 
@@ -345,7 +412,9 @@ private object 동그라미치수 {
     const val 처음위 = 160f   // 처음 자리 — 위에서
     const val 한바퀴 = 1600L  // 퍼지는 고리 한 번
     const val 글쓰기ms = 4200L // 운동보고서 아이콘의 줄글이 써지고 지워지는 한 바퀴 (10-13 홍겸 님) [추측: 폰에서 보고 조절]
-    const val 꾹ms = 580L     // 꾹 누르기 시간 — 10-13 홍겸 님 0.58초 (폰 기본값 0.5초 대신 앱이 정한다 · 0.8 → 0.68 → 0.58)
+    const val 닫기 = 56f      // 끌 때 아래에 나타나는 ✕ 단추 크기 (10-13 홍겸 님)
+    const val 닫기아래 = 72f  // ✕ 의 아래 여백
+    const val 꾹ms = 530L     // 꾹 누르기 시간 — 10-13 홍겸 님 0.53초 (폰 기본값 0.5초 대신 앱이 정한다 · 0.8 → 0.68 → 0.58 → 0.53)
     const val 눌림 = 0.8f     // 꾹 누르는 동안 이만큼 작아진다 (10-13 홍겸 님: 0.8 까지 · 아래 단추 눌림 0.96 보다 깊게)
     const val 용수철 = 600f   // 뽀오잉 — 용수철 세기 (클수록 빠르다)
     const val 누름감쇠 = 49f  // 누를 때 — 튀지 않고 부드럽게 오목해진다 (2×√용수철)

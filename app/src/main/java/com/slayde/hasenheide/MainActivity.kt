@@ -38,7 +38,8 @@ import com.slayde.hasenheide.ui.밖보고서열기
 import com.slayde.hasenheide.ui.운동다함
 import com.slayde.hasenheide.ui.쉼남음
 import com.slayde.hasenheide.ui.다음할세트
-import com.slayde.hasenheide.ui.세트안내글
+import com.slayde.hasenheide.ui.다음시작글
+import com.slayde.hasenheide.ui.쉬는종목
 import com.slayde.hasenheide.data.세기더함
 import com.slayde.hasenheide.data.세기이름
 import com.slayde.hasenheide.data.남은초
@@ -137,7 +138,7 @@ class MainActivity : ComponentActivity() {
         val 글 = 상태.밖에서길게() ?: return
         val h = 상태.d.세션?.휴식
         알람맞추기(if (h != null && !h.물음 && 상태.d.설정.소리진동) h.끝시각 else null, 권한묻기 = false)
-        if (글.isNotEmpty()) 밖알림.띄움(this, 글)   // 10-13: 기본 토스트는 연달아 누르면 빠져서 직접 띄운다 (Notice.kt)
+        if (글.글.isNotEmpty()) 밖알림.띄움(this, 글.글, 길게 = 글.새종목)   // 10-13: 기본 토스트는 연달아 누르면 빠져서 직접 띄운다 (Notice.kt)
     }
 
     /** 10-13 홍겸 님: 쉬는 시간이 저절로 끝났을 때(앱 밖) — 다음에 할 세트를 토스트로. 동그라미를 눌러 끝낸 것은 기록에 쉼이 이미 없어서 여기 오지 않는다 */
@@ -145,7 +146,8 @@ class MainActivity : ComponentActivity() {
         val S = 상태.d.세션 ?: return
         val h = S.휴식 ?: return
         if (S.끝화면 || h.끝시각 > System.currentTimeMillis()) return
-        다음할세트(S)?.let { (j, k) -> 밖알림.띄움(this, 세트안내글(상태.d, S, j, k)) }
+        val 글 = 다음시작글(S, 상태.d, 쉬는종목(S))
+        if (글.글.isNotEmpty()) 밖알림.띄움(this, 글.글, 길게 = 글.새종목, 배너아래 = true)   // 휴식 끝 알림 배너(화면 위)와 겹치지 않게 그 아래
     }
 
     /** 10-13 홍겸 님: 밖 동그라미의 운동보고서 아이콘을 눌러 들어왔으면 보고서 화면을 연다 */
