@@ -230,7 +230,7 @@ class MainActivity : ComponentActivity() {
         // 10-08 홍겸 님: 운동 중에 앱을 벗어나면 다른 앱 위에 동그라미 (유튜브 작은 창과 같이 뜬다)
         if (!isChangingConfigurations && !(Build.VERSION.SDK_INT >= 26 && isInPictureInPictureMode)) 떠있는동그라미.띄움(this, 길게 = { 동그라미길게() }, 쉼끝 = { 동그라미쉼끝() }) { 동그라미값() }
         // 10-14: 잠금 화면에도 남는 [세트 완료] / [휴식 끝] 알림 (동그라미는 잠금 화면 위에 못 뜬다)
-        if (!isChangingConfigurations && !(Build.VERSION.SDK_INT >= 26 && isInPictureInPictureMode)) { 운동알림.단추눌림 = { 동그라미길게() }; 운동알림갱신() }
+        if (!isChangingConfigurations && !(Build.VERSION.SDK_INT >= 26 && isInPictureInPictureMode)) { 운동알림.단추눌림 = { 동그라미길게() }; try { 운동알림갱신() } catch (_: Exception) { } }
     }
 
     override fun onResume() {

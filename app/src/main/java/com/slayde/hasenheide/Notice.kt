@@ -86,9 +86,9 @@ object 운동알림 {
     var 단추눌림: (() -> Unit)? = null
 
     fun 올림(ctx: Context, 글: String, 쉼끝시각: Long?, 단추: String?) {
+        val app = ctx.applicationContext
+        val nm = try { app.getSystemService(NotificationManager::class.java) } catch (_: Exception) { null } ?: return
         try {
-            val app = ctx.applicationContext
-            val nm = app.getSystemService(NotificationManager::class.java) ?: return
             val ch = NotificationChannel(채널, "운동 중", NotificationManager.IMPORTANCE_LOW).apply {
                 description = "앱을 벗어나 있는 동안 지금 할 세트와 [세트 완료] · [휴식 끝] 단추를 보여 줍니다 (잠금 화면 포함)"
                 setSound(null, null)
@@ -97,20 +97,35 @@ object 운동알림 {
                 lockscreenVisibility = Notification.VISIBILITY_PUBLIC
             }
             nm.createNotificationChannel(ch)
-            val 열기 = PendingIntent.getActivity(
-                app, 1,
-                Intent(app, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP),
-                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
-            )
-            val b = Notification.Builder(app, 채널)
-                .setSmallIcon(R.mipmap.ic_launcher)
-                .setContentTitle(글)
-                .setCategory(Notification.CATEGORY_PROGRESS)
-                .setVisibility(Notification.VISIBILITY_PUBLIC)
-                .setContentIntent(열기)
-                .setOngoing(true)
-                .setOnlyAlertOnce(true)
-                .setShowWhen(false)
+        } catch (_: Exception) { }
+        // 10-14: 먼저 전부 넣은 알림을 올려 보고, 어딘가 걸려 터지면 단추 · 시계를 뺀 단순한 알림이라도 올린다 (그때는 오류 이름을 작은 글로 붙여 원인을 알 수 있게)
+        val 오류 = try {
+            nm.notify(번호, 만듦(app, 글, 쉼끝시각, 단추, 단순 = false))
+            return
+        } catch (e: Throwable) { e.javaClass.simpleName + ":" + (e.message ?: "").take(60) }
+        try {
+            nm.notify(번호, 만듦(app, 글, null, null, 단순 = true, 오류 = 오류))
+        } catch (_: Throwable) { }
+    }
+
+    private fun 만듦(app: Context, 글: String, 쉼끝시각: Long?, 단추: String?, 단순: Boolean, 오류: String? = null): Notification {
+        val 열기 = PendingIntent.getActivity(
+            app, 1,
+            Intent(app, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+        val b = androidx.core.app.NotificationCompat.Builder(app, 채널)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentTitle(글)
+            .setVisibility(androidx.core.app.NotificationCompat.VISIBILITY_PUBLIC)
+            .setContentIntent(열기)
+            .setOngoing(true)
+            .setOnlyAlertOnce(true)
+            .setSilent(true)
+            .setPriority(androidx.core.app.NotificationCompat.PRIORITY_LOW)
+            .setShowWhen(false)
+        if (오류 != null) b.setContentText("오류 " + 오류)
+        if (!단순) {
             if (쉼끝시각 != null) b.setShowWhen(true).setWhen(쉼끝시각).setUsesChronometer(true).setChronometerCountDown(true)
             if (단추 != null) {
                 val 누름 = PendingIntent.getBroadcast(
@@ -118,13 +133,13 @@ object 운동알림 {
                     Intent(app, 운동알림수신기::class.java).setAction(동작).setPackage(app.packageName),
                     PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
                 )
-                val a = Notification.Action.Builder(null as android.graphics.drawable.Icon?, 단추, 누름)
+                val a = androidx.core.app.NotificationCompat.Action.Builder(R.mipmap.ic_launcher, 단추, 누름)
                 // 안드로이드 12+ : 잠금을 풀지 않고도 누를 수 있게 (폰 설정에서 막혀 있으면 폰이 잠금 해제를 먼저 물을 수 있다)
-                if (android.os.Build.VERSION.SDK_INT >= 31) a.setAuthenticationRequired(false)
+                a.setAuthenticationRequired(false)
                 b.addAction(a.build())
             }
-            nm.notify(번호, b.build())
-        } catch (_: Exception) { }   // 알림 권한을 거절했으면 알림만 빠진다
+        }
+        return b.build()
     }
 
     fun 치움(ctx: Context) {
