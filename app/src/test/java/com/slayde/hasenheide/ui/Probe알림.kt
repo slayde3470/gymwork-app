@@ -29,7 +29,7 @@ class Probe_알림 {
         val nm = app.getSystemService(NotificationManager::class.java)
         val 목록 = shadowOf(nm).allNotifications
         sb.appendLine("[$제목] 알림 ${목록.size}개: " + 목록.joinToString(" | ") { n ->
-            (n.extras.getCharSequence("android.title") ?: "?").toString() + " / 글=" + n.extras.getCharSequence("android.text") + " / 단추=" + (n.actions?.map { it.title } ?: emptyList<CharSequence>()) + " / 미디어=" + (n.extras.getParcelable<android.os.Parcelable>("android.mediaSession") != null) + " / 채널=" + n.channelId
+            (n.extras.getCharSequence("android.title") ?: "?").toString() + " / 글=" + n.extras.getCharSequence("android.text") + " / 단추=" + (n.actions?.map { it.title } ?: emptyList<CharSequence>()) + " / 미디어=" + (n.extras.getParcelable<android.os.Parcelable>("android.mediaSession") != null) + " / 채널=" + n.channelId + " / 조절단추=" + try { val t = n.extras.getParcelable<android.media.session.MediaSession.Token>("android.mediaSession"); android.media.session.MediaController(app, t!!).playbackState?.customActions?.map { it.name } } catch (e: Throwable) { "읽기오류 " + e.javaClass.simpleName }
         })
     }
 
