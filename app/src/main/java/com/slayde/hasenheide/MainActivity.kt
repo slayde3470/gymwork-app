@@ -224,9 +224,6 @@ class MainActivity : ComponentActivity() {
     override fun onStart() {
         super.onStart()
         밖알림.치움(this)
-        알림손.removeCallbacks(알림갱신)
-        운동알림.단추눌림 = null
-        운동알림.치움(this)
         떠있는동그라미.치움()
     }
 
@@ -236,15 +233,17 @@ class MainActivity : ComponentActivity() {
         super.onStop()
         // 10-08 홍겸 님: 운동 중에 앱을 벗어나면 다른 앱 위에 동그라미 (유튜브 작은 창과 같이 뜬다)
         if (!isChangingConfigurations && !(Build.VERSION.SDK_INT >= 26 && isInPictureInPictureMode)) 떠있는동그라미.띄움(this, 길게 = { 동그라미길게() }, 쉼끝 = { 동그라미쉼끝() }) { 동그라미값() }
-        // 10-14: 잠금 화면에도 남는 [세트 완료] / [휴식 끝] 알림 (동그라미는 잠금 화면 위에 못 뜬다)
-        if (!isChangingConfigurations && !(Build.VERSION.SDK_INT >= 26 && isInPictureInPictureMode)) { 운동알림.단추눌림 = { 동그라미길게() }; try { 운동알림갱신() } catch (_: Exception) { } }
+    }
+
+    override fun onDestroy() {
+        // 앱을 완전히 닫으면(설정 변경으로 다시 만드는 경우 말고) 운동 알림도 거둔다
+        if (isFinishing) { 알림손.removeCallbacks(알림갱신); 운동알림.단추눌림 = null; 운동알림.치움(this) }
+        super.onDestroy()
     }
 
     override fun onResume() {
         super.onResume()
         작은창설정()
-        알림손.removeCallbacks(알림갱신)
-        운동알림.치움(this)
         휴식알람.앞에있음 = true
         휴식알람.알림치움(this)
     }
@@ -252,12 +251,11 @@ class MainActivity : ComponentActivity() {
     override fun onPause() {
         휴식알람.앞에있음 = false
         super.onPause()
-        // 10-14: 작은 창(PiP) · 화면 잠금처럼 onStop 이 안 불리는 경우에도 알림이 뜨게 — 앱으로 돌아오면(onResume) 치운다
-        if (!isChangingConfigurations && !isFinishing) { 운동알림.단추눌림 = { 동그라미길게() }; 운동알림갱신() }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        운동알림.단추눌림 = { 동그라미길게() }   // 10-15: 운동 알림 단추 — 앱이 앞에 있든 뒤에 있든 같은 일
         근육그림미리읽기(this)   // 10-11: 첫 종목 펼침 렉 — 근육 그림을 뒤에서 미리 읽어 둔다
         // 화면 가장자리(상태바·내비게이션바)까지 앱이 그려지게 한다
         enableEdgeToEdge()
@@ -285,6 +283,8 @@ class MainActivity : ComponentActivity() {
             // 쉬기 시작하면 끝 시각에 알람을 걸고, 휴식이 끝나거나 운동을 마치면 푼다 (09-26 메모: 화면이 꺼져 있어도)
             val h = 상태.d.세션?.휴식
             val 알람끝 = if (h != null && !h.물음 && 상태.d.설정.소리진동) h.끝시각 else null
+            // 10-15: 운동 중 알림은 앱을 벗어나는 순간이 아니라 '운동이 있는 동안 계속' 올려 둔다 (벗어나는 순간에 올리던 방식은 폰에서 안 떴다)
+            LaunchedEffect(상태.d.세션) { 운동알림갱신() }
             LaunchedEffect(알람끝) { 알람맞추기(알람끝) }
             // 10-01: PiP 가 안 뜨던 것 — [추측] 안드로이드 12 이상 제스처 이동에서는 onUserLeaveHint 가
             //        늦게 오거나 안 와서 작은 창으로 못 들어간다. 운동 중이면 '자동으로 작은 창' 을 켜 둔다
