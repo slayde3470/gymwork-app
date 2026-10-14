@@ -84,9 +84,41 @@ object 운동알림 {
     private const val 번호 = 9
     const val 동작 = "com.slayde.hasenheide.밖단추"
     var 단추눌림: (() -> Unit)? = null
+    private var 앱컨텍스트: Context? = null
+
+    /** 10-15 홍겸 님: 잠금 화면 단추를 누르면 동그라미 꾹 누름처럼 진동 (0.25초 · 세기 230) 한 번 울리고 같은 일을 한다 */
+    fun 눌렸다() {
+        val ctx = 앱컨텍스트
+        if (ctx != null) try {
+            val v = ctx.getSystemService(android.os.Vibrator::class.java)
+            if (v != null && v.hasVibrator()) {
+                val 효과 = if (v.hasAmplitudeControl()) android.os.VibrationEffect.createWaveform(longArrayOf(0, 250), intArrayOf(0, 230), -1)
+                else android.os.VibrationEffect.createWaveform(longArrayOf(0, 250), -1)
+                val 용도 = android.media.AudioAttributes.Builder().setUsage(android.media.AudioAttributes.USAGE_ALARM)
+                    .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION).build()
+                @Suppress("DEPRECATION")
+                v.vibrate(효과, 용도)
+            }
+        } catch (_: Exception) { }
+        단추눌림?.invoke()
+    }
+
+    private var 그림: android.graphics.Bitmap? = null
+    /** 앨범 그림 자리 — 폰이 기본 ♪ 동그라미를 넣지 않게 앱 아이콘을 넣는다 */
+    private fun 앱그림(app: Context): android.graphics.Bitmap? {
+        그림?.let { return it }
+        return try {
+            val d = androidx.core.content.ContextCompat.getDrawable(app, R.mipmap.ic_launcher) ?: return null
+            val b = android.graphics.Bitmap.createBitmap(256, 256, android.graphics.Bitmap.Config.ARGB_8888)
+            val c = android.graphics.Canvas(b)
+            d.setBounds(0, 0, 256, 256); d.draw(c)
+            그림 = b; b
+        } catch (_: Throwable) { null }
+    }
 
     fun 올림(ctx: Context, 글: String, 쉼끝시각: Long?, 단추: String?) {
         val app = ctx.applicationContext
+        앱컨텍스트 = app
         val nm = try { app.getSystemService(NotificationManager::class.java) } catch (_: Exception) { null } ?: return
         try {
             try { nm.deleteNotificationChannel("운동중") } catch (_: Exception) { }
@@ -121,10 +153,10 @@ object 운동알림 {
         val s = 미디어세션 ?: android.media.session.MediaSession(app, "운동중").also { m ->
             // 10-15: 폰의 잠금 화면 미디어 칸은 알림 단추가 아니라 '재생 조절 단추'를 그린다 → 어떤 단추가 눌려도 [세트 완료] / [휴식 끝] 과 같은 일을 한다
             m.setCallback(object : android.media.session.MediaSession.Callback() {
-                override fun onCustomAction(action: String, extras: android.os.Bundle?) { 운동알림.단추눌림?.invoke() }
-                override fun onPlay() { 운동알림.단추눌림?.invoke() }
-                override fun onPause() { 운동알림.단추눌림?.invoke() }
-                override fun onSkipToNext() { 운동알림.단추눌림?.invoke() }
+                override fun onCustomAction(action: String, extras: android.os.Bundle?) { 운동알림.눌렸다() }
+                override fun onPlay() { 운동알림.눌렸다() }
+                override fun onPause() { 운동알림.눌렸다() }
+                override fun onSkipToNext() { 운동알림.눌렸다() }
             })
             미디어세션 = m
         }
@@ -132,6 +164,7 @@ object 운동알림 {
             android.media.MediaMetadata.Builder()
                 .putString(android.media.MediaMetadata.METADATA_KEY_TITLE, 글)
                 .putString(android.media.MediaMetadata.METADATA_KEY_ARTIST, "하젠하이데")
+                .apply { 앱그림(app)?.let { g -> putBitmap(android.media.MediaMetadata.METADATA_KEY_ALBUM_ART, g); putBitmap(android.media.MediaMetadata.METADATA_KEY_ART, g); putBitmap(android.media.MediaMetadata.METADATA_KEY_DISPLAY_ICON, g) } }
                 .build()
         )
         val 상태 = android.media.session.PlaybackState.Builder()
@@ -158,6 +191,7 @@ object 운동알림 {
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setShowWhen(false)
+            .apply { 앱그림(app)?.let { g -> setLargeIcon(g) } }
         if (쉼끝시각 != null) b.setShowWhen(true).setWhen(쉼끝시각).setUsesChronometer(true).setChronometerCountDown(true)
         if (단추 != null) {
             val 누름 = PendingIntent.getBroadcast(
@@ -217,6 +251,6 @@ object 운동알림 {
 class 운동알림수신기 : BroadcastReceiver() {
     override fun onReceive(ctx: Context, intent: Intent) {
         if (intent.action != 운동알림.동작) return
-        운동알림.단추눌림?.invoke()
+        운동알림.눌렸다()
     }
 }
