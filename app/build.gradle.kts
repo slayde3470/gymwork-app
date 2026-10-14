@@ -35,6 +35,7 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
+    testOptions { unitTests { isIncludeAndroidResources = true } }
     buildFeatures {
         compose = true
         buildConfig = true
@@ -59,4 +60,7 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     // Storage(org.json) 시험 (10-05 · PortTest) — 안드로이드 단위시험의 org.json 은 빈 껍데기라 진짜를 넣는다
     testImplementation("org.json:json:20240303")
+
+    testImplementation("org.robolectric:robolectric:4.14.1")
+    testImplementation("androidx.test.ext:junit:1.2.1")
 }
