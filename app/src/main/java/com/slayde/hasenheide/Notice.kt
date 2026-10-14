@@ -118,19 +118,31 @@ object 운동알림 {
 
     /** 미디어 알림 모양 — 글 = 제목, 단추 = 알림 단추. 미디어 세션(소리는 안 낸다)을 달아야 폰이 미디어 칸에 넣는다 */
     private fun 미디어만듦(app: Context, 글: String, 쉼끝시각: Long?, 단추: String?): Notification {
-        val s = 미디어세션 ?: android.media.session.MediaSession(app, "운동중").also { 미디어세션 = it }
+        val s = 미디어세션 ?: android.media.session.MediaSession(app, "운동중").also { m ->
+            // 10-15: 폰의 잠금 화면 미디어 칸은 알림 단추가 아니라 '재생 조절 단추'를 그린다 → 어떤 단추가 눌려도 [세트 완료] / [휴식 끝] 과 같은 일을 한다
+            m.setCallback(object : android.media.session.MediaSession.Callback() {
+                override fun onCustomAction(action: String, extras: android.os.Bundle?) { 운동알림.단추눌림?.invoke() }
+                override fun onPlay() { 운동알림.단추눌림?.invoke() }
+                override fun onPause() { 운동알림.단추눌림?.invoke() }
+                override fun onSkipToNext() { 운동알림.단추눌림?.invoke() }
+            })
+            미디어세션 = m
+        }
         s.setMetadata(
             android.media.MediaMetadata.Builder()
                 .putString(android.media.MediaMetadata.METADATA_KEY_TITLE, 글)
                 .putString(android.media.MediaMetadata.METADATA_KEY_ARTIST, "하젠하이데")
                 .build()
         )
-        s.setPlaybackState(
-            android.media.session.PlaybackState.Builder()
-                .setState(android.media.session.PlaybackState.STATE_PLAYING, android.media.session.PlaybackState.PLAYBACK_POSITION_UNKNOWN, 1f)
-                .setActions(0L)
-                .build()
-        )
+        val 상태 = android.media.session.PlaybackState.Builder()
+            .setState(android.media.session.PlaybackState.STATE_PLAYING, android.media.session.PlaybackState.PLAYBACK_POSITION_UNKNOWN, 1f)
+            .setActions(0L)
+        if (단추 != null) {
+            상태.addCustomAction(
+                android.media.session.PlaybackState.CustomAction.Builder("밖단추", 단추, if (단추 == "휴식 끝") R.drawable.ic_rest_end else R.drawable.ic_set_done).build()
+            )
+        }
+        s.setPlaybackState(상태.build())
         s.isActive = true
         val 열기 = PendingIntent.getActivity(
             app, 1,
