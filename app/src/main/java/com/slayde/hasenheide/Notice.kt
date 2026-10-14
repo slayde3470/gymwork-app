@@ -80,7 +80,7 @@ object 밖알림 {
  *  · 소리 · 진동 없는 조용한 알림 · 앱으로 돌아오면 치운다
  */
 object 운동알림 {
-    private const val 채널 = "운동중"
+    private const val 채널 = "운동중2"   // 10-15: 예전 "운동중"(조용함=LOW)은 폰의 잠금 화면에서 '무음 알림 숨기기'에 걸려 안 보였다 → 소리 없이 보통 중요도(DEFAULT)인 새 채널
     private const val 번호 = 9
     const val 동작 = "com.slayde.hasenheide.밖단추"
     var 단추눌림: (() -> Unit)? = null
@@ -89,7 +89,8 @@ object 운동알림 {
         val app = ctx.applicationContext
         val nm = try { app.getSystemService(NotificationManager::class.java) } catch (_: Exception) { null } ?: return
         try {
-            val ch = NotificationChannel(채널, "운동 중", NotificationManager.IMPORTANCE_LOW).apply {
+            try { nm.deleteNotificationChannel("운동중") } catch (_: Exception) { }
+            val ch = NotificationChannel(채널, "운동 중", NotificationManager.IMPORTANCE_DEFAULT).apply {
                 description = "앱을 벗어나 있는 동안 지금 할 세트와 [세트 완료] · [휴식 끝] 단추를 보여 줍니다 (잠금 화면 포함)"
                 setSound(null, null)
                 enableVibration(false)
@@ -121,8 +122,7 @@ object 운동알림 {
             .setContentIntent(열기)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
-            .setSilent(true)
-            .setPriority(androidx.core.app.NotificationCompat.PRIORITY_LOW)
+            .setPriority(androidx.core.app.NotificationCompat.PRIORITY_DEFAULT)
             .setShowWhen(false)
         if (오류 != null) b.setContentText("오류 " + 오류)
         if (!단순) {
