@@ -100,6 +100,11 @@ object 운동알림 {
             nm.createNotificationChannel(ch)
         } catch (_: Exception) { }
         // 10-14: 먼저 전부 넣은 알림을 올려 보고, 어딘가 걸려 터지면 단추 · 시계를 뺀 단순한 알림이라도 올린다 (그때는 오류 이름을 작은 글로 붙여 원인을 알 수 있게)
+        // 10-15: 1순위 = 유튜브 같은 '미디어 알림' 모양 — 폰의 잠금 화면이 일반 알림을 숨겨도 미디어 조절 칸은 보여 준다
+        try {
+            nm.notify(번호, 미디어만듦(app, 글, 쉼끝시각, 단추))
+            return
+        } catch (_: Throwable) { }
         val 오류 = try {
             nm.notify(번호, 만듦(app, 글, 쉼끝시각, 단추, 단순 = false))
             return
@@ -107,6 +112,53 @@ object 운동알림 {
         try {
             nm.notify(번호, 만듦(app, 글, null, null, 단순 = true, 오류 = 오류))
         } catch (_: Throwable) { }
+    }
+
+    private var 미디어세션: android.media.session.MediaSession? = null
+
+    /** 미디어 알림 모양 — 글 = 제목, 단추 = 알림 단추. 미디어 세션(소리는 안 낸다)을 달아야 폰이 미디어 칸에 넣는다 */
+    private fun 미디어만듦(app: Context, 글: String, 쉼끝시각: Long?, 단추: String?): Notification {
+        val s = 미디어세션 ?: android.media.session.MediaSession(app, "운동중").also { 미디어세션 = it }
+        s.setMetadata(
+            android.media.MediaMetadata.Builder()
+                .putString(android.media.MediaMetadata.METADATA_KEY_TITLE, 글)
+                .putString(android.media.MediaMetadata.METADATA_KEY_ARTIST, "하젠하이데")
+                .build()
+        )
+        s.setPlaybackState(
+            android.media.session.PlaybackState.Builder()
+                .setState(android.media.session.PlaybackState.STATE_PLAYING, android.media.session.PlaybackState.PLAYBACK_POSITION_UNKNOWN, 1f)
+                .setActions(0L)
+                .build()
+        )
+        s.isActive = true
+        val 열기 = PendingIntent.getActivity(
+            app, 1,
+            Intent(app, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+        val b = Notification.Builder(app, 채널)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentTitle(글)
+            .setContentText("하젠하이데")
+            .setVisibility(Notification.VISIBILITY_PUBLIC)
+            .setContentIntent(열기)
+            .setOngoing(true)
+            .setOnlyAlertOnce(true)
+            .setShowWhen(false)
+        if (쉼끝시각 != null) b.setShowWhen(true).setWhen(쉼끝시각).setUsesChronometer(true).setChronometerCountDown(true)
+        if (단추 != null) {
+            val 누름 = PendingIntent.getBroadcast(
+                app, 2,
+                Intent(app, 운동알림수신기::class.java).setAction(동작).setPackage(app.packageName),
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+            )
+            val a = Notification.Action.Builder(android.graphics.drawable.Icon.createWithResource(app, R.mipmap.ic_launcher), 단추, 누름)
+            if (android.os.Build.VERSION.SDK_INT >= 31) a.setAuthenticationRequired(false)
+            b.addAction(a.build())
+        }
+        b.setStyle(Notification.MediaStyle().setMediaSession(s.sessionToken).setShowActionsInCompactView(*(if (단추 != null) intArrayOf(0) else intArrayOf())))
+        return b.build()
     }
 
     private fun 만듦(app: Context, 글: String, 쉼끝시각: Long?, 단추: String?, 단순: Boolean, 오류: String? = null): Notification {
@@ -144,6 +196,8 @@ object 운동알림 {
 
     fun 치움(ctx: Context) {
         try { ctx.getSystemService(NotificationManager::class.java)?.cancel(번호) } catch (_: Exception) { }
+        try { 미디어세션?.release() } catch (_: Exception) { }
+        미디어세션 = null
     }
 }
 

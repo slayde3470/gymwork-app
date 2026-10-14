@@ -15,8 +15,6 @@ import androidx.compose.ui.Modifier
 import android.net.Uri
 import android.content.ClipData
 import android.content.ClipboardManager
-import android.media.AudioManager
-import android.media.ToneGenerator
 import android.os.Build
 import android.os.Bundle
 import android.os.VibrationEffect
@@ -322,14 +320,9 @@ class MainActivity : ComponentActivity() {
         작은창중.value = isInPictureInPictureMode
     }
 
-    /** 휴식이 끝났을 때 — 진동 + 짧은 소리 */
+    /** 휴식이 끝났을 때 — 진동만 (10-15 홍겸 님: 소리는 없앴다) */
     private fun 휴식끝알림() {
         진동(상태.d.설정.진동세기, 상태.d.설정.진동시간)
-        try {
-            val 소리 = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 80)
-            소리.startTone(ToneGenerator.TONE_PROP_BEEP2, 400)
-            window.decorView.postDelayed({ 소리.release() }, 800)
-        } catch (_: Exception) { }
     }
 
     /**

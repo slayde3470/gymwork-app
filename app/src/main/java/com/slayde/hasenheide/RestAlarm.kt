@@ -9,11 +9,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.media.AudioAttributes
-import android.media.AudioManager
-import android.media.ToneGenerator
 import android.os.Build
-import android.os.Handler
-import android.os.Looper
 import android.os.VibrationEffect
 import android.os.Vibrator
 
@@ -105,14 +101,6 @@ object 휴식알람 {
         } catch (_: Exception) { }
     }
 
-    /** 짧은 삐 소리 — 다 울린 뒤 끝(release)을 부른다 */
-    fun 소리(끝: () -> Unit = {}) {
-        try {
-            val t = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 80)
-            t.startTone(ToneGenerator.TONE_PROP_BEEP2, 400)
-            Handler(Looper.getMainLooper()).postDelayed({ t.release(); 끝() }, 800)
-        } catch (_: Exception) { 끝() }
-    }
 }
 
 /** 알람 시각이 되면 폰이 부르는 곳 */
@@ -123,9 +111,5 @@ class RestAlarmReceiver : BroadcastReceiver() {
         val 길이 = intent.getIntExtra("길이", 1000)
         휴식알람.진동(ctx, 세기, 길이)
         휴식알람.알림띄움(ctx)
-        if (intent.getBooleanExtra("소리", true)) {
-            val 기다림 = goAsync()
-            휴식알람.소리 { 기다림.finish() }
-        }
     }
 }
