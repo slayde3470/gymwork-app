@@ -151,12 +151,9 @@ object 운동알림 {
     /** 미디어 알림 모양 — 글 = 제목, 단추 = 알림 단추. 미디어 세션(소리는 안 낸다)을 달아야 폰이 미디어 칸에 넣는다 */
     private fun 미디어만듦(app: Context, 글: String, 쉼끝시각: Long?, 단추: String?): Notification {
         val s = 미디어세션 ?: android.media.session.MediaSession(app, "운동중").also { m ->
-            // 10-15: 폰의 잠금 화면 미디어 칸은 알림 단추가 아니라 '재생 조절 단추'를 그린다 → 어떤 단추가 눌려도 [세트 완료] / [휴식 끝] 과 같은 일을 한다
+            // 10-15: 폰의 잠금 화면 미디어 칸은 알림 단추가 아니라 '재생 조절 단추'를 그린다 → 우리가 단 조절 단추(onCustomAction)만 [세트 완료] / [휴식 끝] 을 한다 — 이어폰 재생 · 일시정지 · 다음 버튼이 이 앱으로 와도 세트가 체크되지 않게 (10-15)
             m.setCallback(object : android.media.session.MediaSession.Callback() {
                 override fun onCustomAction(action: String, extras: android.os.Bundle?) { 운동알림.눌렸다() }
-                override fun onPlay() { 운동알림.눌렸다() }
-                override fun onPause() { 운동알림.눌렸다() }
-                override fun onSkipToNext() { 운동알림.눌렸다() }
             })
             미디어세션 = m
         }
