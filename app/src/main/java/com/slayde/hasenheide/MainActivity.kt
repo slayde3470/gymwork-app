@@ -139,36 +139,6 @@ class MainActivity : ComponentActivity() {
         val h = 상태.d.세션?.휴식
         알람맞추기(if (h != null && !h.물음 && 상태.d.설정.소리진동) h.끝시각 else null, 권한묻기 = false)
         if (글.글.isNotEmpty()) 밖알림.띄움(this, 글.글, 길게 = 글.새종목)   // 10-13: 화면 위 알림 배너 (Notice.kt)
-        운동알림갱신()
-    }
-
-    private val 알림손 = android.os.Handler(android.os.Looper.getMainLooper())
-    private val 알림갱신 = Runnable { 운동알림갱신() }
-
-    /**
-     * 10-14 홍겸 님: 앱 밖(잠금 화면 포함)에 남는 알림 — 지금 할 세트(또는 쉬는 중 다음 세트)와 [세트 완료] / [휴식 끝] 단추.
-     * 쉬는 시간이 끝나는 때 한 번 더 고쳐 단추가 [세트 완료] 로 바뀐다
-     */
-    private fun 운동알림갱신() {
-        try { 운동알림갱신본() } catch (e: Throwable) {
-            // 10-14: 글 만들다 터져도 알림은 뜨게 — 오류 이름을 적는다
-            운동알림.올림(this, "운동 중 (오류 " + e.javaClass.simpleName + ")", null, null)
-        }
-    }
-
-    private fun 운동알림갱신본() {
-        알림손.removeCallbacks(알림갱신)
-        val S = 상태.d.세션
-        if (S == null || S.끝화면) { 운동알림.치움(this); return }
-        val 지금 = System.currentTimeMillis()
-        val 쉬는 = 쉼남음(S, 지금)
-        if (운동다함(S) && !쉬는) { 운동알림.올림(this, "모든 운동이 끝났습니다.", null, null); return }
-        val 글 = 다음할세트(S)?.let { (j, k) -> 세트안내글(상태.d, S, j, k) } ?: ""
-        if (쉬는) {
-            val h = S.휴식
-            운동알림.올림(this, "다음 · $글", h?.끝시각, "휴식 끝")
-            if (h != null) 알림손.postDelayed(알림갱신, (h.끝시각 - 지금).coerceAtLeast(0L) + 800L)
-        } else 운동알림.올림(this, "지금 · $글", null, "세트 완료")
     }
 
     /** 10-13 홍겸 님: 쉬는 시간이 저절로 끝났을 때(앱 밖) — 다음에 할 세트를 토스트로. 동그라미를 눌러 끝낸 것은 기록에 쉼이 이미 없어서 여기 오지 않는다 */
@@ -178,7 +148,6 @@ class MainActivity : ComponentActivity() {
         if (S.끝화면 || h.끝시각 > System.currentTimeMillis()) return
         val 글 = 쉼끝글(S, 상태.d)
         if (글.글.isNotEmpty()) 밖알림.띄움(this, 글.글, 길게 = 글.새종목, 휴식끝 = true)   // 휴식 알람의 '휴식 끝' 알림 자리에 다음 세트 안내를 덮어 쓴다
-        운동알림갱신()
     }
 
     /** 10-13 홍겸 님: 밖 동그라미의 운동보고서 아이콘을 눌러 들어왔으면 보고서 화면을 연다 */
@@ -233,12 +202,6 @@ class MainActivity : ComponentActivity() {
         if (!isChangingConfigurations && !(Build.VERSION.SDK_INT >= 26 && isInPictureInPictureMode)) 떠있는동그라미.띄움(this, 길게 = { 동그라미길게() }, 쉼끝 = { 동그라미쉼끝() }) { 동그라미값() }
     }
 
-    override fun onDestroy() {
-        // 앱을 완전히 닫으면(설정 변경으로 다시 만드는 경우 말고) 운동 알림도 거둔다
-        if (isFinishing) { 알림손.removeCallbacks(알림갱신); 운동알림.단추눌림 = null; 운동알림.치움(this) }
-        super.onDestroy()
-    }
-
     override fun onResume() {
         super.onResume()
         작은창설정()
@@ -253,7 +216,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        운동알림.단추눌림 = { 동그라미길게() }   // 10-15: 운동 알림 단추 — 앱이 앞에 있든 뒤에 있든 같은 일
+        밖알림.옛운동알림정리(this)   // 10-15: 잠금 화면 '운동 중' 알림은 라이브 업데이트 때로 미뤘다 — 전 판이 남긴 알림 · 채널을 치운다
         근육그림미리읽기(this)   // 10-11: 첫 종목 펼침 렉 — 근육 그림을 뒤에서 미리 읽어 둔다
         // 화면 가장자리(상태바·내비게이션바)까지 앱이 그려지게 한다
         enableEdgeToEdge()
@@ -281,8 +244,6 @@ class MainActivity : ComponentActivity() {
             // 쉬기 시작하면 끝 시각에 알람을 걸고, 휴식이 끝나거나 운동을 마치면 푼다 (09-26 메모: 화면이 꺼져 있어도)
             val h = 상태.d.세션?.휴식
             val 알람끝 = if (h != null && !h.물음 && 상태.d.설정.소리진동) h.끝시각 else null
-            // 10-15: 운동 중 알림은 앱을 벗어나는 순간이 아니라 '운동이 있는 동안 계속' 올려 둔다 (벗어나는 순간에 올리던 방식은 폰에서 안 떴다)
-            LaunchedEffect(상태.d.세션) { 운동알림갱신() }
             LaunchedEffect(알람끝) { 알람맞추기(알람끝) }
             // 10-01: PiP 가 안 뜨던 것 — [추측] 안드로이드 12 이상 제스처 이동에서는 onUserLeaveHint 가
             //        늦게 오거나 안 와서 작은 창으로 못 들어간다. 운동 중이면 '자동으로 작은 창' 을 켜 둔다
