@@ -763,7 +763,7 @@ private fun 루자동뜸(켜짐: Boolean, modifier: Modifier, 바꿈: (Boolean) 
 
 /**
  * 「루틴」 띠 아래 줄 (시안 401d · v22 ① `루틴상세띠`) — [‹ 뒤로][이름 칸 + 끝 연필][빈자리]. (10-06: 예상 · 세트 글 뺌 · 이름 칸 75% · 10-07: [취소] 뺌 → 목록 카드 휴지통)
- * 이름 칸은 띠 위에서도 고치는 칸으로 읽히게 흰(면) 바탕. 이름은 칸을 떠날 때(완료 · 다른 곳 누름 · 화면 나감) 넣는다.
+ * 10-15: 흰 박스 없음 — 띠 위 흰 글자 이름 + 연필(누르면 고친다). 이름은 칸을 떠날 때(완료 · 다른 곳 누름 · 화면 나감) 넣는다.
  */
 @Composable
 private fun 루틴상세띠(
@@ -798,19 +798,19 @@ private fun 루틴상세띠(
         //   이름이 끝나는 곳에 연필 그림(고칠 수 있다는 표시). 칸 어디를 눌러도 쳐 넣는다
         Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
             Row(
-                Modifier.widthIn(min = 루틴값.이름칸최소).height(높이.낮게).clip(RoundedCornerShape(모서리.작게)).background(c.면)
-                    .눌림 { try { 칸초점.requestFocus() } catch (_: Exception) { } }
-                    .padding(horizontal = 간격.좁게),
+                // 10-15 홍겸 님: 흰 박스는 없앴다 — 띠 바탕 위에 흰 글자 이름 + 연필만 (이름 · 연필 어디를 눌러도 고친다)
+                Modifier.widthIn(min = 루틴값.이름칸최소).height(높이.낮게)
+                    .눌림 { try { 칸초점.requestFocus() } catch (_: Exception) { } },
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(간격.아주좁게),
             ) {
-                Icon(아이콘.연필, "이름 고치기", Modifier.size(루틴값.연필그림), tint = c.옅음)
+                Icon(아이콘.연필, "이름 고치기", Modifier.size(루틴값.연필그림), tint = c.강조글)
                 BasicTextField(
                     value = 이름,
                     onValueChange = { 이름 = it.replace("\n", "") },
                     singleLine = true,
-                    textStyle = 글꼴.보통(크기.본문, FontWeight.Bold).copy(color = c.글),
-                    cursorBrush = SolidColor(c.강조),
+                    textStyle = 글꼴.보통(크기.본문, FontWeight.Bold).copy(color = c.강조글),
+                    cursorBrush = SolidColor(c.강조글),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Done),
                     keyboardActions = KeyboardActions(onDone = { 초점.clearFocus() }),
                     modifier = Modifier.weight(1f, fill = false)
