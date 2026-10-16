@@ -1,30 +1,32 @@
-Shot_s01j_dayExercises > t FAILED
-    java.lang.IllegalStateException at ScreenShots2.kt:38
-Shot_s01k_manyExercises > t FAILED
-    java.lang.IllegalStateException at ScreenShots2.kt:57
-Shot_s07b_exerciseAddSet > s07b FAILED
-Shot_s07g_exerciseDelete > t FAILED
-    java.lang.IllegalStateException at ScreenShots2.kt:111
-> Task :app:testDebugUnitTest FAILED
-* Exception is:
-org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':app:testDebugUnitTest'.
-	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
-Caused by: org.gradle.api.internal.exceptions.MarkedVerificationException: There were failing tests. See the report at: file:///home/runner/work/gymwork-app/gymwork-app/app/build/reports/tests/testDebugUnitTest/index.html
-	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
-BUILD FAILED in 12m 35s
-    <failure message="java.lang.IllegalStateException: 설명 '풀업 · ' 없음" type="java.lang.IllegalStateException">java.lang.IllegalStateException: 설명 '풀업 · ' 없음
-	at com.slayde.hasenheide.ui.ShotBase.누름설명(ScreenShots.kt:129)
-	at com.slayde.hasenheide.ui.ShotBase.누름설명$default(ScreenShots.kt:126)
-	at com.slayde.hasenheide.ui.Shot_s01j_dayExercises.t(ScreenShots2.kt:38)
-    <failure message="java.lang.IllegalStateException: '외 ' 없음" type="java.lang.IllegalStateException">java.lang.IllegalStateException: '외 ' 없음
-	at com.slayde.hasenheide.ui.ShotBase.누름(ScreenShots.kt:120)
-	at com.slayde.hasenheide.ui.ShotBase.누름$default(ScreenShots.kt:117)
-	at com.slayde.hasenheide.ui.Shot_s01k_manyExercises.t(ScreenShots2.kt:57)
-    <failure message="java.lang.AssertionError: Failed to inject touch input.&#10;Can't retrieve node at index '0' of 'Text + EditableText contains '+ 세트' (ignoreCase: false) as substring'&#10;There are no existing nodes for that selector.&#10;" type="java.lang.AssertionError">java.lang.AssertionError: Failed to inject touch input.
-Can't retrieve node at index '0' of 'Text + EditableText contains '+ 세트' (ignoreCase: false) as substring'
-There are no existing nodes for that selector.
+Shot_s01b_calendarDay > s01b_calendarDay FAILED
+--- 로그 끝 30줄 ---
+> Task :app:javaPreCompileDebug
+> Task :app:preDebugUnitTestBuild UP-TO-DATE
+> Task :app:javaPreCompileDebugUnitTest
+> Task :app:mergeDebugShaders
+> Task :app:compileDebugShaders NO-SOURCE
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :app:mergeDebugAssets
+> Task :app:processDebugResources
+> Task :app:packageDebugUnitTestForUnitTest
+> Task :app:generateDebugUnitTestConfig
+> Task :app:compileDebugKotlin
+w: file:///home/runner/work/gymwork-app/gymwork-app/app/src/main/java/com/slayde/hasenheide/ui/SettingsScreen.kt:173:51 'val LocalLifecycleOwner: ProvidableCompositionLocal<LifecycleOwner>' is depreca
+w: file:///home/runner/work/gymwork-app/gymwork-app/app/src/main/java/com/slayde/hasenheide/ui/StatsScreen.kt:641:27 Condition is always 'true'.
+w: file:///home/runner/work/gymwork-app/gymwork-app/app/src/main/java/com/slayde/hasenheide/ui/WorkoutScreen.kt:831:36 Condition is always 'true'.
 
-    <failure message="java.lang.IllegalStateException: '삭제' 없음" type="java.lang.IllegalStateException">java.lang.IllegalStateException: '삭제' 없음
-	at com.slayde.hasenheide.ui.ShotBase.누름(ScreenShots.kt:120)
-	at com.slayde.hasenheide.ui.ShotBase.누름$default(ScreenShots.kt:117)
-	at com.slayde.hasenheide.ui.Shot_s07g_exerciseDelete.t(ScreenShots2.kt:111)
+> Task :app:compileDebugJavaWithJavac
+> Task :app:processDebugJavaRes
+> Task :app:bundleDebugClassesToCompileJar
+> Task :app:bundleDebugClassesToRuntimeJar
+
+> Task :app:compileDebugUnitTestKotlin
+w: file:///home/runner/work/gymwork-app/gymwork-app/app/src/test/java/com/slayde/hasenheide/ui/ScreenShots.kt:180:81 This declaration needs opt-in. Its usage should be marked with '@com.github.takahir
+w: file:///home/runner/work/gymwork-app/gymwork-app/app/src/test/java/com/slayde/hasenheide/ui/ScreenShots.kt:182:40 This declaration needs opt-in. Its usage should be marked with '@com.github.takahir
+
+> Task :app:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :app:processDebugUnitTestJavaRes
+> Task :app:testDebugUnitTest
+
+Shot_s01b_calendarDay > s01b_calendarDay FAILED
+    java.lang.AssertionError at ScreenShots.kt:258
