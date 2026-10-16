@@ -460,7 +460,7 @@ class Shot_s07b_exerciseAddSet : ShotBase() {
         var 들 = rule.onAllNodesWithText("+ 세트", substring = true, useUnmergedTree = true)
         var 밀기 = 0
         while (들.fetchSemanticsNodes().isEmpty() && 밀기 < 8) { 밀기++; rule.onAllNodes(isRoot())[0].performTouchInput { swipeUp(startY = height * 0.75f, endY = height * 0.25f) }; 쉼(); 들 = rule.onAllNodesWithText("+ 세트", substring = true, useUnmergedTree = true) }
-        try { 들[0].performScrollTo(); 쉼(300) } catch (_: Throwable) { }
+        try { 보이게(들[0]) } catch (_: Throwable) { }
         들[0].performClick()
         바로찍("07b_종목_세트추가_순간", 200) }
 }
