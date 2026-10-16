@@ -242,3 +242,247 @@
   0,0 t=시티드 카프 레이즈 d=null
   0,0 t=null d=펼치기
   0,0 t=노르딕 햄스트링 컬 d=null
+## Shot_s01j_dayExercises 누름설명 풀업 · 
+  46,82 t=null d=이전 달
+  37,91 t=2026년 10월 d=null
+  46,82 t=null d=다음 달
+  116,149 t=일 d=null
+  116,149 t=월 d=null
+  116,149 t=화 d=null
+  116,149 t=수 d=null
+  116,149 t=목 d=null
+  116,149 t=금 d=null
+  116,149 t=토 d=null
+  161,191 t=1 d=null
+  161,191 t=2 d=null
+  161,191 t=3 d=null
+  285,315 t=4 d=null
+  285,315 t=5 d=null
+  285,315 t=6 d=null
+  285,315 t=7 d=null
+  285,315 t=8 d=null
+  285,315 t=9 d=null
+  285,315 t=10 d=null
+  315,348 t=상체 A d=null
+  348,381 t=달성 d=null
+  410,440 t=11 d=null
+  440,473 t=하체 B d=null
+  473,506 t=달성 d=null
+  410,440 t=12 d=null
+  440,473 t=등 C d=null
+  473,506 t=달성 d=null
+  410,440 t=13 d=null
+  410,440 t=14 d=null
+  440,473 t=상체 A d=null
+  473,506 t=달성 d=null
+  410,440 t=15 d=null
+  440,473 t=하체 B d=null
+  473,506 t=달성 d=null
+  410,440 t=16 d=null
+  410,440 t=17 d=null
+  440,473 t=휴식 d=null
+  535,565 t=18 d=null
+  565,598 t=상체 A d=null
+  535,565 t=19 d=null
+  565,598 t=하체 B d=null
+  535,565 t=20 d=null
+  565,598 t=등 C d=null
+  535,565 t=21 d=null
+  565,598 t=휴식 d=null
+  535,565 t=22 d=null
+  565,598 t=상체 A d=null
+  535,565 t=23 d=null
+  565,598 t=하체 B d=null
+  535,565 t=24 d=null
+  660,690 t=25 d=null
+  660,690 t=26 d=null
+  660,690 t=27 d=null
+  660,690 t=28 d=null
+  660,690 t=29 d=null
+  660,690 t=30 d=null
+  660,690 t=31 d=null
+  797,833 t=10월 16일 (금) · 오늘 d=null
+  849,887 t=예정 없음 d=null
+  1625,1659 t=운동 계획 만들기 d=null
+  1693,1729 t=null d=캘린더
+  1733,1766 t=캘린더 d=null
+  1693,1729 t=null d=검색
+  1733,1766 t=검색 d=null
+  1693,1729 t=null d=루틴
+  1733,1766 t=루틴 d=null
+  1693,1729 t=null d=종목
+  1733,1766 t=종목 d=null
+  1693,1729 t=null d=플랜
+  1733,1766 t=플랜 d=null
+  1693,1729 t=null d=메모
+  1733,1766 t=메모 d=null
+  1693,1729 t=null d=소셜
+  1733,1766 t=소셜 d=null
+  1693,1729 t=null d=설정
+  1733,1766 t=설정 d=null
+  1681,1782 t=null d=프로필
+  1713,1751 t=홍 d=null
+## Shot_s07g_exerciseDelete 누름 삭제
+  41,95 t=종목 d=null
+  50,86 t=null d=카테고리 관리
+  0,0 t=null d=즐겨찾기 먼저 보기 끄기
+  0,0 t=전체 d=null
+  0,0 t=가슴 d=null
+  0,0 t=등 d=null
+  0,0 t=하체 d=null
+  0,0 t=어깨 d=null
+  0,0 t=팔 d=null
+  0,0 t=복근 d=null
+  0,0 t=유산소 d=null
+  0,0 t=가슴 d=null
+  0,0 t=벤치프레스 d=null
+  0,0 t=플랜 d=null
+  0,0 t=null d=펼치기
+  0,0 t=인클라인 덤벨프레스 d=null
+  0,0 t=null d=펼치기
+  0,0 t=인클라인 벤치프레스 d=null
+  0,0 t=null d=펼치기
+  0,0 t=디클라인 벤치프레스 d=null
+  0,0 t=null d=펼치기
+  0,0 t=덤벨 벤치프레스 d=null
+  0,0 t=null d=펼치기
+  0,0 t=디클라인 덤벨 프레스 d=null
+  0,0 t=null d=펼치기
+  0,0 t=스미스 머신 벤치프레스 d=null
+  0,0 t=null d=펼치기
+  0,0 t=스미스 머신
+인클라인 프레스 d=null
+  0,0 t=null d=펼치기
+  0,0 t=체스트 프레스 머신 d=null
+  0,0 t=null d=펼치기
+  0,0 t=인클라인
+체스트 프레스 머신 d=null
+  0,0 t=null d=펼치기
+  0,0 t=케이블 체스트 프레스 d=null
+  0,0 t=null d=펼치기
+  0,0 t=덤벨 플라이 d=null
+  0,0 t=null d=펼치기
+  0,0 t=인클라인 덤벨 플라이 d=null
+  0,0 t=null d=펼치기
+  0,0 t=펙 덱 플라이 d=null
+  0,0 t=null d=펼치기
+  0,0 t=케이블 크로스오버 d=null
+  0,0 t=null d=펼치기
+  0,0 t=로우 투 하이
+케이블 플라이 d=null
+  0,0 t=null d=펼치기
+  0,0 t=덤벨 풀오버 d=null
+  0,0 t=null d=펼치기
+  0,0 t=플로어 프레스 d=null
+  0,0 t=null d=펼치기
+  0,0 t=팔굽혀펴기 d=null
+  0,0 t=null d=펼치기
+  0,0 t=인클라인 푸시업 d=null
+  0,0 t=null d=펼치기
+  0,0 t=디클라인 푸시업 d=null
+  0,0 t=null d=펼치기
+  0,0 t=다이아몬드 푸시업 d=null
+  0,0 t=null d=펼치기
+  0,0 t=딥스 d=null
+  0,0 t=null d=펼치기
+  0,0 t=등 d=null
+  0,0 t=풀업 d=null
+  0,0 t=null d=펼치기
+  0,0 t=바벨 로우 d=null
+  0,0 t=null d=펼치기
+  0,0 t=랫풀다운 d=null
+  0,0 t=null d=펼치기
+  0,0 t=친업 d=null
+  0,0 t=null d=펼치기
+  0,0 t=어시스티드 풀업 머신 d=null
+  0,0 t=null d=펼치기
+  0,0 t=클로즈그립 랫풀다운 d=null
+  0,0 t=null d=펼치기
+  0,0 t=언더그립 랫풀다운 d=null
+  0,0 t=null d=펼치기
+  0,0 t=스트레이트 암 풀다운 d=null
+  0,0 t=null d=펼치기
+  0,0 t=펜들레이 로우 d=null
+  0,0 t=null d=펼치기
+  0,0 t=덤벨 로우 d=null
+  0,0 t=null d=펼치기
+  0,0 t=시티드 케이블 로우 d=null
+  0,0 t=null d=펼치기
+  0,0 t=T바 로우 d=null
+  0,0 t=null d=펼치기
+  0,0 t=머신 로우 d=null
+  0,0 t=null d=펼치기
+  0,0 t=체스트 서포티드 로우 d=null
+  0,0 t=null d=펼치기
+  0,0 t=랙 풀 d=null
+  0,0 t=null d=펼치기
+  0,0 t=바벨 슈러그 d=null
+  0,0 t=null d=펼치기
+  0,0 t=덤벨 슈러그 d=null
+  0,0 t=null d=펼치기
+  0,0 t=백 익스텐션 d=null
+  0,0 t=null d=펼치기
+  0,0 t=데드리프트 d=null
+  0,0 t=null d=펼치기
+  0,0 t=인버티드 로우 d=null
+  0,0 t=null d=펼치기
+  0,0 t=슈퍼맨 d=null
+  0,0 t=null d=펼치기
+  0,0 t=하체 d=null
+  0,0 t=스쿼트 d=null
+  0,0 t=null d=펼치기
+  0,0 t=루마니안 데드리프트 d=null
+  0,0 t=null d=펼치기
+  0,0 t=레그 프레스 d=null
+  0,0 t=null d=펼치기
+  0,0 t=프론트 스쿼트 d=null
+  0,0 t=null d=펼치기
+  0,0 t=고블릿 스쿼트 d=null
+  0,0 t=null d=펼치기
+  0,0 t=스미스 머신 스쿼트 d=null
+  0,0 t=null d=펼치기
+  0,0 t=핵 스쿼트 d=null
+  0,0 t=null d=펼치기
+  0,0 t=박스 스쿼트 d=null
+  0,0 t=null d=펼치기
+  0,0 t=불가리안 스플릿 스쿼트 d=null
+  0,0 t=null d=펼치기
+  0,0 t=덤벨 런지 d=null
+  0,0 t=null d=펼치기
+  0,0 t=워킹 런지 d=null
+  0,0 t=null d=펼치기
+  0,0 t=리버스 런지 d=null
+  0,0 t=null d=펼치기
+  0,0 t=사이드 런지 d=null
+  0,0 t=null d=펼치기
+  0,0 t=덤벨 스텝업 d=null
+  0,0 t=null d=펼치기
+  0,0 t=레그 익스텐션 d=null
+  0,0 t=null d=펼치기
+  0,0 t=라잉 레그 컬 d=null
+  0,0 t=null d=펼치기
+  0,0 t=시티드 레그 컬 d=null
+  0,0 t=null d=펼치기
+  0,0 t=스모 데드리프트 d=null
+  0,0 t=null d=펼치기
+  0,0 t=트랩바 데드리프트 d=null
+  0,0 t=null d=펼치기
+  0,0 t=스티프 레그 데드리프트 d=null
+  0,0 t=null d=펼치기
+  0,0 t=굿모닝 d=null
+  0,0 t=null d=펼치기
+  0,0 t=힙 쓰러스트 d=null
+  0,0 t=null d=펼치기
+  0,0 t=케이블 풀 스루 d=null
+  0,0 t=null d=펼치기
+  0,0 t=케이블 킥백 d=null
+  0,0 t=null d=펼치기
+  0,0 t=힙 어브덕션 머신 d=null
+  0,0 t=null d=펼치기
+  0,0 t=힙 어덕션 머신 d=null
+  0,0 t=null d=펼치기
+  0,0 t=스탠딩 카프 레이즈 d=null
+  0,0 t=null d=펼치기
+  0,0 t=시티드 카프 레이즈 d=null
+  0,0 t=null d=펼치기
+  0,0 t=노르딕 햄스트링 컬 d=null
