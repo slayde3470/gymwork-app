@@ -66,6 +66,34 @@ abstract class ShotBase {
 
     protected val 오늘 = LocalDate.now()
 
+    /** 10-16: 한 걸음이 100초 넘게 멈추면 그때의 스레드 모습을 screens/_멈춤.txt 에 남기고 깨운다 (두 번째에도 안 풀리면 끊는다) — 한 판이 30분 멈춘 적이 있어서 */
+    companion object {
+        @Volatile var 마지막 = System.currentTimeMillis()
+        @Volatile var 지금 = ""
+        @Volatile var 본: Thread? = null
+        private var 켰음 = false
+        @Synchronized fun 지키기() {
+            if (켰음) return
+            켰음 = true
+            Thread {
+                var 횟수 = 0
+                while (true) {
+                    Thread.sleep(5000)
+                    if (System.currentTimeMillis() - 마지막 > 100_000) {
+                        횟수++
+                        try {
+                            val sb = StringBuilder("멈춤 $횟수 번째: $지금\n")
+                            for ((t, st) in Thread.getAllStackTraces()) { sb.append("## ${t.name}\n"); st.take(30).forEach { sb.append("    $it\n") } }
+                            File("screens/_멈춤.txt").apply { parentFile?.mkdirs() }.appendText(sb.toString() + "\n")
+                        } catch (_: Throwable) { }
+                        마지막 = System.currentTimeMillis()
+                        if (횟수 >= 2) Runtime.getRuntime().halt(3) else 본?.interrupt()
+                    }
+                }
+            }.apply { isDaemon = true; name = "지킴이" }.start()
+        }
+    }
+
     protected fun 예시(): 앱데이터 {
         val 종목들 = listOf(
             종목("벤치프레스", "가슴", "바벨"), 종목("인클라인 덤벨프레스", "가슴", "덤벨"),
@@ -100,6 +128,7 @@ abstract class ShotBase {
     protected lateinit var 상태: 앱상태
 
     protected fun 켜기(업적둠: Boolean = false, 작은: Boolean = false, 바꾸기: (앱데이터) -> 앱데이터 = { it }) {
+        본 = Thread.currentThread(); 마지막 = System.currentTimeMillis(); 지금 = "켜기 ${this::class.simpleName}"; 지키기()
         val 파일 = File.createTempFile("hasenheide", ".json")
         저장소.쓰기(파일, 바꾸기(예시()))
         상태 = 앱상태(파일)
@@ -112,7 +141,7 @@ abstract class ShotBase {
         쉼(1500); 상태.새업적치움(); 쉼(6000)
     }
 
-    protected fun 쉼(ms: Long = 1200) { rule.mainClock.advanceTimeBy(ms); rule.waitForIdle(); rule.mainClock.advanceTimeBy(300) }
+    protected fun 쉼(ms: Long = 1200) { 마지막 = System.currentTimeMillis(); rule.mainClock.advanceTimeBy(ms); rule.waitForIdle(); rule.mainClock.advanceTimeBy(300) }
 
     /** 아래 탭줄 칸 (0 캘린더 · 1 검색 · 2 루틴 · 3 종목 · 4 플랜 · 5 메모 · 6 소셜 · 7 설정 · 8 프로필) */
     protected fun 탭(i: Int) {
@@ -122,6 +151,7 @@ abstract class ShotBase {
 
     /** 글자로 찾아 누름 — 같은 글이 여럿이면 [몇째] (−1 = 마지막) */
     protected fun 누름(글: String, 몇째: Int = 0, 일부: Boolean = false) {
+        지금 = "${this::class.simpleName} 누름 '$글'"; 마지막 = System.currentTimeMillis()
         var 들 = rule.onAllNodesWithText(글, substring = 일부, useUnmergedTree = true)
         var 밀기 = 0
         while (들.fetchSemanticsNodes().isEmpty() && 밀기 < 8) { 밀기++; rule.onAllNodes(isRoot())[0].performTouchInput { swipeUp(startY = height * 0.75f, endY = height * 0.25f) }; 쉼(); 들 = rule.onAllNodesWithText(글, substring = 일부, useUnmergedTree = true) }
@@ -141,6 +171,7 @@ abstract class ShotBase {
 
     /** 설명(contentDescription)으로 찾아 누름 */
     protected fun 누름설명(글: String, 몇째: Int = 0, 일부: Boolean = false) {
+        지금 = "${this::class.simpleName} 누름설명 '$글'"; 마지막 = System.currentTimeMillis()
         var 들 = rule.onAllNodesWithContentDescription(글, substring = 일부, useUnmergedTree = true)
         var 밀기 = 0
         while (들.fetchSemanticsNodes().isEmpty() && 밀기 < 8) { 밀기++; rule.onAllNodes(isRoot())[0].performTouchInput { swipeUp(startY = height * 0.75f, endY = height * 0.25f) }; 쉼(); 들 = rule.onAllNodesWithContentDescription(글, substring = 일부, useUnmergedTree = true) }
@@ -179,7 +210,7 @@ abstract class ShotBase {
 
     protected fun 바로찍(이름: String, ms: Long) { rule.mainClock.advanceTimeBy(ms); captureScreenRoboImage("screens/$이름.png"); 측정(이름) }
 
-    protected fun 찍(이름: String) { 쉼(); captureScreenRoboImage("screens/$이름.png"); 측정(이름) }
+    protected fun 찍(이름: String) { 지금 = "찍 $이름"; 쉼(); captureScreenRoboImage("screens/$이름.png"); 측정(이름) }
 
     /**
      * 10-16 홍겸 님 "UI 전부 크기까지 아티팩트로": 사진과 같은 순간의 화면 요소 치수를 screens/이름.json 으로 남긴다.
