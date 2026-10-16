@@ -26,6 +26,7 @@ import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.swipeUp
+import androidx.compose.ui.test.swipe
 import androidx.compose.ui.test.isRoot
 import androidx.compose.ui.test.performTouchInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -182,17 +183,27 @@ abstract class ShotBase {
         return false
     }
 
-    /** 칸이 화면 밖이면 위로 밀어 올린다 (최대 4번). performScrollTo 는 종목 고르기 시트에서 끝없이 돌아 한 판이 멈췄다 (10-16) */
+    /** 세로로 밀리는 칸(목록 · 시트)을 천천히 한 번 민다 — 천천히 밀어야 손을 뗀 뒤 관성으로 더 가지 않는다. [위로] = 아래 내용이 올라오게 */
+    protected fun 목록밀기(위로: Boolean) {
+        val 목록 = rule.onAllNodes(androidx.compose.ui.test.SemanticsMatcher.keyIsDefined(SemanticsProperties.VerticalScrollAxisRange))
+        val n = 목록.fetchSemanticsNodes().size
+        val 대상 = if (n > 0) 목록[n - 1] else rule.onAllNodes(isRoot()).let { r -> r[r.fetchSemanticsNodes().size - 1] }
+        대상.performTouchInput {
+            val 아래 = Offset(width / 2f, height * 0.85f); val 위 = Offset(width / 2f, height * 0.15f)
+            if (위로) swipe(아래, 위, 1500L) else swipe(위, 아래, 1500L)
+        }
+        쉼(600)
+    }
+
+    /** 칸이 화면 밖이면 밀어서 화면 안으로 (최대 8번). performScrollTo 는 종목 고르기 시트에서 끝없이 돌아 한 판이 멈췄다 (10-16) */
     protected fun 보이게(칸: androidx.compose.ui.test.SemanticsNodeInteraction) {
         val 높이 = rule.activity.resources.displayMetrics.heightPixels
         var i = 0
-        while (i < 4) {
+        while (i < 8) {
             val b = 칸.fetchSemanticsNode().boundsInRoot
             if (b.top >= 0f && b.bottom <= 높이) break
             i++
-            val 뿌리 = rule.onAllNodes(isRoot())
-            뿌리[뿌리.fetchSemanticsNodes().size - 1].performTouchInput { swipeUp(startY = height * 0.75f, endY = height * 0.25f) }
-            쉼(600)
+            목록밀기(b.top > 0f)
         }
     }
 
@@ -202,7 +213,7 @@ abstract class ShotBase {
         var 들 = rule.onAllNodesWithText(글, substring = 일부, useUnmergedTree = true)
         var 밀기 = 0
         if (들.fetchSemanticsNodes().isEmpty()) { 찾아밀기(hasText(글, substring = 일부)); 들 = rule.onAllNodesWithText(글, substring = 일부, useUnmergedTree = true) }
-        while (들.fetchSemanticsNodes().isEmpty() && 밀기 < 8) { 밀기++; rule.onAllNodes(isRoot())[0].performTouchInput { swipeUp(startY = height * 0.75f, endY = height * 0.25f) }; 쉼(); 들 = rule.onAllNodesWithText(글, substring = 일부, useUnmergedTree = true) }
+        while (들.fetchSemanticsNodes().isEmpty() && 밀기 < 8) { 밀기++; 목록밀기(true); 쉼(); 들 = rule.onAllNodesWithText(글, substring = 일부, useUnmergedTree = true) }
         val n = 들.fetchSemanticsNodes().size
         if (n == 0) 실패기록("누름 $글")
         check(n > 0) { "'$글' 없음" }
@@ -221,7 +232,7 @@ abstract class ShotBase {
         var 들 = rule.onAllNodesWithContentDescription(글, substring = 일부, useUnmergedTree = true)
         var 밀기 = 0
         if (들.fetchSemanticsNodes().isEmpty()) { 찾아밀기(hasContentDescription(글, substring = 일부)); 들 = rule.onAllNodesWithContentDescription(글, substring = 일부, useUnmergedTree = true) }
-        while (들.fetchSemanticsNodes().isEmpty() && 밀기 < 8) { 밀기++; rule.onAllNodes(isRoot())[0].performTouchInput { swipeUp(startY = height * 0.75f, endY = height * 0.25f) }; 쉼(); 들 = rule.onAllNodesWithContentDescription(글, substring = 일부, useUnmergedTree = true) }
+        while (들.fetchSemanticsNodes().isEmpty() && 밀기 < 8) { 밀기++; 목록밀기(true); 쉼(); 들 = rule.onAllNodesWithContentDescription(글, substring = 일부, useUnmergedTree = true) }
         val n = 들.fetchSemanticsNodes().size
         if (n == 0) 실패기록("누름설명 $글")
         check(n > 0) { "설명 '$글' 없음" }
@@ -494,7 +505,7 @@ class Shot_s07b_exerciseAddSet : ShotBase() {
         var 들 = rule.onAllNodesWithText("+ 세트", substring = true, useUnmergedTree = true)
         if (들.fetchSemanticsNodes().isEmpty()) { 찾아밀기(hasText("+ 세트", substring = true)); 들 = rule.onAllNodesWithText("+ 세트", substring = true, useUnmergedTree = true) }
         var 밀기 = 0
-        while (들.fetchSemanticsNodes().isEmpty() && 밀기 < 8) { 밀기++; rule.onAllNodes(isRoot())[0].performTouchInput { swipeUp(startY = height * 0.75f, endY = height * 0.25f) }; 쉼(); 들 = rule.onAllNodesWithText("+ 세트", substring = true, useUnmergedTree = true) }
+        while (들.fetchSemanticsNodes().isEmpty() && 밀기 < 8) { 밀기++; 목록밀기(true); 쉼(); 들 = rule.onAllNodesWithText("+ 세트", substring = true, useUnmergedTree = true) }
         try { 보이게(들[0]) } catch (_: Throwable) { }
         들[0].performClick()
         바로찍("07b_종목_세트추가_순간", 200) }
