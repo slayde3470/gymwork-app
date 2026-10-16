@@ -60,7 +60,7 @@ import java.time.LocalDate
  */
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(sdk = [34], qualifiers = "w412dp-h915dp-xhdpi")
+@Config(sdk = [34], qualifiers = "w412dp-h891dp-xhdpi")
 abstract class ShotBase {
     @get:Rule val rule = createAndroidComposeRule<ComponentActivity>()
 
