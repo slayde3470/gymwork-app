@@ -1,8 +1,8 @@
 --- 로그 끝 30줄 ---
-> Task :app:mergeDebugShaders
 > Task :app:compileDebugShaders NO-SOURCE
 > Task :app:generateDebugAssets UP-TO-DATE
 > Task :app:mergeDebugAssets
+> Task :app:processDebugManifestForPackage
 > Task :app:processDebugResources
 > Task :app:packageDebugUnitTestForUnitTest
 > Task :app:generateDebugUnitTestConfig
@@ -25,7 +25,7 @@ w: file:///home/runner/work/gymwork-app/gymwork-app/app/src/test/java/com/slayde
 > Task :app:processDebugUnitTestJavaRes
 > Task :app:testDebugUnitTest
 > Task :app:finalizeTestRoborazziDebug SKIPPED
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run-1792123185590.json
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run-1792123451344.json
 
-BUILD SUCCESSFUL in 3m 28s
+BUILD SUCCESSFUL in 9m 39s
 28 actionable tasks: 28 executed
