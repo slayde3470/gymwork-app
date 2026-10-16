@@ -1,6 +1,4 @@
-# 확인 판: 안 찍혔던 다섯 개만
-Shot_s01b*
+# 확인 판: 안 찍힌 셋
 Shot_s01j*
-Shot_s01k*
 Shot_s07b*
 Shot_s07g*
