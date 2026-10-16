@@ -1,55 +1,31 @@
-Shot_s01j_dayExercises > t FAILED
-    java.lang.IllegalStateException at ScreenShots2.kt:38
-Shot_s07b_exerciseAddSet > s07b FAILED
-Shot_s07g_exerciseDelete > t FAILED
-    java.lang.IllegalStateException at ScreenShots2.kt:111
-> Task :app:testDebugUnitTest FAILED
-* Exception is:
-org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':app:testDebugUnitTest'.
-	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
-Caused by: org.gradle.api.internal.exceptions.MarkedVerificationException: There were failing tests. See the report at: file:///home/runner/work/gymwork-app/gymwork-app/app/build/reports/tests/testDebugUnitTest/index.html
-	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
-BUILD FAILED in 3m 17s
 --- 로그 끝 30줄 ---
-	at org.gradle.api.internal.tasks.execution.ResolveTaskExecutionModeExecuter.execute(ResolveTaskExecutionModeExecuter.java:51)
-	at org.gradle.api.internal.tasks.execution.SkipTaskWithNoActionsExecuter.execute(SkipTaskWithNoActionsExecuter.java:57)
-	at org.gradle.api.internal.tasks.execution.SkipOnlyIfTaskExecuter.execute(SkipOnlyIfTaskExecuter.java:74)
-	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
-	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.executeTask(EventFiringTaskExecuter.java:77)
-	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:55)
-	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:52)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:209)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:204)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:66)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:59)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:166)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:59)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:53)
-	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter.execute(EventFiringTaskExecuter.java:52)
-	at org.gradle.execution.plan.LocalTaskNodeExecutor.execute(LocalTaskNodeExecutor.java:42)
-	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:331)
-	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:318)
-	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.lambda$execute$0(DefaultTaskExecutionGraph.java:314)
-	at org.gradle.internal.operations.CurrentBuildOperationRef.with(CurrentBuildOperationRef.java:85)
-	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:314)
-	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:303)
-	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.execute(DefaultPlanExecutor.java:459)
-	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.run(DefaultPlanExecutor.java:376)
-	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
-	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:48)
+> Task :app:mergeDebugShaders
+> Task :app:compileDebugShaders NO-SOURCE
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :app:mergeDebugAssets
+> Task :app:processDebugResources
+> Task :app:packageDebugUnitTestForUnitTest
+> Task :app:generateDebugUnitTestConfig
+> Task :app:compileDebugKotlin
+w: file:///home/runner/work/gymwork-app/gymwork-app/app/src/main/java/com/slayde/hasenheide/ui/SettingsScreen.kt:173:51 'val LocalLifecycleOwner: ProvidableCompositionLocal<LifecycleOwner>' is depreca
+w: file:///home/runner/work/gymwork-app/gymwork-app/app/src/main/java/com/slayde/hasenheide/ui/StatsScreen.kt:641:27 Condition is always 'true'.
+w: file:///home/runner/work/gymwork-app/gymwork-app/app/src/main/java/com/slayde/hasenheide/ui/WorkoutScreen.kt:831:36 Condition is always 'true'.
 
+> Task :app:compileDebugJavaWithJavac
+> Task :app:processDebugJavaRes
+> Task :app:bundleDebugClassesToCompileJar
+> Task :app:bundleDebugClassesToRuntimeJar
 
-BUILD FAILED in 3m 17s
+> Task :app:compileDebugUnitTestKotlin
+w: file:///home/runner/work/gymwork-app/gymwork-app/app/src/test/java/com/slayde/hasenheide/ui/ScreenShots.kt:158:15 This declaration needs opt-in. Its usage should be marked with '@com.github.takahir
+w: file:///home/runner/work/gymwork-app/gymwork-app/app/src/test/java/com/slayde/hasenheide/ui/ScreenShots.kt:276:81 This declaration needs opt-in. Its usage should be marked with '@com.github.takahir
+w: file:///home/runner/work/gymwork-app/gymwork-app/app/src/test/java/com/slayde/hasenheide/ui/ScreenShots.kt:278:54 This declaration needs opt-in. Its usage should be marked with '@com.github.takahir
+
+> Task :app:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :app:processDebugUnitTestJavaRes
+> Task :app:testDebugUnitTest
+> Task :app:finalizeTestRoborazziDebug SKIPPED
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run-1792123185590.json
+
+BUILD SUCCESSFUL in 3m 28s
 28 actionable tasks: 28 executed
-    <failure message="java.lang.IllegalStateException: 설명 '풀업 · ' 없음" type="java.lang.IllegalStateException">java.lang.IllegalStateException: 설명 '풀업 · ' 없음
-	at com.slayde.hasenheide.ui.ShotBase.누름설명(ScreenShots.kt:238)
-	at com.slayde.hasenheide.ui.ShotBase.누름설명$default(ScreenShots.kt:230)
-	at com.slayde.hasenheide.ui.Shot_s01j_dayExercises.t(ScreenShots2.kt:38)
-    <failure message="java.lang.AssertionError: Failed to inject touch input.&#10;Can't retrieve node at index '0' of 'Text + EditableText contains '+ 세트' (ignoreCase: false) as substring'&#10;There are no existing nodes for that selector.&#10;" type="java.lang.AssertionError">java.lang.AssertionError: Failed to inject touch input.
-Can't retrieve node at index '0' of 'Text + EditableText contains '+ 세트' (ignoreCase: false) as substring'
-There are no existing nodes for that selector.
-
-    <failure message="java.lang.IllegalStateException: '삭제' 없음" type="java.lang.IllegalStateException">java.lang.IllegalStateException: '삭제' 없음
-	at com.slayde.hasenheide.ui.ShotBase.누름(ScreenShots.kt:219)
-	at com.slayde.hasenheide.ui.ShotBase.누름$default(ScreenShots.kt:211)
-	at com.slayde.hasenheide.ui.Shot_s07g_exerciseDelete.t(ScreenShots2.kt:111)
