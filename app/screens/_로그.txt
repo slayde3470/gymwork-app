@@ -11,7 +11,7 @@ org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':app:tes
 	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
 Caused by: org.gradle.api.internal.exceptions.MarkedVerificationException: There were failing tests. See the report at: file:///home/runner/work/gymwork-app/gymwork-app/app/build/reports/tests/testDebugUnitTest/index.html
 	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
-BUILD FAILED in 8m 27s
+BUILD FAILED in 2m 39s
 --- 로그 끝 30줄 ---
 	at org.gradle.api.internal.tasks.execution.ResolveTaskExecutionModeExecuter.execute(ResolveTaskExecutionModeExecuter.java:51)
 	at org.gradle.api.internal.tasks.execution.SkipTaskWithNoActionsExecuter.execute(SkipTaskWithNoActionsExecuter.java:57)
@@ -41,18 +41,18 @@ BUILD FAILED in 8m 27s
 	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:48)
 
 
-BUILD FAILED in 8m 27s
+BUILD FAILED in 2m 39s
 28 actionable tasks: 28 executed
-    <failure message="java.lang.AssertionError: Failed to perform OnClick action.&#10;Can't retrieve node at index '0' of '(OnClick is defined) &amp;&amp; (hasAnyDescendantThat(Text + EditableText contains '14' (ignoreCase: false)))'&#10;There are no existing nodes for that selector.&#10;" type="java.lang.AssertionError">java.lang.AssertionError: Failed to perform OnClick action.
-Can't retrieve node at index '0' of '(OnClick is defined) &amp;&amp; (hasAnyDescendantThat(Text + EditableText contains '14' (ignoreCase: false)))'
+    <failure message="java.lang.AssertionError: Failed to perform OnClick action.&#10;Can't retrieve node at index '0' of '(OnClick is defined) &amp;&amp; (Text + EditableText contains '14' (ignoreCase: false))'&#10;There are no existing nodes for that selector.&#10;" type="java.lang.AssertionError">java.lang.AssertionError: Failed to perform OnClick action.
+Can't retrieve node at index '0' of '(OnClick is defined) &amp;&amp; (Text + EditableText contains '14' (ignoreCase: false))'
 There are no existing nodes for that selector.
 
     <failure message="java.lang.IllegalStateException: 설명 '풀업 · ' 없음" type="java.lang.IllegalStateException">java.lang.IllegalStateException: 설명 '풀업 · ' 없음
-	at com.slayde.hasenheide.ui.ShotBase.누름설명(ScreenShots.kt:193)
-	at com.slayde.hasenheide.ui.ShotBase.누름설명$default(ScreenShots.kt:187)
+	at com.slayde.hasenheide.ui.ShotBase.누름설명(ScreenShots.kt:208)
+	at com.slayde.hasenheide.ui.ShotBase.누름설명$default(ScreenShots.kt:201)
 	at com.slayde.hasenheide.ui.Shot_s01j_dayExercises.t(ScreenShots2.kt:38)
-    <failure message="java.lang.AssertionError: Failed to perform OnClick action.&#10;Can't retrieve node at index '0' of '(OnClick is defined) &amp;&amp; (hasAnyDescendantThat(Text + EditableText contains '14' (ignoreCase: false)))'&#10;There are no existing nodes for that selector.&#10;" type="java.lang.AssertionError">java.lang.AssertionError: Failed to perform OnClick action.
-Can't retrieve node at index '0' of '(OnClick is defined) &amp;&amp; (hasAnyDescendantThat(Text + EditableText contains '14' (ignoreCase: false)))'
+    <failure message="java.lang.AssertionError: Failed to perform OnClick action.&#10;Can't retrieve node at index '0' of '(OnClick is defined) &amp;&amp; (Text + EditableText contains '14' (ignoreCase: false))'&#10;There are no existing nodes for that selector.&#10;" type="java.lang.AssertionError">java.lang.AssertionError: Failed to perform OnClick action.
+Can't retrieve node at index '0' of '(OnClick is defined) &amp;&amp; (Text + EditableText contains '14' (ignoreCase: false))'
 There are no existing nodes for that selector.
 
     <failure message="java.lang.AssertionError: Failed to inject touch input.&#10;Can't retrieve node at index '0' of 'Text + EditableText contains '+ 세트' (ignoreCase: false) as substring'&#10;There are no existing nodes for that selector.&#10;" type="java.lang.AssertionError">java.lang.AssertionError: Failed to inject touch input.
@@ -60,6 +60,6 @@ Can't retrieve node at index '0' of 'Text + EditableText contains '+ 세트' (ig
 There are no existing nodes for that selector.
 
     <failure message="java.lang.IllegalStateException: '삭제' 없음" type="java.lang.IllegalStateException">java.lang.IllegalStateException: '삭제' 없음
-	at com.slayde.hasenheide.ui.ShotBase.누름(ScreenShots.kt:173)
-	at com.slayde.hasenheide.ui.ShotBase.누름$default(ScreenShots.kt:167)
+	at com.slayde.hasenheide.ui.ShotBase.누름(ScreenShots.kt:187)
+	at com.slayde.hasenheide.ui.ShotBase.누름$default(ScreenShots.kt:180)
 	at com.slayde.hasenheide.ui.Shot_s07g_exerciseDelete.t(ScreenShots2.kt:111)
