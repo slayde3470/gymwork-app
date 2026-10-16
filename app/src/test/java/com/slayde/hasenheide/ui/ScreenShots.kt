@@ -149,6 +149,20 @@ abstract class ShotBase {
         쉼()
     }
 
+    /** 칸이 화면 밖이면 위로 밀어 올린다 (최대 4번). performScrollTo 는 종목 고르기 시트에서 끝없이 돌아 한 판이 멈췄다 (10-16) */
+    protected fun 보이게(칸: androidx.compose.ui.test.SemanticsNodeInteraction) {
+        val 높이 = rule.activity.resources.displayMetrics.heightPixels
+        var i = 0
+        while (i < 4) {
+            val b = 칸.fetchSemanticsNode().boundsInRoot
+            if (b.top >= 0f && b.bottom <= 높이) break
+            i++
+            val 뿌리 = rule.onAllNodes(isRoot())
+            뿌리[뿌리.fetchSemanticsNodes().size - 1].performTouchInput { swipeUp(startY = height * 0.75f, endY = height * 0.25f) }
+            쉼(600)
+        }
+    }
+
     /** 글자로 찾아 누름 — 같은 글이 여럿이면 [몇째] (−1 = 마지막) */
     protected fun 누름(글: String, 몇째: Int = 0, 일부: Boolean = false) {
         지금 = "${this::class.simpleName} 누름 '$글'"; 마지막 = System.currentTimeMillis()
@@ -158,7 +172,7 @@ abstract class ShotBase {
         val n = 들.fetchSemanticsNodes().size
         check(n > 0) { "'$글' 없음" }
         val 칸 = 들[if (몇째 < 0) n - 1 else 몇째]
-        try { 칸.performScrollTo(); 쉼(300) } catch (_: Throwable) { }
+        try { 보이게(칸) } catch (_: Throwable) { }
         칸.performClick()
         쉼()
     }
@@ -178,7 +192,7 @@ abstract class ShotBase {
         val n = 들.fetchSemanticsNodes().size
         check(n > 0) { "설명 '$글' 없음" }
         val 칸 = 들[if (몇째 < 0) n - 1 else 몇째]
-        try { 칸.performScrollTo(); 쉼(300) } catch (_: Throwable) { }
+        try { 보이게(칸) } catch (_: Throwable) { }
         칸.performClick()
         쉼()
     }
