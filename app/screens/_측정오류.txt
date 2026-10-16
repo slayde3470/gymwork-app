@@ -1,0 +1,32 @@
+04c_루틴상세_이름고치기: java.lang.AssertionError: Failed: assertExists.
+Reason: Expected exactly '1' node but found '2' nodes that satisfy: (isRoot)
+Nodes found:
+1) Node #1 at (l=0.0, t=0.0, r=824.0, b=1830.0)px
+Has 15 children
+2) Node #360 at (l=-393.0, t=-187.0, r=-352.0, b=-137.0)px
+Has 1 child
+
+07d_종목_주동근협응근_팝업: java.lang.AssertionError: Failed: assertExists.
+Reason: Expected exactly '1' node but found '2' nodes that satisfy: (isRoot)
+Nodes found:
+1) Node #1 at (l=0.0, t=0.0, r=824.0, b=1830.0)px
+Has 13 children
+2) Node #1819 at (l=0.0, t=0.0, r=824.0, b=1830.0)px
+Has 1 child
+
+08d_새종목_주동근협응근_팝업: java.lang.AssertionError: Failed: assertExists.
+Reason: Expected exactly '1' node but found '2' nodes that satisfy: (isRoot)
+Nodes found:
+1) Node #1 at (l=0.0, t=0.0, r=824.0, b=1830.0)px
+Has 15 children
+2) Node #1644 at (l=0.0, t=0.0, r=824.0, b=1830.0)px
+Has 1 child
+
+13d0_프로필_닉네임고치기: java.lang.AssertionError: Failed: assertExists.
+Reason: Expected exactly '1' node but found '2' nodes that satisfy: (isRoot)
+Nodes found:
+1) Node #1 at (l=0.0, t=0.0, r=824.0, b=1830.0)px
+Has 12 children
+2) Node #290 at (l=-326.0, t=-97.0, r=-285.0, b=-47.0)px
+Has 1 child
+
