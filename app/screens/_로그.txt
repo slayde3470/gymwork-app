@@ -1,32 +1,37 @@
-Shot_s01b_calendarDay > s01b_calendarDay FAILED
+> Task :app:testDebugUnitTest FAILED
+* Exception is:
+org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':app:testDebugUnitTest'.
+	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+Caused by: org.gradle.process.internal.ExecException: Process 'Gradle Test Executor 25' finished with non-zero exit value 3
+BUILD FAILED in 5m 56s
 --- 로그 끝 30줄 ---
-> Task :app:javaPreCompileDebug
-> Task :app:preDebugUnitTestBuild UP-TO-DATE
-> Task :app:javaPreCompileDebugUnitTest
-> Task :app:mergeDebugShaders
-> Task :app:compileDebugShaders NO-SOURCE
-> Task :app:generateDebugAssets UP-TO-DATE
-> Task :app:mergeDebugAssets
-> Task :app:processDebugResources
-> Task :app:packageDebugUnitTestForUnitTest
-> Task :app:generateDebugUnitTestConfig
-> Task :app:compileDebugKotlin
-w: file:///home/runner/work/gymwork-app/gymwork-app/app/src/main/java/com/slayde/hasenheide/ui/SettingsScreen.kt:173:51 'val LocalLifecycleOwner: ProvidableCompositionLocal<LifecycleOwner>' is depreca
-w: file:///home/runner/work/gymwork-app/gymwork-app/app/src/main/java/com/slayde/hasenheide/ui/StatsScreen.kt:641:27 Condition is always 'true'.
-w: file:///home/runner/work/gymwork-app/gymwork-app/app/src/main/java/com/slayde/hasenheide/ui/WorkoutScreen.kt:831:36 Condition is always 'true'.
+	at org.gradle.internal.operations.CurrentBuildOperationRef.with(CurrentBuildOperationRef.java:85)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:314)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:303)
+	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.execute(DefaultPlanExecutor.java:459)
+	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.run(DefaultPlanExecutor.java:376)
+	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
+	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:48)
+Caused by: org.gradle.process.internal.ExecException: Process 'Gradle Test Executor 25' finished with non-zero exit value 3
+This problem might be caused by incorrect test process configuration.
+For more on test execution, please refer to https://docs.gradle.org/8.11.1/userguide/java_testing.html#sec:test_execution in the Gradle documentation.
+	at org.gradle.api.internal.tasks.testing.worker.ForkingTestClassProcessor.stop(ForkingTestClassProcessor.java:161)
+	at org.gradle.api.internal.tasks.testing.processors.RestartEveryNTestClassProcessor.endBatch(RestartEveryNTestClassProcessor.java:77)
+	at org.gradle.api.internal.tasks.testing.processors.RestartEveryNTestClassProcessor.processTestClass(RestartEveryNTestClassProcessor.java:55)
+	at jdk.internal.reflect.GeneratedMethodAccessor83.invoke(Unknown Source)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at org.gradle.internal.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:36)
+	at org.gradle.internal.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:24)
+	at org.gradle.internal.dispatch.FailureHandlingDispatch.dispatch(FailureHandlingDispatch.java:30)
+	at org.gradle.internal.dispatch.AsyncDispatch.dispatchMessages(AsyncDispatch.java:87)
+	at org.gradle.internal.dispatch.AsyncDispatch.access$000(AsyncDispatch.java:36)
+	at org.gradle.internal.dispatch.AsyncDispatch$1.run(AsyncDispatch.java:71)
+	at org.gradle.internal.concurrent.InterruptibleRunnable.run(InterruptibleRunnable.java:42)
+	at org.gradle.internal.operations.CurrentBuildOperationRef.with(CurrentBuildOperationRef.java:85)
+	at org.gradle.internal.operations.CurrentBuildOperationPreservingRunnable.run(CurrentBuildOperationPreservingRunnable.java:51)
+	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
+	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:48)
 
-> Task :app:compileDebugJavaWithJavac
-> Task :app:processDebugJavaRes
-> Task :app:bundleDebugClassesToCompileJar
-> Task :app:bundleDebugClassesToRuntimeJar
 
-> Task :app:compileDebugUnitTestKotlin
-w: file:///home/runner/work/gymwork-app/gymwork-app/app/src/test/java/com/slayde/hasenheide/ui/ScreenShots.kt:180:81 This declaration needs opt-in. Its usage should be marked with '@com.github.takahir
-w: file:///home/runner/work/gymwork-app/gymwork-app/app/src/test/java/com/slayde/hasenheide/ui/ScreenShots.kt:182:40 This declaration needs opt-in. Its usage should be marked with '@com.github.takahir
-
-> Task :app:compileDebugUnitTestJavaWithJavac NO-SOURCE
-> Task :app:processDebugUnitTestJavaRes
-> Task :app:testDebugUnitTest
-
-Shot_s01b_calendarDay > s01b_calendarDay FAILED
-    java.lang.AssertionError at ScreenShots.kt:258
+BUILD FAILED in 5m 56s
+28 actionable tasks: 28 executed
