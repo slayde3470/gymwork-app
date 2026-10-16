@@ -4,6 +4,8 @@ import com.slayde.hasenheide.data.루틴
 import com.slayde.hasenheide.data.루틴종목
 import com.slayde.hasenheide.data.앱데이터
 import com.slayde.hasenheide.data.종목
+import com.slayde.hasenheide.data.저장소
+import com.slayde.hasenheide.data.즐겨바꿈
 import com.slayde.hasenheide.data.종목기본세트
 import com.slayde.hasenheide.data.종목사전
 import com.slayde.hasenheide.data.종목세트
@@ -34,12 +36,20 @@ class ExerciseTest {
         assertEquals(listOf(listOf(0, 1), listOf(2, 3), listOf(4)), 격자줄(listOf(false, false, false, false, false)))
     }
 
-    @Test fun 격자_펼친것은한줄_빈칸은뒤가채움() {
-        // 0 접힘 · 1 펼침 · 2 접힘 → [0, 2] 가 첫 줄(빈 칸을 2가 채움) · [1] 둘째 줄
-        assertEquals(listOf(listOf(0, 2), listOf(1)), 격자줄(listOf(false, true, false)))
+    @Test fun 격자_펼친것은한줄_뒤는건너뛰지않음() {
+        // 0 접힘 · 1 펼침(오른쪽 칸) · 2 접힘 → 0 은 가상 칸으로 가려지고 [1] · [2]
+        assertEquals(listOf(listOf(1), listOf(2)), 격자줄(listOf(false, true, false)))   // 10-11: 오른쪽 칸을 펼치면 맨 앞(0)이 가상 칸으로 가려지고 펼친 상자는 제자리 · 뒤 종목은 건너뛰지 않는다
+        assertEquals(listOf(listOf(1, 2), listOf(3), listOf(4)), 격자줄(listOf(false, false, false, true, false)))
         assertEquals(listOf(listOf(0), listOf(1, 2)), 격자줄(listOf(true, false, false)))
         assertEquals(listOf(listOf(0, 1), listOf(2)), 격자줄(listOf(false, false, true)))
         assertEquals(emptyList(), 격자줄(emptyList()))
+    }
+
+    @Test fun 이름두줄_띄어쓰기에서_첫줄이_짧게() {
+        assertEquals("인클라인\n체스트 프레스 머신", 이름두줄("인클라인 체스트 프레스 머신"))
+        assertEquals("불가리안\n스플릿 스쿼트", 이름두줄("불가리안 스플릿 스쿼트"))
+        assertEquals("스미스 머신\n숄더 프레스", 이름두줄("스미스 머신 숄더 프레스"))
+        assertEquals("벤치프레스", 이름두줄("벤치프레스"))
     }
 
     // ─────────────── 종목 탭 판 ───────────────
@@ -67,6 +77,38 @@ class ExerciseTest {
         assertEquals(1, d.상자플랜(가슴[0]).size)
         assertEquals(0, d.상자플랜(가슴[1]).size)
         assertEquals(둘째.id, 가슴[1].열쇠)
+    }
+
+    // ─────────────── 즐겨찾기 (10-11) ───────────────
+
+    @Test fun 즐겨_바꿈은_그_종목만_뒤집고_없는id는그대로() {
+        val d = 바탕()
+        val 켠 = d.즐겨바꿈("턱걸이")
+        assertTrue(켠.종목표.first { it.id == "턱걸이" }.즐겨)
+        assertFalse(켠.종목표.first { it.id == "벤치프레스" }.즐겨)
+        assertFalse(켠.즐겨바꿈("턱걸이").종목표.first { it.id == "턱걸이" }.즐겨)
+        assertEquals(d, d.즐겨바꿈("없는id"))
+    }
+
+    @Test fun 즐겨_먼저면_카테고리마다_맨앞_나머지는_그대로() {
+        val d = 앱데이터(종목표 = listOf(종목("A", "가슴"), 종목("B", "가슴"), 종목("C", "가슴"), 종목("D", "등"))).즐겨바꿈("C")
+        assertEquals(listOf("A", "B", "C"), d.종목탭판("전체").묶음.first().second.map { it.이름 })   // 끄면 그대로
+        assertEquals(listOf("C", "A", "B"), d.종목탭판("전체", true).묶음.first().second.map { it.이름 })
+        assertEquals(listOf("C", "A", "B"), d.종목탭판("가슴", true).묶음.single().second.map { it.이름 })   // 가슴만 골라도 모두 보이고 즐겨찾기가 앞
+    }
+
+    @Test fun 즐겨_저장왕복_옛파일은_꺼짐() {
+        val d = 앱데이터(종목표 = listOf(종목("A", "가슴"), 종목("B", "등"))).즐겨바꿈("B")
+        val e = 저장소.글에서(저장소.글로(d))
+        assertEquals(listOf(false, true), e.종목표.map { it.즐겨 })
+    }
+
+    @Test fun 즐겨먼저_끄면_저장되고_옛파일은_켜짐() {
+        val d = 앱데이터()
+        assertTrue(저장소.글에서(저장소.글로(d)).설정.즐겨먼저)
+        val 끈 = d.copy(설정 = d.설정.copy(즐겨먼저 = false))
+        assertFalse(저장소.글에서(저장소.글로(끈)).설정.즐겨먼저)
+        assertTrue(저장소.글에서("{}").설정.즐겨먼저)   // 처음 깔았거나 옛 파일 = 켜짐
     }
 
     // ─────────────── 세트 줄 ───────────────
@@ -123,6 +165,16 @@ class ExerciseTest {
         val 크런치 = d.새초기().사전고름(d, "크런치")
         assertEquals("복근", 크런치.칸)
         assertNull(d.저장검사(크런치))
+    }
+
+    @Test fun 새_프리처컬머신은프리처컬과다른종목() {
+        // 10-12 홍겸 님: '프리처 컬 머신' 이 사전 다른 이름이라 '프리처 컬' 로 바뀌어 같은 이름 2번째가 생겼다
+        val d = 바탕()
+        val v = d.새초기().copy(이름 = "프리처 컬 머신", 찾는중 = true).확인(d).first
+        assertEquals("프리처 컬 머신", v.이름)              // 사전에 따로 있는 종목
+        assertEquals("프리처 컬", d.새초기().copy(이름 = "EZ바 프리처 컬", 찾는중 = true).확인(d).first.이름)   // 진짜 다른 이름은 대표 이름으로
+        assertEquals("팔", v.칸)              // 근육 · 칸은 사전 값
+        assertTrue("P" in v.근육.values)
     }
 
     @Test fun 새_손으로고른칸은사전이비우지않음() {

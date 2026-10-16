@@ -31,6 +31,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -62,6 +63,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
@@ -76,6 +78,8 @@ import androidx.compose.ui.layout.FirstBaseline
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
@@ -104,6 +108,10 @@ import com.slayde.hasenheide.data.두대비
 import com.slayde.hasenheide.data.목표단위
 import com.slayde.hasenheide.data.목표세트
 import com.slayde.hasenheide.data.무게글
+import com.slayde.hasenheide.data.방식
+import com.slayde.hasenheide.data.시간칸
+import com.slayde.hasenheide.data.거리글
+import com.slayde.hasenheide.data.거리칸
 import com.slayde.hasenheide.data.묶음이름
 import com.slayde.hasenheide.data.볼륨
 import com.slayde.hasenheide.data.분초
@@ -111,6 +119,7 @@ import com.slayde.hasenheide.data.비교
 import com.slayde.hasenheide.data.세션종목
 import com.slayde.hasenheide.data.세트
 import com.slayde.hasenheide.data.세트종류
+import com.slayde.hasenheide.data.실제세트들
 import com.slayde.hasenheide.data.실제진행값
 import com.slayde.hasenheide.data.앱데이터
 import com.slayde.hasenheide.data.운동세션
@@ -118,8 +127,10 @@ import com.slayde.hasenheide.data.웜칸수
 import com.slayde.hasenheide.data.일RM
 import com.slayde.hasenheide.data.재개
 import com.slayde.hasenheide.data.보고끝
+import com.slayde.hasenheide.data.시작날
 import com.slayde.hasenheide.data.보고저장
 import com.slayde.hasenheide.data.보고저장결과
+import com.slayde.hasenheide.data.저장기록열쇠
 import com.slayde.hasenheide.data.종목기록
 import com.slayde.hasenheide.data.종목열쇠
 import com.slayde.hasenheide.data.종목찾기
@@ -177,9 +188,9 @@ private object 보고치수 {
     val 날짜옆 = 15.dp            // v17 B 2 — 제목 글자 오른쪽 끝에서
     val 날짜위 = 15.dp            // v17 B 2 — 제목 위끝에서
     val 찍기폭 = 32.dp            // v19 B — 카메라 · 공유 누르는 칸 32 × 40 · 아이콘 18
-    val 사진 = 58.dp              // v10 0vnw — 48 × 1.2
-    val 사진칸 = 64.dp            // v10 — 사진 58 + 좌우 3
-    val 사진그림 = 28.dp          // 사진 없을 때 사람 그림 (시안 .보고사진 svg)
+    val 사진 = 48.dp              // v10 0vnw — 48 × 1.2
+    val 사진칸 = 54.dp            // v10 — 사진 58 + 좌우 3
+    val 사진그림 = 24.dp          // 사진 없을 때 사람 그림 (시안 .보고사진 svg)
     val 톱니칸 = 28.dp
     val 톱니그림 = 15.3.dp        // v17 B 8 — 18 × 0.85
     val 톱니비킴 = 24.dp          // 톱니 밑에 파란 상자 · 이름 줄이 깔리지 않게
@@ -209,6 +220,7 @@ internal data class 보고줄(val 이름: String, val 값: String, val 차: Doub
 internal data class 보고칸(
     val 번호: Int, val 이름: String, val 종id: String?, val 플랜id: String?,
     val 세트들: List<세트>, val 총: Int, val 맨몸: Boolean, val 줄1: 보고줄, val 줄2: 보고줄,
+    val 묶음: String? = null,   // 10-11 슈퍼세트면 묶음 이름 — 보고서에서 주황으로 묶어 보인다
 )
 
 /** 큰 운동 한 칸 — 맨 앞은 N대 합계. v = 이 기록까지 최고 추정 1RM · 앞 = 이 기록 앞까지 · 때 = 그 값을 처음 낸 날 */
@@ -249,8 +261,9 @@ internal fun 앱데이터.같은줄(e: 종목기록, 종id: String?, 이름: Str
     if (플랜id != null || e.플랜id != null) e.플랜id == 플랜id else 줄표준(e.종id, e.이름) == 줄표준(종id, 이름)
 
 /** 끝내기 전 세션을 기록 꼴로 (저장하지 않는다) — 빈 종목도 남겨 차례가 세션과 같다 */
-internal fun 세션기록(S: 운동세션, 지금: Long): 날기록 {
-    val 들 = S.종목들.map { e -> 종목기록(e.이름, e.찬것(), e.임시, S.묶음이름(e), 플랜id = e.플랜id, 종id = e.종id) }
+internal fun 세션기록(S: 운동세션, 지금: Long, d: 앱데이터? = null): 날기록 {
+    // 10-12 기록 방식: [d] 를 주면 저장될 기록과 같게 실제 무게로 (맨몸 = 체중 + 추가 · 어시스트 = 체중 − 보조)
+    val 들 = S.종목들.map { e -> 종목기록(e.이름, d?.실제세트들(e.종id, e.이름, e.플랜id, e.찬것()) ?: e.찬것(), e.임시, S.묶음이름(e), 플랜id = e.플랜id, 종id = e.종id) }
     val 끝 = S.끝시각 ?: 지금
     val 걸린 = S.흐른초(지금)
     return 날기록(S.루틴id, S.루틴이름, S.한세트수() >= S.목표세트(), 들, 걸린.toInt(), 끝 - 걸린 * 1000, 끝)
@@ -288,7 +301,17 @@ internal fun 앱데이터.보고계산(rec: 날기록, 저장키: String?, 날: 
         val 전 = 지난?.value?.종목들?.filter { 같은줄(it, e.종id, e.이름, e.플랜id) }?.flatMap { 기록세트(it.세트들) } ?: emptyList()
         val 줄1: 보고줄
         val 줄2: 보고줄
-        if (맨) {
+        if (방식(e.종id, e.이름).거리칸()) {
+            // 3단계 유산소: 거리 합 · 시간 합 (볼륨 · 1RM 없음)
+            val 거 = 세.sumOf { it.거리 }; val 합 = 세.sumOf { it.r }
+            줄1 = 보고줄("거리", 거리글(거).ifEmpty { "-" }, if (전.isEmpty()) null else Math.round((거 - 전.take(m).sumOf { it.거리 }) * 10) / 10.0, "km")
+            줄2 = 보고줄("시간", 분초(합), if (전.isEmpty()) null else (합 - 전.take(m).sumOf { it.r }).toDouble(), "초")
+        } else if (방식(e.종id, e.이름).시간칸()) {
+            // 2단계 기록 방식: 시간(버티기)은 r 이 초 — 'N회' 가 아니라 m:ss. 볼륨 · 1RM 은 없다
+            val 최 = 세.maxOf { it.r }; val 합 = 세.sumOf { it.r }
+            줄1 = 보고줄("최고", 분초(최), if (전.isEmpty()) null else (최 - 전.maxOf { it.r }).toDouble(), "초")
+            줄2 = 보고줄("합계", 분초(합), if (전.isEmpty()) null else (합 - 전.take(m).sumOf { it.r }).toDouble(), "초")
+        } else if (맨) {
             val 최회 = 세.maxOf { it.r }; val 합회 = 세.sumOf { it.r }
             줄1 = 보고줄("최고", "${최회}회", if (전.isEmpty()) null else (최회 - 전.maxOf { it.r }).toDouble(), "회")
             줄2 = 보고줄("합계", "${합회}회", if (전.isEmpty()) null else (합회 - 전.take(m).sumOf { it.r }).toDouble(), "회")
@@ -297,7 +320,7 @@ internal fun 앱데이터.보고계산(rec: 날기록, 저장키: String?, 날: 
             줄1 = 보고줄("1RM", "${kg글(rm)}kg", if (전.isEmpty()) null else 견줌차(rm, 전.maxOf { 일RM(it.w, it.r) }), "kg")
             줄2 = 보고줄("볼륨", "${콤마(볼)}kg", if (전.isEmpty()) null else 견줌차(볼, 볼륨(전.take(m))), "kg")
         }
-        보고칸(i, e.이름, e.종id, e.플랜id, 세, max(m, 총칸들?.getOrNull(i) ?: m), 맨, 줄1, 줄2)
+        보고칸(i, e.이름, e.종id, e.플랜id, 세, max(m, 총칸들?.getOrNull(i) ?: m), 맨, 줄1, 줄2, e.묶음)
     }
     return 보고값(날, rec.루틴이름, rec.종목들.sumOf { it.세트들.size }, 루볼, max(0, rec.걸린초), 루차, 칸들)
 }
@@ -340,7 +363,9 @@ internal fun 앱데이터.상세계산(칸: 보고칸, 저장키: String?, 날: 
     fun rm(l: List<세트>) = l.maxOfOrNull { 일RM(it.w, it.r) } ?: 0.0
     val rmx = rm(세); val 볼x = 볼륨(세)
     val 좋 = 세.reduceOrNull { a, y -> if (일RM(y.w, y.r) > 일RM(a.w, a.r) || (y.w <= 0 && a.w <= 0 && y.r > a.r)) y else a }
-    fun 세글(y: 세트) = "${if (y.w > 0) "${무게글(y.w)}kg × " else ""}${y.r}회"
+    val 시간 = 방식(칸.종id, 칸.이름).시간칸()   // 2단계: 시간은 'N회' 대신 m:ss
+    val 유산소 = 방식(칸.종id, 칸.이름).거리칸()   // 3단계: 유산소는 '5.5km · 30:00'
+    fun 세글(y: 세트) = if (유산소) listOf(거리글(y.거리), 분초(y.r)).filter { it.isNotEmpty() }.joinToString(" · ") else if (시간) 분초(y.r) else "${if (y.w > 0) "${무게글(y.w)}kg × " else ""}${y.r}회"
     return 상세값(
         세.mapIndexed { k, y -> "${k + 1}세트 · ${세글(y)}" },
         좋?.let { "최고 세트 · ${세글(it)}" },
@@ -411,11 +436,11 @@ internal fun 마무리(상태: 앱상태, S: 운동세션, 저장됨: Boolean = 
         }
     }
     // 끝내기 전(세션) 보고서도 방금 저장한 자기 기록이 있으면 그 열쇠로 견준다 — 자기 기록은 빼고 · 플랜은 '반영됨' (시안 v22 D)
-    val 자기 = if (저장됨) null else S.저장?.열쇠?.takeIf { d.기록.containsKey(it) }
+    val 자기 = if (저장됨) null else d.저장기록열쇠(S)   // 10-10: 번호가 다시 매겨졌어도 끝 시각으로 찾는다
     val 저장키 = if (저장됨) remember(d.기록, S.루틴id, S.끝시각) { 저장열쇠(d, S) } else 자기
-    val 날 = 저장키?.let { 날짜만(it) } ?: 상태.오늘
+    val 날 = 저장키?.let { 날짜만(it) } ?: S.시작날(상태.오늘)   // 10-10: 시작한 날로 저장하므로 보고서도 그 날 기준
     // 저장된 결과를 보다가 그 기록이 지워져도 세션 값으로 그린다 · 끝내기 전은 늘 세션 값 (빈 종목도 차례대로)
-    val rec = remember(S, 저장키, d.기록) { (if (저장됨) 저장키?.let { d.기록[it] } else null) ?: 세션기록(S, System.currentTimeMillis()) }
+    val rec = remember(S, 저장키, d.기록, d.몸.체중, d.종목표) { (if (저장됨) 저장키?.let { d.기록[it] } else null) ?: 세션기록(S, System.currentTimeMillis(), d) }
     val 총칸들 = remember(S, 저장됨) { if (!저장됨) 세션총칸(S) else null }
     // 10-08 홍겸 님: 저장된 뒤 보는 결과 화면(오래 손대지 않아 저절로 끝난 운동 등)도 [확인] 대신 떠 있는 ‹ (닫기) › (스테이터스)
     보고틀(상태, rec, 저장키, 날, 총칸들, 키 = if (저장됨) 저장키 ?: "결과${S.시작시각}" else "세션${S.시작시각}", 조절됨 = S.조절됨,
@@ -638,7 +663,7 @@ private fun ColumnScope.보고본문(
     if (보임.프로필) {
         Box(Modifier.fillMaxWidth().들어옴(상자p, false).보고상자(c.면, c.선)) {
             Row(
-                Modifier.fillMaxWidth().padding(간격.보통),
+                Modifier.fillMaxWidth().padding(horizontal = 간격.보통, vertical = 8.dp),   // 10-11 홍겸 님: 10개가 다 보이게 프로필 상자를 줄임 (사진 58→48 · 위아래 12→8)
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.보통),
             ) {
                 Column(Modifier.width(보고치수.사진칸), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
@@ -702,18 +727,83 @@ private fun ColumnScope.보고본문(
 
     // ── 종목 두 칸 격자 — 이 안에서만 넘긴다. 누르면 그 줄 아래 두 칸 폭으로 상세 (한 번에 하나) ──
     Column(
-        (if (넘김 != null) Modifier.weight(1f).verticalScroll(넘김) else Modifier).fillMaxWidth().padding(bottom = 아래여백),
+        (if (넘김 != null) Modifier.weight(1f).verticalScroll(넘김) else Modifier).fillMaxWidth().padding(top = 4.dp, bottom = 아래여백),   // 10-11: 맨 윗줄 슈퍼 테두리 · 딱지가 잘리지 않게 위 여백 4
         verticalArrangement = Arrangement.spacedBy(간격.아주좁게),
     ) {
         if (값.칸들.isEmpty()) {
             Text("체크한 세트가 없습니다", Modifier.padding(horizontal = 간격.아주좁게, vertical = 간격.좁게), style = 글꼴.보통(크기.조금작게), color = c.옅음)
         }
-        값.칸들.chunked(2).forEach { 줄 -> key(줄.first().번호) {
+        // 10-11 홍겸 님: 슈퍼세트 = 읽는 차례로 이어진 칸들을 **통짜** 주황 굵은 테두리 하나로 (줄 사이에 걸쳐도 그대로 · 칸 하나하나에 두르지 않는다)
+        val 묶음들 = ArrayList<List<Int>>()   // 칸 차례(index) 묶음 — 두 칸 이상만
+        run {
+            var i = 0
+            while (i < 값.칸들.size) {
+                val g = 값.칸들[i].묶음
+                var j = i
+                while (g != null && j + 1 < 값.칸들.size && 값.칸들[j + 1].묶음 == g) j++
+                if (g != null && j > i) 묶음들.add((i..j).toList())
+                i = j + 1
+            }
+        }
+        val 묶음칸 = HashMap<Int, Int>()   // 칸 번호 → 묶음 차례
+        묶음들.forEachIndexed { q, l -> l.forEach { 묶음칸[값.칸들[it].번호] = q } }
+        val 딱칸 = 묶음들.map { l -> l.first { it % 2 == 1 } }.toSet()   // 묶음 맨 윗줄 오른쪽 칸 — [슈퍼] 딱지
+        val 자리 = remember { androidx.compose.runtime.mutableStateMapOf<Int, Rect>() }
+        val 줄자리 = remember { androidx.compose.runtime.mutableStateMapOf<Int, Rect>() }
+        val 격자틀 = remember { arrayOfNulls<androidx.compose.ui.layout.LayoutCoordinates>(1) }
+        val 주 = c.슈퍼
+        Column(
+            Modifier.fillMaxWidth().onGloballyPositioned { 격자틀[0] = it }
+                .drawWithContent {
+                    drawContent()
+                    // 10-11 홍겸 님: 그린 선을 따라가지 않고 **상자 테두리를 그대로** — 묶인 칸의 줄 높이 사각형을 틈 절반만큼 키워 맞붙이고(경계가 사라진다) 바깥 둘레만 한 번 긋는다
+                    val g = 간격.아주좁게.toPx() / 2f + 0.5f
+                    묶음들.forEach { l ->
+                        var 합: androidx.compose.ui.graphics.Path? = null
+                        l.forEach { i ->
+                            val r = 자리[값.칸들[i].번호] ?: return@forEach
+                            val 줄 = 줄자리[i / 2] ?: return@forEach
+                            val q = androidx.compose.ui.graphics.Path().apply { addRect(Rect(r.left - g, 줄.top - g, r.right + g, 줄.bottom + g)) }
+                            합 = 합?.let { a -> androidx.compose.ui.graphics.Path.combine(androidx.compose.ui.graphics.PathOperation.Union, a, q) } ?: q
+                        }
+                        합?.let { drawPath(it, 주, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 선굵기.굵게.toPx() * 0.7f, pathEffect = androidx.compose.ui.graphics.PathEffect.cornerPathEffect(모서리.작게.toPx()))) }   // 10-11 홍겸 님: 통짜 둘레 그대로(통째로 한 선) · 다른 슈퍼세트와 겹치지 않게 굵기만 70%
+                    }
+                },
+            verticalArrangement = Arrangement.spacedBy(간격.아주좁게),
+        ) {
+        값.칸들.chunked(2).forEachIndexed { 줄번, 줄 -> key(줄.first().번호) {
             val 열린 = 줄.firstOrNull { it.번호 == 펼침 }
             val 보기 = remember { BringIntoViewRequester() }
             Column(Modifier.fillMaxWidth().bringIntoViewRequester(보기), verticalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
-                    줄.forEach { k -> 종목칸(d, k, k.번호 == 펼침, 움직, 키, 찍는용, 상자p, Modifier.weight(1f)) { on펼침(k.번호) } }
+                Row(
+                    Modifier.fillMaxWidth().then(if (묶음들.isEmpty()) Modifier else Modifier.onGloballyPositioned { co ->
+                        val 기 = 격자틀[0]
+                        if (기 != null && 기.isAttached && co.isAttached) {
+                            val r = Rect(기.localPositionOf(co, Offset.Zero), Size(co.size.width.toFloat(), co.size.height.toFloat()))
+                            if (줄자리[줄번] != r) 줄자리[줄번] = r
+                        }
+                    }),
+                    horizontalArrangement = Arrangement.spacedBy(간격.아주좁게),
+                ) {
+                    줄.forEach { k ->
+                        val 다 = 값.칸들.indexOf(k)
+                        Box(
+                            Modifier.weight(1f).then(if (묶음칸[k.번호] == null) Modifier else Modifier.onGloballyPositioned { co ->
+                                val 기 = 격자틀[0]
+                                if (기 != null && 기.isAttached && co.isAttached) {
+                                    val p0 = 기.localPositionOf(co, Offset.Zero)
+                                    val r = Rect(p0, Size(co.size.width.toFloat(), co.size.height.toFloat()))
+                                    if (자리[k.번호] != r) 자리[k.번호] = r
+                                }
+                            }),
+                        ) {
+                            종목칸(d, k, k.번호 == 펼침, 움직, 키, 찍는용, 상자p, Modifier.fillMaxWidth()) { on펼침(k.번호) }
+                            if (다 in 딱칸) Box(
+                                Modifier.align(Alignment.TopEnd).offset(x = 3.dp, y = (-3).dp).clip(RoundedCornerShape(bottomStart = 모서리.작게))
+                                    .background(주).padding(horizontal = 간격.아주좁게),
+                            ) { Text("슈퍼", style = 글꼴.보통(크기.작게 * 0.9f, FontWeight.Bold), color = c.강조, maxLines = 1, softWrap = false) }
+                        }
+                    }
                     if (줄.size == 1) Box(Modifier.weight(1f))
                 }
                 if (열린 != null) {
@@ -730,6 +820,7 @@ private fun ColumnScope.보고본문(
                 }
             }
         } }
+        }
     }
 }
 

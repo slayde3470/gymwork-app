@@ -3,11 +3,16 @@ package com.slayde.hasenheide.ui
 import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.animate
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -46,8 +51,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.key
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
@@ -67,16 +76,23 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.layer.GraphicsLayer
+import androidx.compose.ui.graphics.layer.drawLayer
+import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.layout.positionInParent
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalView
@@ -101,6 +117,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
@@ -110,7 +127,17 @@ import com.slayde.hasenheide.data.다음회
 import com.slayde.hasenheide.data.저장전
 import com.slayde.hasenheide.data.덜한가
 import com.slayde.hasenheide.data.무게글
-import com.slayde.hasenheide.data.볼륨
+import com.slayde.hasenheide.data.거리글
+import com.slayde.hasenheide.data.기록방식표
+import com.slayde.hasenheide.data.무게칸있음
+import com.slayde.hasenheide.data.시간칸
+import com.slayde.hasenheide.data.시간한칸
+import com.slayde.hasenheide.data.기록방식
+import com.slayde.hasenheide.data.시간최대
+import com.slayde.hasenheide.data.시간최소
+import com.slayde.hasenheide.data.거리칸
+import com.slayde.hasenheide.data.거리한칸
+import com.slayde.hasenheide.data.방식
 import com.slayde.hasenheide.data.분초
 import com.slayde.hasenheide.data.세기더함
 import com.slayde.hasenheide.data.세기이름
@@ -126,6 +153,8 @@ import com.slayde.hasenheide.data.식구
 import com.slayde.hasenheide.data.앱데이터
 import com.slayde.hasenheide.data.열쇠
 import com.slayde.hasenheide.data.운동세션
+import com.slayde.hasenheide.data.운동중목표볼륨
+import com.slayde.hasenheide.data.운동중볼륨
 import com.slayde.hasenheide.data.자리로
 import com.slayde.hasenheide.data.종목넣기
 import com.slayde.hasenheide.data.종목되돌리기
@@ -161,8 +190,10 @@ import com.slayde.hasenheide.ui.theme.크기
 import com.slayde.hasenheide.ui.theme.휴식칸값
 import com.slayde.hasenheide.ui.theme.쉼게이지글
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import kotlin.math.abs
+import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -202,8 +233,42 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
     if (n == 0) { 빈운동(상태); return }
 
     // 보는 종목 — 이 운동(시작 시각) 동안 기억한다. 탭을 오가도 그대로 (시안 `U.본`)
-    val 본 = if (운보기.세션 == S.시작시각 && 운보기.본 in S.종목들.indices) 운보기.본 else S.i.coerceIn(0, n - 1)
-    SideEffect { 운보기.세션 = S.시작시각; 운보기.본 = 본 }
+    val 목표본 = if (운보기.세션 == S.시작시각 && 운보기.본 in S.종목들.indices) 운보기.본 else S.i.coerceIn(0, n - 1)
+    SideEffect { 운보기.세션 = S.시작시각; 운보기.본 = 목표본 }
+    // 10-11 홍겸 님: 종목을 넘기면 — 새 쪽은 이미 아래에 깔려 있고, 옛 쪽(스냅샷 그림)이 넘어가며 드러낸다.
+    //  그릴 화면은 언제나 한 벌이다(옛 쪽은 그림일 뿐 → 터치 · 스크롤 · 입력 칸 상태가 둘이 되지 않는다). 첫 그림에는 효과가 없다
+    //  방식 1 = 좌우 밀기(책장 · 영역 A 전체) · 방식 0 = 버튼 · 자동 · 칸 고르기(밀기 · 영역 B 만)
+    var 표시본 by remember(S.시작시각) { mutableIntStateOf(목표본) }
+    val 본 = 표시본.coerceIn(0, n - 1)
+    val 넘김방식 = remember { intArrayOf(0) }   // 좌우 밀기 람다만 1 로 세운다. 효과가 읽고 0 으로 되돌린다
+    val 층A = rememberGraphicsLayer()
+    val 층B = rememberGraphicsLayer()
+    var 옛그림 by remember(S.시작시각) { mutableStateOf<ImageBitmap?>(null) }
+    var 옛방식 by remember(S.시작시각) { mutableIntStateOf(0) }
+    var 옛방향 by remember(S.시작시각) { mutableIntStateOf(1) }   // +1 = 다음 · −1 = 이전
+    val 진행 = remember(S.시작시각) { Animatable(0f) }
+    val 끌림x = remember { mutableFloatStateOf(0f) }   // 손가락을 따라 끌려오는 거리(px) — 그릴 때만 읽는다
+    val 옛시작 = remember { mutableFloatStateOf(0f) }   // 손을 뗀 자리 — 옛 쪽 그림이 여기서부터 밀려 나간다
+    val 끌범위 = rememberCoroutineScope()
+    val 이웃방향 by remember { derivedStateOf { if (끌림x.floatValue < 0f) 1 else if (끌림x.floatValue > 0f) -1 else 0 } }   // 구성은 부호가 바뀔 때만 다시 짠다
+    LaunchedEffect(S.시작시각, 목표본) {
+        if (목표본 == 표시본) return@LaunchedEffect
+        val 방식 = 넘김방식[0]; 넘김방식[0] = 0
+        val 쪽 = if (목표본 > 표시본) 1 else -1
+        // 10-11 홍겸 님: 슈퍼세트는 한 화면 — 같은 묶음 안에서 종목이 바뀔 때는 화면을 넘기지 않고 이름 칸만 바뀐다
+        if (S.식구(표시본).let { it.size > 1 && 목표본 in it }) { 표시본 = 목표본; 끌림x.floatValue = 0f; return@LaunchedEffect }
+        진행.snapTo(0f)   // 새 쪽이 처음 그려지는 판에 옛 진행값이 남아 있지 않게 — 그림을 찍기 전에
+        val 그림 = try {
+            (if (방식 == 1) 층A else 층B).toImageBitmap()   // 표시본을 바꾸기 전에 지금 쪽을 찍는다
+        } catch (t: CancellationException) { throw t } catch (t: Exception) { null }
+        if (그림 == null) { 표시본 = 목표본; 끌림x.floatValue = 0f; return@LaunchedEffect }
+        try {
+            옛방식 = 방식; 옛방향 = 쪽; 옛그림 = 그림
+            표시본 = 목표본   // 이제 새 내용이 아래에 그려진다
+            끌림x.floatValue = 0f
+            진행.animateTo(1f, tween(if (방식 == 1) 운치수.책장시간 else 운치수.밀기시간, easing = LinearEasing))
+        } finally { 옛그림 = null }
+    }
     val e = S.종목들[본]
     // 칸 줄을 '보는 칸 맨 앞' 으로 다시 맞추라는 신호 (시안 `운자리.당김`)
     var 당김 by remember { mutableIntStateOf(0) }
@@ -240,9 +305,20 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
     // 10-09 홍겸 님: 화면을 좌우로 밀면 이전 · 다음 종목 (맨 아래 ‹ › 대신)
     val 넘김: (Int) -> Unit = { 쪽 ->
         상태.d.세션?.let { s ->
-            val 새 = (운보기.본 + 쪽).coerceIn(0, max(0, s.종목들.size - 1))
-            if (새 != 운보기.본) { 발자취.적기(if (쪽 > 0) "다음 종목으로 밀기" else "이전 종목으로 밀기"); 운보기.본 = 새; 당김++ }
+            val 새 = 이웃본찾기(s, 운보기.본, 쪽) ?: 운보기.본   // 10-11: 슈퍼세트 묶음은 한 쪽 — 건너뛴다
+            if (새 != 운보기.본) { 발자취.적기(if (쪽 > 0) "다음 종목으로 밀기" else "이전 종목으로 밀기"); 넘김방식[0] = 1; 운보기.본 = 새; 당김++ }
         }
+    }
+    // 10-11 홍겸 님: 좌우로 밀면 화면이 손가락을 따라 끌려온다. 기준(밀기)을 넘겨 떼면 그 자리에서 이어서 밀려 넘어가고, 덜 밀었으면 제자리로 돌아온다
+    val 끌기: (Float) -> Unit = { x ->
+        val 갈곳 = 상태.d.세션?.let { 이웃본찾기(it, 운보기.본, if (x < 0) 1 else -1) }
+        끌림x.floatValue = if (갈곳 != null) x else x * 0.25f   // 맨 끝에서는 무겁게
+    }
+    val 놓기기준 = with(androidx.compose.ui.platform.LocalDensity.current) { 운치수.밀기.toPx() }
+    val 놓기: (Float) -> Unit = { x ->
+        val 쪽 = if (x < 0) 1 else -1
+        if (abs(x) > 놓기기준 && 상태.d.세션?.let { 이웃본찾기(it, 운보기.본, 쪽) } != null) { 옛시작.floatValue = 끌림x.floatValue; 넘김(쪽) }
+        else 끌범위.launch { animate(끌림x.floatValue, 0f, animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) { v, _ -> 끌림x.floatValue = v } }
     }
 
     // 슈퍼세트 — 체크하면 지금 · 쉬는 줄이 묶음 안 다른 종목으로 간다. 같은 묶음을 보고 있으면 따라간다 (시안에는 슈퍼세트가 없다)
@@ -254,16 +330,85 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
     val 뒤로 = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
 
     Box(Modifier.fillMaxSize()) {
+        // 10-11 홍겸 님: 띠 윗줄(‹ · 루틴 · 지표 · 시계 · 게이지) 과 맨 아래 단추줄은 고정. 책장은 종목 이름 칸부터 진행 상자까지(영역 A) ·
+        //  버튼 · 자동으로 넘어갈 때의 밀기는 근육 지도부터 세트 상자까지(영역 B)
         Column(Modifier.fillMaxSize()) {
-            운머리(상태, S, 본, e, 지금, 그림보기 = if (그림켬 && 그림숨김) ({ 발자취.적기("그림 칸 다시 보임"); 그림칸기억.숨긴운동 = "" }) else null) {
+            운머리윗줄(S, d, 지금) {
                 // ‹ = 캘린더로 나가기 (운동은 그대로 이어진다) — 앱의 뒤로가기와 같은 길
                 발자취.적기("운동 화면 나가기"); 뒤로?.onBackPressed()
             }
-            AnimatedVisibility(visible = 그림켬 && !그림숨김) {
-                Box(Modifier.번호("운그림").좌우밀기(넘김)) { 운동그림칸(상태, S.copy(i = 본), 지금) { 그림칸기억.숨긴운동 = S.루틴id } }
+            val 막방식 = if (옛그림 != null) 옛방식 else 넘김방식[0]   // 터치를 막는 영역: 1 = A 전체 · 0 = B 만
+            val 전환중 = 옛그림 != null || 표시본 != 목표본
+            Box(Modifier.weight(1f).clipToBounds()) {   // 영역 A
+                Column(
+                    Modifier.fillMaxSize()
+                        .graphicsLayer {
+                            // 좌우 밀기 — 새 쪽이 밀려 들어온다 (옛 쪽 그림이 같이 밀려 나간다). 그리기 단계에서만 값을 읽는다
+                            if (옛그림 != null && 옛방식 == 1) {
+                                val v = 움직임.부드럽게.transform(진행.value.coerceIn(0f, 1f))
+                                val 옛 = 옛시작.floatValue + (-옛방향 * size.width - 옛시작.floatValue) * v
+                                translationX = 옛 + 옛방향 * size.width   // 새 쪽은 옛 쪽 바로 옆에 붙어 온다
+                            } else translationX = 끌림x.floatValue
+                        }
+                        .기록층(층A),
+                ) {
+                    운머리아랫줄(상태, S, 본, e, if (그림켬 && 그림숨김) ({ 발자취.적기("그림 칸 다시 보임"); 그림칸기억.숨긴운동 = "" }) else null)
+                    Box(Modifier.weight(1f).clipToBounds()) {   // 영역 B
+                        Column(
+                            Modifier.fillMaxSize()
+                                .graphicsLayer {
+                                    // 밀기 — 새 쪽(살아 있는 내용)이 반대편에서 들어온다. 그리기 단계에서만 값을 읽는다 (기록 층보다 바깥 → 그림에 안 섞인다)
+                                    if (옛그림 != null && 옛방식 == 0) {
+                                        val v = 움직임.부드럽게.transform(진행.value.coerceIn(0f, 1f))
+                                        translationX = 옛방향 * size.width * 운치수.밀기폭 * (1f - v)
+                                        alpha = v
+                                    } else { translationX = 0f; alpha = 1f }
+                                }
+                                .기록층(층B),
+                        ) {
+                            AnimatedVisibility(visible = 그림켬 && !그림숨김) {
+                                // key(본) — 종목이 바뀌면 근육 지도를 새로 만든다 (안의 색 이동 애니메이션이 펄럭이지 않게)
+                                Box(Modifier.번호("운그림").좌우밀기(끌기, 놓기)) { key(본) { 운동그림칸(상태, S.copy(i = 본), 지금) { 그림칸기억.숨긴운동 = S.루틴id } } }
+                            }
+                            세트목록(상태, S, 본, 지금, Modifier.weight(1f).좌우밀기(끌기, 놓기), 함 = ::함, 바꿈 = ::바꿈, 당김 = { 당김++ })
+                        }
+                        val 밀그림 = 옛그림
+                        if (밀그림 != null && 옛방식 == 0) 밀기옛쪽(밀그림, 옛방향) { 진행.value }
+                        if (전환중 && 막방식 == 0) Box(Modifier.fillMaxSize().터치삼킴())   // 반쯤 바뀐 채 누른 것이 엉뚱한 종목에 가지 않게
+                    }
+                    진행상자(상태, S, 본, 당김, Modifier.번호("운띠"), 함 = ::함, 고름 = { i -> 운보기.본 = i; 당김++ }, 넣기 = { 넣기열림 = true })
+                }
+                // 10-11 홍겸 님: 끌려오는 동안 다음(이전) 화면이 옆에서 같이 보인다 — 끌기 시작할 때만 한 벌 더 그린다 (눌림은 삼킨다)
+                // 가만히 있을 때(0.3초 뒤)부터 양옆 화면을 미리 그려 둔다 — 끌 때 새로 그리지 않고 옆에서 꺼내 온다
+                val 이웃준비 by produceState(false, 표시본) { value = false; delay(300); value = true }
+                if (옛그림 == null) for (이웃 in intArrayOf(-1, 1)) {
+                    val 이웃본 = 이웃본찾기(S, 본, 이웃) ?: continue
+                    if (!(이웃준비 || 이웃 == 이웃방향)) continue
+                    key(이웃본) {
+                        Box(
+                            Modifier.fillMaxSize().clipToBounds()
+                                .graphicsLayer { translationX = 끌림x.floatValue + 이웃 * size.width },
+                        ) {
+                            Column(Modifier.fillMaxSize()) {
+                                운머리아랫줄(상태, S, 이웃본, S.종목들[이웃본], null)
+                                Box(Modifier.weight(1f).clipToBounds()) {
+                                    Column(Modifier.fillMaxSize()) {
+                                        AnimatedVisibility(visible = 그림켬 && !그림숨김) {
+                                            Box { 운동그림칸(상태, S.copy(i = 이웃본), 지금) { } }
+                                        }
+                                        세트목록(상태, S, 이웃본, 지금, Modifier.weight(1f), 함 = ::함, 바꿈 = ::바꿈, 당김 = { })
+                                    }
+                                }
+                                진행상자(상태, S, 이웃본, 당김, Modifier, 함 = ::함, 고름 = { }, 넣기 = { })
+                            }
+                            Box(Modifier.fillMaxSize().터치삼킴())
+                        }
+                    }
+                }
+                val 책그림 = 옛그림
+                if (책그림 != null && 옛방식 == 1) 책장옛쪽(책그림, 옛방향, { 옛시작.floatValue }) { 진행.value }
+                if (전환중 && 막방식 == 1) Box(Modifier.fillMaxSize().터치삼킴())
             }
-            세트목록(상태, S, 본, 지금, Modifier.weight(1f).좌우밀기(넘김), 함 = ::함, 바꿈 = ::바꿈, 당김 = { 당김++ })
-            진행상자(상태, S, 본, 당김, Modifier.번호("운띠"), 함 = ::함, 고름 = { i -> 운보기.본 = i; 당김++ }, 넣기 = { 넣기열림 = true })
             단추줄(S, 본,
                 주 = { 발자취.적기("큰 단추 ${운주상태(S, 본).글}"); 함 { s -> 운주누름(s, 운보기.본, System.currentTimeMillis()) }; 당김++ },
                 끝내기 = { 발자취.적기("오늘 운동 끝내기"); 바꿈 { it.끝냄(System.currentTimeMillis()) } },
@@ -304,6 +449,14 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
     }
 }
 
+/** 방향(+1 · −1)으로 한 쪽 옮긴 종목 번호 — 슈퍼세트 묶음은 한 쪽이라 건너뛴다. 없으면 null */
+private fun 이웃본찾기(S: 운동세션, 본: Int, 방향: Int): Int? {
+    val 식구 = S.식구(본)
+    var i = 본 + 방향
+    while (i in S.종목들.indices && i in 식구) i += 방향
+    return if (i in S.종목들.indices) i else null
+}
+
 /** 보는 종목 — 화면을 떠났다 와도(다른 탭) 이 운동 동안은 그대로 (시안 `U.본` 은 화면 밖 상태다). 앱을 껐다 켜면 지금 종목부터 */
 private object 운보기 {
     var 세션 by mutableLongStateOf(Long.MIN_VALUE)
@@ -312,19 +465,99 @@ private object 운보기 {
     var 앞쉼: Int? = null
 }
 
-/** 좌우로 밀기 — [운치수.밀기] 넘게 밀었다 떼면 왼쪽으로 민 것 = 다음(+1) · 오른쪽 = 이전(−1). 위아래 스크롤과는 먼저 움직인 쪽이 이긴다 */
-private fun Modifier.좌우밀기(넘김: (Int) -> Unit): Modifier = pointerInput(Unit) {
-    val 기준 = 운치수.밀기.toPx()
+/** 좌우로 밀기 — 밀리는 동안 [끌기] 로 누적 거리를 알리고, 뗄 때 [놓기] 로 알린다. 위아래 스크롤과는 먼저 움직인 쪽이 이긴다 */
+private fun Modifier.좌우밀기(끌기: (Float) -> Unit, 놓기: (Float) -> Unit): Modifier = pointerInput(Unit) {
     var 합 = 0f
     detectHorizontalDragGestures(
         onDragStart = { 합 = 0f },
-        onDragEnd = { if (abs(합) > 기준) 넘김(if (합 < 0) 1 else -1); 합 = 0f },
-        onDragCancel = { 합 = 0f },
-    ) { ch, dx -> 합 += dx; ch.consume() }
+        onDragEnd = { 놓기(합); 합 = 0f },
+        onDragCancel = { 놓기(0f); 합 = 0f },
+    ) { ch, dx -> 합 += dx; 끌기(합); ch.consume() }
+}
+
+/** 내용을 그리면서 GraphicsLayer 에도 기록해 둔다 — 종목이 바뀌기 직전에 `toImageBitmap()` 으로 옛 쪽 그림을 얻는다 (10-11) */
+private fun Modifier.기록층(층: GraphicsLayer): Modifier = this.drawWithContent {
+    층.record { this@drawWithContent.drawContent() }
+    drawLayer(층)
+}
+
+/** 전환 중 터치 삼키기 — 눌림 · 스크롤 · 밀기가 자식에게 가지 않는다 */
+private fun Modifier.터치삼킴(): Modifier = pointerInput(Unit) {
+    awaitPointerEventScope {
+        while (true) { awaitPointerEvent(PointerEventPass.Initial).changes.forEach { it.consume() } }
+    }
+}
+
+/** 좌우 밀기의 옛 쪽 (방식 1) — 새 쪽과 붙어서 같이 밀려 나간다 (다음 = 왼쪽으로 · 이전 = 오른쪽으로) */
+@Composable
+private fun 책장옛쪽(그림: ImageBitmap, 방향: Int, 옛시작: () -> Float, 진행값: () -> Float) {
+    Box(
+        Modifier.fillMaxSize()
+            .graphicsLayer {
+                val v = 움직임.부드럽게.transform(진행값().coerceIn(0f, 1f))
+                translationX = 옛시작() + (-방향 * size.width - 옛시작()) * v
+            }
+            .drawBehind { drawImage(그림, dstSize = IntSize(size.width.roundToInt(), size.height.roundToInt())) },
+    )
+}
+
+/** 밀기의 옛 쪽 (방식 0 · 영역 B) — 옆으로 물러나며 사라진다. 새 쪽은 반대편에서 들어온다(살아 있는 내용 쪽 graphicsLayer) */
+@Composable
+private fun 밀기옛쪽(그림: ImageBitmap, 방향: Int, 진행값: () -> Float) {
+    Box(
+        Modifier.fillMaxSize()
+            .graphicsLayer {
+                val v = 움직임.부드럽게.transform(진행값().coerceIn(0f, 1f))
+                translationX = -방향 * size.width * 운치수.밀기폭 * v
+                alpha = 1f - v
+            }
+            .drawBehind { drawImage(그림, dstSize = IntSize(size.width.roundToInt(), size.height.roundToInt())) },
+    )
 }
 
 /** 지금 치고 있는 kg · 회 칸 — 다른 행동을 하기 전에 친 값을 넣는다 (한 번에 하나) */
 private object 운입력 { var 확정: (() -> Unit)? = null }
+
+/**
+ * 3단계 시간 타이머 · 유산소 스톱워치 (10-12 홍겸 님) — 한 번에 하나. 시간(버티기)은 [목표]초에서 줄어들다 0 이면 진동 + 자동 체크 ·
+ * 유산소는 [목표] 0 으로 올라간다(스톱워치). 시계는 지금 시각 차이로 세므로 화면이 꺼졌다 켜져도 맞다 (끝 진동은 화면이 켜져 있을 때만).
+ */
+private object 운타이머 {
+    var 세션 by mutableLongStateOf(0L)          // 운동 세션의 시작 시각 — 다른 운동의 같은 자리에 되살아나지 않게
+    var 줄 by mutableStateOf<Pair<Int, Int>?>(null)   // (종목 번호 j, 세트 칸 k)
+    var 시작 by mutableLongStateOf(0L)
+    var 목표 by mutableIntStateOf(0)
+}
+
+/** 타이머 끝 진동 — 짧게 세 번 (진동 권한은 이미 있다) */
+private fun 진동울림(맥락: android.content.Context) {
+    try {
+        val v = 맥락.getSystemService(android.os.Vibrator::class.java) ?: return
+        v.vibrate(android.os.VibrationEffect.createWaveform(longArrayOf(0, 250, 120, 250, 120, 400), -1))
+    } catch (_: Exception) { }
+}
+
+/** ▶ 시작 · ■ 멈춤 단추 — 칸 높이 정사각, 돌아가는 동안은 강조로 채운다 */
+@Composable
+private fun 타이머단추(돌아감: Boolean, onClick: () -> Unit) {
+    val c = Local색.current
+    val 모양 = RoundedCornerShape(모서리.작게)
+    Box(
+        Modifier.size(높이.아주낮게).clip(모양).background(if (돌아감) c.강조 else Color.Transparent).border(선굵기.보통, c.강조, 모양)
+            .눌림 { onClick() }.semantics { contentDescription = if (돌아감) "타이머 멈춤" else "타이머 시작" },
+        contentAlignment = Alignment.Center,
+    ) { Icon(if (돌아감) 아이콘.멈춤 else 아이콘.재생, null, Modifier.size(16.dp), tint = if (돌아감) c.강조글 else c.강조) }
+}
+
+/** 돌아가는 동안 시간 칸 자리에 보이는 큰 글 (− ＋ 없음) */
+@Composable
+private fun 타이머칸(글: String, 글크기: TextUnit, modifier: Modifier) {
+    val c = Local색.current
+    val 모양 = RoundedCornerShape(모서리.작게)
+    Box(modifier.height(높이.아주낮게).clip(모양).border(선굵기.보통, c.강조, 모양), contentAlignment = Alignment.Center) {
+        Text(글, style = 글꼴.보통(글크기, FontWeight.Bold).copy(fontFeatureSettings = "tnum"), color = c.강조, maxLines = 1, softWrap = false, textAlign = TextAlign.Center)
+    }
+}
 
 /** 운동 화면에만 쓰는 값 (시안 v9 ~ v21) — 11 지침에 아직 이름이 없는 것. 합칠 때 Theme.kt `부품치수` 로 옮긴다 */
 private object 운치수 {
@@ -342,7 +575,7 @@ private object 운치수 {
     val 끌기오른끝 = 칸높이 + 화살자리   // 끄는 손이 이 안에 들면 오른쪽으로 넘긴다 ([＋] 28 + [›] 자리 32)
     val 뺌동그라미 = 16.dp          // 보는 칸 ✕ (v21 ①)
     val 뺌그림 = 14.dp
-    val 시계오른 = 20.dp            // 5gd1 타이머 왼쪽으로 20
+    val 시계오른 = 0.dp             // 10-11 홍겸 님: 시간 오른쪽 끝 = 게이지 끝 (종목 · 세트 · 시간이 오른쪽으로)
     const val 시계배 = 0.65f         // 10-09 홍겸 님: 위 띠 시간 글자 35% 작게 (18 → 11.7) [11_UI지침에 올릴 값]
     val 띠게이지 = 3.dp             // 10-09: 위 띠 전체 진행 게이지 — 1번째 · 2번째 줄 사이 틈에 얇게 [11_UI지침에 올릴 값]
     val 띠게이지틈 = 2.dp           // 게이지 위아래 틈
@@ -351,6 +584,14 @@ private object 운치수 {
     const val 더동그라미비 = 0.95f   // 10-09: 세트 줄 아래 [＋ 세트] 동그라미 = 번호 동그라미 × 0.95 [11_UI지침에 올릴 값]
     const val 값그림배 = 0.97f       // 10-09: 세트 줄 − ＋ 그림 3% 작게 (16 → 15.52 · 누르는 칸 20 은 그대로) [11_UI지침에 올릴 값]
     val 칸여유 = 4.dp               // 10-09: 세트 줄 kg · 회 · 휴식 칸 = 단추 둘 + 테 둘 + 잰 글자 폭 + 이 여유
+    const val 책장시간 = 300          // 10-11 홍겸 님: 좌우 밀기 책장 넘김(ms) — 새 쪽이 아래에 깔리고 옛 쪽이 책등을 축으로 넘어간다 [11_UI지침에 올릴 값]
+    const val 밀기시간 = 380          // 버튼 · 자동 · 칸 고르기로 넘어갈 때 옆으로 밀려 바뀌는 시간(ms)
+    const val 밀기폭 = 0.28f          // 밀려나는 거리 = 영역 폭 × 이만큼
+    const val 책장어둠 = 0.35f        // 넘어가는 옛 쪽이 어두워지는 최대 농도 (검정)
+    const val 책장그림자 = 0.25f      // 넘어가는 가장자리 옆 새 쪽 위 그림자 최대 농도 — 색표에 검정 이름이 없어 Color.Black. 새 이름 '책장그림자' 제안
+    const val 책장그림자폭 = 0.1f     // 그림자 너비 = 영역 폭 × 이만큼
+    const val 책장카메라 = 12f        // 원근 거리 = 이 값 × density
+    val 책장곡선 = CubicBezierEasing(0.4f, 0f, 0.2f, 1f)   // 천천히 들었다 끝에서 부드럽게 눕는 곡선
     val 밀기 = 48.dp                // 10-09 홍겸 님: 화면을 좌우로 이만큼 밀면 이전 · 다음 종목 [11_UI지침에 올릴 값]
     val 점선 = 3.dp                 // [＋] 점선 테
     val 칸번호위 = 9.dp             // 칸 오른쪽 위 번호 딱지 (위 4 + 딱지가 스스로 올라가는 5)
@@ -372,38 +613,32 @@ private object 운치수 {
 
 /**
  * 시안 `.운머리.띠` — 강조 바탕. 10-09 홍겸 님: 아래 상자에 있던 루틴 이름 · 전체 게이지 · 지표를 올렸다.
- *  · 1번째 줄: ‹ · 루틴 이름 · (오른쪽 끝에서 왼쪽으로) 시계 · 볼륨 · 세트 · 종목  — 시계 글자는 35% 작게
- *  · 게이지: 1번째 · 2번째 줄 사이 틈에 얇게 (전체 세트 진행)
- *  · 2번째 줄: 지금 종목 이름(잘리지 않는다 · 두 줄까지) · 오른쪽에 [그림] 칩(그림을 감췄을 때)
+ * 10-11 홍겸 님: 띠를 둘로 쪼갰다 — 윗줄(고정)과 아랫줄(종목 이름 · 종목이 넘어갈 때 같이 넘어간다). 둘이 붙으면 예전 띠 그대로
+ *  · 윗줄: ‹ · 루틴 이름 · (오른쪽 끝에서 왼쪽으로) 시계 · 볼륨 · 세트 · 종목 — 시계 글자는 35% 작게 / 그 아래 전체 진행 게이지
  */
 @Composable
-private fun 운머리(상태: 앱상태, S: 운동세션, 본: Int, e: 세션종목, 지금: Long, 그림보기: (() -> Unit)?, 나가기: () -> Unit) {
+private fun 운머리윗줄(S: 운동세션, d: 앱데이터, 지금: Long, 나가기: () -> Unit) {
     val c = Local색.current
-    // 10-06 v22 검수: 보고서에서 ‹ 로 돌아왔으면 저장 전 플랜 회차 · 기록으로 (다음 회차 · 측정일로 보이지 않게)
-    val d = 상태.d.let { x -> remember(x) { x.저장전 } }
     // 10-09 홍겸 님: 아래 진행 상자에서 올라온 지표 — 종목 n/m · 세트 a/b · 볼륨 x/y
     val n = S.종목들.size
     val 전 = S.종목들.sumOf { it.총칸() }
     val 끝낸 = S.종목들.sumOf { it.찬것().size }
     val 끝종 = S.종목들.count { it.총칸() > 0 && it.찬것().size >= it.총칸() }
-    val 총볼 = S.종목들.sumOf { 볼륨(it.찬것()) }
-    val 총목 = S.종목들.sumOf { x -> 볼륨((0 until x.총칸()).map { S.세트값(x, it) }) }
+    val 총볼 = d.운동중볼륨(S)       // 10-12 기록 방식: 맨몸 · 어시스트는 실제 무게로 (저장되는 기록의 볼륨과 같은 값)
+    val 총목 = d.운동중목표볼륨(S)
     Column(
-        // 10-09 홍겸 님: 띠도 좌우 여백 12 · 모서리 8 (운동 보고서처럼)
+        // 10-09 홍겸 님: 띠도 좌우 여백 12 · 모서리 8 (운동 보고서처럼) — 윗줄은 위쪽 모서리만
         Modifier.padding(start = 간격.보통, end = 간격.보통, top = 간격.보통).fillMaxWidth()
-            .clip(RoundedCornerShape(모서리.작게)).background(c.강조).번호("운0")
-            .padding(horizontal = 간격.보통, vertical = 부품치수.띠세로여백),
+            .clip(RoundedCornerShape(topStart = 모서리.작게, topEnd = 모서리.작게)).background(c.강조).번호("운0")
+            .padding(start = 간격.보통, end = 간격.보통, top = 부품치수.띠세로여백),
     ) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
-            Box(
-                Modifier.height(높이.낮게).widthIn(min = 높이.아주낮게).눌림(나가기).semantics { contentDescription = "나가기" },
-                contentAlignment = Alignment.Center,
-            ) { Text("‹", style = 글꼴.보통(크기.크게, FontWeight.Bold), color = c.강조글) }
             // 루틴 이름 — 지표가 먼저 자리를 잡고 남는 폭에 한 줄 (좁으면 …)
-            Text(S.루틴이름, Modifier.weight(1f), style = 글꼴.보통(크기.버튼, FontWeight.Bold), color = c.강조글, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            val 작 = 글꼴.보통(크기.작게).copy(fontFeatureSettings = "tnum")
+            Text(S.루틴이름, Modifier.weight(1f), style = 글꼴.보통(크기.버튼 * 1.3f, FontWeight.Bold), color = c.강조글, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            val 작 = 글꼴.보통(크기.작게 * 0.9f).copy(fontFeatureSettings = "tnum")
             fun 값(앞: String, b: String, 뒤: String = "") = buildAnnotatedString {
-                append(앞); withStyle(SpanStyle(color = c.강조글, fontWeight = FontWeight.Bold)) { append(b) }; append(뒤)
+                append(앞); withStyle(SpanStyle(color = c.강조글, fontWeight = FontWeight.Bold, fontSize = 크기.작게 * 0.9f * 0.75f)) { append(b) }
+                if (뒤.isNotEmpty()) withStyle(SpanStyle(fontSize = 크기.작게 * 0.9f * 0.75f)) { append(뒤) }   // 10-11: '/700' 도 앞 숫자와 같은 크기
             }
             val 라벨색 = c.강조글.copy(alpha = 운치수.띠라벨투명)
             Text(값("종목 ", "$끝종/$n"), style = 작, color = 라벨색, maxLines = 1, softWrap = false)
@@ -416,13 +651,26 @@ private fun 운머리(상태: 앱상태, S: 운동세션, 본: Int, e: 세션종
             )
         }
         띠게이지(if (전 > 0) 끝낸.toFloat() / 전 else 0f, Modifier.fillMaxWidth().padding(vertical = 운치수.띠게이지틈))
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
-            운이름(d, S, 본, e, 상태.오늘, Modifier.weight(1f))
-            if (그림보기 != null) Box(
-                Modifier.clip(RoundedCornerShape(모서리.작게)).background(c.강조글).눌림(그림보기)
-                    .padding(horizontal = 간격.좁게, vertical = 간격.아주좁게),
-            ) { Text("그림", style = 글꼴.보통(크기.버튼, FontWeight.Bold), color = c.강조, maxLines = 1) }
-        }
+    }
+}
+
+/** 띠 아랫줄 (10-11) — 지금 종목 이름(잘리지 않는다 · 두 줄까지) · 오른쪽에 [그림] 칩(그림을 감췄을 때). 아래쪽 모서리만 둥글다 */
+@Composable
+private fun 운머리아랫줄(상태: 앱상태, S: 운동세션, 본: Int, e: 세션종목, 그림보기: (() -> Unit)?) {
+    val c = Local색.current
+    // 10-06 v22 검수: 보고서에서 ‹ 로 돌아왔으면 저장 전 플랜 회차 · 기록으로 (다음 회차 · 측정일로 보이지 않게)
+    val d = 상태.d.let { x -> remember(x) { x.저장전 } }
+    Row(
+        Modifier.padding(start = 간격.보통, end = 간격.보통).fillMaxWidth()
+            .clip(RoundedCornerShape(bottomStart = 모서리.작게, bottomEnd = 모서리.작게)).background(c.강조)
+            .padding(start = 간격.보통, end = 간격.보통, bottom = 부품치수.띠세로여백),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.좁게),
+    ) {
+        운이름(d, S, 본, e, 상태.오늘, Modifier.weight(1f))
+        if (그림보기 != null) Box(
+            Modifier.clip(RoundedCornerShape(모서리.작게)).background(c.강조글).눌림(그림보기)
+                .padding(horizontal = 간격.좁게, vertical = 간격.아주좁게),
+        ) { Text("그림", style = 글꼴.보통(크기.버튼, FontWeight.Bold), color = c.강조, maxLines = 1) }
     }
 }
 
@@ -452,9 +700,11 @@ private fun 운이름(d: 앱데이터, S: 운동세션, 본: Int, e: 세션종�
             listOfNotNull("${계?.회 ?: (p.한회 + 1)}회차", if (계?.측정일 == true) "측정일" else null,
                 if (p.만든날.isNotBlank()) "${p.지난주(오늘)}주 진행 중" else null).joinToString(" · ")
         }
-        S.식구(본).size > 1 -> "슈퍼세트 " + ('A' + S.식구(본).indexOf(본)).toString()
+        S.식구(본).size > 1 -> "· 슈퍼세트"   // 10-11 홍겸 님: 한 이름 칸에서 '덤벨컬 - 슈퍼세트 (1/2)' (주황) → 끝나면 '리스트컬 - 슈퍼세트 (2/2)'
         else -> null
     }
+    val 슈퍼중 = p == null && S.식구(본).size > 1
+    val 진행 = if (슈퍼중) "(${S.식구(본).indexOf(본) + 1}/${S.식구(본).size})" else null
     val 측정 = rememberTextMeasurer()
     val 밀도 = LocalDensity.current
     val 딱꼴 = 글꼴.보통(크기.작게, FontWeight.Bold).copy(lineHeight = 부품치수.딱지글높이, fontFeatureSettings = "tnum")
@@ -464,8 +714,9 @@ private fun 운이름(d: 앱데이터, S: 운동세션, 본: Int, e: 세션종�
     val 글 = buildAnnotatedString {
         append(e.이름.trim())
         if (딱 != null) { append("\u2060"); appendInlineContent("딱", 딱) }   // 끝 낱말과 딱지가 떨어져 감기지 않게
-        if (곁 != null) withStyle(SpanStyle(fontSize = 크기.버튼, fontWeight = FontWeight.Normal, letterSpacing = (-0.01).em)) {
+        if (곁 != null) withStyle(SpanStyle(fontSize = 크기.버튼 * 0.9f, fontWeight = if (슈퍼중) FontWeight.Bold else FontWeight.Normal, letterSpacing = (-0.01).em, color = if (슈퍼중) c.슈퍼글 else Color.Unspecified)) {
             append("  "); append(곁.replace(' ', '\u00A0'))
+            if (진행 != null) withStyle(SpanStyle(fontSize = 크기.버튼 * 0.9f * 0.85f)) { append("\u00A0"); append(진행) }
         }
     }
     val 붙임 = if (딱 == null || 딱폭 == null) emptyMap() else mapOf(
@@ -473,7 +724,7 @@ private fun 운이름(d: 앱데이터, S: 운동세션, 본: Int, e: 세션종�
     )
     Text(
         글, modifier, color = c.강조글, inlineContent = 붙임,
-        style = 글꼴.제목(크기.크게),
+        style = 글꼴.제목(크기.크게 * 0.8f * 0.85f),
     )
 }
 
@@ -503,13 +754,19 @@ private fun 세트목록(
     상태: 앱상태, S: 운동세션, 본: Int, 지금: Long, modifier: Modifier,
     함: ((운동세션) -> 운결과?) -> Unit, 바꿈: ((운동세션) -> 운동세션) -> Unit, 당김: () -> Unit,
 ) {
-    val c = Local색.current
+    val c0 = Local색.current
     val e = S.종목들[본]
+    // 10-11 홍겸 님: 슈퍼세트 = 한 세트 상자에 묶인 종목 세트가 번갈아 (덤벨컬 1 · 리스트컬 1 · 덤벨컬 2 …) · 이 칸의 파란 중심색은 전부 주황
+    val 식구 = S.식구(본)
+    val 묶음 = 식구.size > 1
+    val c = if (묶음) c0.copy(강조 = c0.슈퍼, 강조옅음 = c0.슈퍼옅음, 지금깜빡 = c0.슈퍼옅음) else c0
+    val 줄들: List<Pair<Int, Int>> = if (묶음) (0 until 식구.maxOf { S.종목들[it].총칸() }).flatMap { k -> 식구.filter { k < S.종목들[it].총칸() }.map { it to k } }
+        else (0 until e.총칸()).map { 본 to it }
     val 목 = rememberScrollState()
     val 자 = remember { 줄자리() }
     var 다음줄 by remember { mutableStateOf<Triple<Int, Int, Long>?>(null) }   // (보는 칸, 줄, 누른 때) — 한 번만 쓴다
     var 세트더 by remember { mutableStateOf<Pair<Int, Long>?>(null) }           // (보는 칸, 누른 때) — '+ 세트' 를 눌렀다 · 한 번만 쓴다
-    val 본키 = "${S.시작시각}|$본|${e.열쇠}"
+    val 본키 = if (묶음) "${S.시작시각}|묶음|${e.슈퍼}" else "${S.시작시각}|$본|${e.열쇠}"
     LaunchedEffect(본키) { 목.scrollTo(0) }
     LaunchedEffect(다음줄) {
         val (b, k, _) = 다음줄 ?: return@LaunchedEffect
@@ -531,6 +788,7 @@ private fun 세트목록(
     }
     val 지금k = 첫빈칸(e)
     val 무게폭 = 상태.d.설정.무게폭
+    androidx.compose.runtime.CompositionLocalProvider(Local색 provides c) {
     BoxWithConstraints(modifier.fillMaxWidth()) {
         val 남는 = maxWidth - 간격.보통 * 2 - 높이.아주낮게 - 간격.아주좁게 * 4
         // 10-09 홍겸 님: kg 칸은 100.00 · 횟수 칸은 100 · 휴식 칸은 10:00 이 다 들어가게 — 글자를 재서 칸 최소 폭을 정한다.
@@ -550,26 +808,31 @@ private fun 세트목록(
         ) {
             // 머리 — 세트 · kg · 회 · 휴식 (11 옅음)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
-                listOf("세트", "kg", "회", "휴식").forEachIndexed { x, t ->
+                // 10-12 기록 방식: 표의 줄이 모두 맨몸이면 '추가 kg' · 모두 어시스트면 '보조 kg' (섞이면 'kg')
+                val 머리무게 = 무게머리글(줄들.map { it.first }.distinct().mapNotNull { jj -> S.종목들.getOrNull(jj)?.let { ej -> 상태.d.머리방식(ej.종id, ej.이름, ej.플랜id) } }, "kg")
+                // 2단계: 줄이 모두 시간(버티기)이면 '시간' (섞이면 '회')
+                val 머리횟수 = 횟수머리글(줄들.map { it.first }.distinct().mapNotNull { jj -> S.종목들.getOrNull(jj)?.let { ej -> 상태.d.방식(ej.종id, ej.이름) } }, "회")
+                listOf("세트", 머리무게, 머리횟수, "휴식").forEachIndexed { x, t ->
                     Text(t, Modifier.width(폭[x]), style = 글꼴.보통(크기.작게), color = c.옅음, textAlign = TextAlign.Center, maxLines = 1)
                 }
             }
-            val 앞 = 앞줄개수(e.총칸(), 본키)   // 10-08: 방금 더한 줄은 한 번 점멸 · 눌렸다 제자리
-            for (k in 0 until e.총칸()) {
+            val 앞 = 앞줄개수(줄들.size, 본키)   // 10-08: 방금 더한 줄은 한 번 점멸 · 눌렸다 제자리
+            줄들.forEachIndexed { r, (jj, k) ->
+                val ej = S.종목들[jj]
                 운세트줄(
-                    S, 본, k, 지금k, 폭, 글크기, 지금, 무게폭,
-                    Modifier.새줄효과(k >= 앞).onPlaced { 자.위[k] = it.positionInParent().y.roundToInt(); 자.높이 = it.size.height },
+                    S, 상태.d, jj, k, if (묶음) (if (jj == (S.휴식?.다음i?.takeIf { it in 식구 } ?: S.i)) 첫빈칸(ej) else -1) else 지금k, 폭, 글크기, 지금, 무게폭,
+                    Modifier.새줄효과(r >= 앞).onPlaced { 자.위[r] = it.positionInParent().y.roundToInt(); 자.높이 = it.size.height },
                     체크 = {
-                        val 전 = 상태.d.세션?.종목들?.getOrNull(본)
+                        val 전 = 상태.d.세션?.종목들?.getOrNull(jj)
                         val 체크함 = 전 != null && 전.기록.칸(k) == null
-                        발자취.적기("${e.이름} ${k + 1}세트 ${if (체크함) "체크" else "체크 풀기"}")
+                        발자취.적기("${ej.이름} ${k + 1}세트 ${if (체크함) "체크" else "체크 풀기"}")
                         // 보이는 칸 아래 절반의 줄을 체크하면 다음 빈 줄을 가운데로 (넘칠 때만)
-                        val y = 자.위[k]
+                        val y = 자.위[r]
                         if (체크함 && 전 != null && y != null && 목.maxValue > 0 && y + 자.위끝 + 자.높이 / 2 - 목.value > 자.보임 / 2) {
-                            val 다 = (k + 1 until 전.총칸()).firstOrNull { 전.기록.칸(it) == null }
+                            val 다 = (r + 1 until 줄들.size).firstOrNull { q -> 상태.d.세션?.종목들?.getOrNull(줄들[q].first)?.기록?.칸(줄들[q].second) == null }
                             if (다 != null) 다음줄 = Triple(본, 다, System.nanoTime())
                         }
-                        함 { s -> 운체크(s, 본, k, System.currentTimeMillis()).let { 운결과(it, 본따라감(it, 본)) } }
+                        함 { s -> 운체크(s, jj, k, System.currentTimeMillis()).let { 운결과(it, 본따라감(it, 본)) } }
                         당김()
                     },
                     쉼누름 = { 마무리 ->
@@ -578,7 +841,7 @@ private fun 세트목록(
                         당김()
                     },
                     값 = { f -> 바꿈(f); 당김() },
-                    지우기 = { 세트지우기(상태, 본, k) { 당김() } },
+                    지우기 = { 세트지우기(상태, jj, k) { 당김() } },
                 )
             }
             // 10-09 홍겸 님: [+ 세트] = 세트 줄들 바로 아래 줄, 세트 번호 동그라미 자리에 (번호 동그라미 × 0.95) 동그라미 + ＋
@@ -600,6 +863,7 @@ private fun 세트목록(
                 }
             }
         }
+    }
     }
 }
 
@@ -644,7 +908,7 @@ private fun 세트지우기(상태: 앱상태, j: Int, k: Int, 다음: () -> Uni
  */
 @Composable
 private fun 운세트줄(
-    S: 운동세션, j: Int, k: Int, 지금k: Int, 폭: List<Dp>, 글크기: TextUnit, 지금: Long, 무게폭: Double, modifier: Modifier,
+    S: 운동세션, d: 앱데이터, j: Int, k: Int, 지금k: Int, 폭: List<Dp>, 글크기: TextUnit, 지금: Long, 무게폭: Double, modifier: Modifier,
     체크: () -> Unit, 쉼누름: (마무리: Boolean) -> Unit, 값: ((운동세션) -> 운동세션) -> Unit, 지우기: () -> Unit,
 ) {
     val c = Local색.current
@@ -676,17 +940,71 @@ private fun 운세트줄(
                 Modifier.width(폭[1] + 폭[2] + 폭[3] + 간격.아주좁게 * 2),
             ) { 쉼누름(종류 == 쉼종류.마무리) }
         } else {
-            운값칸(무게글(v.w), "무게", 소수 = true, 끝남 = 완료, 글크기, Modifier.width(폭[1]),
-                빼기 = { 값 { s -> s.값고치기(j, k, 새무게 = s.세트값(s.종목들[j], k).w - 무게폭) } },
-                더하기 = { 값 { s -> s.값고치기(j, k, 새무게 = s.세트값(s.종목들[j], k).w + 무게폭) } },
-                넣기 = { t -> t.replace(',', '.').toDoubleOrNull()?.let { w -> 값 { s -> s.값고치기(j, k, 새무게 = w) } } })
-            운값칸("${v.r}", "횟수", 소수 = false, 끝남 = 완료, 글크기, Modifier.width(폭[2]),
+            // 2단계 기록 방식: 횟수만 · 시간은 무게 칸이 없다(자리만 비운다) · 시간(버티기)은 무게 칸 자리까지 넓은 m:ss 칸 (− ＋ 5초씩)
+            // 3단계: 유산소는 무게 칸 자리가 거리 km(0.5씩) · 시간 칸은 1분씩. 시간 · 유산소 줄은 ▶ 타이머 (버티기 = 카운트다운 · 유산소 = 스톱워치)
+            val 방 = d.방식(e.종id, e.이름)
+            val 버티기 = 방 == 기록방식.시간; val 거리줄 = 방.거리칸()
+            val 타이머줄 = 방.시간칸() && !완료
+            val 돌아감 = 타이머줄 && 운타이머.줄 == (j to k) && 운타이머.세션 == S.시작시각
+            val 경과 = if (돌아감) max(0, ((지금 - 운타이머.시작) / 1000L).toInt()) else 0
+            val 맥락 = LocalContext.current
+            // 체크해 끝난 줄은 타이머를 끈다 (체크를 풀면 다시 살아나지 않게)
+            LaunchedEffect(완료) { if (완료 && 운타이머.줄 == (j to k)) 운타이머.줄 = null }
+            // 카운트다운이 0 이 되면: 진동 + 정한 시간으로 자동 체크
+            if (돌아감 && 버티기 && 경과 >= 운타이머.목표) {
+                LaunchedEffect(운타이머.시작) {
+                    val 목표 = 운타이머.목표
+                    운타이머.줄 = null
+                    진동울림(맥락)
+                    발자취.적기("${e.이름} ${k + 1}세트 타이머 끝 · 자동 체크")
+                    값 { s -> s.값고치기(j, k, 새횟수 = 목표) }
+                    체크()
+                }
+            }
+            val 시작 = {
+                운입력.확정?.invoke()
+                운타이머.세션 = S.시작시각; 운타이머.줄 = j to k; 운타이머.시작 = System.currentTimeMillis()
+                운타이머.목표 = if (버티기) v.r else 0
+                발자취.적기("${e.이름} ${k + 1}세트 타이머 시작")
+            }
+            val 멈춤 = {
+                val 초 = max(1, ((System.currentTimeMillis() - 운타이머.시작) / 1000L).toInt())
+                운타이머.줄 = null
+                발자취.적기("${e.이름} ${k + 1}세트 타이머 멈춤 · ${초}초")
+                값 { s -> s.값고치기(j, k, 새횟수 = 초) }
+                if (버티기) 체크()   // 버티기는 버틴 만큼 바로 기록 · 유산소는 거리를 적고 직접 체크
+            }
+            val 시간칸그림: @Composable (Modifier) -> Unit = { m ->
+                if (돌아감) 타이머칸(분초(if (버티기) max(0, 운타이머.목표 - 경과) else 경과), 글크기, m)
+                else 운휴칸(v.r, 완료, 글크기, m, 최소 = 방.시간최소(), 최대 = 방.시간최대(), 이름 = if (거리줄) "시간 1분" else "시간 5초") { 방향 ->
+                    값 { s -> s.값고치기(j, k, 새횟수 = 시간한칸(s.세트값(s.종목들[j], k).r, 방향, 방)) }
+                }
+            }
+            if (방.무게칸있음()) {
+                // 10-12 기록 방식: 맨몸 · 어시스트 줄은 칸 아래에 작게 '= 69kg' (기록에 남는 실제 무게)
+                무게칸아래글(d.실제무게글(e.종id, e.이름, e.플랜id, v.w), Modifier.width(폭[1])) {
+                    운값칸(무게글(v.w), if (거리줄) "거리" else "무게", 소수 = true, 끝남 = 완료, 글크기, Modifier.fillMaxWidth(),
+                        빼기 = { 값 { s -> s.값고치기(j, k, 새무게 = s.세트값(s.종목들[j], k).w.let { w -> if (거리줄) 거리한칸(w, -1) else w - 무게폭 }) } },
+                        더하기 = { 값 { s -> s.값고치기(j, k, 새무게 = s.세트값(s.종목들[j], k).w.let { w -> if (거리줄) 거리한칸(w, 1) else w + 무게폭 }) } },
+                        넣기 = { t -> t.replace(',', '.').toDoubleOrNull()?.let { w -> 값 { s -> s.값고치기(j, k, 새무게 = w) } } })
+                }
+            } else if (!방.시간칸()) Spacer(Modifier.width(폭[1]))
+            if (버티기) {
+                // 버티기: [▶/■] 단추 + 넓은 시간 칸 (무게 칸 자리까지)
+                Row(Modifier.width(폭[1] + 폭[2] + 간격.아주좁게), horizontalArrangement = Arrangement.spacedBy(간격.아주좁게), verticalAlignment = Alignment.CenterVertically) {
+                    if (타이머줄) 타이머단추(돌아감, if (돌아감) 멈춤 else 시작) else Spacer(Modifier.width(높이.아주낮게))
+                    시간칸그림(Modifier.weight(1f))
+                }
+            } else if (거리줄) 시간칸그림(Modifier.width(폭[2]))
+            else 운값칸("${v.r}", "횟수", 소수 = false, 끝남 = 완료, 글크기, Modifier.width(폭[2]),
                 빼기 = { 값 { s -> s.값고치기(j, k, 새횟수 = s.세트값(s.종목들[j], k).r - 1) } },
                 더하기 = { 값 { s -> s.값고치기(j, k, 새횟수 = s.세트값(s.종목들[j], k).r + 1) } },
                 넣기 = { t -> t.toIntOrNull()?.let { r -> 값 { s -> s.값고치기(j, k, 새횟수 = r) } } })
             Box(Modifier.width(폭[3]), contentAlignment = Alignment.Center) {
+                // 유산소: 휴식 칸 자리에 ▶ 스톱워치 단추 (끝난 줄은 휴식 칸)
+                if (거리줄 && 타이머줄) 타이머단추(돌아감, if (돌아감) 멈춤 else 시작)
                 // 슈퍼세트는 마지막 종목 줄에만 휴식 (09-21)
-                if (S.휴식보임(j)) 운휴칸(e.세트휴식(k), 완료, 글크기, Modifier.fillMaxWidth()) { 방향 ->
+                else if (S.휴식보임(j)) 운휴칸(e.세트휴식(k), 완료, 글크기, Modifier.fillMaxWidth()) { 방향 ->
                     값 { s -> s.종목들.getOrNull(j)?.let { x -> s.휴식고치기(j, k, 휴식한칸(x.세트휴식(k), 방향)) } ?: s }
                 }
             }
@@ -782,19 +1100,24 @@ private fun 운값칸(
 
 /** 휴식 칸 — kg · 회 와 같은 − 값 ＋ (15초씩 · 0:15 ~ 5:00 · ✎ ypk0 · v9). 값 15 · 끝난 줄은 테 · − ＋ 감춤 */
 @Composable
-private fun 운휴칸(초: Int, 끝남: Boolean, 글크기: TextUnit, modifier: Modifier, 바꿈: (방향: Int) -> Unit) {
+private fun 운휴칸(
+    초: Int, 끝남: Boolean, 글크기: TextUnit, modifier: Modifier,
+    /** 2단계: 시간 칸도 이 부품을 쓴다 — 범위와 설명만 다르다 */
+    최소: Int = 휴식칸값.최소, 최대: Int = 휴식칸값.최대, 이름: String = "휴식 15초",
+    바꿈: (방향: Int) -> Unit,
+) {
     val c = Local색.current
     val 모양 = RoundedCornerShape(모서리.작게)
     Row(
         modifier.height(높이.아주낮게).clip(모양).border(선굵기.보통, if (끝남) Color.Transparent else c.속선, 모양),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        값단추(아이콘.빼기, "휴식 15초 줄이기", !끝남, 초 > 휴식칸값.최소) { 바꿈(-1) }
+        값단추(아이콘.빼기, "$이름 줄이기", !끝남, 초 > 최소) { 바꿈(-1) }
         Text(
             분초(초), Modifier.weight(1f), style = 글꼴.보통(글크기).copy(fontFeatureSettings = "tnum"),
             color = if (끝남) c.흐림 else c.글, maxLines = 1, textAlign = TextAlign.Center, softWrap = false,
         )
-        값단추(아이콘.더하기, "휴식 15초 늘리기", !끝남, 초 < 휴식칸값.최대) { 바꿈(1) }
+        값단추(아이콘.더하기, "$이름 늘리기", !끝남, 초 < 최대) { 바꿈(1) }
     }
 }
 
@@ -1235,7 +1558,8 @@ internal fun 운체크(S: 운동세션, j: Int, k: Int, 지금: Long): 운동세
 
 /** 슈퍼세트 — 지금 · 쉬는 줄이 보는 칸과 같은 묶음 안 다른 종목이면 보는 칸이 따라간다 (묶음이 아니면 그대로) */
 internal fun 본따라감(S: 운동세션, 본: Int): Int {
-    val 갈 = 쉬는종목(S) ?: S.i
+    // 10-11 홍겸 님: 한 바퀴를 끝내고 쉬는 동안엔 이름 · 예정 줄이 쉬는 마지막 종목이 아니라 **다음 차례 종목**
+    val 갈 = S.휴식?.다음i?.takeIf { it in S.식구(본) && it in S.종목들.indices } ?: 쉬는종목(S) ?: S.i
     return if (갈 != 본 && 갈 in S.종목들.indices && 본 in S.종목들.indices && 갈 in S.식구(본)) 갈 else 본
 }
 
@@ -1264,6 +1588,121 @@ internal fun 운주누름(S: 운동세션, 본: Int, 지금: Long): 운결과 = 
     운주.완료 -> 운체크(S, 본, 첫빈칸(S.종목들[본]), 지금).let { 운결과(it, 본따라감(it, 본)) }
 }
 
+/** 쉬는 시간이 아직 남아 돌고 있나 — 끝시각이 지났거나 '물음' 상태면 끝난 것으로 본다 */
+internal fun 쉼남음(S: 운동세션, 지금: Long): Boolean = S.휴식?.let { !it.물음 && it.끝시각 > 지금 } == true
+
+/**
+ * 10-13 홍겸 님: 앱 밖 떠 있는 동그라미를 꾹 눌렀을 때 —
+ *  · 쉬는 시간이 남아 돌고 있으면 쉬는 시간 끝 (건너뛰기와 같다)
+ *  · 아니면 지금 할 세트 체크. 쉬는 시간이 이미 끝나 있었으면(앱이 뒤에 있어 아직 안 넘어간 것) 먼저 넘기고 체크한다
+ * 할 일이 없으면 null
+ */
+internal fun 밖길게(S: 운동세션, 본: Int, 지금: Long): 운결과? {
+    if (S.끝화면) return null
+    var t = S; var b = 본; var 건너뜀 = false
+    if (S.휴식 != null) {
+        val r = 휴식건너뛰기(S, 본, 지금)
+        if (쉼남음(S, 지금)) return r
+        t = r.세션; b = r.본; 건너뜀 = true
+    }
+    val (j, k) = 다음할세트(t) ?: return if (건너뜀) 운결과(t, b, true) else null
+    return 운체크(t, j, k, 지금).let { 운결과(it, 본따라감(it, j), 건너뜀) }
+}
+
+/** 지금(쉬는 중이면 쉬고 난 뒤) 할 세트 — (종목 번호, 칸 번호). 남은 세트가 없으면 null */
+internal fun 다음할세트(S: 운동세션): Pair<Int, Int>? {
+    if (S.종목들.isEmpty()) return null
+    val 기준 = (S.휴식?.다음i?.takeIf { it in S.종목들.indices } ?: S.i).coerceIn(0, S.종목들.size - 1)
+    val j = if (운남음(S.종목들[기준])) 기준 else 다음남은(S, 기준)
+    val e = S.종목들.getOrNull(j) ?: return null
+    val k = 첫빈칸(e)
+    return if (k < 0) null else j to k
+}
+
+/** 세트 내용 글 — 기록 방식마다 (55kg 12회 · 12회 · 0:30 · 5.5km · 30:00). '추가' · '보조' 같은 말은 붙이지 않는다 (10-13 홍겸 님) */
+internal fun 세트내용글(d: 앱데이터, S: 운동세션, e: 세션종목, k: Int): String {
+    val v = S.세트값(e, k)
+    return when (d.방식(e.종id, e.이름)) {
+        기록방식.무게, 기록방식.맨몸, 기록방식.어시스트 -> if (v.w > 0.0) "${무게글(v.w)}kg ${v.r}회" else "${v.r}회"
+        기록방식.횟수만 -> "${v.r}회"
+        기록방식.시간 -> 분초(v.r)
+        기록방식.유산소 -> listOf(거리글(v.w), 분초(v.r)).filter { it.isNotEmpty() }.joinToString(" · ")
+    }
+}
+
+/** 쉬는 중 안내 글 — "덤벨컬(3/5) 12kg 10회" (한 줄에 들어가게 짧게 · 10-13 홍겸 님) */
+internal fun 세트안내글(d: 앱데이터, S: 운동세션, j: Int, k: Int): String {
+    val e = S.종목들[j]
+    return "${e.이름}(${k + 1}/${e.총칸()}) ${세트내용글(d, S, e, k)}"
+}
+
+/** 밖 동그라미 안내 — [새종목] = 어떤 종목의 첫 세트로 들어갈 때(팝업을 1.5배 오래 보인다 · 10-13 홍겸 님) */
+internal data class 밖글(val 글: String, val 새종목: Boolean = false)
+
+/** 쉬는 시간이 끝났을 때(또는 눌러 끝냈을 때) 다음에 할 세트 안내. [쉰] = 방금 쉬던 종목 번호 */
+internal fun 다음시작글(S: 운동세션, d: 앱데이터, 쉰: Int?): 밖글 =
+    다음할세트(S)?.let { (j, k) -> 밖글(세트안내글(d, S, j, k), 쉰 != null && j != 쉰 && k == 0) } ?: 밖글("")
+
+/** 쉬는 시간이 저절로 끝났을 때 알림 글 — 다음에 할 세트, 마지막 세트 뒤라면 "모든 운동이 끝났습니다." (10-13 홍겸 님) */
+internal fun 쉼끝글(S: 운동세션, d: 앱데이터): 밖글 {
+    val 글 = 다음시작글(S, d, 쉬는종목(S))
+    return if (글.글.isEmpty() && 운동다함(S)) 밖글("모든 운동이 끝났습니다.") else 글
+}
+
+/**
+ * 앱 밖 동그라미를 꾹 눌렀을 때 팝업에 띄울 글 (10-13 홍겸 님).
+ *  · 세트를 체크했으면 → "벤치프레스(1/5) 세트 완료" (종목 마지막 세트도 같다)
+ *  · 슈퍼세트처럼 쉬지 않고 곧바로 다른 종목 차례가 되면 체크 확인 대신 다음 종목만 "리스트컬(1/5) 8kg 10회" (알림이 한 줄이라 짧게 · 10-14)
+ *  · 쉬는 시간을 끝냈으면 → 다음에 할 세트 "덤벨컬(3/5) 12kg 10회" (종목의 마지막 세트 뒤면 다음 종목의 첫 세트)
+ * 할 세트가 없고 운동이 모두 끝났으면 "모든 운동이 끝났습니다." (동그라미는 운동보고서 아이콘으로 바뀐다)
+ */
+internal fun 밖토스트글(전: 운동세션, 후: 운동세션, d: 앱데이터, 지금: Long): 밖글 {
+    if (후.끝화면 || 전.종목들.size != 후.종목들.size) return 밖글("")
+    val 체크됨 = 후.종목들.indices.firstOrNull { 후.종목들[it].찬것().size > 전.종목들[it].찬것().size }
+    if (체크됨 != null) {
+        val e = 후.종목들[체크됨]
+        val 글 = "${e.이름}(${e.찬것().size}/${e.총칸()}) 세트 완료"
+        if (!쉼남음(후, 지금)) 다음할세트(후)?.let { (j, k) ->
+            if (j != 체크됨) return 밖글(세트안내글(d, 후, j, k), k == 0)   // 10-14: 알림 배너는 제목 · 내용이 한 줄로 이어져 "A 세트 완료 → B …" 는 뒤(=다음 종목)가 잘렸다 → 다음에 할 것만 짧게
+        }
+        return 밖글(글)
+    }
+    // 휴식을 꾹 눌러 끝냈는데 더 할 세트가 없으면 "모든 운동이 끝났습니다." (저절로 끝났을 때와 같다 · 10-13 홍겸 님)
+    val 글 = 다음시작글(후, d, 쉬는종목(전))
+    return if (글.글.isEmpty() && 운동다함(후)) 밖글("모든 운동이 끝났습니다.") else 글
+}
+
+/** 밖 동그라미 꾹 누름을 앱 기록에 반영한다 — 알려 줄 글(빈 글 = 했지만 알릴 것 없음, null = 아무 일도 안 함). 화면이 꺼져 있어도 부를 수 있다 */
+internal fun 앱상태.밖에서길게(): 밖글? {
+    var 글: 밖글? = null
+    var 새본: Int? = null
+    바꿈 { dd ->
+        val s = dd.세션 ?: return@바꿈 dd
+        val 본 = (if (운보기.세션 == s.시작시각) 운보기.본 else s.i).coerceIn(0, max(0, s.종목들.size - 1))
+        val 지금 = System.currentTimeMillis()
+        val r = 밖길게(s, 본, 지금) ?: return@바꿈 dd
+        새본 = r.본
+        글 = 밖토스트글(s, r.세션, dd, 지금)   // 10-13: 체크 완료 / 다음 세트 (할 세트가 없으면 빈 글 = 팝업 없음)
+        val 새 = dd.copy(세션 = r.세션.copy(마지막 = 지금))
+        if (r.건너뜀) 새.세기더함(세기이름.연속건너뜀) else 새
+    }
+    새본?.let { b -> d.세션?.let { s -> 운보기.본 = b.coerceIn(0, max(0, s.종목들.size - 1)) } }
+    return 글
+}
+
+/** 모든 운동이 끝나 마무리만 남았나 (큰 주 단추가 '운동 마무리'일 때) */
+internal fun 운동다함(S: 운동세션): Boolean = S.종목들.isNotEmpty() && S.종목들.none(::운남음)
+
+/** 10-13 홍겸 님: 밖 동그라미의 운동보고서 아이콘을 눌렀을 때 — '운동 마무리' 단추와 같다 (보고서 화면이 켜진다) */
+internal fun 앱상태.밖보고서열기() {
+    바꿈 { dd ->
+        val s = dd.세션 ?: return@바꿈 dd
+        if (s.끝화면 || !운동다함(s)) return@바꿈 dd
+        val 지금 = System.currentTimeMillis()
+        dd.copy(세션 = s.끝냄(지금).copy(마지막 = 지금))
+    }
+}
+
 /** 지운 세트 — 되돌리기에 쓴다 (시안 `U.운지움`). 그 칸이 목록에 있었는지까지 적어 빼기 → 되돌리기 = 원래 그대로 */
 internal data class 지운세트(
     val j: Int, val 열쇠: String, val k: Int,
@@ -1275,6 +1714,12 @@ internal data class 지운세트(
     /** 지운 줄에서 쉬던 휴식 (종목 번호는 실제 번호) */
     val 휴식: 휴식중?,
     val 세션시작: Long,
+    /** 10-10: 지운 칸의 루틴 번호(더한 칸이면 null) · 번호표 칸이 있었나 · 지우기 전 계획 세트 (되돌리면 계획도 돌아온다) */
+    val 원번호: Int? = null,
+    val 원있음: Boolean = false,
+    val 계획: Int = 0,
+    /** 같은 종목을 두 번 넣었을 때 몇 번째 것이었나 (그 사이 순서가 바뀌어도 같은 줄에 되돌리려고) */
+    val 몇째: Int = 0,
 )
 
 /**
@@ -1288,18 +1733,14 @@ internal fun 운세트지우기(S: 운동세션, j: Int, k: Int): Pair<운동세
     if (k < 0 || k >= e.총칸() || e.총칸() <= 1) return null
     val 쉰 = 쉬는종목(S)
     val 지운쉼 = S.휴식?.takeIf { 쉰 == j && it.k == k }?.copy(종목 = j)
-    var t = S.세트삭제(j, k)
-    t.휴식?.let { h ->
-        var h2 = h
-        if (쉬는종목(t) == j && h.k > k) h2 = h2.copy(k = h.k - 1)
-        if (h2.다음i == j && (h2.다음s ?: -1) > k) h2 = h2.copy(다음s = h2.다음s!! - 1)
-        t = t.copy(휴식 = h2)
-    }
-    if (t.i == j && S.i == j && S.s == k) t = t.자리로(j, k).copy(끝화면 = t.끝화면, 끝시각 = t.끝시각)
+    // 휴식 번호 · 슈퍼세트 자리 · 지금 세트 자리는 데이터 `세트삭제` 가 맞춘다 (10-10 — 화면과 데이터가 따로 맞추던 것을 한곳으로)
+    val t = S.세트삭제(j, k)
     val z = 지운세트(
         j, e.열쇠, k, e.기록.칸(k), e.예정값.칸(k), e.휴식들.칸(k),
         k in e.기록.indices, k in e.예정값.indices, k in e.휴식들.indices, e.세트,
         S.i, S.s, S.무게, S.횟수, t.i, t.s, 지운쉼, S.시작시각,
+        원번호 = e.원번호.칸(k), 원있음 = k in e.원번호.indices, 계획 = e.계획세트,
+        몇째 = S.종목들.take(j).count { it.열쇠 == e.열쇠 },
     )
     return t to z
 }
@@ -1307,14 +1748,21 @@ internal fun 운세트지우기(S: 운동세션, j: Int, k: Int): Pair<운동세
 /** 지운 세트 되돌리기 — 그 자리에 다시 끼운다. 다른 운동이면 그대로. 그 사이 순서가 바뀌었으면 같은 종목(열쇠)을 찾아 끼운다 */
 internal fun 세트되살리기(S: 운동세션, z: 지운세트, 지금: Long): 운동세션 {
     if (z.세션시작 != S.시작시각) return S
-    val j = if (S.종목들.getOrNull(z.j)?.열쇠 == z.열쇠) z.j else S.종목들.indexOfFirst { it.열쇠 == z.열쇠 }
+    val 같은 = S.종목들.indices.filter { S.종목들[it].열쇠 == z.열쇠 }
+    val j = if (S.종목들.getOrNull(z.j)?.열쇠 == z.열쇠) z.j else 같은.getOrNull(z.몇째) ?: 같은.firstOrNull() ?: -1
     if (j < 0) return S
     val e = S.종목들[j]
+    // 10-10: 지울 때 그 칸이 목록에 없었어도(기록이 짧았어도) 뒤 칸들은 한 칸씩 밀려 있다 → 빈 칸을 끼워 같이 밀어 준다
+    //   (전에는 안 끼워서 체크 기록이 한 줄 위로 어긋났다)
     fun <T> List<T?>.끼움(있음: Boolean, v: T?): List<T?> =
-        if (!있음) this else toMutableList().also { m -> while (m.size < z.k) m.add(null); m.add(min(z.k, m.size), v) }
+        if (!있음 && size <= z.k) this else toMutableList().also { m -> while (m.size < z.k) m.add(null); m.add(min(z.k, m.size), if (있음) v else null) }
+    val 새세트 = e.세트 + (z.세트수 - max(1, z.세트수 - 1))
+    val 새기록 = e.기록.끼움(z.기록있음, z.기록)
     val 새e = e.copy(
-        기록 = e.기록.끼움(z.기록있음, z.기록), 예정값 = e.예정값.끼움(z.예정있음, z.예정), 휴식들 = e.휴식들.끼움(z.휴있음, z.휴),
-        세트 = e.세트 + (z.세트수 - max(1, z.세트수 - 1)),
+        기록 = 새기록, 예정값 = e.예정값.끼움(z.예정있음, z.예정), 휴식들 = e.휴식들.끼움(z.휴있음, z.휴),
+        원번호 = if (e.원번호.isEmpty()) e.원번호 else e.원번호.끼움(z.원있음, z.원번호),
+        세트 = 새세트,
+        계획세트 = if (e.계획세트 < z.계획) min(z.계획, max(새세트, 새기록.size)) else e.계획세트,   // 지울 때 줄어든 계획을 돌려 놓는다
     )
     var t = S.copy(종목들 = S.종목들.mapIndexed { x, y -> if (x == j) 새e else y })
     t = when {
@@ -1329,6 +1777,12 @@ internal fun 세트되살리기(S: 운동세션, z: 지운세트, 지금: Long):
         if (h2.다음i == j && (h2.다음s ?: -1) >= z.k) h2 = h2.copy(다음s = h2.다음s!! + 1)
         t.copy(휴식 = h2)
     } else if (z.휴식 != null && z.휴식.끝시각 > 지금) t.copy(휴식 = z.휴식.copy(종목 = j)) else t
+    // 10-10: 그 사이 다른 줄을 체크 · 풀어 지금 자리가 우연히 같아 보였어도, 지금 세트가 이미 한 줄을 가리키면 첫 빈 줄로 (22 버그 #9 의 되돌리기 쪽)
+    val ce = t.종목들.getOrNull(t.i)
+    if (ce != null && !t.끝화면 && t.휴식 == null && !ce.마감 && ce.덜한가() && t.s < ce.총칸() && ce.기록.칸(t.s) != null) {
+        val 빈 = 첫빈칸(ce)
+        if (빈 >= 0) t = t.copy(s = 빈, 무게 = (ce.예정값.칸(빈) ?: 세트(ce.무게, ce.횟수)).w, 횟수 = (ce.예정값.칸(빈) ?: 세트(ce.무게, ce.횟수)).r)
+    }
     return t
 }
 

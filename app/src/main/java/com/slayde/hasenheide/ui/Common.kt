@@ -48,6 +48,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -256,19 +258,23 @@ fun 버튼(
     낮게: Boolean = false,
     /** 10-08 홍겸 님: 글이 넘치면 글자를 줄인다 (맞춤글 — 캘린더 아래 단추 줄) */
     줄임: Boolean = false,
+    /** 10-11 홍겸 님: 높이를 고정하지 않고 글 위아래 이만큼만 두고 줄인다 (캘린더 아래 단추 줄) */
+    세로여백: Dp? = null,
+    /** 10-11: 글 크기 배율 (캘린더 아래 단추 줄 0.9) */
+    글배율: Float = 1f,
 ) {
     val c = Local색.current
     val 손 = remember { MutableInteractionSource() }
     val 배 = 눌림배율(손)   // 10-02: 누르면 살짝 작아진다
     Row(
         modifier
-            .height(if (낮게) 높이.낮게 else if (작게) 높이.보통 else 높이.높게)
+            .then(if (세로여백 != null) Modifier else Modifier.height(if (낮게) 높이.낮게 else if (작게) 높이.보통 else 높이.높게))
             .배율(배)
             .clip(RoundedCornerShape(모서리.작게))
             .background(if (주요) c.강조 else c.면)
             .then(if (주요) Modifier else Modifier.border(1.dp, c.속선, RoundedCornerShape(모서리.작게)))
             .눌림손(손, onClick)
-            .padding(horizontal = if (낮게) 8.dp else 12.dp),
+            .padding(horizontal = if (낮게) 8.dp else 12.dp, vertical = 세로여백 ?: 0.dp),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -277,8 +283,8 @@ fun 버튼(
             Icon(그림, null, Modifier.size(if (낮게) 14.dp else 16.dp), tint = 색)
             Box(Modifier.width(if (낮게) 4.dp else 6.dp))
         }
-        val 글크기 = if (낮게) 크기.조금작게 else if (작게) 크기.버튼 else 크기.본문
-        if (줄임) 맞춤글(text, 최대 = 글크기, 최소 = 크기.작게, 색 = 색, 굵기 = FontWeight.Bold)
+        val 글크기 = (if (낮게) 크기.조금작게 else if (작게) 크기.버튼 else 크기.본문).let { if (글배율 == 1f) it else (it.value * 글배율).sp }
+        if (줄임) 맞춤글(text, 최대 = 글크기, 최소 = if (글크기.value < 크기.작게.value) 글크기 else 크기.작게, 색 = 색, 굵기 = FontWeight.Bold)
         else 글(text, 크기값 = 글크기, 색 = 색, 굵기 = FontWeight.Bold)
     }
 }
@@ -287,6 +293,10 @@ fun 버튼(
 @Composable
 fun 칩줄(
     목록: List<String>, 선택: String?, onSelect: (String) -> Unit, modifier: Modifier = Modifier,
+    /** 10-11: 칩 사이 간격 (기본 8 · 종목 넣기 = 7) */
+    사이: Dp = 8.dp,
+    /** 10-11: 맨 앞에 끼우는 칩 (즐겨찾기 별) */
+    앞: (@Composable () -> Unit)? = null,
     /** 10-05: 밖에서 넘김을 쥘 때 (양끝 ‹ › 단추 — Parts.kt 화살칩줄). null 이면 전처럼 안에서 */
     밖넘김: androidx.compose.foundation.ScrollState? = null,
 ) {
@@ -295,8 +305,9 @@ fun 칩줄(
     val 넘김 = 밖넘김 ?: 안넘김
     Row(
         modifier.fillMaxWidth().오른끝흐림(넘김).horizontalScroll(넘김),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(사이),
     ) {
+        if (앞 != null) 앞()
         목록.forEach { p -> key(p) {
             val 켬 = p == 선택
             // 10-02: 누르면 살짝 작아지고, 고르면 색이 옮겨 간다 (켠 칩의 테두리는 바탕과 같은 색이라 보이지 않는다 — 전과 같은 모양)
@@ -318,6 +329,41 @@ fun 칩줄(
         } }
     }
 }
+
+/**
+ * 둥근 별 (10-11 홍겸 님) — 끝이 뾰족하지 않고 둥글다. 켬 = 속을 칠한다 · 끔 = 속이 빈 테두리. 박스 없이 별만.
+ * [체크] = 별 가운데 체크(색은 [체크색]) — 즐겨찾기 종목을 넣었을 때
+ */
+@Composable
+fun 별(켬: Boolean, 크기: Dp, 색: Color, modifier: Modifier = Modifier, 체크: Boolean = false, 체크색: Color = Color.Unspecified) {
+    androidx.compose.foundation.Canvas(modifier.size(크기)) {
+        val w = size.minDimension
+        val 큰 = w * 0.5f * 0.80f
+        val 작 = 큰 * 0.56f
+        val cx = size.width / 2f
+        val cy = size.height / 2f + 큰 * 0.095f   // 별의 위아래 한가운데
+        val path = androidx.compose.ui.graphics.Path()
+        for (i in 0 until 10) {
+            val a = -Math.PI / 2 + i * Math.PI / 5
+            val r = if (i % 2 == 0) 큰 else 작
+            val x = cx + (Math.cos(a) * r).toFloat(); val y = cy + (Math.sin(a) * r).toFloat()
+            if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+        }
+        path.close()
+        val 굵 = w * 0.056f
+        if (켬) drawPath(path, 색, style = androidx.compose.ui.graphics.drawscope.Fill)
+        drawPath(path, 색, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 굵, join = androidx.compose.ui.graphics.StrokeJoin.Round, cap = androidx.compose.ui.graphics.StrokeCap.Round))
+        if (체크) {
+            val k = androidx.compose.ui.graphics.Path().apply {
+                moveTo(cx - 큰 * 0.34f, cy + 큰 * 0.0f); lineTo(cx - 큰 * 0.08f, cy + 큰 * 0.28f); lineTo(cx + 큰 * 0.38f, cy - 큰 * 0.24f)
+            }
+            drawPath(k, 체크색, style = androidx.compose.ui.graphics.drawscope.Stroke(width = w * 0.09f, join = androidx.compose.ui.graphics.StrokeJoin.Round, cap = androidx.compose.ui.graphics.StrokeCap.Round))
+        }
+    }
+}
+
+/** 시트 안에서 시트를 (내려가는 움직임과 함께) 닫는다 — 종목 넣기의 [확인] */
+val Local시트닫기 = androidx.compose.runtime.staticCompositionLocalOf<() -> Unit> { {} }
 
 /** 켜고 끄기 */
 @Composable
@@ -790,15 +836,25 @@ fun 시트(
     제목: String, onClose: () -> Unit, 위끝고정: Boolean = false,
     /** 10-06 v22 RT: 띠 머리 오른쪽을 ✕ 대신 이 글 단추로 (종목 넣기 = "확인" · 동작은 닫기 그대로). null = ✕ */
     닫기글: String? = null,
+    /** 10-11: 띠 아래 ~ 속 사이 틈 (기본 12 · 종목 넣기 = 9) */
+    위틈: Dp = 12.dp,
     /** 10-07: 위끝 고정 시트의 위끝 비율 (새 종목 시트 = 5%) */
     위끝: Float = 부품치수.시트위끝,
     /** 10-08: 화면 단계 — 1 이상이면 왼쪽에 [겹] 장만큼 책장처럼 겹쳐 그린다 ([쪽겹]) */
     겹: Int = 0,
     /** 10-08: 띠 아닌 시트의 제목 줄을 글 대신 이것으로 (달 고르기 ‹ 2026 ›). null = [제목] 글 */
     제목칸: (@Composable RowScope.() -> Unit)? = null,
+    /** 10-11: 속이 무거운 시트(종목 목록) — 올라오는 움직임이 끝난 뒤에 속을 그린다 (속을 먼저 그리면 그 시간만큼 움직임이 먹힌다) */
+    속늦춤: Boolean = false,
+    /** 10-11: 펼친 상자 자리(창 좌표) — 있으면 시트 전체(머리 띠 · 둘레 여백 포함)를 어둡게 칠하고 이 자리만 비운다 (종목 넣기) */
+    가림구멍: State<androidx.compose.ui.geometry.Rect?>? = null,
+    가림농도: () -> Float = { 1f },
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val c = Local색.current
+    var 속그림 by remember { mutableStateOf(!속늦춤) }
+    if (속늦춤) LaunchedEffect(Unit) { kotlinx.coroutines.delay(움직임.시트 + 60L); 속그림 = true }
+    val 속투명 by animateFloatAsState(if (속그림) 1f else 0f, tween(180), label = "시트속")
     // 10-02: 나타날 때 아래에서 올라오고, ✕ · 바깥 · 뒤로가기로 닫으면 내려간 뒤에 닫힌다.
     //        (안에서 무언가를 골라 화면이 시트를 바로 치우는 경우는 내려가는 움직임 없이 사라진다)
     val 보임 = remember { MutableTransitionState(false).apply { targetState = true } }
@@ -809,6 +865,7 @@ fun 시트(
     BackHandler(onBack = { 닫기() })
     // 끌어내린 만큼 (px) — 그릴 때만 읽는다
     var 끌림 by remember { mutableStateOf(0f) }
+    val 판창 = remember { mutableStateOf(Offset.Zero) }
     val 범위 = rememberCoroutineScope()
     val 닫을px = with(LocalDensity.current) { 부품치수.시트닫기.toPx() }
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
@@ -826,9 +883,23 @@ fun 시트(
                     .fillMaxWidth()
                     .then(if (위끝고정) Modifier.fillMaxHeight(1f - 위끝) else Modifier.heightIn(max = 620.dp))
                     .graphicsLayer { translationY = 끌림 }
-                    .쪽겹(겹, 모서리.크게)
                     .clip(RoundedCornerShape(topStart = 모서리.크게, topEnd = 모서리.크게))
                     .background(c.면)
+                    .onGloballyPositioned { 판창.value = it.positionInWindow() }
+                    .drawWithContent {
+                        drawContent()
+                        val h = 가림구멍?.value
+                        if (h != null) {
+                            val o = 판창.value
+                            val l = (h.left - o.x).coerceIn(0f, size.width); val t = (h.top - o.y).coerceIn(0f, size.height)
+                            val r = (h.right - o.x).coerceIn(0f, size.width); val b = (h.bottom - o.y).coerceIn(0f, size.height)
+                            val 색 = 종목치수.넣기가림.copy(alpha = 종목치수.넣기가림.alpha * 가림농도().coerceIn(0f, 1f))
+                            drawRect(색, Offset(0f, 0f), Size(size.width, t))
+                            drawRect(색, Offset(0f, b), Size(size.width, size.height - b))
+                            drawRect(색, Offset(0f, t), Size(l, b - t))
+                            drawRect(색, Offset(r, t), Size(size.width - r, b - t))
+                        }
+                    }
                     .눌림 { }
                     .navigationBarsPadding()
                     .imePadding()
@@ -860,7 +931,7 @@ fun 시트(
                                     .size(부품치수.손잡이폭, 부품치수.손잡이두께).clip(RoundedCornerShape(부품치수.손잡이모서리)).background(c.속선),
                             )
                             머리띠(제목, 위여백 = 0.dp, 오른쪽 = {
-                                if (닫기글 != null) 띠칩(닫기글, { 닫기() })   // U4-8 띠 위 단추 = 캘린더 스탯 칩 모양
+                                if (닫기글 != null) { if (닫기글.isNotEmpty()) 띠칩(닫기글, { 닫기() }) }   // 빈 글 = 띠 오른쪽에 아무것도 두지 않는다   // U4-8 띠 위 단추 = 캘린더 스탯 칩 모양
                                 else 아이콘버튼(아이콘.닫기, "닫기", { 닫기() }, 칠함 = false, 색 = c.강조글, 크기칸 = 높이.낮게)
                             })
                         }
@@ -878,9 +949,9 @@ fun 시트(
                     }
                 }
                 Column(
-                    Modifier.then(if (위끝고정) Modifier.weight(1f).padding(horizontal = 간격.넓게) else Modifier).padding(top = 12.dp).verticalScroll(rememberScrollState()),
-                    content = content,
-                )
+                    Modifier.then(if (위끝고정) Modifier.weight(1f).padding(horizontal = 간격.넓게) else Modifier).padding(top = 위틈)
+                        .graphicsLayer { alpha = 속투명 }.verticalScroll(rememberScrollState()),
+                ) { if (속그림) androidx.compose.runtime.CompositionLocalProvider(Local시트닫기 provides { 닫기() }) { content() } }
             }
         }
     }

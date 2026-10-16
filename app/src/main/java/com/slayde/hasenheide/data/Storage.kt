@@ -88,6 +88,8 @@ object 저장소 {
         .also { if (e.참고url != null) it.put("참고url", e.참고url) }
         .also { if (e.참고글 != null) it.put("참고글", e.참고글) }
         .also { if (e.목표1RM != null) it.put("목표1RM", e.목표1RM) }
+        .also { if (e.즐겨) it.put("즐겨", true) }   // 10-11 — 켠 것만 적는다 (옛 파일 = false)
+        .also { if (e.방식 != null) it.put("방식", e.방식) }   // 10-12 기록 방식 — 고른 것만 적는다 (옛 파일 = null = 이름으로 자동)
         // 10-02 (스키마 13): 종목 사진 — 파일 **이름만** 적는다. 사진 파일은 백업에 들어가지 않는다 (filesDir/photos 에 그대로)
         .also { if (e.사진.isNotEmpty()) it.put("사진", JSONArray().also { a -> e.사진.forEach { a.put(it) } }) }
         // 스키마 15 (10-05): 종목 id · 근육 역할 (P · Y)
@@ -105,8 +107,11 @@ object 저장소 {
         .also { o -> r.원래예정?.let { o.put("원래예정", it) }; r.원래고정?.let { o.put("원래고정", it) } }   // 10-09 그 날 운동
         .put("종목", JSONArray().also { a -> r.종목.forEach { a.put(루틴종목to(it)) } })
 
-    // 종류는 본운동(0) 이 아닐 때만 적는다 — 옛 파일과 모양이 같아 읽는 쪽이 안 깨진다
-    private fun 세트to(s: 세트) = JSONArray().put(s.w).put(s.r).also { if (s.종류 != 0) it.put(s.종류) }
+    // 종류는 본운동(0) 이 아닐 때만 적는다 · 거리(유산소 km)는 0 이 아닐 때만 네 번째로 적는다 — 옛 파일과 모양이 같아 읽는 쪽이 안 깨진다
+    private fun 세트to(s: 세트) = JSONArray().put(s.w).put(s.r).also {
+        if (s.종류 != 0 || s.거리 != 0.0) it.put(s.종류)
+        if (s.거리 != 0.0) it.put(s.거리)
+    }
 
     private fun 세트들to(l: List<세트?>) = JSONArray().also { a -> l.forEach { a.put(if (it == null) JSONObject.NULL else 세트to(it)) } }
 
@@ -134,7 +139,7 @@ object 저장소 {
         .put("만든날", p.만든날).put("한회", p.한회).put("누적볼륨", p.누적볼륨)
         .put("워밍업수", p.워밍업수).put("켬", p.켬).put("측정먼저", p.측정먼저)
         .put("측정들", JSONArray().also { a ->
-            p.측정들.forEach { m -> a.put(JSONObject().put("회", m.회).put("날", m.날).put("무게", m.무게).put("횟수", m.횟수)) }
+            p.측정들.forEach { m -> a.put(JSONObject().put("회", m.회).put("날", m.날).put("무게", m.무게).put("횟수", m.횟수).put("값", m.값)) }
         })
         // 스키마 12 (10-01) — 매 회차 자기조절의 출발점
         .also { o -> p.재기준?.let { r -> o.put("재기준", JSONObject().put("회", r.회).put("날", r.날).put("값", r.값)) } }
@@ -152,7 +157,7 @@ object 저장소 {
     )
 
     private fun 설정to(s: 설정값) = JSONObject().put("자동진행", s.자동진행).put("넘어가기전확인", s.넘어가기전확인)
-        .put("소리진동", s.소리진동).put("화면유지", s.화면유지).put("무게폭", s.무게폭)
+        .put("소리진동", s.소리진동).put("화면유지", s.화면유지).put("무게폭", s.무게폭).put("즐겨먼저", s.즐겨먼저)
         .put("기본휴식", s.기본휴식).put("기준", s.기준).put("기본세트", s.기본세트)
         .put("볼륨켬", s.볼륨켬).put("볼륨방식", s.볼륨방식).put("볼륨값", s.볼륨값)
         .put("볼륨언제", s.볼륨언제).put("볼륨배분", s.볼륨배분).put("횟수상한", s.횟수상한)
@@ -177,7 +182,8 @@ object 저장소 {
                     .put("휴식들", JSONArray().also { h -> e.휴식들.forEach { h.put(it ?: JSONObject.NULL) } })
                     .put("임시", e.임시).put("마감", e.마감).also { if (e.슈퍼 != null) it.put("슈퍼", e.슈퍼) }
                     .also { if (e.플랜id != null) it.put("플랜id", e.플랜id) }
-                    .also { if (e.종id != null) it.put("종id", e.종id) })
+                    .also { if (e.종id != null) it.put("종id", e.종id) }
+                    .also { if (e.원번호.isNotEmpty()) it.put("원번호", JSONArray().also { a2 -> e.원번호.forEach { n -> a2.put(n ?: JSONObject.NULL) } }) })
             }
         })
         .also { o ->
@@ -215,7 +221,8 @@ object 저장소 {
                     .copy(사진 = 목록(it.optJSONArray("사진")) { x, j -> x.getString(j) },   // 스키마 13 (10-02) — 옛 파일은 빈 목록
                         // 스키마 15 (10-05) — 옛 파일은 id = 이름 · 역할 없음. 옛 "S"(보조) 는 "Y"(협응) 로, 모르는 값은 버린다
                         id = 글또는널(it, "id")?.takeIf { x -> x.isNotBlank() } ?: it.getString("이름"),
-                        근육 = 역할읽기(it.optJSONObject("근육"))) }
+                        근육 = 역할읽기(it.optJSONObject("근육")), 즐겨 = it.optBoolean("즐겨"),
+                        방식 = 글또는널(it, "방식")?.takeIf { x -> 기록방식.values().any { m -> m.name == x } }) }
             }.id겹침풀기(),
             카테고리 = if (o.has("카테고리")) 목록(o.optJSONArray("카테고리")) { a, i -> a.getString(i) } else 앱데이터.기본카테고리,
             루틴들 = 목록(o.optJSONArray("루틴들")) { a, i -> 루틴from(a.getJSONObject(i)) },
@@ -392,7 +399,7 @@ object 저장소 {
             측정들 = 목록(o.optJSONArray("측정들")) { a, i ->
                 a.getJSONObject(i).let {
                     // 옛 파일은 '주' 로 적혀 있다 — 회로 읽되 주당 횟수를 모르니 그대로 둔다
-                    측정(if (it.has("회")) it.optInt("회") else it.optInt("주"), it.optString("날"), it.optDouble("무게"), it.optInt("횟수"))
+                    측정(if (it.has("회")) it.optInt("회") else it.optInt("주"), it.optString("날"), it.optDouble("무게"), it.optInt("횟수"), it.optDouble("값", 0.0))
                 }
             },
             워밍업수 = o.optInt("워밍업수", 0),
@@ -412,7 +419,7 @@ object 저장소 {
         )
     }
 
-    private fun 세트from(a: JSONArray) = 세트(a.getDouble(0), a.getInt(1), if (a.length() > 2) a.optInt(2, 0) else 0)
+    private fun 세트from(a: JSONArray) = 세트(a.getDouble(0), a.getInt(1), if (a.length() > 2) a.optInt(2, 0) else 0, if (a.length() > 3) a.optDouble(3, 0.0) else 0.0)
 
     private fun 세트들from(a: JSONArray?): List<세트?> =
         목록(a) { x, i -> if (x.isNull(i)) null else 세트from(x.getJSONArray(i)) }
@@ -435,7 +442,7 @@ object 저장소 {
         val 폭 = o.optDouble("무게폭", 1.0).let { if (판 < 2 && it == 2.5) 1.0 else it }.let { if (it in 무게폭목록) it else 1.0 }
         return 설정값(
             자동진행 = o.optBoolean("자동진행", true), 넘어가기전확인 = o.optBoolean("넘어가기전확인", false),
-            소리진동 = o.optBoolean("소리진동", true), 화면유지 = o.optBoolean("화면유지", true), 무게폭 = 폭,
+            소리진동 = o.optBoolean("소리진동", true), 화면유지 = o.optBoolean("화면유지", true), 무게폭 = 폭, 즐겨먼저 = o.optBoolean("즐겨먼저", true),
             // 09-24: 기본 휴식은 1분으로. 옛 판의 90초는 60초로 옮긴다
             기본휴식 = (if (판 < 4) 60 else o.optInt("기본휴식", 60)).let { if (it in 기본휴식목록) it else 60 },
             기본세트 = (if (판 < 3) 1 else o.optInt("기본세트", 1)).coerceIn(1, 5),
@@ -476,6 +483,7 @@ object 저장소 {
                     목록(e.optJSONArray("휴식들")) { h, j -> if (h.isNull(j)) null else h.getInt(j) },
                     e.optBoolean("임시"), e.optBoolean("마감"), 글또는널(e, "슈퍼"),
                     플랜id = 글또는널(e, "플랜id"), 종id = 글또는널(e, "종id"),
+                    원번호 = 목록(e.optJSONArray("원번호")) { n, j -> if (n.isNull(j)) null else n.getInt(j) },
                 )
             }
         },

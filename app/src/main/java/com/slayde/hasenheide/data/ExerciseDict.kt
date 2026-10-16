@@ -114,7 +114,8 @@ object 종목사전 {
         사전종목("덤벨 컬", "팔", listOf("덤벨 바이셉스 컬", "얼터네이트 컬")),
         사전종목("EZ바 컬", "팔", listOf("이지바 컬")),
         사전종목("해머 컬", "팔", listOf("덤벨 해머 컬")),
-        사전종목("프리처 컬", "팔", listOf("프리처 컬 머신")),
+        사전종목("프리처 컬", "팔", listOf("EZ바 프리처 컬", "바벨 프리처 컬")),
+        사전종목("프리처 컬 머신", "팔", listOf("머신 프리처 컬", "머신 컬")),   // 10-12 홍겸 님: 프리(바벨 · EZ바)와 머신은 다른 종목 — 전엔 다른 이름이라 '프리처 컬' 로 바뀌었다
         사전종목("인클라인 덤벨 컬", "팔", emptyList(), mapOf("biceps" to "P", "brachialis" to "S", "forearm" to "Y")),
         사전종목("컨센트레이션 컬", "팔"),
         사전종목("케이블 컬", "팔", listOf("케이블 바이셉스 컬")),
@@ -155,6 +156,11 @@ object 종목사전 {
         사전종목("데드 버그", "맨몸", listOf("데드버그"), mapOf("abs" to "P", "obliques" to "Y")),
         사전종목("할로우 바디 홀드", "맨몸", listOf("할로우 홀드"), mapOf("abs" to "P", "obliques" to "Y")),
         사전종목("슈퍼맨", "맨몸", listOf("슈퍼맨 익스텐션"), mapOf("lower_back" to "P", "glutes" to "S")),
+        // 유산소 (10-12 홍겸 님 · 기록 방식 3단계) — 거리 km + 시간. 근육은 그림에만 쓴다 (피로는 아직 안 센다)
+        사전종목("러닝", "유산소", listOf("달리기", "조깅", "트레드밀", "런닝"), mapOf("quads" to "P", "glutes" to "P", "hamstrings" to "S", "calves" to "S")),
+        사전종목("계단 오르기", "유산소", listOf("천국의 계단", "스텝밀", "스테어마스터", "스테어 클라이머"), mapOf("quads" to "P", "glutes" to "P", "calves" to "S", "hamstrings" to "S")),
+        사전종목("로잉 머신", "유산소", listOf("로잉", "노젓기"), mapOf("lats" to "P", "quads" to "P", "hamstrings" to "S", "biceps" to "S", "lower_back" to "Y")),
+        사전종목("사이클", "유산소", listOf("싸이클", "자전거", "실내 자전거", "스피닝"), mapOf("quads" to "P", "glutes" to "S", "hamstrings" to "S", "calves" to "Y")),
     )
 
     /** 세부 부위 — 근육 지도에서 실제로 칠해지는 부위만 (시안 `세부부위`). 새 종목 시트의 묶음 칩 → 부위 칩 */
@@ -203,6 +209,7 @@ object 종목사전 {
     fun 장비(x: 사전종목): String {
         val n = x.이름
         return when {
+            x.칸 == "유산소" -> "머신"   // 유산소는 무게 기본값을 쓰지 않는다 ([사전기본세트들])
             x.칸 == "맨몸" || n in 맨몸들 -> "맨몸"
             n.contains("덤벨") -> "덤벨"
             n.contains("스미스") -> "스미스"

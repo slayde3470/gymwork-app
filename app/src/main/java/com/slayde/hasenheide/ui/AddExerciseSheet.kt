@@ -2,6 +2,7 @@ package com.slayde.hasenheide.ui
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -24,22 +25,27 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
@@ -49,6 +55,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.coerceAtLeast
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import com.slayde.hasenheide.data.같은이름번호
@@ -77,7 +84,7 @@ import kotlin.math.roundToInt
  *
  * 10-08 홍겸 님: 이 시트의 목록은 **종목 탭 목록(11번)과 같은 화면**이다 — [종목묶음들](ExerciseScreen.kt)을 그대로 부른다.
  *  · 위끝 고정 · 머리 = 띠 · 띠 오른쪽 [확인](= 닫기) · 칩줄은 고정, 목록만 스크롤
- *  · 상자 오른쪽 끝 체크 상자 = 넣기(들어 있으면 하나 빼기 · 꾹 = 하나 더) · 들어간 상자는 강조옅음 바탕 + 강조 테
+ *  · 상자 맨 앞(이름 왼쪽) 체크 상자 = 넣기(들어 있으면 하나 빼기 · 꾹 = 하나 더) · 들어간 상자는 강조옅음 바탕 + 강조 테
  *  · 상자를 누르면 펼침(종목 탭과 같다 — 기본 세팅 · 근육을 고치고 [저장]) · 꾹 눌러 끌면 순서 옮김
  *  · 오른쪽 아래 구석에 떠 있는 [+ 새 종목 만들기] → [새종목시트]. 저장하면 그 종목을 바로 [넣기] 로 넣고 칩 = [전체]
  *
@@ -118,8 +125,10 @@ fun 종목넣기시트(
         })
     } else {
         val 플랜길 = if (플랜개수 != null && 플랜넣기 != null && 플랜빼기 != null) 플랜손(플랜개수, 플랜넣기, 플랜빼기) else null
-        시트(제목, 닫기, 위끝고정 = true, 닫기글 = "확인", 겹 = 겹) {
-            넣기속(상태, 칸고름, { 칸고름 = it }, 개수, 넣기, 빼기, 새종목만들기, { 새로 = true }, 플랜길)
+        val 창구멍 = remember { mutableStateOf<Rect?>(null) }
+        val 어둠 = remember { androidx.compose.animation.core.Animatable(0f) }   // 0 ~ 1 — 펼침 · 접힘과 같이 움직이는 어둠 농도
+        시트(제목, 닫기, 위끝고정 = true, 닫기글 = "", 위틈 = 7.65.dp, 겹 = 겹, 가림구멍 = 창구멍, 가림농도 = { 어둠.value }) {
+            넣기속(상태, 칸고름, { 칸고름 = it }, 개수, 넣기, 빼기, 새종목만들기, { 새로 = true }, 플랜길, 창구멍, 어둠)
         }
     }
 }
@@ -131,7 +140,7 @@ private class 플랜손(val 개수: (String) -> Int, val 넣기: (String) -> Uni
 
 /**
  * 시트 속 (10-08 홍겸 님) — **종목 탭 목록(11번 화면)을 그대로** 쓴다: 칩줄 · 카테고리 이름표 · 2열 격자 · 펼침(12번 — 기본 세팅 고치기).
- * 다른 점은 상자마다 오른쪽 끝 체크 상자(누름 = 넣기 / 들어 있으면 하나 빼기 · 꾹 = 하나 더)와 들어간 상자의 강조옅음 바탕뿐.
+ * 다른 점은 상자마다 맨 앞(이름 왼쪽) 체크 상자(누름 = 넣기 / 들어 있으면 하나 빼기 · 꾹 = 하나 더)와 들어간 상자의 강조옅음 바탕뿐.
  * 칩줄은 그대로 두고 목록만 스크롤한다 (시안 v18 D ⑤) — 공용 [시트] 는 속을 통째로 넘기므로 목록 칸의 높이를 여기서 잰다:
  * 시트 판 안쪽 높이 − 이 칸의 위끝 = 남은 자리. 재지 못하면(시트 모양이 바뀌면) 시트가 넘기는 대로 둔다.
  */
@@ -146,13 +155,44 @@ private fun 넣기속(
     새종목만들기: Boolean,
     새로열기: () -> Unit,
     플랜길: 플랜손?,
+    창구멍: androidx.compose.runtime.MutableState<Rect?>,
+    어둠: androidx.compose.animation.core.Animatable<Float, androidx.compose.animation.core.AnimationVector1D>,
 ) {
     val d = 상태.d
     val 밀도 = LocalDensity.current
     var 칸높이 by remember { mutableStateOf<Dp?>(null) }
     var 못잼 by remember { mutableStateOf(false) }
     var 펼친 by remember { mutableStateOf<String?>(null) }
-    val 판 = d.종목탭판(칸고름)
+    // 10-11 홍겸 님: 펼치면 펼친 상자 말고 나머지를 어둡게 (종목 탭 [펼침가림막] 을 그대로 쓴다) · 어두운 곳을 누르면 접힌다.
+    //  펼친 상자 자리([구멍])는 스크롤 속 칸 기준으로 재서 스크롤해도 안 변한다. 한 번에 하나만 펼침은 전부터 그랬다([펼친] 하나)
+    val 구멍틀 = remember { arrayOfNulls<LayoutCoordinates>(2) }   // [0] 스크롤 속 칸 · [1] 펼친 상자
+    val 구멍상태 = remember { mutableStateOf<Rect?>(null) }   // 10-11(2차): 펼치는 동안 프레임마다 바뀌므로 구성에서 읽지 않는다 (읽으면 목록 전체가 매 프레임 다시 그려져 렉)
+    var 구멍 by 구멍상태
+    var 마지막 by remember { mutableStateOf<마지막누름?>(null) }   // 10-11 홍겸 님: 방금 접은 종목 — 반짝이고 화면 밖이면 안으로 되돌린다
+    val 마지막틀 = remember { arrayOfNulls<LayoutCoordinates>(1) }
+    val 보임틀 = remember { arrayOfNulls<LayoutCoordinates>(1) }   // 목록이 보이는 칸 — 어두운 구멍이 머리 띠 위로 번지지 않게 이 안으로 자른다
+    var 접힘정리 by remember { mutableStateOf(false) }
+    var 접는키 by remember { mutableStateOf<String?>(null) }   // 10-11 홍겸 님: 접는 중인 상자 — 속이 줄어드는 동안 어둠 · 스크롤도 같이 돌아온다
+    val 기억높이 = remember { floatArrayOf(0f) }   // 접는 동안 아래 빈칸이 갑자기 줄지 않게 마지막으로 잰 펼친 상자 높이
+    val 펼치전 = remember { intArrayOf(-1) }   // 10-11 홍겸 님: 펼치기 직전 스크롤 자리 — 접으면 거기로 돌아간다
+    var 보임px by remember { mutableIntStateOf(0) }   // 목록이 보이는 칸의 높이 (어둡게 · 스크롤 여유에 쓴다)
+    fun 구멍재기() {
+        val 속 = 구멍틀[0]; val 상 = 구멍틀[1]
+        구멍 = if (속 != null && 상 != null && 속.isAttached && 상.isAttached) 속.localBoundingBoxOf(상, clipBounds = false) else null
+        // 10-11 홍겸 님: 시트 전체를 어둡게 칠하려고 창 좌표로도 알린다 (시트 [가림구멍])
+        if (상 != null && 상.isAttached) {
+            val 창 = Rect(상.localToWindow(Offset.Zero), androidx.compose.ui.geometry.Size(상.size.width.toFloat(), 상.size.height.toFloat()))
+            val 뷰 = 보임틀[0]?.takeIf { it.isAttached }?.let { Rect(it.localToWindow(Offset.Zero), androidx.compose.ui.geometry.Size(it.size.width.toFloat(), it.size.height.toFloat())) }
+            창구멍.value = if (뷰 == null) 창 else 창.intersect(뷰).let { if (it.width <= 0f || it.height <= 0f) Rect(뷰.left, 뷰.top, 뷰.left, 뷰.top) else it }
+            기억높이[0] = 상.size.height.toFloat()
+        }
+    }
+    // 접기 = 펼친 상자의 속이 줄어드는 것 · 어두운 곳이 걷히는 것 · 화면이 펼치기 전 자리로 돌아가는 것이 한꺼번에 (아래 LaunchedEffect(접는키))
+    val 접기 = { 펼친?.let { k -> if (접는키 == null) { 마지막 = 마지막누름(k) { c -> 마지막틀[0] = c }; 접힘정리 = true; 접는키 = k } }; Unit }
+    val 판톡 = remember루톡(true)
+    // 10-11 홍겸 님: 펼친 동안은 즐겨찾기를 눌러도 순서를 바꾸지 않는다 — 접으면 반영
+    val 즐겨고정 = remember(펼친 != null) { if (펼친 != null) d.종목표.filter { it.즐겨 }.map { it.id }.toSet() else null }
+    val 판 = d.종목탭판(칸고름, d.설정.즐겨먼저, 즐겨고정)
     // 꾹 눌러 끌어 종목 순서 바꾸기 — 종목 탭과 같은 판 (같은 카테고리 안 · 종목표 차례)
     val 끌판 = remember격자끌기판({ a, b, 뒤 ->
         발자취.적기("넣기 · 종목 순서 옮김")
@@ -176,31 +216,147 @@ private fun 넣기속(
             },
     ) {
         Column(Modifier.fillMaxWidth().then(if (쓸 != null) Modifier.fillMaxHeight() else Modifier)) {
-            칩줄(listOf(넣기전체) + 판.칸들, 판.고름, { 칸바꿈(it) })
+            Box(Modifier.fillMaxWidth()) {
+                칩줄(listOf(넣기전체) + 판.칸들, 판.고름, { 칸바꿈(it) }, 사이 = 5.dp, 앞 = { 즐겨칩(상태) })
+                if (펼친 != null) Box(Modifier.matchParentSize().눌림(접기))   // 어둡게 칠하는 건 시트가 한다 — 여기는 누름만   // 칩줄도 어둡게 (누르면 접힌다)
+            }
+            // 10-11 홍겸 님: 카테고리 칩 줄 아래 파란 경계선 (칩 줄은 흰 바탕으로 고정 · 목록만 스크롤)
+            Box(Modifier.padding(top = 간격.좁게).fillMaxWidth().height(선굵기.굵게).background(Local색.current.강조))
             Spacer(Modifier.height(간격.좁게))
             // 칩을 바꾸면 맨 위부터 (시안 v18 D ⑤) · 칸을 눌러 다시 그려도 보던 자리 그대로
             key(판.고름) {
                 val 넘김 = rememberScrollState()
+                // 10-11 홍겸 님: 목록을 한꺼번에 그리면 멈칫 — 처음 한 화면 분량만 그리고 나머지는 프레임마다 조금씩 채운다
+                var 한도 by remember { mutableIntStateOf(12) }
+                val 판최신 by rememberUpdatedState(판)
+                LaunchedEffect(Unit) {
+                    while (한도 < 판최신.묶음.sumOf { it.second.size }) { withFrameNanos { }; 한도 += 8 }
+                }
+                // 10-11 홍겸 님: 펼침이 끝난 뒤(애니메이션 중에는 재지 않는다) 펼친 상자 맨 위(= 접힌 때의 이름 줄)가 목록 맨 위에 오도록 **한 번만** 스크롤.
+                //  접힐 때는 구멍만 비운다. 다른 종목으로 바꾸면 이 효과가 다시 돌아 새 자리로 한 번 움직인다
+                LaunchedEffect(접는키) {
+                    val k = 접는키 ?: return@LaunchedEffect
+                    kotlinx.coroutines.coroutineScope {
+                        launch {
+                            val 돌아감 = 펼치전[0]; 펼치전[0] = -1
+                            if (돌아감 >= 0 && 돌아감 != 넘김.value) 넘김.animateScrollTo(돌아감.coerceAtMost(넘김.maxValue), tween(움직임.상자펼침))
+                        }
+                        launch { kotlinx.coroutines.delay(움직임.상자펼침.toLong()); if (펼친 == k) 펼친 = null }
+                    }
+                    접는키 = null; 접힘정리 = false
+                }
+                LaunchedEffect(펼친 != null && 접는키 == null) {
+                    어둠.animateTo(if (펼친 != null && 접는키 == null) 1f else 0f, tween(움직임.상자펼침))
+                    if (펼친 == null) 창구멍.value = null
+                }
+                // 10-11 홍겸 님: 펼친 종목을 지우면 상자가 없어졌는데 어둠 · 구멍만 남던 버그 — 펼친 것이 목록에 없으면 접은 것으로 친다
+                LaunchedEffect(펼친, 판) {
+                    if (펼친 != null && 판.묶음.none { g -> g.second.any { it.열쇠 == 펼친 } }) {
+                        접는키 = null; 접힘정리 = false; 마지막 = null; 마지막틀[0] = null
+                        펼친 = null; 구멍틀[1] = null; 구멍 = null; 창구멍.value = null
+                    }
+                }
+                // 10-11 홍겸 님: 펼친 종목을 지우면 상자가 없어졌는데 어둠 · 구멍만 남던 버그 — 펼친 것이 목록에 없으면 접은 것으로 친다
+                LaunchedEffect(펼친, 판) {
+                    if (펼친 != null && 판.묶음.none { g -> g.second.any { it.열쇠 == 펼친 } }) {
+                        접는키 = null; 접힘정리 = false; 마지막 = null; 마지막틀[0] = null
+                        펼친 = null; 구멍틀[1] = null; 구멍 = null; 창구멍.value = null
+                    }
+                }
+                LaunchedEffect(펼친) {
+                    if (펼친 == null) {
+                        구멍틀[1] = null; 구멍 = null
+                        // 10-11 홍겸 님: 접은 뒤 방금 누른 상자가 화면 밖으로 나가 있으면 안으로 부드럽게 되돌린다 (그 상자는 반짝인다)
+                        if (마지막 != null) {
+                            접힘정리 = true
+                            withFrameNanos { }
+                            withFrameNanos { }
+                            val 돌아감 = 펼치전[0]; 펼치전[0] = -1
+                            if (돌아감 >= 0) {
+                                if (돌아감 != 넘김.value) 넘김.animateScrollTo(돌아감.coerceAtMost(넘김.maxValue))
+                            } else {
+                                val 속 = 구멍틀[0]; val 틀 = 마지막틀[0]
+                                if (속 != null && 틀 != null && 속.isAttached && 틀.isAttached) {
+                                    val r = 속.localBoundingBoxOf(틀, clipBounds = false)
+                                    val 위 = 넘김.value
+                                    if (r.top < 위 || r.bottom > 위 + 보임px) 넘김.animateScrollTo((r.top - 보임px * 0.25f).roundToInt().coerceAtLeast(0))
+                                }
+                            }
+                            접힘정리 = false
+                        }
+                    } else {
+                        // 10-11 홍겸 님(2차): 펼친 뒤에 움직이면 렉처럼 보인다 → 펼침과 동시에, 새 자리를 바로(애니메이션 없이) 맞춘다.
+                        //  이름 줄이 맨 위에 와서 위 카테고리는 화면 밖 · 상자는 거기서 위 → 아래로 펼쳐진다. 이전 상자는 바로 접히므로 두 프레임 뒤 한 번만 잰다
+                        if (펼치전[0] < 0) 펼치전[0] = 넘김.value
+                        withFrameNanos { }
+                        withFrameNanos { }
+                        구멍재기()
+                        구멍?.let { 넘김.animateScrollTo(it.top.roundToInt().coerceAtLeast(0), tween(움직임.상자펼침)) }   // 10-11: 펼쳐지는 것과 같은 시간에 같이 움직인다 (전: 한 번에 확 건너뜀)
+                    }
+                }
                 if (쓸 == null && !못잼) {
                     // 재는 중 — 한 번만 비워 둔다 (긴 목록을 먼저 그렸다가 줄이지 않게 · U5-6)
                     Spacer(Modifier.height(1.dp))
-                } else Column(
-                    Modifier.fillMaxWidth()
-                        .then(if (쓸 != null) Modifier.weight(1f).격자끌기틀(끌판, 넘김).verticalScroll(넘김) else Modifier)
-                        // 떠 있는 [새 종목] 단추 자리만큼 아래 여백 (시안 v19 C ②)
-                        .padding(bottom = if (새종목만들기) 높이.낮게 + 간격.좁게 else 간격.좁게),
-                    verticalArrangement = Arrangement.spacedBy(간격.좁게),
-                ) {
-                    종목묶음들(상태, 판, 끌판, 펼친, { k -> 펼친 = if (펼친 == k) null else k }, 손)
+                } else {
+                    // 떠 있는 [새 종목] 단추 자리만큼 아래 여백 (시안 v19 C ②) — 펼쳤을 때는 단추가 목록 맨 끝으로 가므로 뺀다
+                    val 아래여백 = if (펼친 == null) 높이.낮게 + 간격.좁게 * 2 else 간격.좁게   // 10-11: 아래에 떠 있는 줄([새 종목 만들기] · [확인]) 자리 — 펼치면 줄이 없다
+                    val 아래여백px = with(밀도) { 아래여백.roundToPx() }
+                    Column(
+                        Modifier.fillMaxWidth()
+                            .then(if (쓸 != null) Modifier.weight(1f).onSizeChanged { 보임px = it.height }.onGloballyPositioned { 보임틀[0] = it; 구멍재기() }.격자끌기틀(끌판, 넘김).verticalScroll(넘김) else Modifier)
+                            .padding(bottom = 아래여백),
+                    ) {
+                        // 스크롤 속 칸 하나 — 목록이 짧아도 보이는 칸 끝까지 어둡게 하려고 보이는 높이 이상으로 둔다.
+                        //  10-11(2차): [보임px] · [구멍] 은 배치 단계에서만 읽는다 (구성에서 읽으면 목록 전체가 다시 그려져 렉)
+                        Box(
+                            Modifier.fillMaxWidth()
+                                .layout { m, c ->
+                                    val 최소 = minOf(max(c.minHeight, (보임px - 아래여백px).coerceAtLeast(0)), c.maxHeight)
+                                    val q = m.measure(c.copy(minHeight = 최소))
+                                    layout(q.width, q.height) { q.place(0, 0) }
+                                }
+                                .onGloballyPositioned { 구멍틀[0] = it; 구멍재기() },
+                        ) {
+                            Column(Modifier.fillMaxWidth()) {
+                                Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(간격.좁게)) {
+                                    종목묶음들(
+                                        상태, 판, 끌판, 펼친,
+                                        { k -> if (접는키 != null) Unit else if (펼친 == k) 접기() else { 마지막 = null; 마지막틀[0] = null; 펼친 = k } },
+                                        손, 펼침틀 = { 구멍틀[1] = it; 구멍재기() }, 마지막 = 마지막, 접는키 = 접는키, 한도 = if (펼친 != null) Int.MAX_VALUE else 한도,
+                                    )
+                                    // 펼쳤을 때는 아래 떠 있는 줄이 없고, [새 종목 만들기] 가 목록 맨 끝에 놓인다 (가림막 아래라 어둡다)
+                                    if (펼친 != null && 새종목만들기) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                                        버튼(
+                                            "새 종목 만들기", { 판톡.톡(); 발자취.적기("넣기 · 새 종목 만들기"); 새로열기() },
+                                            Modifier.루톡(판톡), 주요 = true, 낮게 = true, 그림 = 아이콘.더하기,
+                                        )
+                                    }
+                                }
+                                // 펼친 상자를 맨 위로 올릴 수 있게 아래를 비워 둔다 (펼친 상자가 보이는 칸보다 작을 때만) · 접은 직후 화면을 되돌리는 동안도 유지
+                                Box(
+                                    Modifier.fillMaxWidth().layout { _, c ->
+                                        val h = if (펼친 != null || 접힘정리) (보임px - (구멍상태.value?.height ?: 기억높이[0]).roundToInt()).coerceAtLeast(0) else 0
+                                        layout(if (c.hasBoundedWidth) c.maxWidth else 0, h) { }
+                                    },
+                                )
+                            }
+                            if (펼친 != null) 가림막자리(구멍상태, 접기, Modifier.matchParentSize())
+                        }
+                    }
                 }
             }
         }
-        if (새종목만들기) {
-            val 판톡 = remember루톡(true)
-            버튼(
+        // 10-11 홍겸 님: 아래에 떠 있는 줄 — [새 종목 만들기] 가운데 · [확인] 오른쪽 (파란 박스 · 흰 글). 바탕은 칠하지 않는다(목록이 가려지지 않게) · 펼치면 없다
+        val 닫기 = Local시트닫기.current
+        if (펼친 == null) Box(
+            Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(bottom = 간격.좁게),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (새종목만들기) 버튼(
                 "새 종목 만들기", { 판톡.톡(); 발자취.적기("넣기 · 새 종목 만들기"); 새로열기() },
-                Modifier.align(Alignment.BottomEnd).루톡(판톡), 주요 = true, 낮게 = true, 그림 = 아이콘.더하기,
+                Modifier.루톡(판톡), 주요 = true, 낮게 = true, 그림 = 아이콘.더하기,
             )
+            버튼("확인", { 판톡.톡(); 닫기() }, Modifier.align(Alignment.CenterEnd), 주요 = true, 낮게 = true)
         }
         격자끌기이름표(끌판)
     }
@@ -247,7 +403,11 @@ internal fun 넣기빈칸(글자: String, modifier: Modifier = Modifier) {
 /** 넣기 시트 값 (시안 CSS) — Theme 에 없는 것만 여기 모았다. 합칠 때 Theme.kt `부품치수` 로 옮긴다 */
 internal object 넣기값 {
     val 번호폭 = 12.dp          // .넣기번 min-width
-    val 체크 = 20.dp            // .넣기체크 20 × 20
+    val 체크 = 18.dp            // .넣기체크 (10-11 홍겸 님: 20 → 18, 10% 줄임)
+    val 체크옆 = 6.dp           // 10-11 홍겸 님: 체크 상자 좌우 여백 6 (상자 테두리 · 이름과의 사이)
+    val 체크늘림 = 4.5.dp       // 누르는 범위 +15% (30 → 34.5) — 오른쪽으로만 늘린다
+    val 체크윤곽 = 2.5f         // 체크(✓) 흰 글씨 둘레 얇은 테두리 굵기(px) — 주동색 (10-13 홍겸 님)
+    val 체크옆넓힘 = 20.dp      // 전 좌우 12 → 3 으로 줄어 이름 칸이 넓어진 만큼 (글 크기는 그대로 · 자간만 넓힌다)
     val 체크모서리 = 4.dp       // .넣기체크 border-radius
     val 딱지겹침 = (-5).dp      // 이름 오른쪽 위 5 겹침 (부품치수.딱지겹침 과 같은 값)
     val 최소높이 = 120.dp       // 잰 목록 높이가 이보다 작거나
@@ -255,9 +415,6 @@ internal object 넣기값 {
     const val 말진하기 = 0.85f  // .넣기말 opacity
     val 연필폭 = 24.dp          // v22 ⑦ .넣기편집 누르는 칸 24 × 28
     val 연필그림 = 16.dp        // .넣기편집 svg 16
-    // 10-08 홍겸 님 [11_UI지침에 올릴 값]
-    const val 체크간격줄임 = 0.35f  // 접힌 줄: ∨ ↔ 체크 상자 눈에 보이는 간격(12)을 35% 줄인다 (→ 7.8)
-    val 체크옮김 = 4.dp         // 접힌 줄: 체크 상자를 오른쪽으로 (띄어쓰기 한 칸)
 }
 
 // ═════════════════════ 순수 계산 (시험: ui/RoutineTest.kt) ═════════════════════
@@ -304,5 +461,13 @@ internal fun 넣기칸들(종목표: List<종목>, 플랜들: List<플랜>, 칸:
 internal fun 넣기이름넘침(이름: String, 잘림: Boolean, 줄끝: List<Int>): Boolean =
     잘림 || 줄끝.dropLast(1).any { e -> e in 1 until 이름.length && !이름[e - 1].isWhitespace() && !이름[e].isWhitespace() }
 
-/** 체크 상자 글 — 1~3 = ✓ 그 수만큼, 넷부터 ✓×n, 0 = "" (시안 v18 D ③) */
-internal fun 체크글(n: Int): String = if (n <= 0) "" else if (n > 3) "✓×${n}" else "✓".repeat(n)
+/** 체크 상자 글 — 1~2 = ✓ 그 수만큼, 셋부터 ✓×n (10-11 홍겸 님: 넷 → 셋부터), 0 = "" (시안 v18 D ③) */
+internal fun 체크글(n: Int): String = if (n <= 0) "" else if (n >= 3) "✓×${n}" else "✓".repeat(n)
+
+/** 펼친 상자 둘레의 어두운 막 — 구멍(펼친 상자 자리)을 이 안에서만 읽어, 펼치는 동안 이 작은 부분만 다시 그린다. 구멍을 아직 못 쟀으면 전부 어둡게 */
+@Composable
+private fun 가림막자리(구멍: State<Rect?>, 접기: () -> Unit, modifier: Modifier) {
+    val h = 구멍.value
+    if (h != null) 펼침가림막(h, 접기, modifier, androidx.compose.ui.graphics.Color.Transparent)
+    else Box(modifier.눌림(접기))
+}

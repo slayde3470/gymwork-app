@@ -8,6 +8,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -36,6 +37,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
@@ -50,6 +52,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -62,6 +69,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.slayde.hasenheide.data.근육계산
 import com.slayde.hasenheide.data.날기록
 import com.slayde.hasenheide.data.날짜만
@@ -82,12 +90,16 @@ import com.slayde.hasenheide.data.세트종류
 import com.slayde.hasenheide.data.시간글
 import com.slayde.hasenheide.data.앱데이터
 import com.slayde.hasenheide.data.예상초
+import com.slayde.hasenheide.data.볼륨있음
+import com.slayde.hasenheide.data.방식
 import com.slayde.hasenheide.data.예정루틴
+import com.slayde.hasenheide.data.예정옮기기
 import com.slayde.hasenheide.data.예정지우기
 import com.slayde.hasenheide.data.예정초기화
 import com.slayde.hasenheide.data.운동량
 import com.slayde.hasenheide.data.운동세션
 import com.slayde.hasenheide.data.운동시작
+import com.slayde.hasenheide.data.입력세트들
 import com.slayde.hasenheide.data.한세트수
 import com.slayde.hasenheide.data.목표세트
 import com.slayde.hasenheide.data.조절적용
@@ -139,6 +151,26 @@ internal fun 앱데이터.캘기록목록(날: String): List<Pair<String, 날기
 /** 그 날 기록이 하나라도 있나 (시안 `기록있음`) */
 internal fun 앱데이터.캘기록있음(날: String): Boolean = 기록.keys.any { 날짜만(it) == 날 }
 
+/**
+ * 10-10 홍겸 님: 달력 날을 꾹 눌러 다른 날로 옮기기 — 오늘 이전은 이미 지났고, 운동을 마친 날(기록 있는 날)은 옮길 수 없다(지우기만 된다).
+ * 집을 수 있으면 null, 아니면 토스트 글. 옮기는 계산은 [예정옮기기]
+ */
+internal fun 앱데이터.캘집기막힘(원: String, 오늘: String): String? = when {
+    원 < 오늘 -> "지난 날은 옮길 수 없습니다"
+    캘기록있음(원) -> "운동을 마친 날은 옮길 수 없습니다 (기록 삭제만 됩니다)"
+    예정루틴(원) == null -> "옮길 운동이 없는 날입니다"
+    원 == 오늘 && 세션 != null && 세션.루틴id == 예정[원] -> "진행 중인 운동은 옮길 수 없습니다"   // 감시관: 그 날만 쓰는 운동이 사라지면 세션이 가리키는 루틴이 끊긴다
+    else -> null
+}
+
+/** [원] 날의 운동을 [D] 날에 놓을 수 있으면 null, 아니면 토스트 글 (이미 운동이 깔린 날은 놓을 수 있다 — 그 날 것을 대신한다) */
+internal fun 앱데이터.캘놓기막힘(원: String, D: String, 오늘: String): String? = when {
+    D == 원 -> "같은 날입니다"
+    D < 오늘 -> "지난 날로는 옮길 수 없습니다"
+    캘기록있음(D) -> "운동을 마친 날로는 옮길 수 없습니다"
+    else -> 캘집기막힘(원, 오늘)
+}
+
 /** 그 날 기록을 이 차례로 다시 놓는다 — 날짜 · ~2 · ~3 … 빈 번호 없이 (첫 기록 열쇠가 늘 날짜가 되게 — data 쪽 함수들이 그렇게 본다) */
 internal fun 앱데이터.캘기록놓기(날: String, 줄: List<날기록>): 앱데이터 {
     val 남 = 기록.filterKeys { 날짜만(it) != 날 }
@@ -176,7 +208,8 @@ internal fun 앱데이터.캘기록되살림(x: 캘지움값): 앱데이터 {
         if (j >= 0) 줄 += 지금.removeAt(j) else if (i in x.지운) 줄 += r
     }
     줄 += 지금
-    return 캘기록놓기(x.날, 줄)
+    // 10-10: 되살린 날은 한 날이다 — 지우는 사이 자정이 지나 '미실시' · '쉰날' 로 담겼으면 뺀다
+    return 캘기록놓기(x.날, 줄).let { it.copy(미실시 = it.미실시 - x.날, 쉰날 = it.쉰날 - x.날) }
 }
 
 /** 달력 칸 한 개의 글 (시안 `칸내용`) — 기록 > 미실시 > 예정. 기록이 여럿이면 '하체 +1' */
@@ -228,10 +261,12 @@ internal fun 앱데이터.캘기록세션(rec: 날기록, 날: String): 운동�
         val 웜 = e.세트들.count { it.종류 == 세트종류.워밍업 }
         val 계획 = 짝?.종목?.firstOrNull { 캘같은종목(it.종id, it.이름, e.종id, e.이름) }?.세트
         val 계획세트 = if (rec.달성 || 계획 == null) n else max(n, 계획 + 웜)
-        val 첫 = e.세트들.firstOrNull()
+        // 10-12 기록 방식: 기록은 실제 무게로 남아 있다 → 세션은 입력값(추가 · 보조)으로 거꾸로 (다시 저장 · 계산할 때 두 번 바뀌지 않게)
+        val 입력 = 입력세트들(e.종id, e.이름, e.플랜id, e.세트들)
+        val 첫 = 입력.firstOrNull()
         세션종목(
             e.이름, n, 계획세트, 첫?.w ?: 0.0, 첫?.r ?: 0, 0,
-            기록 = e.세트들, 예정값 = e.세트들, 임시 = e.임시, 슈퍼 = e.묶음, 플랜id = e.플랜id, 종id = e.종id,
+            기록 = 입력, 예정값 = 입력, 임시 = e.임시, 슈퍼 = e.묶음, 플랜id = e.플랜id, 종id = e.종id,
         )
     }
     val 첫 = 들.firstOrNull()
@@ -254,7 +289,13 @@ internal fun 캘요일글(k: String): String = "일월화수목금토"[LocalDate
 // ─────────────── 화면 값 ───────────────
 
 /** 달력 칸 높이 (시안 `.칸날` 64 · 날짜 13 + 루틴 11 + 상태 11 이 들어간다) [Theme 에 없는 새 값 — 합칠 때 Theme.kt 로] */
-private val 칸높이 = 64.dp
+private val 칸높이 = 52.dp   // 10-11 홍겸 님: 64 → 54 (날짜 판에 예정 종목 10개가 들어가게)
+/** 달력 한 달 전체 높이 — 6줄 기준으로 고정. 5줄 · 4줄인 달은 같은 높이를 줄 수로 균등하게 나눈다 (10-11 홍겸 님) */
+private const val 기본줄수 = 6
+private val 달력높이 = 칸높이 * 기본줄수
+/** 날짜 판 띠(선택한 날) 글 크기 — 띠글 18 에서 날짜 2sp · 요일 4sp 만 낮춘다 (10-11 홍겸 님) [Theme 에 없는 새 값 — 합칠 때 Theme.kt 로] */
+private val 중간날짜크기 = 12.sp   // 10-11 홍겸 님: 16 → 12 (25%↓)
+private val 중간요일크기 = 9.1.sp   // 14 → 9.1 (35%↓) · [오늘] 도 같은 크기
 /** 날짜 판 기록 이름은 줄의 이만큼까지 (시안 `.예이름 max-width:40%`) */
 private const val 이름폭비 = 0.4f
 /** 칸 안 글 옆 · 요일 줄 위아래 (시안 `.칸날` padding 4px 2px · `.요일` padding 2px 0) */
@@ -313,6 +354,49 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
     }
 
     fun 날고름(k: String) { if (k != 고른날) { 록골 = emptySet(); 지움모드 = false }; 고른날 = k }
+    // 10-10 홍겸 님: 날을 꾹 눌러 집으면(집은날) 다른 날로 끌어 놓거나, 손을 떼고 옮길 날을 누른다. 같은 날 다시 누르기 · 뒤로가기 = 취소
+    var 집은날 by remember { mutableStateOf<String?>(null) }
+    val 손 = remember { mutableStateOf<Offset?>(null) }   // 끄는 손가락 자리(화면) — 달력만 읽는다(화면 전체가 매 프레임 다시 그려지지 않게)
+    val 진동 = LocalHapticFeedback.current
+    fun 집기취소() { 집은날 = null; 손.value = null }
+    fun 옮기기(원: String, D: String) {
+        val 전 = 상태.d
+        val 막힘 = 전.캘놓기막힘(원, D, 상태.오늘)
+        if (막힘 != null) { 상태.알림.토스트(막힘); return }
+        val 이름 = 전.예정루틴(원)?.이름 ?: ""
+        상태.바꿈 { it.예정옮기기(원, D, 상태.오늘) }
+        집기취소()
+        if (상태.d.예정 == 전.예정 && 상태.d.예정고정 == 전.예정고정 && 상태.d.그날운동 == 전.그날운동) { 상태.알림.토스트("옮기지 못했습니다"); return }
+        날고름(D)
+        발자취.적기("${캘날글(원)} → ${캘날글(D)} 예정 옮김")
+        상태.알림.되돌림("캘린더옮김", { n -> if (n > 1) "예정을 ${n}번 옮겼습니다" else "${캘날글(원)} ${조사(이름, "을", "를")} ${캘날글(D)}로 옮겼습니다" }) {
+            상태.바꿈 { dd -> dd.copy(예정 = 전.예정, 예정고정 = 전.예정고정, 그날운동 = 전.그날운동) }
+            날고름(원)
+            발자취.적기("예정 옮김 되돌림")
+        }
+    }
+    fun 꾹눌림(k: String, 자리: Offset) {
+        val 막힘 = 상태.d.캘집기막힘(k, 상태.오늘)
+        if (막힘 != null) { 상태.알림.토스트(막힘); return }
+        if (k == 집은날) return
+        진동.performHapticFeedback(HapticFeedbackType.LongPress)
+        if (집은날 == null) 상태.알림.토스트("${캘날글(k)} 운동을 옮길 날을 누르거나 끌어 놓으세요")
+        집은날 = k; 손.value = 자리
+    }
+    fun 날눌림(k: String) {
+        val 원 = 집은날
+        when {
+            원 == null -> 날고름(k)
+            k == 원 -> 집기취소()
+            else -> 옮기기(원, k)   // 못 놓는 날이면 토스트만 · 집은 채로 다시 고른다
+        }
+    }
+    fun 끌어놓음(위: String?) {
+        val 원 = 집은날 ?: return
+        손.value = null
+        // 손을 떼도 아무 날 위가 아니거나 제 자리면 집은 채로 둔다 (집어 두기 — 다음에 옮길 날을 누른다)
+        if (위 != null && 위 != 원) 옮기기(원, 위)
+    }
     // 달 넘기기 — ‹ › · 달력 좌우 스와이프 · 끌며 넘김이 모두 이 함수. 고른 날도 같은 '일' 로 (없으면 그 달 마지막 날)
     fun 달넘김(n: Int) {
         val 새달 = 보는달.plusMonths(n.toLong())
@@ -366,6 +450,7 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
         }
     }
     fun 보고서(k: String, @Suppress("UNUSED_PARAMETER") rec: 날기록) { 보는기록 = k }
+    BackHandler(enabled = 집은날 != null) { 집기취소() }
 
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
@@ -383,6 +468,7 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
                         밀기.animateTo(0f, tween(움직임.달))
                     }
                 }
+                Box(Modifier.fillMaxWidth()) {
                 Column(
                     Modifier.graphicsLayer {
                         translationX = 밀기.value * size.width * 움직임.달밀기
@@ -391,12 +477,18 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
                 ) {
                     요일줄()
                     달력(d, 오늘, 보는달, 고른날, Modifier.번호("캘2"),
-                        on누름 = { 날고름(it) },
-                        on스와이프 = { n -> 달넘김(n) })
+                        on누름 = { 날눌림(it) },
+                        on스와이프 = { n -> 달넘김(n) },
+                        집은날 = 집은날, 손 = 손,
+                        on꾹 = { k, 자리 -> 꾹눌림(k, 자리) },
+                        on끌 = { 양 -> 손.value = 손.value?.plus(양) },
+                        on놓음 = { 위 -> 끌어놓음(위) })
+                }
+                // 10-11 홍겸 님: [오늘] 은 캘린더 우측 하단에 고정 — 달을 넘기는 밀기 밖에 둬서 자리가 안 변한다 (다른 달을 볼 때만 보임 · 전과 같음)
+                if (보는달 != 이번달) 흰칩("오늘", { 보는달 = 이번달; 날고름(오늘) }, Modifier.align(Alignment.BottomEnd).padding(end = 간격.보통, bottom = 간격.아주좁게))
                 }
                 날판(
-                    상태, 고른날, 다른달 = 보는달 != 이번달, 록골 = 록골, 지움모드 = 지움모드, 예펼침 = 예펼침,
-                    on오늘 = { 보는달 = 이번달; 날고름(오늘) },
+                    상태, 고른날, 록골 = 록골, 지움모드 = 지움모드, 예펼침 = 예펼침,
                     on록고름 = { rk -> 록골 = if (rk in 록골) 록골 - rk else 록골 + rk },
                     on펼침 = { 키 -> 예펼침 = if (예펼침 == 키) null else 키 },
                     modifier = Modifier.weight(1f),
@@ -425,7 +517,7 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
                     이름표("루틴 고르기")   // 10-09 홍겸 님: 목록은 펼친 채, 무엇을 고르는지 작은 제목만 다시
                     Box(Modifier.height(간격.아주좁게))
                     d.루틴들.forEach { r ->
-                        val 곁 = (if (r.휴식일) "휴식" else "예상 ${시간글(예상초(d.플랜줄채움(r)))}") + if (r.자동생성) "" else " · 수동"
+                        val 곁 = (if (r.휴식일) "휴식" else "예상 ${시간글(예상초(d.플랜줄채움(r), d))}") + if (r.자동생성) "" else " · 수동"
                         고르기줄(r.이름, 곁, 오른쪽 = if (d.예정[k] == r.id) 아이콘.체크 else null) {
                             열린 = null
                             상태.바꿈 { it.그날만바꾸기(r.id, k, 상태.오늘) }
@@ -505,7 +597,7 @@ private fun 흰칩(글자: String, onClick: () -> Unit, modifier: Modifier = Mod
         modifier.height(높이.아주낮게).배율(배).clip(RoundedCornerShape(모서리.작게)).background(c.강조글)
             .눌림손(손, onClick).padding(horizontal = 간격.좁게),
         contentAlignment = Alignment.Center,
-    ) { 글(글자, 크기값 = 크기.조금작게, 색 = c.강조, 굵기 = FontWeight.Bold) }
+    ) { 글(글자, 크기값 = 크기.조금작게, 색 = c.강조, 굵기 = FontWeight.Normal) }   // 10-11 홍겸 님: 볼드 아님
 }
 
 // ─────────────── 달력 ───────────────
@@ -538,15 +630,21 @@ private fun Modifier.칸선(색: Color, 첫칸: Boolean): Modifier = drawBehind 
 private fun 달력(
     d: 앱데이터, 오늘: String, 달: YearMonth, 고른날: String, modifier: Modifier,
     on누름: (String) -> Unit, on스와이프: (Int) -> Unit,
+    집은날: String? = null, 손: State<Offset?>? = null,
+    on꾹: (String, Offset) -> Unit = { _, _ -> }, on끌: (Offset) -> Unit = {}, on놓음: (String?) -> Unit = {},
 ) {
     val c = Local색.current
     val 첫 = 달.atDay(1)
     val 앞빈칸 = 첫.dayOfWeek.value % 7          // 일요일 = 0
     val 줄수 = (앞빈칸 + 달.lengthOfMonth() + 6) / 7
-    // 10-09 홍겸 님: 날 옮기기(꾹 눌러 끌기 · 집어 두기)를 없앴다 — 남은 건 누르기 · 가로로 달 넘기기뿐
+    // 10-09 홍겸 님이 없앴던 날 옮기기(꾹 눌러 끌기 · 집어 두기)를 10-10 다시 달라고 해 되살렸다 — 누르기 · 가로로 달 넘기기 · 꾹 눌러 옮기기
     val 스와이프 by rememberUpdatedState(on스와이프)
+    val 칸틀 = remember(달) { HashMap<String, Rect>() }   // 달이 바뀌면 옛 칸 자리를 버린다(다른 달 칸이 손 밑에 잡히지 않게)
+    val 손최신 = 손
+    fun 어느날(): String? = 손최신?.value?.let { p -> 칸틀.entries.firstOrNull { p in it.value }?.key }
+    val 위 = if (집은날 != null) 어느날() else null   // 손이 움직일 때마다 다시 그려진다(손 상태를 여기서 읽는다)
     Box(modifier.fillMaxWidth()) {
-        Column(Modifier.fillMaxWidth().pointerInput(Unit) {
+        Column(Modifier.fillMaxWidth().height(달력높이).pointerInput(Unit) {
             // 가로로 달달 끌기 — 왼쪽으로 끌면 다음 달 · 오른쪽으로 끌면 이전 달. 가로가 세로보다 클 때만
             val 거리 = 달스와이프거리.toPx()
             var 가로 = 0f; var 세로 = 0f
@@ -558,13 +656,21 @@ private fun 달력(
             )
         }) {
             for (줄 in 0 until 줄수) {
-                Row(Modifier.fillMaxWidth().height(칸높이)) {
+                Row(Modifier.fillMaxWidth().weight(1f)) {   // 6줄 높이를 줄 수로 균등하게
                     for (칸 in 0 until 7) {
                         val n = 줄 * 7 + 칸 - 앞빈칸 + 1
                         val 칸모양 = Modifier.weight(1f).fillMaxHeight()
                         if (n < 1 || n > 달.lengthOfMonth()) { Box(칸모양.칸선(c.선, 칸 == 0)); continue }
                         val k = 달.atDay(n).toString()
-                        날칸(d.캘칸내용(k), n, 칸, k == 오늘, k == 고른날, 칸모양) { on누름(k) }
+                        val 옮김 = if (집은날 == null) -1 else when {
+                            k == 집은날 -> 0
+                            d.캘놓기막힘(집은날, k, 오늘) != null -> 3
+                            k == 위 -> 2
+                            else -> 1
+                        }
+                        날칸(d.캘칸내용(k), n, 칸, k == 오늘, k == 고른날, 옮김, 칸모양,
+                            on꾹 = { 자리 -> on꾹(k, 자리) }, on끌 = on끌, on놓음 = { on놓음(어느날()) },
+                            on틀 = { 칸틀[k] = it }) { on누름(k) }
                     }
                 }
             }
@@ -577,19 +683,44 @@ private fun 달력(
  * 고른 날 = 강조 테두리 + 강조옅음 바탕
  */
 @Composable
-private fun 날칸(값: 캘칸값?, 일: Int, 요일: Int, 오늘임: Boolean, 고름: Boolean, modifier: Modifier, onClick: () -> Unit) {
+private fun 날칸(
+    값: 캘칸값?, 일: Int, 요일: Int, 오늘임: Boolean, 고름: Boolean,
+    /** 날 옮기는 중 모양 — -1 아님 · 0 집은 날 · 1 놓을 수 있는 날 · 2 놓을 수 있고 손이 그 위 · 3 놓을 수 없는 날 (동작방식 D3-10 · 11 지침 U5-5) */
+    옮김: Int,
+    modifier: Modifier,
+    on꾹: (Offset) -> Unit, on끌: (Offset) -> Unit, on놓음: () -> Unit, on틀: (Rect) -> Unit,
+    onClick: () -> Unit,
+) {
     val c = Local색.current
     val 누름 by rememberUpdatedState(onClick)
-    val 테두리 by animateColorAsState(if (고름) c.강조 else Color.Transparent, tween(움직임.색), label = "고른날")
-    val 바탕 by animateColorAsState(if (고름) c.강조옅음 else Color.Transparent, tween(움직임.색), label = "고른날바탕")
+    val 꾹최신 by rememberUpdatedState(on꾹)
+    val 끌최신 by rememberUpdatedState(on끌)
+    val 놓음최신 by rememberUpdatedState(on놓음)
+    val 틀최신 by rememberUpdatedState(on틀)
+    var 내틀 by remember { mutableStateOf(Rect.Zero) }
+    val 꾹 = remember { 꾹표() }
+    val 테두리 by animateColorAsState(
+        when (옮김) { 0, 1, 2 -> c.강조; 3 -> c.나쁨; else -> if (고름) c.강조 else Color.Transparent }, tween(움직임.색), label = "고른날")
+    val 바탕 by animateColorAsState(if (고름 && 옮김 < 0 || 옮김 == 0 || 옮김 == 2) c.강조옅음 else Color.Transparent, tween(움직임.색), label = "고른날바탕")
     val 강조글 = c.강조글
     Column(
         modifier
+            .onGloballyPositioned { 내틀 = it.boundsInRoot(); 틀최신(내틀) }
             .칸선(c.선, 요일 == 0)
             .background(바탕)
-            .border(선굵기.보통, 테두리)
-            // 칸 전체가 누르는 곳 — 손이 닿는 순간이 아니라 뗄 때 고른다
-            .pointerInput(Unit) { detectTapGestures(onTap = { 누름() }) }
+            .border(if (옮김 == 0 || 옮김 == 2) 선굵기.굵게 else 선굵기.보통, 테두리)
+            .alpha(if (옮김 == 0) 움직임.끌림투명 else 1f)   // 집은 것은 흐리게 (U5-5) — 테두리는 또렷하게 두려고 이 줄 뒤에서만
+            // 칸 전체가 누르는 곳 — 손이 닿는 순간이 아니라 뗄 때 고른다. 꾹 눌렀다 뗀 뒤에는 누름으로 치지 않는다
+            .pointerInput(Unit) { detectTapGestures(onTap = { if (!꾹.중 && SystemClock.uptimeMillis() - 꾹.끝 > 300L) 누름() }) }
+            // 꾹 눌러 집기 · 그대로 끌어 다른 날에 놓기 (집기만 하고 떼면 집은 채로 남는다). 꾹 누르기 전에 움직이면 달 넘기기 스와이프로 넘어간다
+            .pointerInput(Unit) {
+                detectDragGesturesAfterLongPress(
+                    onDragStart = { p -> 꾹.중 = true; 꾹최신(Offset(내틀.left + p.x, 내틀.top + p.y)) },
+                    onDrag = { ch, 양 -> ch.consume(); 끌최신(양) },
+                    onDragEnd = { 꾹.중 = false; 꾹.끝 = SystemClock.uptimeMillis(); 놓음최신() },
+                    onDragCancel = { 꾹.중 = false; 꾹.끝 = SystemClock.uptimeMillis() },
+                )
+            }
             .padding(vertical = 간격.아주좁게, horizontal = 칸글옆),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -618,6 +749,9 @@ private fun 날칸(값: 캘칸값?, 일: Int, 요일: Int, 오늘임: Boolean, �
     }
 }
 
+/** 날 칸의 꾹 누름 표 — 꾹 누르는 중인가 · 마지막으로 끝난 때(ms). 꾹 눌렀다 뗄 때 같이 오는 '누름'을 걸러낸다 */
+private class 꾹표 { var 중 = false; var 끝 = 0L }
+
 // ─────────────── 날짜 판 ───────────────
 
 /** 위쪽 가는 선 + 위 8 — 판 안 이름 줄 사이 (시안 `.예머리` border-top · padding-top) */
@@ -631,8 +765,8 @@ private fun Modifier.윗선(켬: Boolean, 색: Color): Modifier =
  */
 @Composable
 private fun 날판(
-    상태: 앱상태, k: String, 다른달: Boolean, 록골: Set<String>, 지움모드: Boolean, 예펼침: String?,
-    on오늘: () -> Unit, on록고름: (String) -> Unit, on펼침: (String) -> Unit,
+    상태: 앱상태, k: String, 록골: Set<String>, 지움모드: Boolean, 예펼침: String?,
+    on록고름: (String) -> Unit, on펼침: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val c = Local색.current
@@ -645,16 +779,25 @@ private fun 날판(
     val 넘김 = rememberScrollState()
     LaunchedEffect(k) { 넘김.scrollTo(0) }
     Column(modifier.fillMaxWidth().번호("캘1")) {
-        // ── 띠 — 오른쪽 끝: 다른 달을 볼 때만 [오늘] (10-08: [변경] · [루틴 넣기] 는 없앴다 — 아래 단추 줄이 한다) ──
+        // ── 띠 — 고른 날 · 요일 (10-11: [오늘] 은 달력 우측 하단으로 옮겼다. 10-08: [변경] · [루틴 넣기] 는 없앴다 — 아래 단추 줄이 한다) ──
         Row(
-            Modifier.padding(horizontal = 간격.보통).fillMaxWidth().heightIn(min = 높이.보통)   // 10-09: 좌우 여백 12 · 모서리 8
-                .clip(RoundedCornerShape(모서리.작게)).background(c.강조).padding(horizontal = 간격.보통, vertical = 부품치수.띠세로여백),
+            Modifier.padding(horizontal = 간격.보통).fillMaxWidth()   // 10-09: 좌우 여백 12 · 모서리 8 · 10-11: 높이 = 글 위아래 7
+                .clip(RoundedCornerShape(모서리.작게)).background(c.강조).padding(horizontal = 간격.보통, vertical = 6.dp),   // 10-11 홍겸 님: 띠 위아래 +2
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.좁게),
         ) {
-            띠글("${캘날글(k)} (${캘요일글(k)})${if (k == 오늘) " · 오늘" else ""}", Modifier.weight(1f))
-            if (다른달) 흰칩("오늘", on오늘)
+            // 10-11 홍겸 님: 날짜 글 18 → 16 (2sp ↓) · 요일 글 18 → 14 (4sp ↓). 모양은 띠글(굵게 · 강조글)과 같다
+            Text(
+                buildAnnotatedString {
+                    append("${캘날글(k)} ")
+                    withStyle(SpanStyle(fontSize = 중간요일크기, color = c.강조글.copy(alpha = 0.65f))) {
+                        append("(${캘요일글(k)})")
+                        if (k == 오늘) append(" · 오늘")
+                    }
+                },
+                Modifier.weight(1f), style = 글꼴.제목(중간날짜크기), color = c.강조글, maxLines = 1, overflow = TextOverflow.Ellipsis,
+            )
         }
-        Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(넘김).padding(horizontal = 간격.보통, vertical = 간격.좁게), verticalArrangement = Arrangement.spacedBy(간격.좁게)) {
+        Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(넘김).padding(horizontal = 간격.보통, vertical = 2.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {   // 10-11 홍겸 님: 머리 줄 위아래 줄여 10칸이 다 보이게
             var 앞것 = false
             록.forEach { (rk, rec) ->
                 기록머리(d, rec, 켬 = rk in 록골, 선위 = 앞것, 지움모드 = 지움모드) { on록고름(rk) }
@@ -684,7 +827,7 @@ private fun 날판(
 }
 
 /** 날짜 판에 보이는 그 날 루틴 — 플랜 줄은 지금 회차 처방으로, 그 날만 조절이 있으면 적용 (운동 시작 `조절해시작` 과 같은 차례) */
-private fun 앱데이터.보일루틴(k: String, r: 루틴): 루틴 = 플랜줄채움(r).조절적용(조절[k], 설정.무게폭)
+private fun 앱데이터.보일루틴(k: String, r: 루틴): 루틴 = 플랜줄채움(r).조절적용(조절[k], 설정.무게폭) { e -> 방식(e.종id, e.이름) }
 
 /** 기록의 종목 줄 — '60kg × 9회'. 워밍업은 넣지 않는다. 세트 수는 보이지 않는다 (10-06 홍겸 님 ⑤ — 기록머리 칩에 합계가 있다) */
 private fun 기록줄들(rec: 날기록): List<Pair<String, String>> =
@@ -766,10 +909,10 @@ private fun 예머리(d: 앱데이터, r: 루틴, 선위: Boolean) {
             FlowRow(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(간격.아주좁게), verticalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
                 if (r.휴식일) 판칩("휴식일") else {
                     // 볼륨 — 맨몸 0kg 은 체중의 60% 로 센다 (시안 `유효무게` · 근육 계산과 같은 값)
-                    val 볼 = r.종목.sumOf { e -> (0 until e.세트).sumOf { i -> e.목표(i).let { s -> 근육계산.유효무게(s.w, d.몸.체중) * s.r } } }
+                    val 볼 = r.종목.filter { e -> d.방식(e.종id, e.이름).볼륨있음() }.sumOf { e -> (0 until e.세트).sumOf { i -> e.목표(i).let { s -> 근육계산.유효무게(s.w, d.몸.체중) * s.r } } }
                     판칩("${총세트(r)}세트")
                     판칩("볼륨 ${콤마(볼)}kg")
-                    판칩("예상 ${시간글(예상초(r))}")
+                    판칩("예상 ${시간글(예상초(r, d))}")
                 }
             }
         }
@@ -810,7 +953,7 @@ private fun 목록칸(i: Int, 이름: String, 곁: String) {
     val c = Local색.current
     // 한 줄 (10-06 ⑤) — [번호][이름 13 · 넘치면 …][무게×횟수 11 · 넘치면 맞춤글로 줄임]. 이름과 곁 글은 남은 폭을 반씩까지
     Row(
-        Modifier.fillMaxWidth().아랫선(c.선).padding(vertical = 간격.아주좁게),
+        Modifier.fillMaxWidth().height(목록줄높이).아랫선(c.선),   // 10-11 홍겸 님: 두 칸 줄이 맞게 높이 고정
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.아주좁게),
     ) {
         Text("${i + 1}", Modifier.width(간격.넓게), style = 글꼴.보통(크기.작게, FontWeight.Bold), color = c.옅음, textAlign = TextAlign.Center, maxLines = 1)
@@ -824,7 +967,7 @@ private fun 목록칸(i: Int, 이름: String, 곁: String) {
 private fun 접기칸(펼침: Boolean, 남은: Int, onClick: () -> Unit) {
     val c = Local색.current
     Row(
-        Modifier.fillMaxWidth().heightIn(min = 높이.낮게).아랫선(c.선).눌림(onClick),
+        Modifier.fillMaxWidth().height(목록줄높이).아랫선(c.선).눌림(onClick),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.아주좁게),
     ) {
         Box(Modifier.width(간격.넓게))
@@ -833,6 +976,8 @@ private fun 접기칸(펼침: Boolean, 남은: Int, onClick: () -> Unit) {
     }
 }
 
+/** 날짜 판 목록 한 줄 높이 — 왼쪽·오른쪽 칸 줄이 같은 높이로 맞는다 (글이 줄어도 · '외 N종목' 칸이어도) */
+private val 목록줄높이 = 30.dp
 private val 그림보통 = 18.dp   // 11 지침 U3-6 기본 아이콘
 private val 그림작게 = 16.dp   // 11 지침 U3-6 글 옆 · 체크 안
 
@@ -858,26 +1003,27 @@ private fun 판단추(
     val r = d.예정루틴(k)
     val 운동예정 = r != null && !r.휴식일
     if (록.isEmpty() && k < 오늘) return   // 지난 날 · 기록 없음 = 단추 없음
+    if (록.isEmpty() && k == 오늘 && d.세션 != null) return   // 10-11 홍겸 님: 운동 중에는 [운동 시작] · [초기화] 를 없앤다 (그 자리에 [돌아가기] 가 있다)
     Row(
-        Modifier.fillMaxWidth().background(c.바탕).padding(horizontal = 간격.보통, vertical = 간격.좁게),
-        horizontalArrangement = Arrangement.spacedBy(간격.좁게),
+        Modifier.fillMaxWidth().background(c.바탕).padding(7.dp),   // 10-11 홍겸 님: 상하좌우 7
+        horizontalArrangement = Arrangement.spacedBy(간격.좁게), verticalAlignment = Alignment.CenterVertically,
     ) {
         if (록.isNotEmpty() && 지움모드) {
             val 꺼짐 = 록.none { it.first in 록골 }
-            버튼("취소", { on지움모드(false) }, Modifier.weight(1f), 작게 = true)
-            버튼("기록 삭제", { if (!꺼짐) 지움(k) }, Modifier.weight(1f).alpha(if (꺼짐) 꺼짐투명 else 1f), 작게 = true, 글색 = c.나쁨)
+            버튼("취소", { on지움모드(false) }, Modifier.weight(1f), 작게 = true, 세로여백 = 4.dp, 글배율 = 0.9f)
+            버튼("기록 삭제", { if (!꺼짐) 지움(k) }, Modifier.weight(1f).alpha(if (꺼짐) 꺼짐투명 else 1f), 작게 = true, 세로여백 = 4.dp, 글배율 = 0.9f, 글색 = c.나쁨)
         } else if (록.isNotEmpty()) {
             val 끝 = 록.last().second
-            버튼("운동 보고서", { 상태.d.캘기록목록(k).lastOrNull()?.let { (kk, rr) -> 보고서(kk, rr) } }, Modifier.weight(1f).번호("캘3"), 작게 = true)
+            버튼("운동 보고서", { 상태.d.캘기록목록(k).lastOrNull()?.let { (kk, rr) -> 보고서(kk, rr) } }, Modifier.weight(1f).번호("캘3"), 작게 = true, 세로여백 = 4.dp, 글배율 = 0.9f)
             val 다시 = if (k == 오늘) d.루틴(끝.루틴id)?.takeIf { !it.휴식일 } else null
             if (다시 != null) 버튼("한 번 더 운동하기", {
                 // 측정일이면 플랜 줄 앞에 워밍업 (20 B-3 · 조절해시작과 같은 함수). 저장하면 그 날 '~2' 기록으로 따로 남는다
                 val dd = 상태.d
                 val rr = dd.루틴(다시.id)
                 시작(rr?.let { 운동시작(dd.측정워밍업붙임(dd.플랜줄채움(it)), System.currentTimeMillis()) })
-            }, Modifier.weight(판단추폭.넓게), 주요 = true, 작게 = true, 줄임 = true)
+            }, Modifier.weight(판단추폭.넓게), 주요 = true, 작게 = true, 세로여백 = 4.dp, 글배율 = 0.9f, 줄임 = true)
             // 10-08 홍겸 님: '기록 삭제' 로 줄이고 폭을 줄인다 — 줄어든 만큼 [한 번 더 운동하기] 가 넓어진다. 누르면 지움 모드
-            버튼("기록 삭제", { on지움모드(true) }, Modifier.weight(판단추폭.좁게), 작게 = true, 글색 = c.나쁨, 줄임 = true)
+            버튼("기록 삭제", { on지움모드(true) }, Modifier.weight(판단추폭.좁게), 작게 = true, 세로여백 = 4.dp, 글배율 = 0.9f, 글색 = c.나쁨, 줄임 = true)
         } else {
             // 10-08 홍겸 님: 기록 없는 오늘 이후. 휴식 예정이 있어도 [초기화] 는 오른쪽에 둔다
             val 초기화있음 = r != null
@@ -888,12 +1034,12 @@ private fun 판단추(
                     val 지금r = dd.예정루틴(k)
                     if (지금r == null || 지금r.휴식일) return@버튼
                     시작(dd.조절해시작(지금r, k, System.currentTimeMillis()))
-                }, Modifier.weight(큰폭).번호("캘3"), 주요 = true, 작게 = true, 줄임 = true)
+                }, Modifier.weight(큰폭).번호("캘3"), 주요 = true, 작게 = true, 세로여백 = 7.dp, 줄임 = true, 글배율 = 0.9f)
             } else {
                 // 10-09 홍겸 님: 내일 이후 · 운동 예정이 있어도 이름은 [운동 계획 만들기] 로 통일
-                버튼("운동 계획 만들기", { 계획(k) }, Modifier.weight(큰폭).번호("캘3"), 주요 = true, 작게 = true, 줄임 = true)
+                버튼("운동 계획 만들기", { 계획(k) }, Modifier.weight(큰폭).번호("캘3"), 주요 = true, 작게 = true, 세로여백 = 4.dp, 줄임 = true, 글배율 = 0.9f)
             }
-            if (초기화있음) 버튼("초기화", { 초기화(k) }, Modifier.weight(판단추폭.초기화), 작게 = true, 글색 = c.나쁨, 줄임 = true)
+            if (초기화있음) 버튼("초기화", { 초기화(k) }, Modifier.weight(판단추폭.초기화), 작게 = true, 세로여백 = if (운동예정 && k == 오늘) 7.dp else 4.dp, 글색 = c.나쁨, 줄임 = true, 글배율 = 0.9f)
         }
     }
 }

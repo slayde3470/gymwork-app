@@ -15,8 +15,6 @@ import androidx.compose.ui.Modifier
 import android.net.Uri
 import android.content.ClipData
 import android.content.ClipboardManager
-import android.media.AudioManager
-import android.media.ToneGenerator
 import android.os.Build
 import android.os.Bundle
 import android.os.VibrationEffect
@@ -28,13 +26,24 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import com.slayde.hasenheide.ui.앱
 import com.slayde.hasenheide.ui.작은창
-import com.slayde.hasenheide.ui.물음창
+import com.slayde.hasenheide.ui.근육그림미리읽기
+import com.slayde.hasenheide.ui.알림안내창
 import com.slayde.hasenheide.ui.Local번호
 import androidx.compose.runtime.CompositionLocalProvider
 import com.slayde.hasenheide.ui.앱상태
+import com.slayde.hasenheide.ui.밖에서길게
+import com.slayde.hasenheide.ui.밖보고서열기
+import com.slayde.hasenheide.ui.운동다함
+import com.slayde.hasenheide.ui.쉼남음
+import com.slayde.hasenheide.ui.다음할세트
+import com.slayde.hasenheide.ui.쉼끝글
+import com.slayde.hasenheide.ui.다음시작글
+import com.slayde.hasenheide.ui.세트안내글
+import com.slayde.hasenheide.ui.쉬는종목
 import com.slayde.hasenheide.data.세기더함
 import com.slayde.hasenheide.data.세기이름
 import com.slayde.hasenheide.data.남은초
+import com.slayde.hasenheide.data.식구
 import com.slayde.hasenheide.ui.폰기능
 import com.slayde.hasenheide.ui.theme.하젠하이데테마
 import java.io.File
@@ -113,7 +122,61 @@ class MainActivity : ComponentActivity() {
         val S = 상태.d.세션 ?: return null
         if (S.끝화면) return null
         val h = S.휴식
-        return if (h != null && !h.물음) 떠있는동그라미.값(h.남은초(System.currentTimeMillis()), h.총초) else 떠있는동그라미.값(null, 0)
+        // 10-13 홍겸 님: 모든 운동이 끝나고 쉬는 시간도 끝났으면 운동보고서 아이콘
+        val 보고서 = 운동다함(S) && !쉼남음(S, System.currentTimeMillis())
+        // 10-13 홍겸 님: 지금(쉬는 중이면 다음에 할) 종목이 슈퍼세트면 동그라미 그림을 주황으로
+        val 본 = (h?.다음i ?: h?.종목?.takeIf { it >= 0 } ?: S.i).coerceIn(0, maxOf(0, S.종목들.size - 1))
+        val 슈퍼 = S.종목들.isNotEmpty() && S.식구(본).size > 1
+        return if (h != null && !h.물음) 떠있는동그라미.값(h.남은초(System.currentTimeMillis()), h.총초, h.끝시각, 슈퍼, 보고서) else 떠있는동그라미.값(null, 0, 0L, 슈퍼, 보고서)
+    }
+
+    /**
+     * 10-13 홍겸 님: 밖 동그라미를 꾹 누르면 — 쉬는 중이면 휴식 끝, 아니면 지금 세트 체크 (앱을 열지 않는다).
+     * 앱이 뒤에 있으면 화면이 안 그려져 아래 휴식 알람 맞춤 효과가 늦게 돌 수 있으므로 여기서 바로 맞춘다.
+     */
+    private fun 동그라미길게() {
+        val 글 = 상태.밖에서길게() ?: return
+        val h = 상태.d.세션?.휴식
+        알람맞추기(if (h != null && !h.물음 && 상태.d.설정.소리진동) h.끝시각 else null, 권한묻기 = false)
+        if (글.글.isNotEmpty()) 밖알림.띄움(this, 글.글, 길게 = 글.새종목)   // 10-13: 화면 위 알림 배너 (Notice.kt)
+    }
+
+    /** 10-13 홍겸 님: 쉬는 시간이 저절로 끝났을 때(앱 밖) — 다음에 할 세트를 토스트로. 동그라미를 눌러 끝낸 것은 기록에 쉼이 이미 없어서 여기 오지 않는다 */
+    private fun 동그라미쉼끝() {
+        val S = 상태.d.세션 ?: return
+        val h = S.휴식 ?: return
+        if (S.끝화면 || h.끝시각 > System.currentTimeMillis()) return
+        val 글 = 쉼끝글(S, 상태.d)
+        if (글.글.isNotEmpty()) 밖알림.띄움(this, 글.글, 길게 = 글.새종목, 휴식끝 = true)   // 휴식 알람의 '휴식 끝' 알림 자리에 다음 세트 안내를 덮어 쓴다
+    }
+
+    /** 10-13 홍겸 님: 밖 동그라미의 운동보고서 아이콘을 눌러 들어왔으면 보고서 화면을 연다 */
+    private fun 보고서요청확인(i: Intent?) {
+        if (i?.getBooleanExtra(보고서열기, false) != true) return
+        i.removeExtra(보고서열기)
+        상태.밖보고서열기()
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        보고서요청확인(intent)
+    }
+
+    companion object { const val 보고서열기 = "보고서열기" }
+
+    /** 휴식 끝 시각에 알람을 걸고(null 이거나 지났으면 푼다) — 앱 화면 효과와 동그라미 꾹 누름이 같이 쓴다 */
+    private fun 알람맞추기(알람끝: Long?, 권한묻기: Boolean = true) {
+        if (알람끝 != null && 알람끝 > System.currentTimeMillis()) {
+            if (권한묻기) 알림권한묻기()   // 뒤에 있을 때는 권한 창을 띄우지 않는다
+            휴식알람.맞춤(this, 알람끝, 상태.d.설정.진동세기, 상태.d.설정.진동시간)
+            걸린끝 = 알람끝
+        } else {
+            // 휴식을 일찍 끝냈을 때만 푼다 — 제시각에 끝난 것이면 알람이 울리게 둔다
+            val 전 = 걸린끝
+            if (전 != null && System.currentTimeMillis() < 전 - 1000) 휴식알람.끔(this)
+            걸린끝 = null
+        }
     }
 
     /** 운동 중 자동 작은 창(PiP) — 떠 있는 동그라미 권한이 있으면 PiP 대신 동그라미를 쓴다 */
@@ -127,13 +190,16 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
+        밖알림.치움(this)
         떠있는동그라미.치움()
     }
+
+
 
     override fun onStop() {
         super.onStop()
         // 10-08 홍겸 님: 운동 중에 앱을 벗어나면 다른 앱 위에 동그라미 (유튜브 작은 창과 같이 뜬다)
-        if (!isChangingConfigurations && !(Build.VERSION.SDK_INT >= 26 && isInPictureInPictureMode)) 떠있는동그라미.띄움(this) { 동그라미값() }
+        if (!isChangingConfigurations && !(Build.VERSION.SDK_INT >= 26 && isInPictureInPictureMode)) 떠있는동그라미.띄움(this, 길게 = { 동그라미길게() }, 쉼끝 = { 동그라미쉼끝() }) { 동그라미값() }
     }
 
     override fun onResume() {
@@ -150,6 +216,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        밖알림.옛운동알림정리(this)   // 10-15: 잠금 화면 '운동 중' 알림은 라이브 업데이트 때로 미뤘다 — 전 판이 남긴 알림 · 채널을 치운다
+        근육그림미리읽기(this)   // 10-11: 첫 종목 펼침 렉 — 근육 그림을 뒤에서 미리 읽어 둔다
         // 화면 가장자리(상태바·내비게이션바)까지 앱이 그려지게 한다
         enableEdgeToEdge()
         처음물음확인()
@@ -171,22 +239,12 @@ class MainActivity : ComponentActivity() {
                 알림글("복사했습니다 · Claude 에게 붙여넣으세요")
             },
         )
+        보고서요청확인(intent)
         setContent {
             // 쉬기 시작하면 끝 시각에 알람을 걸고, 휴식이 끝나거나 운동을 마치면 푼다 (09-26 메모: 화면이 꺼져 있어도)
             val h = 상태.d.세션?.휴식
             val 알람끝 = if (h != null && !h.물음 && 상태.d.설정.소리진동) h.끝시각 else null
-            LaunchedEffect(알람끝) {
-                if (알람끝 != null && 알람끝 > System.currentTimeMillis()) {
-                    알림권한묻기()
-                    휴식알람.맞춤(this@MainActivity, 알람끝, 상태.d.설정.진동세기, 상태.d.설정.진동시간)
-                    걸린끝 = 알람끝
-                } else {
-                    // 휴식을 일찍 끝냈을 때만 푼다 — 제시각에 끝난 것이면 알람이 울리게 둔다
-                    val 전 = 걸린끝
-                    if (전 != null && System.currentTimeMillis() < 전 - 1000) 휴식알람.끔(this@MainActivity)
-                    걸린끝 = null
-                }
-            }
+            LaunchedEffect(알람끝) { 알람맞추기(알람끝) }
             // 10-01: PiP 가 안 뜨던 것 — [추측] 안드로이드 12 이상 제스처 이동에서는 onUserLeaveHint 가
             //        늦게 오거나 안 와서 작은 창으로 못 들어간다. 운동 중이면 '자동으로 작은 창' 을 켜 둔다
             val 작은창켬 = 상태.d.세션 != null && 상태.d.세션?.끝화면 != true
@@ -197,13 +255,7 @@ class MainActivity : ComponentActivity() {
                     Box(Modifier.fillMaxSize()) {
                         앱(상태, 폰)
                         if (작은창중.value) 작은창(상태)
-                        else if (처음물음.value) 물음창(
-                            제목 = "권한을 켤까요?",
-                            설명 = "휴식 알림, 그리고 유튜브를 보면서도 휴식 시간이 보이게 하려면 필요합니다",
-                            예 = "켜기",
-                            on예 = { 처음물음켜기() },
-                            on아니오 = { 처음물음.value = false },
-                        )
+                        else if (처음물음.value) 알림안내창(on켜기 = { 처음물음켜기() }, on나중에 = { 처음물음.value = false })
                     }
                 }
             }
@@ -229,14 +281,9 @@ class MainActivity : ComponentActivity() {
         작은창중.value = isInPictureInPictureMode
     }
 
-    /** 휴식이 끝났을 때 — 진동 + 짧은 소리 */
+    /** 휴식이 끝났을 때 — 진동만 (10-15 홍겸 님: 소리는 없앴다) */
     private fun 휴식끝알림() {
         진동(상태.d.설정.진동세기, 상태.d.설정.진동시간)
-        try {
-            val 소리 = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 80)
-            소리.startTone(ToneGenerator.TONE_PROP_BEEP2, 400)
-            window.decorView.postDelayed({ 소리.release() }, 800)
-        } catch (_: Exception) { }
     }
 
     /**

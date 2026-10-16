@@ -26,6 +26,8 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -245,7 +247,7 @@ fun 운동그림칸(상태: 앱상태, S: 운동세션, 지금: Long, on숨김: 
     val 높 = 그림칸.높이   // 10-06 홍겸 님: 쉬는 동안 커지던 것 뺌
     // 근육 단계 — 1분마다 다시 잰다 (회복은 시간 단위로 느리게 내려간다)
     val 분 = 지금 / 60_000L
-    val 단계 = remember(S.종목들, d.피로, d.최대볼륨, d.몸.체중, d.종목표, 분) { d.근육단계(S.근육입력들(), 지금) }
+    val 단계 = remember(S.종목들, d.피로, d.최대볼륨, d.몸.체중, d.종목표, 분) { d.근육단계(S.근육입력들(d), 지금) }
     val 사진들 = d.종목표.firstOrNull { it.이름 == e.이름 }?.사진.orEmpty()
     val 전신쪽 = remember(e.이름, d.종목부위(e.이름)) { 종목전신쪽(e.이름, d.종목부위(e.이름)) }
     val 씨 = 그림칸기억.씨("${S.시작시각}|${끝낸}")
@@ -274,14 +276,6 @@ fun 운동그림칸(상태: 앱상태, S: 운동세션, 지금: Long, on숨김: 
                 }
             }
         }
-        // ✕ — 이 운동 동안 감춘다. 머리줄의 '그림' 으로 다시 보인다
-        val 손 = remember { MutableInteractionSource() }
-        val 배 = 눌림배율(손)
-        Box(
-            Modifier.align(Alignment.TopEnd).padding(top = 간격.아주좁게, end = 간격.아주좁게).size(그림칸.닫기).배율(배).clip(CircleShape)
-                .background(c.면).눌림손(손) { 발자취.적기("그림 칸 감춤"); on숨김() },
-            contentAlignment = Alignment.Center,
-        ) { Icon(아이콘.닫기, "그림 감추기", Modifier.size(16.dp), tint = c.흐림) }
     }
 }
 
@@ -316,10 +310,13 @@ private fun 접고펴는칸(대상: 판, 내용: @Composable (판) -> Unit) {
 private fun 그림판(p: 판, 단계: Map<String, Double>, 색표이름: String, 더미: Int, 부위: String?) {
     val c = Local색.current
     val 모양 = RoundedCornerShape(그림칸.모서리)
-    Box(Modifier.fillMaxSize().clip(모양).background(c.면).border(1.dp, c.선, 모양)) {
+    // 10-11 홍겸 님: 박스의 좌우 너비만 10% 줄인다 — 근육 그림은 옛 크기 그대로 가운데에 두고 빈 좌우 여백만 줄어든다
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+    val 옛폭 = maxWidth; val 옛높 = maxHeight
+    Box(Modifier.align(Alignment.Center).fillMaxHeight().width(옛폭 * 0.9f).clip(모양).background(c.면).border(1.dp, c.선, 모양)) {
         when (p.종류) {
-            "전신" -> 새몸그림(단계, 색표이름, remember(p.종목) { listOf(그림보기(p.종목.ifEmpty { "01" })) }, Modifier.fillMaxSize().padding(간격.아주좁게))
-            "확대" -> 새몸그림(단계, 색표이름, remember(p.종목, 부위) { 종목확대보기(p.종목, 부위) }, Modifier.fillMaxSize().padding(간격.아주좁게))
+            "전신" -> Box(Modifier.requiredSize(옛폭, 옛높).align(Alignment.Center)) { 새몸그림(단계, 색표이름, remember(p.종목) { listOf(그림보기(p.종목.ifEmpty { "01" })) }, Modifier.fillMaxSize().padding(간격.아주좁게)) }
+            "확대" -> Box(Modifier.requiredSize(옛폭, 옛높).align(Alignment.Center)) { 새몸그림(단계, 색표이름, remember(p.종목, 부위) { 종목확대보기(p.종목, 부위) }, Modifier.fillMaxSize().padding(간격.아주좁게)) }
             "사진" -> 사진그림(p.사진 ?: "", 그림칸.높이 * 2, Modifier.fillMaxSize(), "${p.종목} 사진")
             else -> 글("사진 없음", Modifier.align(Alignment.Center), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)   // 설명 글은 한 줄
         }
@@ -330,6 +327,7 @@ private fun 그림판(p: 판, 단계: Map<String, Double>, 색표이름: String,
                 .clip(RoundedCornerShape(그림칸.모서리)).background(c.면).padding(horizontal = 간격.아주좁게),
         ) { 맞춤글("${p.번호 + 1}/${p.수}", 최대 = 크기.아주작게, 색 = c.흐림) }
         if (더미 > 0) 사진더미(더미)
+    }
     }
 }
 

@@ -21,6 +21,7 @@ import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -181,9 +182,10 @@ fun 머리띠(
  *
  *  · 토스트 — 글만. 새 토스트가 오면 앞 것은 바로 사라진다 (시안 `토스트`) · 1.5초 (2초 × 0.75)
  *  · 되돌림 띠 — [되돌리기] 가 붙는다. **같은 [묶음] 이면 한 띠로 합친다** — 개수가 늘고, 누르면 전부 되돌린다
- *    (새것부터 차례로) · 시간은 다시 센다 · 4.5초 (6초 × 0.75)
+ *    (새것부터 차례로) · 시간은 다시 센다 · 3초 (10-10 홍겸 님). **지운 뒤 다른 일로 데이터가 바뀌면 띠는 바로 사라진다** ([데이터바뀜])
+ *    · 띠는 아래 단추를 가리지 않게 화면 칸과 탭줄 사이에 **자리를 차지하며** 끼운다 ([띠자리]) — 메모 시트가 떠 있을 때만 맨 위에 올린다
  *  · 띠 — 다른 단추 하나 (업적 [보기] 등) · 3.75초 (5초 × 0.75)
- *  · 자리 — 나타나기 2초 안에 누른 단추가 있으면 **그 단추 위** (띠 아랫변 = 단추 윗변 − 8). 위로 넘치면 단추 아래.
+ *  · 토스트 자리 — 나타나기 2초 안에 누른 단추가 있으면 **그 단추 위** (띠 아랫변 = 단추 윗변 − 8). 위로 넘치면 단추 아래.
  *    한 번 정한 자리는 사라질 때까지 그대로. 누른 단추가 없으면 토스트 = 위 50, 띠 = 아래(탭 위)
  *  · 띠 바깥 · 띠 글자는 누름을 막지 않는다 — 띠 안 단추만 눌린다 (아래 화면 단추를 그대로 누를 수 있다)
  *  · 나타날 때 · 사라질 때 0.2초 흐려짐
@@ -191,6 +193,7 @@ fun 머리띠(
 @Stable
 class 알림판 {
     enum class 꼴 { 토스트, 띠 }
+    private val 되돌리기글 = "되돌리기"
 
     class 알림 internal constructor(
         val id: Long,
@@ -240,7 +243,7 @@ class 알림판 {
         val 합친: () -> Unit = if (옛행동 == null) 되돌리기 else ({ 되돌리기(); 옛행동() })
         // 10-08 홍겸 님: 되돌리기 띠는 누른 자리를 따라가지 않고 늘 같은 자리(탭줄 바로 위)에 — 화면마다 위 · 아래로 바뀌어 찾기 어려웠다
         뗀수 = 0
-        목록 = 목록.filter { it !== 옛 } + 알림(++번호, 꼴.띠, 글(개수), "되돌리기", 합친, 묶음, 개수, 움직임.되돌림띠, null)
+        목록 = 목록.filter { it !== 옛 } + 알림(++번호, 꼴.띠, 글(개수), 되돌리기글, 합친, 묶음, 개수, 움직임.되돌림띠, null)
     }
 
     /** 단추 하나 붙은 띠 (업적 [보기] 등) — 되돌리기가 아닌 것. 같은 [묶음] 이면 바꿔 끼운다 */
@@ -249,6 +252,26 @@ class 알림판 {
         뗀수 = 0
         목록 = 남길 + 알림(++번호, 꼴.띠, 글, 단추, 행동, 묶음, 1, 시간, null)
     }
+
+    /**
+     * 10-10 홍겸 님: 지운 뒤 **다른 일을 하면 되돌리기 띠는 없앤다** — 앱상태.바꿈 이 데이터가 실제로 바뀔 때마다 부른다.
+     * 지우기 자신의 바꿈 → 곧바로 같은 호출 안에서 [되돌림] 이 오면 같은 [묶음] 은 한 띠로 합쳐야 하므로,
+     * 바로 지우지 않고 '보류' 에 적어 두었다가 그 호출이 끝난 다음 그림 차례([보류처리])에 치운다
+     */
+    private val 보류 = mutableSetOf<Long>()
+    var 보류신호 by mutableIntStateOf(0)
+        private set
+    fun 데이터바뀜() {
+        val ids = 목록.filter { it.꼴 == 꼴.띠 && it.단추 == 되돌리기글 }.map { it.id }
+        if (ids.isEmpty()) return
+        보류.addAll(ids); 보류신호++
+    }
+    internal fun 보류처리() {
+        if (보류.isEmpty()) return
+        val 치울것 = 보류.toSet(); 보류.clear()
+        목록 = 목록.filter { it.id !in 치울것 }
+    }
+    val 띠있음: Boolean get() = 목록.any { it.꼴 == 꼴.띠 }
 
     fun 치움(id: Long) { 목록 = 목록.filter { it.id != id } }
     fun 묶음치움(묶음: String) { 목록 = 목록.filter { it.묶음 != 묶음 } }
@@ -270,11 +293,56 @@ fun Modifier.누름기억(판: 알림판): Modifier = this.pointerInput(판) {
 /**
  * 알림을 그리는 곳 — App.kt 맨 바깥 상자(누름기억을 붙인 상자)를 꽉 채워 맨 위에 둔다.
  * [아래여백] = 누른 단추가 없을 때 띠가 뜨는 자리(화면 아래에서)
+ * [띠도위에] = true 면 띠도 여기(맨 위)에 그린다 — 메모 시트가 떠 있을 때. 평소 띠는 [띠자리] 가 화면 칸 사이에 끼워 그린다
  */
 @Composable
-fun 알림자리(판: 알림판, 아래여백: Dp, modifier: Modifier = Modifier) {
+fun 알림자리(판: 알림판, 아래여백: Dp, modifier: Modifier = Modifier, 띠도위에: Boolean = false) {
+    // 지운 뒤 다른 일이 있었으면 그림 차례에 낡은 되돌리기 띠를 치운다 (10-10)
+    LaunchedEffect(판.보류신호) { 판.보류처리() }
     Box(modifier.fillMaxSize()) {
-        판.목록.forEach { a -> key(a.id) { 알림한개(판, a, 아래여백) } }
+        판.목록.forEach { a -> if (a.꼴 == 알림판.꼴.토스트 || 띠도위에) key(a.id) { 알림한개(판, a, 아래여백) } }
+    }
+}
+
+/**
+ * 10-10 홍겸 님: 되돌리기 띠가 아래 단추를 가렸다 → 띠를 **자리를 차지하는 칸**으로 — 화면 칸과 아래 탭줄 사이에 끼워 넣는다.
+ * 띠가 뜨는 동안 화면 칸이 그만큼 줄어 어떤 단추도 가리지 않는다. App.kt 의 Column 안, 화면 칸 바로 아래에 둔다
+ */
+@Composable
+fun 띠자리(판: 알림판, modifier: Modifier = Modifier) {
+    val 띠들 = 판.목록.filter { it.꼴 == 알림판.꼴.띠 }
+    if (띠들.isEmpty()) return
+    Column(modifier.fillMaxWidth()) { 띠들.forEach { a -> key(a.id) { 띠한개(판, a) } } }
+}
+
+@Composable
+private fun 띠한개(판: 알림판, a: 알림판.알림) {
+    val 보임 = remember { MutableTransitionState(false).apply { targetState = true } }
+    LaunchedEffect(a.id) { delay(a.시간.toLong()); 보임.targetState = false }
+    LaunchedEffect(보임.isIdle, 보임.currentState) { if (보임.isIdle && !보임.currentState && !보임.targetState) 판.치움(a.id) }
+    Box(Modifier.fillMaxWidth().padding(horizontal = 간격.보통, vertical = 간격.좁게)) {
+        AnimatedVisibility(visibleState = 보임, enter = fadeIn(tween(움직임.띠흐림)), exit = fadeOut(tween(움직임.띠흐림)), label = "띠") {
+            띠몸(판, a, Modifier.fillMaxWidth())
+        }
+    }
+}
+
+/** 띠 한 줄 — 글 + 단추. 칸에 끼운 띠와 맨 위에 올린 띠가 같은 모양 */
+@Composable
+private fun 띠몸(판: 알림판, a: 알림판.알림, modifier: Modifier) {
+    val c = Local색.current
+    Row(
+        modifier.clip(RoundedCornerShape(모서리.작게)).background(c.흐림)
+            .padding(horizontal = 간격.보통, vertical = 간격.좁게),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(간격.보통),
+    ) {
+        Text(a.글, Modifier.weight(1f), style = 글꼴.보통(크기.버튼), color = c.바탕, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        if (a.단추 != null) Text(
+            a.단추, Modifier.눌림 { 판.누름처리(a) },
+            style = 글꼴.보통(크기.버튼, FontWeight.Bold).copy(textDecoration = TextDecoration.Underline),
+            color = c.바탕, maxLines = 1,
+        )
     }
 }
 
@@ -295,19 +363,7 @@ private fun 알림한개(판: 알림판, a: 알림판.알림, 아래여백: Dp) 
                             .padding(horizontal = 간격.보통, vertical = 부품치수.띠세로여백),
                     ) { Text(a.글, style = 글꼴.보통(크기.버튼), color = c.바탕, maxLines = 2, overflow = TextOverflow.Ellipsis) }
                 } else {
-                    Row(
-                        Modifier.fillMaxWidth().clip(RoundedCornerShape(모서리.작게)).background(c.흐림)
-                            .padding(horizontal = 간격.보통, vertical = 간격.좁게),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(간격.보통),
-                    ) {
-                        Text(a.글, Modifier.weight(1f), style = 글꼴.보통(크기.버튼), color = c.바탕, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                        if (a.단추 != null) Text(
-                            a.단추, Modifier.눌림 { 판.누름처리(a) },
-                            style = 글꼴.보통(크기.버튼, FontWeight.Bold).copy(textDecoration = TextDecoration.Underline),
-                            color = c.바탕, maxLines = 1,
-                        )
-                    }
+                    띠몸(판, a, Modifier.fillMaxWidth())
                 }
             }
         },
@@ -683,39 +739,76 @@ fun 이름맞춤(
     색: Color = Local색.current.글,
     굵기: FontWeight = FontWeight.Bold,
     가운데: Boolean = false,
+    두줄촘촘: Boolean = false,
+    자간넓힘폭: androidx.compose.ui.unit.Dp = 0.dp,
 ) {
     val 측정 = rememberTextMeasurer()
+    val 넓힘px = with(LocalDensity.current) { 자간넓힘폭.roundToPx() }
     BoxWithConstraints(modifier) {
         val w = constraints.maxWidth
-        val (꼴, 줄) = remember(이름, w, 바탕크기, 굵기) { 이름꼴고르기(측정, 이름, w, 바탕크기, 굵기) }
+        val (꼴, 줄) = remember(이름, w, 바탕크기, 굵기, 두줄촘촘, 넓힘px) { 이름꼴고르기(측정, 이름, w, 바탕크기, 굵기, 두줄촘촘, 넓힘px) }
         Text(
-            이름, if (가운데) Modifier.fillMaxWidth() else Modifier, style = 꼴, color = 색, maxLines = 줄, softWrap = 줄 > 1, overflow = TextOverflow.Clip,
+            if (줄 > 1) 이름두줄(이름) else 이름, if (가운데) Modifier.fillMaxWidth() else Modifier, style = 꼴, color = 색, maxLines = 줄, softWrap = 줄 > 1, overflow = TextOverflow.Clip,
             textAlign = if (가운데) TextAlign.Center else null,
         )
     }
 }
 
-private fun 이름꼴고르기(측정: TextMeasurer, 이름: String, w: Int, 바탕: TextUnit, 굵기: FontWeight): Pair<TextStyle, Int> {
+/**
+ * 두 줄 이름의 줄바꿈 자리 (10-11 홍겸 님) — 띄어쓰기 자리에서만, 첫 줄이 둘째 줄보다 길지 않게 하되 가장 고르게.
+ * '인클라인 / 체스트 프레스 머신' · '불가리안 / 스플릿 스쿼트' · '스미스 머신 / 숄더 프레스'. 첫 줄이 짧을 수 없으면 가장 고른 자리.
+ */
+internal fun 이름두줄(이름: String): String {
+    val 말 = 이름.trim().split(" ").filter { it.isNotEmpty() }
+    if (말.size < 2) return 이름
+    fun 길(l: List<String>) = l.sumOf { it.codePointCount(0, it.length) }
+    val 자리 = (1 until 말.size).map { k -> 길(말.take(k)) to 길(말.drop(k)) }
+    val 고름 = 자리.withIndex().filter { it.value.first <= it.value.second }.minByOrNull { it.value.second - it.value.first }
+        ?: 자리.withIndex().minBy { kotlin.math.abs(it.value.second - it.value.first) }
+    val k = 고름.index + 1
+    return 말.take(k).joinToString(" ") + "\n" + 말.drop(k).joinToString(" ")
+}
+
+private fun 이름넘침(측정: TextMeasurer, 이름: String, st: TextStyle, 줄: Int, w: Int): Boolean =
+    측정.measure(if (줄 > 1) 이름두줄(이름) else 이름, st, overflow = TextOverflow.Clip, softWrap = 줄 > 1, maxLines = 줄, constraints = Constraints(maxWidth = w)).hasVisualOverflow
+
+/** [넓힘px] — 칸이 그만큼 넓어졌을 때: 글 크기는 (좁은 칸에서 고른) 그대로 두고 자간만 기본(−0.01em) 쪽으로 넓힌다 (10-11 홍겸 님) */
+private fun 이름꼴고르기(측정: TextMeasurer, 이름: String, w: Int, 바탕: TextUnit, 굵기: FontWeight, 촘촘: Boolean, 넓힘px: Int): Pair<TextStyle, Int> {
+    if (w == Constraints.Infinity || w <= 0 || 넓힘px <= 0) return 이름꼴기본(측정, 이름, w, 바탕, 굵기, 촘촘)
+    val (꼴0, 줄) = 이름꼴기본(측정, 이름, (w - 넓힘px).coerceAtLeast(1), 바탕, 굵기, 촘촘)
+    val 기본 = -0.01f
+    val 지금 = 꼴0.letterSpacing.value
+    if (지금 >= 기본 - 0.0001f) return 꼴0 to 줄
+    var s = 기본
+    while (s > 지금 + 0.0001f) {
+        val st = 꼴0.copy(letterSpacing = s.em)
+        if (!이름넘침(측정, 이름, st, 줄, w)) return st to 줄
+        s -= 이름맞춤값.자간폭
+    }
+    return 꼴0 to 줄
+}
+
+private fun 이름꼴기본(측정: TextMeasurer, 이름: String, w: Int, 바탕: TextUnit, 굵기: FontWeight, 촘촘: Boolean): Pair<TextStyle, Int> {
     val 줄0 = 이름줄수(이름)
+    fun 단계(줄: Int): List<Float> =
+        (if (촘촘 && 줄 > 1) 이름맞춤값.두줄글단계 else 이름맞춤값.글단계).filter { it <= 바탕.value + 0.1f }.ifEmpty { listOf(이름맞춤값.두줄글단계.last().coerceAtMost(바탕.value)) }
+    fun 꼴(fs: Float, 줄: Int): TextStyle = 글꼴.보통(fs.sp, 굵기).let { if (촘촘 && 줄 > 1) it.copy(lineHeight = fs.sp * 이름맞춤값.두줄줄높이) else it }
+    fun 끝꼴(줄: Int) = 꼴(단계(줄).last(), 줄).copy(letterSpacing = 이름맞춤값.자간끝.em)
     if (w == Constraints.Infinity || w <= 0) return 글꼴.보통(바탕, 굵기) to 줄0
-    val 단계 = 이름맞춤값.글단계.filter { it <= 바탕.value + 0.1f }.ifEmpty { listOf(바탕.value) }
-    val 끝꼴 = 글꼴.보통(단계.last().sp, 굵기).copy(letterSpacing = 이름맞춤값.자간끝.em)
-    fun 넘침(st: TextStyle, 줄: Int): Boolean =
-        측정.measure(이름, st, overflow = TextOverflow.Clip, softWrap = 줄 > 1, maxLines = 줄, constraints = Constraints(maxWidth = w)).hasVisualOverflow
     fun 해봄(줄: Int): TextStyle? {
-        for (fs in 단계) { val st = 글꼴.보통(fs.sp, 굵기); if (!넘침(st, 줄)) return st }
+        for (fs in 단계(줄)) { val st = 꼴(fs, 줄); if (!이름넘침(측정, 이름, st, 줄, w)) return st }
         var n = 2
         while (n <= (-이름맞춤값.자간끝 * 100).roundToInt()) {
-            val st = 글꼴.보통(단계.last().sp, 굵기).copy(letterSpacing = (-n * 이름맞춤값.자간폭).em)
-            if (!넘침(st, 줄)) return st
+            val st = 꼴(단계(줄).last(), 줄).copy(letterSpacing = (-n * 이름맞춤값.자간폭).em)
+            if (!이름넘침(측정, 이름, st, 줄, w)) return st
             n++
         }
         return null
     }
     해봄(줄0)?.let { return it to 줄0 }
-    if (줄0 > 1) return 끝꼴 to 줄0
+    if (줄0 > 1) return 끝꼴(줄0) to 줄0
     해봄(2)?.let { return it to 2 }
-    return 끝꼴 to 2
+    return 끝꼴(2) to 2
 }
 
 // ═════════════════════ 9. 점멸 — 지금 줄 바탕 · 노란 점 · 끝난 줄 ═════════════════════

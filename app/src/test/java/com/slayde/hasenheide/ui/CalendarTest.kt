@@ -7,6 +7,9 @@ import com.slayde.hasenheide.data.목표세트
 import com.slayde.hasenheide.data.세트
 import com.slayde.hasenheide.data.세트종류
 import com.slayde.hasenheide.data.앱데이터
+import com.slayde.hasenheide.data.예정옮기기
+import com.slayde.hasenheide.data.운동세션
+import com.slayde.hasenheide.data.그날운동
 import com.slayde.hasenheide.data.오늘볼륨
 import com.slayde.hasenheide.data.종목기록
 import com.slayde.hasenheide.data.한세트수
@@ -202,5 +205,65 @@ class CalendarTest {
         // 시각을 모르는 옛 기록도 죽지 않는다
         val 옛 = 날기록("x", "옛", true, emptyList())
         assertNotNull(앱데이터().캘기록세션(옛, "2026-10-01"))
+    }
+
+    // ─────────────── 10-10 홍겸 님: 달력 날 꾹 눌러 옮기기 ───────────────
+
+    private val 옮김d = 앱데이터(
+        루틴들 = listOf(루틴("a", "가슴"), 루틴("b", "등")),
+        예정 = mapOf("2026-10-06" to "a", "2026-10-07" to "b", "2026-10-09" to "a"),
+        기록 = mapOf("2026-10-04" to 기록("어제"), "2026-10-05" to 기록("오늘"), "2026-10-09" to 기록("하체")),
+    )
+    private val 오늘 = "2026-10-05"
+
+    @Test fun 옮김_집을수_있는_날은_오늘_이후_기록없음_예정있음() {
+        assertNull(옮김d.캘집기막힘("2026-10-06", 오늘))
+        assertNotNull(옮김d.캘집기막힘("2026-10-04", 오늘))   // 지난 날
+        assertNotNull(옮김d.캘집기막힘("2026-10-05", 오늘))   // 오늘 기록 있음
+        assertNotNull(옮김d.캘집기막힘("2026-10-09", 오늘))   // 기록 있는 날 (지우기만)
+        assertNotNull(옮김d.캘집기막힘("2026-10-12", 오늘))   // 운동 없는 날
+    }
+
+    @Test fun 옮김_놓을수_있는_날() {
+        assertNull(옮김d.캘놓기막힘("2026-10-06", "2026-10-08", 오늘))
+        assertNull(옮김d.캘놓기막힘("2026-10-06", "2026-10-07", 오늘))        // 이미 운동이 있는 날도 놓을 수 있다(대신한다)
+        assertNotNull(옮김d.캘놓기막힘("2026-10-06", "2026-10-06", 오늘))     // 같은 날
+        assertNotNull(옮김d.캘놓기막힘("2026-10-06", "2026-10-04", 오늘))     // 지난 날
+        assertNotNull(옮김d.캘놓기막힘("2026-10-06", "2026-10-09", 오늘))     // 기록 있는 날
+    }
+
+    @Test fun 옮김_막힌_날은_계산도_그대로() {
+        // 화면이 막은 곳은 계산도 안 움직인다 (두 겹)
+        assertEquals(옮김d, 옮김d.예정옮기기("2026-10-04", "2026-10-08", 오늘))
+        assertEquals(옮김d, 옮김d.예정옮기기("2026-10-06", "2026-10-09", 오늘))
+        val 새 = 옮김d.예정옮기기("2026-10-06", "2026-10-08", 오늘)
+        assertEquals("a", 새.예정["2026-10-08"]); assertNull(새.예정["2026-10-06"])
+        // 되돌리기 = 예정 · 예정고정을 옛 것으로 (화면이 하는 일)
+        assertEquals(옮김d, 새.copy(예정 = 옮김d.예정, 예정고정 = 옮김d.예정고정))
+    }
+
+    @Test fun 옮김_그날운동은_id도_새_날짜로() {
+        val 날운 = 루틴("날2026-10-06", "벤치", 종목 = listOf(루틴종목("벤치프레스")), 원래예정 = "a", 원래고정 = null)
+        val d = 옮김d.copy(예정 = 옮김d.예정 + ("2026-10-06" to 날운.id), 그날운동 = listOf(날운))
+        val 새 = d.예정옮기기("2026-10-06", "2026-10-08", 오늘)
+        assertEquals("날2026-10-08", 새.예정["2026-10-08"]); assertNull(새.예정["2026-10-06"])
+        assertEquals(listOf("날2026-10-08"), 새.그날운동.map { it.id })
+        assertEquals(listOf("벤치프레스"), 새.그날운동("2026-10-08")?.종목?.map { it.이름 })   // 옮긴 날에서 '그 날 운동' 으로 읽힌다
+        assertEquals("", 새.그날운동[0].원래예정)   // 옮겨 간 날은 원래 비어 있었다
+        // 이미 그 날 운동이 있는 날로 옮기면 그것을 대신하고, 넣기 전 예정은 옛 것을 이어받는다
+        val 옛 = 루틴("날2026-10-08", "등", 종목 = listOf(루틴종목("랫풀다운")), 원래예정 = "b")
+        val d2 = d.copy(예정 = d.예정 + ("2026-10-08" to 옛.id), 그날운동 = listOf(날운, 옛))
+        val 새2 = d2.예정옮기기("2026-10-06", "2026-10-08", 오늘)
+        assertEquals(listOf("날2026-10-08"), 새2.그날운동.map { it.id })
+        assertEquals("b", 새2.그날운동[0].원래예정); assertEquals(listOf("벤치프레스"), 새2.그날운동[0].종목.map { it.이름 })
+        // 되돌리기 = 예정 · 예정고정 · 그날운동을 옛 것으로
+        assertEquals(d2, 새2.copy(예정 = d2.예정, 예정고정 = d2.예정고정, 그날운동 = d2.그날운동))
+    }
+
+    @Test fun 옮김_진행중인_오늘_운동은_못_옮긴다() {
+        val d = 옮김d.copy(예정 = 옮김d.예정 + ("2026-10-07" to "b"), 기록 = emptyMap(), 세션 = 운동세션("b", "등", 0L))
+        val 오늘예정 = d.copy(예정 = d.예정 + ("2026-10-05" to "b"))
+        assertEquals("진행 중인 운동은 옮길 수 없습니다", 오늘예정.캘집기막힘("2026-10-05", "2026-10-05"))
+        assertNull(오늘예정.캘집기막힘("2026-10-07", "2026-10-05"))   // 앞으로의 같은 루틴 날은 옮길 수 있다
     }
 }
