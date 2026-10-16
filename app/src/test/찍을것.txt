@@ -1,1 +1,6 @@
-# 비우면 전부
+# 확인 판: 안 찍혔던 다섯 개만
+Shot_s01b*
+Shot_s01j*
+Shot_s01k*
+Shot_s07b*
+Shot_s07g*

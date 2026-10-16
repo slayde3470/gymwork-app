@@ -24,6 +24,7 @@ import androidx.compose.ui.test.hasAnyDescendant
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.test.isRoot
 import androidx.compose.ui.test.performTouchInput
@@ -149,6 +150,18 @@ abstract class ShotBase {
         쉼()
     }
 
+    /** 목록(Lazy)에 아직 안 그려진 칸을 찾아 목록을 밀어 준다 — 맨 위 칸 말고 마지막 목록부터 (10-16) */
+    protected fun 찾아밀기(맞는것: androidx.compose.ui.test.SemanticsMatcher): Boolean {
+        try {
+            val 목록 = rule.onAllNodes(androidx.compose.ui.test.hasScrollAction())
+            val n = 목록.fetchSemanticsNodes().size
+            for (k in n - 1 downTo 0) {
+                try { 목록[k].performScrollToNode(맞는것); 쉼(300); return true } catch (_: Throwable) { }
+            }
+        } catch (_: Throwable) { }
+        return false
+    }
+
     /** 칸이 화면 밖이면 위로 밀어 올린다 (최대 4번). performScrollTo 는 종목 고르기 시트에서 끝없이 돌아 한 판이 멈췄다 (10-16) */
     protected fun 보이게(칸: androidx.compose.ui.test.SemanticsNodeInteraction) {
         val 높이 = rule.activity.resources.displayMetrics.heightPixels
@@ -168,6 +181,7 @@ abstract class ShotBase {
         지금 = "${this::class.simpleName} 누름 '$글'"; 마지막 = System.currentTimeMillis()
         var 들 = rule.onAllNodesWithText(글, substring = 일부, useUnmergedTree = true)
         var 밀기 = 0
+        if (들.fetchSemanticsNodes().isEmpty()) { 찾아밀기(hasText(글, substring = 일부)); 들 = rule.onAllNodesWithText(글, substring = 일부, useUnmergedTree = true) }
         while (들.fetchSemanticsNodes().isEmpty() && 밀기 < 8) { 밀기++; rule.onAllNodes(isRoot())[0].performTouchInput { swipeUp(startY = height * 0.75f, endY = height * 0.25f) }; 쉼(); 들 = rule.onAllNodesWithText(글, substring = 일부, useUnmergedTree = true) }
         val n = 들.fetchSemanticsNodes().size
         check(n > 0) { "'$글' 없음" }
@@ -179,7 +193,7 @@ abstract class ShotBase {
 
     /** 달력의 [일] 칸 — 칸 전체(눌리는 칸)의 눌림 동작을 바로 부른다 (글자 자리를 손가락으로 누르면 안 먹힌 적이 있다 · 10-16) */
     protected fun 날누름(일: Int) {
-        rule.onAllNodes(hasClickAction() and hasAnyDescendant(hasText(일.toString())))[0].performSemanticsAction(SemanticsActions.OnClick)
+        rule.onAllNodes(hasClickAction() and hasText(일.toString()))[0].performSemanticsAction(SemanticsActions.OnClick)
         쉼()
     }
 
@@ -188,6 +202,7 @@ abstract class ShotBase {
         지금 = "${this::class.simpleName} 누름설명 '$글'"; 마지막 = System.currentTimeMillis()
         var 들 = rule.onAllNodesWithContentDescription(글, substring = 일부, useUnmergedTree = true)
         var 밀기 = 0
+        if (들.fetchSemanticsNodes().isEmpty()) { 찾아밀기(hasContentDescription(글, substring = 일부)); 들 = rule.onAllNodesWithContentDescription(글, substring = 일부, useUnmergedTree = true) }
         while (들.fetchSemanticsNodes().isEmpty() && 밀기 < 8) { 밀기++; rule.onAllNodes(isRoot())[0].performTouchInput { swipeUp(startY = height * 0.75f, endY = height * 0.25f) }; 쉼(); 들 = rule.onAllNodesWithContentDescription(글, substring = 일부, useUnmergedTree = true) }
         val n = 들.fetchSemanticsNodes().size
         check(n > 0) { "설명 '$글' 없음" }
@@ -458,6 +473,7 @@ class Shot_s16c_addSetFlash : ShotBase() {
 class Shot_s07b_exerciseAddSet : ShotBase() {
     @Test fun s07b() { 켜기(); 탭(3); 누름("스쿼트")
         var 들 = rule.onAllNodesWithText("+ 세트", substring = true, useUnmergedTree = true)
+        if (들.fetchSemanticsNodes().isEmpty()) { 찾아밀기(hasText("+ 세트", substring = true)); 들 = rule.onAllNodesWithText("+ 세트", substring = true, useUnmergedTree = true) }
         var 밀기 = 0
         while (들.fetchSemanticsNodes().isEmpty() && 밀기 < 8) { 밀기++; rule.onAllNodes(isRoot())[0].performTouchInput { swipeUp(startY = height * 0.75f, endY = height * 0.25f) }; 쉼(); 들 = rule.onAllNodesWithText("+ 세트", substring = true, useUnmergedTree = true) }
         try { 보이게(들[0]) } catch (_: Throwable) { }
