@@ -204,16 +204,20 @@ abstract class ShotBase {
     }
 
     /** 칸이 화면 밖이면 밀어서 화면 안으로 (최대 8번). performScrollTo 는 종목 고르기 시트에서 끝없이 돌아 한 판이 멈췄다 (10-16) */
-    protected fun 보이게(칸: androidx.compose.ui.test.SemanticsNodeInteraction) {
+    protected fun 보이게(칸: androidx.compose.ui.test.SemanticsNodeInteraction, 위쪽에: Boolean = false) {
         val 높이 = rule.activity.resources.displayMetrics.heightPixels
         var i = 0
         while (i < 8) {
             val b = 칸.fetchSemanticsNode().boundsInRoot
-            if (b.top >= 0f && b.bottom <= 높이) break
+            val 됨 = if (위쪽에) b.top >= 0f && b.top <= 높이 * 0.35f else b.top >= 0f && b.bottom <= 높이
+            if (됨) break
             i++
             목록밀기(b.top > 0f)
         }
     }
+
+    /** 이름이 [글] 인 첫 칸을 화면 위쪽으로 올린다 — 펼친 카드가 사진에 다 들어오게 */
+    protected fun 위로올림(글: String) { try { 보이게(rule.onAllNodesWithText(글, useUnmergedTree = true)[0], true); 쉼(300) } catch (_: Throwable) { } }
 
     /** 글자로 찾아 누름 — 같은 글이 여럿이면 [몇째] (−1 = 마지막) */
     protected fun 누름(글: String, 몇째: Int = 0, 일부: Boolean = false) {
@@ -507,7 +511,7 @@ class Shot_s16c_addSetFlash : ShotBase() {
 
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class Shot_s07b_exerciseAddSet : ShotBase() {
-    @Test fun s07b() { 켜기(); 탭(3); 누름("스쿼트")
+    @Test fun s07b() { 켜기(); 탭(3); 누름("스쿼트"); 위로올림("스쿼트")
         var 들 = rule.onAllNodesWithText("+ 세트", substring = true, useUnmergedTree = true)
         if (들.fetchSemanticsNodes().isEmpty()) { 찾아밀기(hasText("+ 세트", substring = true)); 들 = rule.onAllNodesWithText("+ 세트", substring = true, useUnmergedTree = true) }
         var 밀기 = 0
@@ -526,5 +530,5 @@ class Shot_s05b_addSheetOpen : ShotBase() {
 
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class Shot_s07c_exerciseOpenNoPlan : ShotBase() {
-    @Test fun s07c_exerciseOpenNoPlan() { 켜기(); 탭(3); 누름("스쿼트"); 찍("07c_종목_펼침_스쿼트") }
+    @Test fun s07c_exerciseOpenNoPlan() { 켜기(); 탭(3); 누름("스쿼트"); 위로올림("스쿼트"); 찍("07c_종목_펼침_스쿼트") }
 }
