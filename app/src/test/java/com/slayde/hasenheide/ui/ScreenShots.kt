@@ -19,6 +19,13 @@ import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasAnyDescendant
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.swipeUp
+import androidx.compose.ui.test.isRoot
 import androidx.compose.ui.test.performTouchInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.captureScreenRoboImage
@@ -115,19 +122,33 @@ abstract class ShotBase {
 
     /** 글자로 찾아 누름 — 같은 글이 여럿이면 [몇째] (−1 = 마지막) */
     protected fun 누름(글: String, 몇째: Int = 0, 일부: Boolean = false) {
-        val 들 = rule.onAllNodesWithText(글, substring = 일부, useUnmergedTree = true)
+        var 들 = rule.onAllNodesWithText(글, substring = 일부, useUnmergedTree = true)
+        var 밀기 = 0
+        while (들.fetchSemanticsNodes().isEmpty() && 밀기 < 8) { 밀기++; rule.onAllNodes(isRoot())[0].performTouchInput { swipeUp(startY = height * 0.75f, endY = height * 0.25f) }; 쉼(); 들 = rule.onAllNodesWithText(글, substring = 일부, useUnmergedTree = true) }
         val n = 들.fetchSemanticsNodes().size
         check(n > 0) { "'$글' 없음" }
-        들[if (몇째 < 0) n - 1 else 몇째].performClick()
+        val 칸 = 들[if (몇째 < 0) n - 1 else 몇째]
+        try { 칸.performScrollTo(); 쉼(300) } catch (_: Throwable) { }
+        칸.performClick()
+        쉼()
+    }
+
+    /** 달력의 [일] 칸 — 칸 전체(눌리는 칸)의 눌림 동작을 바로 부른다 (글자 자리를 손가락으로 누르면 안 먹힌 적이 있다 · 10-16) */
+    protected fun 날누름(일: Int) {
+        rule.onAllNodes(hasClickAction() and hasAnyDescendant(hasText(일.toString())))[0].performSemanticsAction(SemanticsActions.OnClick)
         쉼()
     }
 
     /** 설명(contentDescription)으로 찾아 누름 */
     protected fun 누름설명(글: String, 몇째: Int = 0, 일부: Boolean = false) {
-        val 들 = rule.onAllNodesWithContentDescription(글, substring = 일부, useUnmergedTree = true)
+        var 들 = rule.onAllNodesWithContentDescription(글, substring = 일부, useUnmergedTree = true)
+        var 밀기 = 0
+        while (들.fetchSemanticsNodes().isEmpty() && 밀기 < 8) { 밀기++; rule.onAllNodes(isRoot())[0].performTouchInput { swipeUp(startY = height * 0.75f, endY = height * 0.25f) }; 쉼(); 들 = rule.onAllNodesWithContentDescription(글, substring = 일부, useUnmergedTree = true) }
         val n = 들.fetchSemanticsNodes().size
         check(n > 0) { "설명 '$글' 없음" }
-        들[if (몇째 < 0) n - 1 else 몇째].performClick()
+        val 칸 = 들[if (몇째 < 0) n - 1 else 몇째]
+        try { 칸.performScrollTo(); 쉼(300) } catch (_: Throwable) { }
+        칸.performClick()
         쉼()
     }
 
@@ -200,7 +221,7 @@ abstract class ShotBase {
                 }
                 n.children.forEach { 걷기(it) }
             }
-            걷기(rule.onRoot(useUnmergedTree = true).fetchSemanticsNode())
+            rule.onAllNodes(isRoot(), useUnmergedTree = true).fetchSemanticsNodes().forEach { 걷기(it) }
             sb.append("]")
             File("screens/$이름.json").apply { parentFile?.mkdirs() }.writeText(sb.toString(), Charsets.UTF_8)
         } catch (t: Throwable) {
@@ -234,7 +255,7 @@ class Shot_s01_calendar : ShotBase() {
 
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class Shot_s01b_calendarDay : ShotBase() {
-    @Test fun s01b_calendarDay() { 켜기(); 누름(오늘.minusDays(2).dayOfMonth.toString()); 찍("01b_캘린더_지난날") }
+    @Test fun s01b_calendarDay() { 켜기(); 날누름(오늘.minusDays(2).dayOfMonth); 찍("01b_캘린더_지난날") }
 }
 
 
@@ -391,7 +412,11 @@ class Shot_s16c_addSetFlash : ShotBase() {
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class Shot_s07b_exerciseAddSet : ShotBase() {
     @Test fun s07b() { 켜기(); 탭(3); 누름("스쿼트")
-        val 들 = rule.onAllNodesWithText("+ 세트", substring = true, useUnmergedTree = true); 들[0].performClick()
+        var 들 = rule.onAllNodesWithText("+ 세트", substring = true, useUnmergedTree = true)
+        var 밀기 = 0
+        while (들.fetchSemanticsNodes().isEmpty() && 밀기 < 8) { 밀기++; rule.onAllNodes(isRoot())[0].performTouchInput { swipeUp(startY = height * 0.75f, endY = height * 0.25f) }; 쉼(); 들 = rule.onAllNodesWithText("+ 세트", substring = true, useUnmergedTree = true) }
+        try { 들[0].performScrollTo(); 쉼(300) } catch (_: Throwable) { }
+        들[0].performClick()
         바로찍("07b_종목_세트추가_순간", 200) }
 }
 

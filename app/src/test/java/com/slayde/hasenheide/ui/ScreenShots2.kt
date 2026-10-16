@@ -53,7 +53,7 @@ class Shot_s01k_manyExercises : ShotBase() {
                 "펙덱 플라이", "트라이셉스 익스텐션", "덤벨 컬", "해머 컬", "페이스 풀", "크런치")
             d.copy(기록 = d.기록 + (날.toString() to r.copy(종목들 = 더.map { 종목기록(it, List(3) { 세트(20.0, 10) }) })))
         }
-        누름(날.dayOfMonth.toString()); 찍("01k_캘린더_종목많은날")
+        날누름(날.dayOfMonth); 찍("01k_캘린더_종목많은날")
         누름("외 ", 일부 = true); 찍("01l_캘린더_종목펼침")
     }
 }
