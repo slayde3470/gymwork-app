@@ -2,6 +2,14 @@ package com.slayde.hasenheide.ui
 
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.isSpecified
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.unit.isSpecified
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsNode
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onAllNodesWithContentDescription
@@ -148,9 +156,57 @@ abstract class ShotBase {
         return 이름
     }
 
-    protected fun 바로찍(이름: String, ms: Long) { rule.mainClock.advanceTimeBy(ms); captureScreenRoboImage("screens/$이름.png") }
+    protected fun 바로찍(이름: String, ms: Long) { rule.mainClock.advanceTimeBy(ms); captureScreenRoboImage("screens/$이름.png"); 측정(이름) }
 
-    protected fun 찍(이름: String) { 쉼(); captureScreenRoboImage("screens/$이름.png") }
+    protected fun 찍(이름: String) { 쉼(); captureScreenRoboImage("screens/$이름.png"); 측정(이름) }
+
+    /**
+     * 10-16 홍겸 님 "UI 전부 크기까지 아티팩트로": 사진과 같은 순간의 화면 요소 치수를 screens/이름.json 으로 남긴다.
+     * 칸마다 [왼 위 폭 높이] (dp, 화면 맨 위 왼쪽 기준) · 종류 · 글 · 글자 크기(sp) · 굵기 · 색 · 자간(em) · 줄 높이(sp).
+     * 실패해도 사진은 그대로 (try/catch).
+     */
+    protected fun 측정(이름: String) {
+        try {
+            val d = rule.activity.resources.displayMetrics.density
+            val sb = StringBuilder("[")
+            fun 문(t: String) = "\"" + t.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", " ").replace("\r", " ") + "\""
+            fun 반(v: Float) = (Math.round(v / d * 2f) / 2f).toString()
+            fun 걷기(n: SemanticsNode) {
+                val c = n.config
+                val b = n.boundsInRoot
+                val 글 = c.getOrNull(SemanticsProperties.Text)?.joinToString("") { it.text }
+                val 설명 = c.getOrNull(SemanticsProperties.ContentDescription)?.joinToString(",")
+                val 누름 = c.contains(SemanticsActions.OnClick)
+                val 칸 = c.contains(SemanticsActions.SetText)
+                if ((글 != null || 설명 != null || 누름 || 칸) && b.width > 0f && b.height > 0f) {
+                    var 크기 = ""; var 굵기 = ""; var 색 = ""; var 자간 = ""; var 줄 = ""
+                    val 행동 = c.getOrNull(SemanticsActions.GetTextLayoutResult)?.action
+                    if (행동 != null) {
+                        val l = ArrayList<TextLayoutResult>(); 행동(l)
+                        val st = l.firstOrNull()?.layoutInput?.style
+                        if (st != null) {
+                            if (st.fontSize.isSpecified) 크기 = st.fontSize.value.toString()
+                            st.fontWeight?.let { 굵기 = it.weight.toString() }
+                            if (st.color.isSpecified) 색 = "%06X".format(st.color.toArgb() and 0xFFFFFF)
+                            if (st.letterSpacing.isSpecified) 자간 = st.letterSpacing.value.toString()
+                            if (st.lineHeight.isSpecified) 줄 = st.lineHeight.value.toString()
+                        }
+                    }
+                    if (sb.length > 1) sb.append(',')
+                    sb.append("[").append(반(b.left)).append(',').append(반(b.top)).append(',').append(반(b.width)).append(',').append(반(b.height))
+                        .append(',').append(문(if (칸) "칸" else if (누름) "누름" else if (글 != null) "글" else "설명"))
+                        .append(',').append(문(글 ?: "")).append(',').append(문(설명 ?: ""))
+                        .append(',').append(문(크기)).append(',').append(문(굵기)).append(',').append(문(색)).append(',').append(문(자간)).append(',').append(문(줄)).append("]")
+                }
+                n.children.forEach { 걷기(it) }
+            }
+            걷기(rule.onRoot(useUnmergedTree = true).fetchSemanticsNode())
+            sb.append("]")
+            File("screens/$이름.json").apply { parentFile?.mkdirs() }.writeText(sb.toString(), Charsets.UTF_8)
+        } catch (t: Throwable) {
+            File("screens/_측정오류.txt").apply { parentFile?.mkdirs() }.appendText("$이름: $t\n")
+        }
+    }
 
     /** 오늘도 상체 A 를 한 기록 (한 번 더 · 기록 삭제 단추) */
     protected fun 오늘기록(d: 앱데이터): 앱데이터 {
