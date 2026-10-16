@@ -183,6 +183,14 @@ abstract class ShotBase {
         return false
     }
 
+    /** 그 글자(설명)를 품은 가장 가까운 '누르는 칸'의 눌림 동작을 바로 부른다. 눌림이 없으면(달력 칸 같은 손 동작) false → 손가락으로 누른다 */
+    protected fun 의미누름(칸: androidx.compose.ui.test.SemanticsNodeInteraction): Boolean = try {
+        var a: SemanticsNode? = 칸.fetchSemanticsNode()
+        while (a != null && !a.config.contains(SemanticsActions.OnClick)) a = a.parent
+        val f = a?.config?.getOrNull(SemanticsActions.OnClick)?.action
+        if (f == null) false else { rule.runOnUiThread { f() }; true }
+    } catch (_: Throwable) { false }
+
     /** 세로로 밀리는 칸(목록 · 시트)을 천천히 한 번 민다 — 천천히 밀어야 손을 뗀 뒤 관성으로 더 가지 않는다. [위로] = 아래 내용이 올라오게 */
     protected fun 목록밀기(위로: Boolean) {
         val 목록 = rule.onAllNodes(androidx.compose.ui.test.SemanticsMatcher.keyIsDefined(SemanticsProperties.VerticalScrollAxisRange))
@@ -218,8 +226,7 @@ abstract class ShotBase {
         if (n == 0) 실패기록("누름 $글")
         check(n > 0) { "'$글' 없음" }
         val 칸 = 들[if (몇째 < 0) n - 1 else 몇째]
-        try { 보이게(칸) } catch (_: Throwable) { }
-        칸.performClick()
+        if (!의미누름(칸)) { try { 보이게(칸) } catch (_: Throwable) { }; 칸.performClick() }   // 누르는 칸이면 자리에 상관없이 '눌림' 동작을 바로 부른다 (화면 밖 · 시트 안에서도 먹는다)
         쉼()
     }
 
@@ -237,8 +244,7 @@ abstract class ShotBase {
         if (n == 0) 실패기록("누름설명 $글")
         check(n > 0) { "설명 '$글' 없음" }
         val 칸 = 들[if (몇째 < 0) n - 1 else 몇째]
-        try { 보이게(칸) } catch (_: Throwable) { }
-        칸.performClick()
+        if (!의미누름(칸)) { try { 보이게(칸) } catch (_: Throwable) { }; 칸.performClick() }   // 누르는 칸이면 자리에 상관없이 '눌림' 동작을 바로 부른다 (화면 밖 · 시트 안에서도 먹는다)
         쉼()
     }
 
