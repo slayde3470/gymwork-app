@@ -129,6 +129,8 @@ abstract class ShotBase {
     protected lateinit var 상태: 앱상태
 
     protected fun 켜기(업적둠: Boolean = false, 작은: Boolean = false, 바꾸기: (앱데이터) -> 앱데이터 = { it }) {
+        // 달력 칸은 '뗀 지 300ms 안이면 누름 아님'을 SystemClock 으로 잰다 — 시험 시계가 0 근처면 첫 누름이 먹히지 않는다
+        try { org.robolectric.shadows.ShadowSystemClock.advanceBy(java.time.Duration.ofSeconds(10)) } catch (_: Throwable) { }
         본 = Thread.currentThread(); 마지막 = System.currentTimeMillis(); 지금 = "켜기 ${this::class.simpleName}"; 지키기()
         val 파일 = File.createTempFile("hasenheide", ".json")
         저장소.쓰기(파일, 바꾸기(예시()))
@@ -148,6 +150,24 @@ abstract class ShotBase {
     protected fun 탭(i: Int) {
         rule.onRoot().performTouchInput { click(Offset(width * (i + 0.5f) / 9f, height - 22f * 2f)) }
         쉼()
+    }
+
+    /** 못 찾았을 때 그때 화면과 칸 목록을 남긴다 (screens/_없음_*.png · _없음.txt) */
+    protected fun 실패기록(무엇: String) {
+        try { captureScreenRoboImage("screens/_없음_${this::class.simpleName}.png") } catch (_: Throwable) { }
+        try {
+            val 줄 = rule.onAllNodes(isRoot(), useUnmergedTree = true).fetchSemanticsNodes().flatMap { r ->
+                val out = ArrayList<String>()
+                fun 걷(n: androidx.compose.ui.semantics.SemanticsNode) {
+                    val t = n.config.getOrNull(SemanticsProperties.Text)?.joinToString("|") { it.text }
+                    val d = n.config.getOrNull(SemanticsProperties.ContentDescription)?.joinToString("|")
+                    if (t != null || d != null) out.add("  ${n.boundsInRoot.top.toInt()},${n.boundsInRoot.bottom.toInt()} t=$t d=$d")
+                    n.children.forEach { 걷(it) }
+                }
+                걷(r); out
+            }
+            File("screens/_없음.txt").apply { parentFile?.mkdirs() }.appendText("## ${this::class.simpleName} $무엇\n" + 줄.take(160).joinToString("\n") + "\n")
+        } catch (_: Throwable) { }
     }
 
     /** 목록(Lazy)에 아직 안 그려진 칸을 찾아 목록을 밀어 준다 — 맨 위 칸 말고 마지막 목록부터 (10-16) */
@@ -184,6 +204,7 @@ abstract class ShotBase {
         if (들.fetchSemanticsNodes().isEmpty()) { 찾아밀기(hasText(글, substring = 일부)); 들 = rule.onAllNodesWithText(글, substring = 일부, useUnmergedTree = true) }
         while (들.fetchSemanticsNodes().isEmpty() && 밀기 < 8) { 밀기++; rule.onAllNodes(isRoot())[0].performTouchInput { swipeUp(startY = height * 0.75f, endY = height * 0.25f) }; 쉼(); 들 = rule.onAllNodesWithText(글, substring = 일부, useUnmergedTree = true) }
         val n = 들.fetchSemanticsNodes().size
+        if (n == 0) 실패기록("누름 $글")
         check(n > 0) { "'$글' 없음" }
         val 칸 = 들[if (몇째 < 0) n - 1 else 몇째]
         try { 보이게(칸) } catch (_: Throwable) { }
@@ -192,10 +213,7 @@ abstract class ShotBase {
     }
 
     /** 달력의 [일] 칸 — 칸 전체(눌리는 칸)의 눌림 동작을 바로 부른다 (글자 자리를 손가락으로 누르면 안 먹힌 적이 있다 · 10-16) */
-    protected fun 날누름(일: Int) {
-        rule.onAllNodes(hasClickAction() and hasText(일.toString()))[0].performSemanticsAction(SemanticsActions.OnClick)
-        쉼()
-    }
+    protected fun 날누름(일: Int) { 누름(일.toString()) }
 
     /** 설명(contentDescription)으로 찾아 누름 */
     protected fun 누름설명(글: String, 몇째: Int = 0, 일부: Boolean = false) {
@@ -205,6 +223,7 @@ abstract class ShotBase {
         if (들.fetchSemanticsNodes().isEmpty()) { 찾아밀기(hasContentDescription(글, substring = 일부)); 들 = rule.onAllNodesWithContentDescription(글, substring = 일부, useUnmergedTree = true) }
         while (들.fetchSemanticsNodes().isEmpty() && 밀기 < 8) { 밀기++; rule.onAllNodes(isRoot())[0].performTouchInput { swipeUp(startY = height * 0.75f, endY = height * 0.25f) }; 쉼(); 들 = rule.onAllNodesWithContentDescription(글, substring = 일부, useUnmergedTree = true) }
         val n = 들.fetchSemanticsNodes().size
+        if (n == 0) 실패기록("누름설명 $글")
         check(n > 0) { "설명 '$글' 없음" }
         val 칸 = 들[if (몇째 < 0) n - 1 else 몇째]
         try { 보이게(칸) } catch (_: Throwable) { }
