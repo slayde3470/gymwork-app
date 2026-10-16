@@ -1,8 +1,8 @@
 --- 로그 끝 30줄 ---
+> Task :app:mergeDebugShaders
 > Task :app:compileDebugShaders NO-SOURCE
 > Task :app:generateDebugAssets UP-TO-DATE
 > Task :app:mergeDebugAssets
-> Task :app:processDebugManifestForPackage
 > Task :app:processDebugResources
 > Task :app:packageDebugUnitTestForUnitTest
 > Task :app:generateDebugUnitTestConfig
@@ -13,19 +13,19 @@ w: file:///home/runner/work/gymwork-app/gymwork-app/app/src/main/java/com/slayde
 
 > Task :app:compileDebugJavaWithJavac
 > Task :app:processDebugJavaRes
-> Task :app:bundleDebugClassesToCompileJar
 > Task :app:bundleDebugClassesToRuntimeJar
+> Task :app:bundleDebugClassesToCompileJar
 
 > Task :app:compileDebugUnitTestKotlin
 w: file:///home/runner/work/gymwork-app/gymwork-app/app/src/test/java/com/slayde/hasenheide/ui/ScreenShots.kt:158:15 This declaration needs opt-in. Its usage should be marked with '@com.github.takahir
-w: file:///home/runner/work/gymwork-app/gymwork-app/app/src/test/java/com/slayde/hasenheide/ui/ScreenShots.kt:276:81 This declaration needs opt-in. Its usage should be marked with '@com.github.takahir
-w: file:///home/runner/work/gymwork-app/gymwork-app/app/src/test/java/com/slayde/hasenheide/ui/ScreenShots.kt:278:54 This declaration needs opt-in. Its usage should be marked with '@com.github.takahir
+w: file:///home/runner/work/gymwork-app/gymwork-app/app/src/test/java/com/slayde/hasenheide/ui/ScreenShots.kt:280:81 This declaration needs opt-in. Its usage should be marked with '@com.github.takahir
+w: file:///home/runner/work/gymwork-app/gymwork-app/app/src/test/java/com/slayde/hasenheide/ui/ScreenShots.kt:282:54 This declaration needs opt-in. Its usage should be marked with '@com.github.takahir
 
 > Task :app:compileDebugUnitTestJavaWithJavac NO-SOURCE
 > Task :app:processDebugUnitTestJavaRes
 > Task :app:testDebugUnitTest
 > Task :app:finalizeTestRoborazziDebug SKIPPED
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run-1792123451344.json
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run-1792124109747.json
 
-BUILD SUCCESSFUL in 9m 39s
+BUILD SUCCESSFUL in 3m 19s
 28 actionable tasks: 28 executed
