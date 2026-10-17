@@ -55,6 +55,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.graphics.Color
@@ -337,6 +338,7 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
     var 고른날 by remember { mutableStateOf(캘기억.고른날 ?: 오늘) }
     SideEffect { 캘기억.보는달 = 보는달; 캘기억.고른날 = 고른날 }
     var 열린 by remember { mutableStateOf<캘시트?>(null) }
+    var 띠아래 by remember { mutableStateOf(0f) }   // 10-17: 년월 띠 아래끝(창 좌표) — 달 고르기 카드가 여기서 열린다
     var 시트날 by remember { mutableStateOf(오늘) }
     var 록골 by remember { mutableStateOf<Set<String>>(emptySet()) }   // 지우려고 고른 기록 열쇠 (기본 = 아무것도 안 고름)
     var 예펼침 by remember { mutableStateOf<String?>(null) }
@@ -454,7 +456,7 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
 
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
-            년월띠(보는달, { 달넘김(-1) }, { 달넘김(1) }, { 시트날 = 오늘; 열린 = 캘시트.달 })
+            년월띠(보는달, { 달넘김(-1) }, { 달넘김(1) }, { 시트날 = 오늘; 열린 = 캘시트.달 }, { 띠아래 = it })
             // 10-06 홍겸 님 ④: 달력은 움직이지 않는다 — 넘김은 날짜 판의 목록 칸 안에서만 (전에는 이 칸 전체가 verticalScroll 이었다)
             Column(Modifier.weight(1f).fillMaxWidth()) {
                 // 달을 넘기면 다음 달은 오른쪽에서, 이전 달은 왼쪽에서 살짝 밀려 들어온다 (10-02).
@@ -551,7 +553,7 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
                     } } },
                 )
             }
-            캘시트.달 -> 달고르기(보는달, 이번달, { 보는달 = it; 열린 = null }, { 열린 = null })
+            캘시트.달 -> 달고르기({ 띠아래 }, 보는달, 이번달, { 보는달 = it; 열린 = null }, { 열린 = null })
             null -> {}
         }
 
@@ -569,11 +571,12 @@ private object 캘지움띠 { val 목록 = mutableListOf<캘지움값>() }
 
 /** 시안 `.띠.년월띠` — ‹ 2026년 10월 › (10-06 홍겸 님 ②: 좌우 [스탯] [업적] 칩은 뺐다). 년월은 언제나 한가운데, 누르면 달 고르기 */
 @Composable
-private fun 년월띠(달: YearMonth, 이전: () -> Unit, 다음: () -> Unit, 달고르기: () -> Unit) {
+private fun 년월띠(달: YearMonth, 이전: () -> Unit, 다음: () -> Unit, 달고르기: () -> Unit, 아래끝: (Float) -> Unit) {
     val c = Local색.current
     Box(
         // 10-09 홍겸 님: 띠도 좌우 여백 12 · 모서리 8 (운동 보고서처럼)
         Modifier.padding(start = 간격.보통, end = 간격.보통, top = 간격.보통).fillMaxWidth().heightIn(min = 높이.보통)
+            .onGloballyPositioned { 아래끝(it.boundsInWindow().bottom) }
             .clip(RoundedCornerShape(모서리.작게)).background(c.강조)
             .padding(horizontal = 간격.보통, vertical = 부품치수.띠세로여백).번호("캘0"),
     ) {
@@ -1052,22 +1055,21 @@ private object 판단추폭 { const val 넓게 = 1.4f; const val 좁게 = 0.6f
 // ─────────────── 시트 ───────────────
 
 /**
- * 달 고르기 (시안 v9 xz0l `달고르기시트` · v17 `년고르기`) — 제목 줄 = ‹ 2026 › (해 넘기기) · 1~12월 3×4.
- * 10-08 홍겸 님: '달 고르기' · '해 고르기' · 범위 글(2021~2032)을 없애고 시트 제목 줄에 ‹ 고른 해 › 만 둔다.
+ * 달 고르기 (시안 v9 xz0l `달고르기시트` · v17 `년고르기`) — 머리 줄 = ‹ 2026 › (해 넘기기) · 1~12월 3×4.
+ * 10-17 홍겸 님: 아래에서 올라오는 시트는 손가락을 내려야 해서 비직관적 → 누른 년월 띠 바로 아래에 카드로 펼친다 ([단추아래팝업]).
+ * 10-08: '달 고르기' · '해 고르기' · 범위 글(2021~2032)은 없고 머리 줄에 ‹ 고른 해 › 만 둔다 (✕ 는 없다 — 바깥 · 뒤로가기로 닫는다).
  * 가운데 해를 누르면 12해 격자(‹ › 는 12해씩, 가운데 글은 그대로 고른 해) → 해를 고르면 그 해의 달 격자 · 해 모드에서 가운데를 다시 누르면 달 격자.
  * 보는 달 · 해 = 고른 표시(상자 전체 파랑), 이번 달 · 올해 = 오늘 표시
  */
 @Composable
-private fun 달고르기(보는달: YearMonth, 이번달: YearMonth, 고름: (YearMonth) -> Unit, 닫기: () -> Unit) {
+private fun 달고르기(띠아래: () -> Float, 보는달: YearMonth, 이번달: YearMonth, 고름: (YearMonth) -> Unit, 닫기: () -> Unit) {
     var 해 by remember { mutableIntStateOf(보는달.year) }
     var 해보기 by remember { mutableStateOf(false) }
     var 해시작 by remember { mutableIntStateOf(보는달.year - 5) }
-    시트("", 닫기, 제목칸 = {
+    단추아래팝업(띠아래, 닫기) {
         val 이전 = if (해보기) "이전 12년" else "이전 해"
         val 다음 = if (해보기) "다음 12년" else "다음 해"
-        // 오른쪽 ✕ 와 같은 폭을 왼쪽에 비워 ‹ 2026 › 가 제목 줄 한가운데에 오게 한다
-        Box(Modifier.width(높이.낮게))
-        Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(간격.아주좁게, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(간격.아주좁게, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) {
             아이콘버튼(아이콘.왼쪽, 이전, {
                 if (해보기) 해시작 = (해시작 - 해칸수).coerceIn(해범위.first, 해범위.last - 해칸수 + 1) else 해 = (해 - 1).coerceIn(해범위)
             }, 칠함 = false, 색 = Local색.current.강조)
@@ -1081,7 +1083,7 @@ private fun 달고르기(보는달: YearMonth, 이번달: YearMonth, 고름: (Ye
                 if (해보기) 해시작 = (해시작 + 해칸수).coerceIn(해범위.first, 해범위.last - 해칸수 + 1) else 해 = (해 + 1).coerceIn(해범위)
             }, 칠함 = false, 색 = Local색.current.강조)
         }
-    }) {
+        Box(Modifier.height(간격.좁게))
         if (해보기) 고르기칸들((0 until 해칸수).map { "${해시작 + it}" }, (0 until 해칸수).indexOfFirst { 해시작 + it == 보는달.year }, (0 until 해칸수).indexOfFirst { 해시작 + it == 이번달.year }) { i ->
             해 = 해시작 + i; 해보기 = false
         } else 고르기칸들((1..12).map { "${it}월" }, if (보는달.year == 해) 보는달.monthValue - 1 else -1, if (이번달.year == 해) 이번달.monthValue - 1 else -1) { i ->

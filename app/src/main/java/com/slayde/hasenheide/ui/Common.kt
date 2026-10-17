@@ -11,6 +11,9 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.scaleIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -953,6 +956,45 @@ fun 시트(
                         .graphicsLayer { alpha = 속투명 }.verticalScroll(rememberScrollState()),
                 ) { if (속그림) androidx.compose.runtime.CompositionLocalProvider(Local시트닫기 provides { 닫기() }) { content() } }
             }
+        }
+    }
+}
+
+/**
+ * 단추 바로 아래에 펼쳐지는 고르기 카드 — 10-17 홍겸 님: 달 · 해 고르기가 아래에서 올라오는 것이 비직관적이라,
+ * 누른 단추(캘린더 년월 띠) 자리에서 열리게 한다. 카드 위끝이 단추 아래 [간격.좁게] 에 붙고, 위끝 가운데에서 펼쳐진다.
+ *  · [기준아래] = 단추(띠) 아래끝의 창 좌표(px) — 단추가 자기 자리를 재서 넘긴다
+ *  · 바깥 · 뒤로가기로 닫는다 (안에서 고르면 화면이 바로 치운다 — [시트] 와 같다)
+ *  · 큰 상자 = 강조 2dp 테두리 · 면 바탕 · 모서리 16 (U1-6 · U3-4 · U3-5), 고르는 일에만 쓴다 (U5-3)
+ */
+@Composable
+fun 단추아래팝업(기준아래: () -> Float, onClose: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
+    val c = Local색.current
+    val 보임 = remember { MutableTransitionState(false).apply { targetState = true } }
+    var 닫는중 by remember { mutableStateOf(false) }
+    val 닫기최신 by rememberUpdatedState(onClose)
+    fun 닫기() { if (!닫는중) { 닫는중 = true; 보임.targetState = false } }
+    LaunchedEffect(보임.isIdle, 보임.currentState) { if (닫는중 && 보임.isIdle && !보임.currentState) 닫기최신() }
+    BackHandler(onBack = { 닫기() })
+    var 창위 by remember { mutableStateOf(0f) }
+    val 위 = with(LocalDensity.current) { (기준아래() - 창위).coerceAtLeast(0f).toDp() }
+    val 모양 = RoundedCornerShape(모서리.크게)
+    val 윗가운데 = TransformOrigin(0.5f, 0f)
+    Box(Modifier.fillMaxSize().onGloballyPositioned { 창위 = it.positionInWindow().y }) {
+        AnimatedVisibility(visibleState = 보임, enter = fadeIn(tween(움직임.팝업)), exit = fadeOut(tween(움직임.팝업닫기)), label = "팝업가림") {
+            Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.35f)).눌림 { 닫기() })
+        }
+        AnimatedVisibility(
+            visibleState = 보임,
+            enter = scaleIn(tween(움직임.팝업, easing = 움직임.부드럽게), 움직임.팝업시작, 윗가운데) + fadeIn(tween(움직임.팝업)),
+            exit = scaleOut(tween(움직임.팝업닫기), 움직임.팝업시작, 윗가운데) + fadeOut(tween(움직임.팝업닫기)),
+            modifier = Modifier.padding(start = 간격.보통, end = 간격.보통, top = 위 + 간격.좁게),
+            label = "팝업",
+        ) {
+            Column(
+                Modifier.fillMaxWidth().clip(모양).background(c.면).border(선굵기.굵게, c.강조, 모양).눌림 { }.padding(간격.보통),
+                content = content,
+            )
         }
     }
 }
