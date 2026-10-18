@@ -13,6 +13,7 @@ import com.slayde.hasenheide.data.전환막힘
 import com.slayde.hasenheide.data.종목전환
 import com.slayde.hasenheide.data.줄전환모드
 import com.slayde.hasenheide.data.플랜보조무게
+import com.slayde.hasenheide.data.플랜보조무게정하기
 import com.slayde.hasenheide.data.플랜전환
 import com.slayde.hasenheide.data.플랜찾기
 import com.slayde.hasenheide.ui.theme.간격
@@ -30,6 +31,33 @@ import com.slayde.hasenheide.data.실제무게
 import com.slayde.hasenheide.data.앱데이터
 import com.slayde.hasenheide.ui.theme.Local색
 import com.slayde.hasenheide.ui.theme.크기
+import com.slayde.hasenheide.ui.theme.글꼴
+import com.slayde.hasenheide.ui.theme.모서리
+import com.slayde.hasenheide.ui.theme.선굵기
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.unit.dp
 
 /**
  * 기록 방식 1단계 화면 (10-12 · 문서/기록방식_설계.md) — 무게 칸 머리 글 + 칸 아래 작게 '= 69kg'.
@@ -87,6 +115,7 @@ internal fun 무게칸아래글(작은글: String?, modifier: Modifier = Modifie
 internal fun 방식전환줄(
     모드: 전환모드, 이름: String?, 보조: Double?, onClick: () -> Unit, on덜: () -> Unit, on더: () -> Unit,
     modifier: Modifier = Modifier,
+    on직접: (Double) -> Unit = {},
 ) {
     val c = Local색.current
     Row(
@@ -97,10 +126,54 @@ internal fun 방식전환줄(
         버튼(모드.name, onClick, Modifier.semantics { contentDescription = "${이름 ?: ""} 방식 바꾸기, 지금 ${모드.name}" }, 낮게 = true, 그림 = 아이콘.바꿈)
         if (보조 != null) {
             아이콘버튼(아이콘.빼기, "보조 무게 줄이기", on덜, 크기칸 = 높이.낮게)
-            글("${if (모드 == 전환모드.어시스트) "보조" else "추가"} ${무게글(보조)}kg", 크기값 = 크기.버튼, 굵기 = FontWeight.Bold, 색 = c.글)
+            보조값칸(if (모드 == 전환모드.어시스트) "보조" else "추가", 보조, on직접)
             아이콘버튼(아이콘.더하기, "보조 무게 늘리기", on더, 크기칸 = 높이.낮게)
         }
     }
+}
+
+/**
+ * 보조 · 추가 kg 숫자 — 10-19 홍겸 님: 누르면 그 자리에서 직접 친다 (자판 · 완료 · 다른 곳 누르기로 확정).
+ * − ＋ 는 5kg 씩이라 크게 움직이고, 정확한 값은 여기서 친다. 숫자가 아니면 그대로 둔다
+ */
+@Composable
+private fun 보조값칸(앞글: String, 값: Double, on직접: (Double) -> Unit) {
+    val c = Local색.current
+    var 편집 by remember { mutableStateOf(false) }
+    if (!편집) {
+        Box(Modifier.height(높이.낮게).눌림 { 편집 = true }.semantics { contentDescription = "$앞글 무게 ${무게글(값)}킬로, 눌러서 직접 입력" }, contentAlignment = Alignment.Center) {
+            글("$앞글 ${무게글(값)}kg", 크기값 = 크기.버튼, 굵기 = FontWeight.Bold, 색 = c.글)
+        }
+        return
+    }
+    var 칸 by remember { mutableStateOf(TextFieldValue(무게글(값), TextRange(0, 무게글(값).length))) }
+    var 초점얻음 by remember { mutableStateOf(false) }
+    val 초점 = remember { FocusRequester() }
+    fun 끝내기() {
+        if (!편집) return
+        편집 = false
+        루무게읽기(칸.text)?.let { if (it != 값) on직접(it) }
+    }
+    LaunchedEffect(Unit) { 초점.requestFocus() }
+    글(앞글, 크기값 = 크기.버튼, 굵기 = FontWeight.Bold, 색 = c.글)
+    Box(
+        Modifier.width(72.dp).height(높이.아주낮게)
+            .clip(RoundedCornerShape(모서리.작게)).background(c.면).border(선굵기.보통, c.속선, RoundedCornerShape(모서리.작게))
+            .padding(horizontal = 간격.좁게),
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        BasicTextField(
+            value = 칸, onValueChange = { 칸 = it }, singleLine = true,
+            textStyle = 글꼴.보통(크기.버튼, FontWeight.Bold).copy(color = c.글),
+            cursorBrush = SolidColor(c.강조),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = { 끝내기() }),
+            modifier = Modifier.fillMaxWidth().focusRequester(초점).onFocusChanged {
+                if (it.isFocused) 초점얻음 = true else if (초점얻음) 끝내기()
+            },
+        )
+    }
+    글("kg", 크기값 = 크기.버튼, 굵기 = FontWeight.Bold, 색 = c.글)
 }
 
 /** 줄 하나의 ⇄ — 이 줄이 ⇄ 대상이 아니면 아무것도 그리지 않는다. 일반 줄은 종목 방식을, 플랜 줄은 플랜 보조모드를 바꾼다 */
@@ -114,6 +187,7 @@ internal fun 전환행(상태: 앱상태, 종id: String?, 이름: String, 플랜
         onClick = { 상태.방식바꾸기(종id, 이름, 플랜id) },
         on덜 = { 상태.보조무게바꾸기(플랜id, -1) }, on더 = { 상태.보조무게바꾸기(플랜id, 1) },
         modifier = modifier,
+        on직접 = { 값 -> 상태.보조무게정하기(플랜id, 값) },
     )
 }
 
@@ -124,9 +198,16 @@ internal fun 앱상태.방식바꾸기(종id: String?, 이름: String, 플랜id:
     바꿈 { dd -> if (플랜id != null) dd.플랜전환(플랜id) else dd.종목전환(종id, 이름) }
 }
 
+/** 보조 무게 − ＋ — 10-19 홍겸 님: 체크한 세트가 있어도 막지 않는다 (체크한 세트는 그대로 · 남은 세트만 새 처방) */
 internal fun 앱상태.보조무게바꾸기(플랜id: String?, 방향: Int) {
     if (플랜id == null) return
-    if (d.플랜찾기(플랜id)?.let { d.전환막힘(null, it.이름, 플랜id) } == true) { 알림.토스트("체크한 세트가 있어 바꿀 수 없습니다"); return }
     발자취.적기("⇄ 보조 무게 ${if (방향 > 0) "＋" else "－"}")
     바꿈 { dd -> dd.플랜보조무게(플랜id, 방향) }
+}
+
+/** 보조 무게를 직접 친 값으로 */
+internal fun 앱상태.보조무게정하기(플랜id: String?, 값: Double) {
+    if (플랜id == null) return
+    발자취.적기("⇄ 보조 무게 직접 입력")
+    바꿈 { dd -> dd.플랜보조무게정하기(플랜id, 값) }
 }
