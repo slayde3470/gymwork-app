@@ -151,10 +151,10 @@ fun 플랜화면(상태: 앱상태, 설정으로: () -> Unit, 종목으로: () -
 
                 // ── 플0 · 종목 — 바꾸면 칸을 모두 비운다 (시안 `폼값` 종목) ──
                 단계(1, "종목", 끝단계 == 1) {
-                    카드(Modifier.번호("플0")) {
+                    // 목록 카드는 이 카드 바로 아래에서 열린다 (카드 아래끝을 잰다)
+                    카드(Modifier.번호("플0").onGloballyPositioned { 종목줄아래 = it.positionInWindow().y + it.size.height }) {
                         // 종목 단추를 늘어놓지 않는다 — 이 줄을 누르면 목록 카드가 위에서 아래로 펼쳐진다 (한 줄에 한 종목)
-                        고름줄(if (골랐나) f.종목 else "종목 선택하기", 골랐나, 아이콘.아래,
-                            Modifier.onGloballyPositioned { 종목줄아래 = it.positionInWindow().y + it.size.height }) { 종목열림 = true }
+                        고름줄(if (골랐나) f.종목 else "종목 선택하기", 골랐나, 아이콘.아래) { 종목열림 = true }
                     }
                 }
 
