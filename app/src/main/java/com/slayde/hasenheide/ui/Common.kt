@@ -417,6 +417,7 @@ fun 입력칸(
     숫자: Boolean = false,
     onDone: (() -> Unit)? = null,
     여러줄: Boolean = false,   // 긴 글을 고칠 때 — 줄을 바꿔 가며 전부 보인다 (09-24 메모: 한 줄이라 가로로 찾아야 했다)
+    글크기: TextUnit = 크기.본문,   // 10-19: 플랜 탭 숫자 칸은 크기.큰숫자 (22) — 한눈에 읽히게
 ) {
     val c = Local색.current
     val 초점 = LocalFocusManager.current
@@ -429,10 +430,10 @@ fun 입력칸(
             .padding(horizontal = 12.dp, vertical = if (여러줄) 10.dp else 0.dp),
         contentAlignment = if (여러줄) Alignment.TopStart else Alignment.CenterStart,
     ) {
-        if (값.isEmpty()) 글(안내, 색 = c.옅음)
+        if (값.isEmpty()) 글(안내, 크기값 = 글크기, 색 = c.옅음)
         BasicTextField(
             value = 값, onValueChange = onChange, singleLine = !여러줄,
-            textStyle = 글꼴.보통(크기.본문).copy(color = c.글),
+            textStyle = 글꼴.보통(글크기).copy(color = c.글),
             cursorBrush = SolidColor(c.강조),
             keyboardOptions = KeyboardOptions(
                 keyboardType = if (숫자) KeyboardType.Decimal else KeyboardType.Text,
