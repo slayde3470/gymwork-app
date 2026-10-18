@@ -108,12 +108,14 @@ fun 플랜화면(상태: 앱상태, 설정으로: () -> Unit, 종목으로: () -
     val 맨몸 = t?.맨몸인가 == true
     val 안함 = f.입력안함
 
-    Column(Modifier.fillMaxSize()) {
+    // 10-19 홍겸 님 '플랜탭 ui 개편': 다른 탭과 같은 짜임 — 띠 · (구역 이름표 + 카드) · 떠 있는 단추 (설정 · 루틴 · 종목 탭과 같은 값)
+    Box(Modifier.fillMaxSize()) {
+      Column(Modifier.fillMaxSize()) {
         머리띠("운동 플랜")
         당겨새로고침({ }, Modifier.weight(1f).fillMaxWidth()) {
             Column(
                 Modifier.fillMaxSize().verticalScroll(rememberScrollState())
-                    .padding(horizontal = 간격.보통).padding(top = 간격.보통, bottom = 간격.보통),
+                    .padding(start = 간격.보통, end = 간격.보통, top = 간격.보통, bottom = 간격.보통 + 높이.보통 + 간격.보통),
                 verticalArrangement = Arrangement.spacedBy(간격.좁게),
             ) {
                 // ── 플0 · 종목 — 바꾸면 칸을 모두 비운다 (시안 `폼값` 종목) ──
@@ -121,9 +123,8 @@ fun 플랜화면(상태: 앱상태, 설정으로: () -> Unit, 종목으로: () -
 
                 if (t != null) {
                     // ── 플2 · 목표 근력 (위) ──
+                    구역머리("목표 근력", 판.second)
                     카드(Modifier.번호("플2")) {
-                        판정줄("목표 근력", 판.second)
-                        Box(Modifier.height(간격.좁게))
                         if (맨몸) {
                             Row { 폼칸("목표 개수 (한 번에)", f.목표개수, "회", Modifier.weight(1f)) { v -> 폼 { it.copy(목표개수 = v) } } }
                         } else {
@@ -138,11 +139,10 @@ fun 플랜화면(상태: 앱상태, 설정으로: () -> Unit, 종목으로: () -
                     }
 
                     // ── 플1 · 현재 근력 (아래) — [입력하지 않음] 은 제목 줄 맨 오른쪽 ──
+                    구역머리("현재 근력", 판.first) {
+                        안함단추(안함) { 폼 { it.copy(입력안함 = !it.입력안함) } }   // sjb8 다시 누르면 풀린다
+                    }
                     카드(Modifier.번호("플1")) {
-                        판정줄("현재 근력", 판.first) {
-                            안함단추(안함) { 폼 { it.copy(입력안함 = !it.입력안함) } }   // sjb8 다시 누르면 풀린다
-                        }
-                        Box(Modifier.height(간격.좁게))
                         흐린칸(안함) {
                             if (맨몸) {
                                 if (t.보조옵션) {
@@ -165,15 +165,20 @@ fun 플랜화면(상태: 앱상태, 설정으로: () -> Unit, 종목으로: () -
                     }
 
                     // ── 플3 · 훈련 방식 — 누르는 줄 하나 (v8 15lk · 맨몸은 1번 하나뿐이라 없다) ──
-                    if (!맨몸) 방식고름줄(방식찾기(f.방식번호), Modifier.번호("플3")) { 방식열림 = true }
+                    if (!맨몸) {
+                        구역머리("훈련 방식")
+                        카드(Modifier.번호("플3")) { 방식고름줄(방식찾기(f.방식번호)) { 방식열림 = true } }
+                    }
 
                     if (오류.isNotEmpty()) 글(오류, 크기값 = 크기.조금작게, 색 = c.나쁨, 줄 = 2)
-                    버튼("플랜 만들기", {
-                        val (p, 막힘) = 플랜만들기(플랜폼상태.value, 상태.d.몸, 상태.d.플랜들, "p" + System.currentTimeMillis(), 상태.오늘, 상태.d.향상기록들)
-                        if (p == null) 오류 = 막힘 else { 오류 = ""; 결과 = p }
-                    }, Modifier.fillMaxWidth(), 주요 = true)
                 }
             }
+        }
+      }
+        // 떠 있는 [플랜 만들기] — 루틴 · 종목 탭의 떠 있는 단추와 같은 모양 · 같은 자리 (오른쪽 아래)
+        떠있는단추("플랜 만들기", "플랜 만들기", true, Modifier.align(Alignment.BottomEnd).padding(간격.보통)) {
+            val (p, 막힘) = 플랜만들기(플랜폼상태.value, 상태.d.몸, 상태.d.플랜들, "p" + System.currentTimeMillis(), 상태.오늘, 상태.d.향상기록들)
+            if (p == null) 오류 = 막힘 else { 오류 = ""; 결과 = p }
         }
     }
 
@@ -201,11 +206,17 @@ private val 보조말 = listOf("정자세", "어시스트", "과부하")
 
 // ═══════════════════ 플랜 탭 부품 ═══════════════════
 
-/** 카드 제목 줄 — '목표 근력 [상위 20%]' · '현재 근력 [초보자] …… [입력하지 않음]' (시안 v9 9zt1 · 4v24) */
+/**
+ * 구역 머리 — 카드 위의 이름표 한 줄 (설정 탭 '신체 정보' 와 같은 [이름표]) · 목표/현재 근력은 옆에 판정 알약 · 맨 오른쪽 [입력하지 않음]
+ * (시안 v9 9zt1 · 4v24 — 카드 안에 있던 제목 줄을 카드 밖 이름표로 옮겼다)
+ */
 @Composable
-private fun 판정줄(제목: String, 판정: String, 오른쪽: (@Composable RowScope.() -> Unit)? = null) {
-    Row(Modifier.fillMaxWidth().heightIn(min = 높이.아주낮게), verticalAlignment = Alignment.CenterVertically) {
-        글(제목, 크기값 = 크기.조금작게, 굵기 = FontWeight.Bold)
+private fun 구역머리(제목: String, 판정: String = "", 오른쪽: (@Composable RowScope.() -> Unit)? = null) {
+    Row(
+        Modifier.fillMaxWidth().padding(top = 간격.좁게).then(if (오른쪽 != null) Modifier.heightIn(min = 높이.낮게) else Modifier),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        이름표(제목)
         if (판정.isNotEmpty()) { Box(Modifier.width(간격.좁게)); 판정알약(판정, 강조 = true) }
         if (오른쪽 != null) { Box(Modifier.weight(1f)); 오른쪽() }
     }
@@ -263,18 +274,16 @@ private fun 단위칸(값: String, 단위: String, 안내: String, 바꿈: (Stri
     }
 }
 
-/** 훈련 방식 줄 — 높이 44 · 1px 강조 테두리: [훈련 방식][1. 꾸준히 늘리기][›] (시안 v8 15lk `.방식고름줄`) */
+/** 훈련 방식 줄 — 카드 안 한 줄: [1. 꾸준히 늘리기 ………… ›] (이름은 위 구역 이름표 '훈련 방식' · 자기 테두리 없음) */
 @Composable
-private fun 방식고름줄(m: 훈련방식, modifier: Modifier = Modifier, onClick: () -> Unit) {
+private fun 방식고름줄(m: 훈련방식, onClick: () -> Unit) {
     val c = Local색.current
     Row(
-        modifier.fillMaxWidth().height(높이.높게).clip(RoundedCornerShape(모서리.보통)).background(c.면)
-            .border(선굵기.보통, c.강조, RoundedCornerShape(모서리.보통)).눌림(onClick).padding(horizontal = 간격.보통),
+        Modifier.fillMaxWidth().heightIn(min = 높이.보통).눌림(onClick),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.좁게),
     ) {
-        글("훈련 방식", 크기값 = 크기.아주작게, 색 = c.옅음)
         글("${m.번호}. ${m.이름}", Modifier.weight(1f), 크기값 = 크기.본문, 굵기 = FontWeight.Bold)
-        Icon(아이콘.오른쪽, null, Modifier.size(18.dp), tint = c.옅음)
+        Icon(아이콘.오른쪽, null, Modifier.size(18.dp), tint = c.강조)
     }
 }
 
