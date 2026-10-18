@@ -79,6 +79,45 @@ class ExerciseTest {
         assertEquals(둘째.id, 가슴[1].열쇠)
     }
 
+    // ─────────────── 넣기 시트 — 플랜은 일반 종목을 덮지 않는다 (10-19 홍겸 님) ───────────────
+
+    @Test fun 넣기판_플랜상자는_일반상자_뒤에_따로() {
+        val d = 바탕().copy(플랜들 = listOf(플랜("p1", "벤치 플랜", "벤치프레스", 80.0)))
+        val 가슴 = d.플랜상자나눔(d.종목탭판("전체")).묶음.first { it.first == "가슴" }.second
+        assertEquals(listOf("벤치프레스", "벤치 플랜"), 가슴.map { it.이름 })
+        assertNull(가슴[0].플랜id)                     // 일반 상자는 그대로 있다 (전: 플랜 상자가 일반 상자를 대신했다)
+        assertEquals("p1", 가슴[1].플랜id)
+        assertEquals(가슴[0].종목, 가슴[1].종목)        // 바탕 종목은 같다 (근육 · 사진을 위해)
+        assertEquals("p:p1", 가슴[1].열쇠)
+        assertNotEquals(가슴[0].열쇠, 가슴[1].열쇠)
+        assertNotEquals(가슴[0].끌기키, 가슴[1].끌기키)
+        // 종목 탭 판 자체는 바뀌지 않는다
+        assertEquals(listOf("벤치프레스"), d.종목탭판("전체").묶음.first { it.first == "가슴" }.second.map { it.이름 })
+    }
+
+    @Test fun 넣기판_꺼둔플랜은_상자없음_플랜없는종목은_그대로() {
+        val d = 바탕().copy(플랜들 = listOf(플랜("p1", "벤치 플랜", "벤치프레스", 80.0).copy(켬 = false)))
+        val 판 = d.플랜상자나눔(d.종목탭판("전체"))
+        assertEquals(listOf("벤치프레스"), 판.묶음.first { it.first == "가슴" }.second.map { it.이름 })
+        assertEquals(listOf("턱걸이"), 판.묶음.first { it.first == "등" }.second.map { it.이름 })
+    }
+
+    @Test fun 넣기판_플랜만남은종목은_플랜상자만() {
+        val d = 바탕().copy(플랜들 = listOf(플랜("p1", "스쿼트 플랜", "백 스쿼트", 100.0)))
+        val 기타 = d.플랜상자나눔(d.종목탭판("전체")).묶음.last().second
+        assertEquals(listOf("스쿼트 플랜"), 기타.map { it.이름 })
+        assertEquals("p1", 기타.single().플랜id)
+        assertNull(기타.single().종목)
+    }
+
+    @Test fun 넣기판_같은이름둘이면_플랜상자는_첫종목_뒤에만() {
+        val d0 = 바탕().copy(플랜들 = listOf(플랜("p1", "벤치 플랜", "벤치프레스", 80.0)))
+        val (d, _) = d0.새종목저장(새종목값(이름 = "벤치프레스", 칸 = "가슴", 근육 = mapOf("chest_mid" to "P")), 1000L)
+        val 가슴 = d.플랜상자나눔(d.종목탭판("전체")).묶음.first { it.first == "가슴" }.second
+        assertEquals(3, 가슴.size)
+        assertEquals(listOf(null, "p1", null), 가슴.map { it.플랜id })
+    }
+
     // ─────────────── 즐겨찾기 (10-11) ───────────────
 
     @Test fun 즐겨_바꿈은_그_종목만_뒤집고_없는id는그대로() {

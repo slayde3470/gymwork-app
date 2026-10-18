@@ -138,6 +138,7 @@ import com.slayde.hasenheide.data.시간최소
 import com.slayde.hasenheide.data.거리칸
 import com.slayde.hasenheide.data.거리한칸
 import com.slayde.hasenheide.data.방식
+import com.slayde.hasenheide.data.줄방식
 import com.slayde.hasenheide.data.분초
 import com.slayde.hasenheide.data.세기더함
 import com.slayde.hasenheide.data.세기이름
@@ -806,12 +807,14 @@ private fun 세트목록(
                 .padding(horizontal = 간격.보통, vertical = 간격.좁게),
             verticalArrangement = Arrangement.spacedBy(간격.아주좁게 * 운치수.세트줄간격비),
         ) {
+            // 10-19 홍겸 님: ⇄ 방식 바꾸기 — 턱걸이 · 딥스 · 친업 (일반 → 어시스트 → 중량). 줄마다 하나, 대상이 아니면 그리지 않는다
+            줄들.map { it.first }.distinct().forEach { jj -> S.종목들.getOrNull(jj)?.let { ej -> 전환행(상태, ej.종id, ej.이름, ej.플랜id, 이름보임 = 묶음) } }
             // 머리 — 세트 · kg · 회 · 휴식 (11 옅음)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
                 // 10-12 기록 방식: 표의 줄이 모두 맨몸이면 '추가 kg' · 모두 어시스트면 '보조 kg' (섞이면 'kg')
                 val 머리무게 = 무게머리글(줄들.map { it.first }.distinct().mapNotNull { jj -> S.종목들.getOrNull(jj)?.let { ej -> 상태.d.머리방식(ej.종id, ej.이름, ej.플랜id) } }, "kg")
                 // 2단계: 줄이 모두 시간(버티기)이면 '시간' (섞이면 '회')
-                val 머리횟수 = 횟수머리글(줄들.map { it.first }.distinct().mapNotNull { jj -> S.종목들.getOrNull(jj)?.let { ej -> 상태.d.방식(ej.종id, ej.이름) } }, "회")
+                val 머리횟수 = 횟수머리글(줄들.map { it.first }.distinct().mapNotNull { jj -> S.종목들.getOrNull(jj)?.let { ej -> 상태.d.줄방식(ej.종id, ej.이름, ej.플랜id) } }, "회")
                 listOf("세트", 머리무게, 머리횟수, "휴식").forEachIndexed { x, t ->
                     Text(t, Modifier.width(폭[x]), style = 글꼴.보통(크기.작게), color = c.옅음, textAlign = TextAlign.Center, maxLines = 1)
                 }
@@ -942,7 +945,7 @@ private fun 운세트줄(
         } else {
             // 2단계 기록 방식: 횟수만 · 시간은 무게 칸이 없다(자리만 비운다) · 시간(버티기)은 무게 칸 자리까지 넓은 m:ss 칸 (− ＋ 5초씩)
             // 3단계: 유산소는 무게 칸 자리가 거리 km(0.5씩) · 시간 칸은 1분씩. 시간 · 유산소 줄은 ▶ 타이머 (버티기 = 카운트다운 · 유산소 = 스톱워치)
-            val 방 = d.방식(e.종id, e.이름)
+            val 방 = d.줄방식(e.종id, e.이름, e.플랜id)
             val 버티기 = 방 == 기록방식.시간; val 거리줄 = 방.거리칸()
             val 타이머줄 = 방.시간칸() && !완료
             val 돌아감 = 타이머줄 && 운타이머.줄 == (j to k) && 운타이머.세션 == S.시작시각
@@ -1622,9 +1625,9 @@ internal fun 다음할세트(S: 운동세션): Pair<Int, Int>? {
 /** 세트 내용 글 — 기록 방식마다 (55kg 12회 · 12회 · 0:30 · 5.5km · 30:00). '추가' · '보조' 같은 말은 붙이지 않는다 (10-13 홍겸 님) */
 internal fun 세트내용글(d: 앱데이터, S: 운동세션, e: 세션종목, k: Int): String {
     val v = S.세트값(e, k)
-    return when (d.방식(e.종id, e.이름)) {
+    return when (d.줄방식(e.종id, e.이름, e.플랜id)) {
         기록방식.무게, 기록방식.맨몸, 기록방식.어시스트 -> if (v.w > 0.0) "${무게글(v.w)}kg ${v.r}회" else "${v.r}회"
-        기록방식.횟수만 -> "${v.r}회"
+        기록방식.횟수만, 기록방식.정자세 -> "${v.r}회"
         기록방식.시간 -> 분초(v.r)
         기록방식.유산소 -> listOf(거리글(v.w), 분초(v.r)).filter { it.isNotEmpty() }.joinToString(" · ")
     }

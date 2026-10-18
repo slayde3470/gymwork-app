@@ -1,5 +1,7 @@
 package com.slayde.hasenheide.ui
 
+import com.slayde.hasenheide.data.줄전환모드
+import com.slayde.hasenheide.data.종목찾기
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -429,7 +431,7 @@ private fun 종목격자(상태: 앱상태, l: List<종목칸값>, 무리: Strin
 
 /** 상자 자리 · 그리기 — 종목표에 있는 종목만(플랜만 남은 '기타' 상자는 못 끈다). 잡는 손은 상자 머리([종목상자]) */
 private fun Modifier.끌기칸(끌판: 격자끌기판, x: 종목칸값, 무리: String): Modifier =
-    this.격자끌기자리(끌판, x.종목?.id ?: x.열쇠, 무리, 켬 = false)   // 10-11 홍겸 님: 종목 목록은 이름순 — 꾹 눌러 순서 옮기기는 없앴다
+    this.격자끌기자리(끌판, x.끌기키, 무리, 켬 = false)   // 10-11 홍겸 님: 종목 목록은 이름순 — 꾹 눌러 순서 옮기기는 없앴다
 
 /**
  * 종목 상자 하나 (시안 `종목칸`). 10-08 홍겸 님: 펼친 상자 = [사진][이름 · ▾][삭제] → 기본 세팅(세트 · 무게 · 횟수 · 휴식)
@@ -442,8 +444,14 @@ private fun Modifier.끌기칸(끌판: 격자끌기판, x: 종목칸값, 무리:
 private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modifier: Modifier, 이름높이: androidx.compose.ui.unit.Dp, 끌판: 격자끌기판, 펼침: (String) -> Unit, 넣기: 종목넣기손?, 마지막: 마지막누름? = null, 접는키: String? = null) {
     val c = Local색.current
     val d = 상태.d
-    val t = x.종목
-    val 플 = d.상자플랜(x)
+    val 바탕 = x.종목
+    // 10-19: 넣기 시트에서는 일반 상자와 플랜 상자가 따로다 — 플랜 상자는 그 플랜 하나, 일반 상자는 플랜 없음. 종목 탭은 전처럼 한 상자
+    val 플 = when {
+        x.플랜id != null -> d.플랜들.filter { it.id == x.플랜id }
+        넣기 != null && 넣기.플랜카드 -> emptyList()
+        else -> d.상자플랜(x)
+    }
+    val t = if (x.플랜id != null) null else 바탕   // 플랜 상자는 종목을 고치지 않는다 (이름 · 즐겨찾기 · 삭제)
     val 번 = if (t != null) 같은이름번호(d.종목표, t.id, t.이름) else 0
     val 곁 = if (플.size > 1) "플랜 ${플.size}개" else ""   // 10-08 홍겸 님: '플랜 가능' 글은 없앴다
     var 이름고침 by remember(x.열쇠, 펼) { mutableStateOf(false) }   // 10-08 홍겸 님: 펼친 상자에서 이름을 누르면 그 자리에서 고친다
@@ -497,7 +505,7 @@ private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modif
                 눌렀다 = { 오목범위.launch { 오목.animateTo(0.91f, tween(110)); 오목.animateTo(1f, androidx.compose.animation.core.spring(dampingRatio = 0.5f, stiffness = 400f)) } })
             if (펼 && t != null) 즐겨칸(상태, t)
             // 10-07 꾹 눌러 끌기 — 손은 누름보다 안쪽(먼저 받아야 끊기지 않는다). 꾹 누르고 떼어도 펼치지 않게 길게 누름은 빈 동작
-            Column(Modifier.weight(1f).눌림길게({ 펼침(x.열쇠) }, { }).격자끌기손(끌판, x.종목?.id ?: x.열쇠, x.이름, 켬 = false)) {
+            Column(Modifier.weight(1f).눌림길게({ 펼침(x.열쇠) }, { }).격자끌기손(끌판, x.끌기키, x.이름, 켬 = false)) {
                 Row(
                     Modifier.fillMaxWidth().heightIn(min = maxOf(높이.아주낮게, 이름높이)),
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(if (펼) 간격.아주좁게 else 종목치수.접힌그림앞),
@@ -540,7 +548,7 @@ private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modif
                 // 10-09 홍겸 님: 카드 차례 = 게이지 → 다음 측정 → 근육 그림 2장 → [변경][지우기]
                 val 플id = 플.map { it.id }.toSet()
                 플랜종목칸(상태, { it.id in 플id }, 아래여백 = false, 횟수보임 = 플.size > 1, 근육칸 = {
-                    if (t != null) key(t.id) { 플랜종목근육(상태, t) } else 근육읽기(상태, x.이름)
+                    if (바탕 != null) key(바탕.id) { 플랜종목근육(상태, 바탕) } else 근육읽기(상태, x.이름)
                 })
             } else {
                 if (t != null) key(t.id) { 종목고치기(상태, t, 플.isNotEmpty(), 저장뒤 = { if (넣기 != null) 펼침(x.열쇠) else 접는중내부 = true }) }
@@ -766,6 +774,16 @@ private fun 종목고치기(상태: 앱상태, t: 종목, 플랜있음: Boolean,
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
             글("기본 세팅", 크기값 = 크기.조금작게, 굵기 = FontWeight.Bold)
             if (플랜있음) 맞춤글("플랜으로 넣으면 플랜 처방대로", Modifier.weight(1f), 최대 = 크기.작게, 색 = c.옅음)
+        }
+        // 10-19 홍겸 님: ⇄ 방식 바꾸기 — 바로 종목에 적용한다. 고치던 기본 세팅 줄은 새 방식의 처음 값으로 바꾸고 근육 · 칸은 그대로 둔다
+        d.줄전환모드(t.id, t.이름, null)?.let { 지금 ->
+            방식전환줄(지금, null, null, {
+                상태.방식바꾸기(t.id, t.이름, null)
+                if (상태.d.줄전환모드(t.id, t.이름, null) != 지금) {
+                    val 새세트 = 상태.d.편집초기(상태.d.종목찾기(t.id) ?: t).세트
+                    처음 = 처음.copy(세트 = 새세트); v = v.copy(세트 = 새세트)
+                }
+            }, {}, {})
         }
         // 10-12 기록 방식: 맨몸 '추가 kg' · 어시스트 '보조 kg' + 칸 아래 '= 69kg'
         기본세트표(v.세트, d.설정.무게폭, { f -> v = v.copy(세트 = f(v.세트)) }, { 상태.알림.토스트(세트최대글) },
@@ -1009,6 +1027,7 @@ private fun 종목세팅(상태: 앱상태, 열쇠: String, 플랜있음: Boolea
             글("기본 세팅", 크기값 = 크기.조금작게, 굵기 = FontWeight.Bold)
             if (플랜있음) 맞춤글("플랜으로 넣으면 플랜 처방대로", Modifier.weight(1f), 최대 = 크기.작게, 색 = c.옅음)
         }
+        전환행(상태, 열쇠, 열쇠, null)   // 10-19 홍겸 님: ⇄ 방식 바꾸기 — 턱걸이 · 딥스 · 친업
         세트줄표(
             상태.d.종목기본세트(열쇠), 상태.d.설정.무게폭,
             { f -> 상태.바꿈 { it.종목세트고침(열쇠, f) } },
@@ -1304,9 +1323,11 @@ internal fun 즐겨칩(상태: 앱상태) {
 // ═════════════════════ 순수 계산 (시험: test/…/ui/ExerciseTest.kt) ═════════════════════
 
 /** 상자 하나 — [종목] null = 종목표에 없고 플랜만 남은 종목('기타' 칸) */
-internal data class 종목칸값(val 이름: String, val 칸: String, val 종목: 종목?) {
-    /** 펼침 열쇠 — 종목 id, 플랜만 남은 것은 "기타:" + 이름 */
-    val 열쇠: String get() = 종목?.id ?: "기타:$이름"
+internal data class 종목칸값(val 이름: String, val 칸: String, val 종목: 종목?, val 플랜id: String? = null) {
+    /** 펼침 열쇠 — 플랜 상자는 "p:" + 플랜 id, 종목 id, 플랜만 남은 것은 "기타:" + 이름 */
+    val 열쇠: String get() = 플랜id?.let { "p:$it" } ?: 종목?.id ?: "기타:$이름"
+    /** 끌기 자리 열쇠 — 플랜 상자가 바탕 종목 상자와 겹치지 않게 */
+    val 끌기키: String get() = 플랜id?.let { "p:$it" } ?: 종목?.id ?: 열쇠
 }
 
 /** 종목 탭 판 — [칸들] 칩(전체 빼고) · [고름] 실제로 고른 칩 · [묶음] 카테고리마다 상자 (빈 카테고리는 뺀다) */
@@ -1324,6 +1345,18 @@ internal fun 앱데이터.종목탭판(고른칸: String, 즐겨먼저: Boolean 
     }.filter { it.second.isNotEmpty() }
     return 종목판(칸들, 고, 묶)
 }
+
+/**
+ * 넣기 시트용 (10-19 홍겸 님: 플랜은 일반 종목을 덮어쓰지 않는다 — 플랜이 적용된 종목이 **따로 하나 더** 생길 뿐).
+ * 플랜(켠 것)이 있는 종목은 일반 상자 바로 뒤에 플랜마다 상자를 더한다. 종목표에 없고 플랜만 남은 '기타' 는 플랜 상자만.
+ * 종목 탭은 이것을 거치지 않는다.
+ */
+internal fun 앱데이터.플랜상자나눔(판: 종목판): 종목판 = 판.copy(묶음 = 판.묶음.map { (칸, l) ->
+    칸 to l.flatMap { x ->
+        val 플상 = 상자플랜(x).filter { it.켬 }.map { p -> 종목칸값(p.이름, x.칸, x.종목, p.id) }
+        if (x.종목 == null) 플상 else listOf(x) + 플상
+    }
+}.filter { it.second.isNotEmpty() })
 
 /** 상자의 플랜 — 그 이름의 첫 종목(또는 플랜만 남은 것)에만 붙는다 (시안 `첫`) */
 internal fun 앱데이터.상자플랜(x: 종목칸값): List<플랜> {

@@ -192,7 +192,8 @@ private fun 넣기속(
     val 판톡 = remember루톡(true)
     // 10-11 홍겸 님: 펼친 동안은 즐겨찾기를 눌러도 순서를 바꾸지 않는다 — 접으면 반영
     val 즐겨고정 = remember(펼친 != null) { if (펼친 != null) d.종목표.filter { it.즐겨 }.map { it.id }.toSet() else null }
-    val 판 = d.종목탭판(칸고름, d.설정.즐겨먼저, 즐겨고정)
+    // 10-19 홍겸 님: 플랜은 일반 종목을 덮어쓰지 않는다 — 플랜이 적용된 상자를 일반 상자 뒤에 따로 더한다 (플랜을 못 넣는 시트는 그대로)
+    val 판 = d.종목탭판(칸고름, d.설정.즐겨먼저, 즐겨고정).let { if (플랜길 != null) d.플랜상자나눔(it) else it }
     // 꾹 눌러 끌어 종목 순서 바꾸기 — 종목 탭과 같은 판 (같은 카테고리 안 · 종목표 차례)
     val 끌판 = remember격자끌기판({ a, b, 뒤 ->
         발자취.적기("넣기 · 종목 순서 옮김")
@@ -363,28 +364,26 @@ private fun 넣기속(
 }
 
 /**
- * 종목 탭 상자 → 넣기 (10-08). 플랜이 있는 종목(그 이름의 첫 종목 · 켠 플랜)은 플랜으로 넣는다(전: 플랜마다 칸 — 이제 상자 하나에 첫 플랜).
- * 플랜만 남은 종목('기타')은 플랜이 있을 때만 체크 상자. 개수는 누르는 순간의 값([상태.d])으로 센다
+ * 종목 탭 상자 → 넣기 (10-08). 10-19 홍겸 님: 플랜은 일반 종목을 덮어쓰지 않는다 — 일반 상자는 일반 종목을, 플랜 상자([종목칸값.플랜id])는 그 플랜을 넣는다.
+ * 플랜만 남은 종목('기타')은 플랜 상자만. 개수는 누르는 순간의 값([상태.d])으로 센다
  */
 private fun 넣기손(상태: 앱상태, 개수: (String) -> Int, 넣기: (String) -> Unit, 빼기: (String) -> Unit, 플랜길: 플랜손?): 종목넣기손 {
-    fun 플(x: 종목칸값): List<플랜> = if (플랜길 == null) emptyList() else 상태.d.상자플랜(x).filter { it.켬 }
     return 종목넣기손(
         수 = { x ->
-            val p = 플(x)
-            if (p.isNotEmpty() && 플랜길 != null) p.sumOf { 플랜길.개수(it.id) } else x.종목?.let { 개수(it.id) } ?: 0
+            val pid = x.플랜id
+            if (pid != null) 플랜길?.개수?.invoke(pid) ?: 0 else x.종목?.let { 개수(it.id) } ?: 0
         },
         넣기 = { x ->
-            val p = 플(x)
+            val pid = x.플랜id
             발자취.적기("넣기 · ${x.이름}")
-            if (p.isNotEmpty() && 플랜길 != null) 플랜길.넣기(p.first().id) else x.종목?.let { 넣기(it.id) }
+            if (pid != null) 플랜길?.넣기?.invoke(pid) else x.종목?.let { 넣기(it.id) }
         },
         빼기 = { x ->
-            val p = 플(x)
+            val pid = x.플랜id
             발자취.적기("넣기 빼기 · ${x.이름}")
-            if (p.isNotEmpty() && 플랜길 != null) p.lastOrNull { 플랜길.개수(it.id) > 0 }?.let { 플랜길.빼기(it.id) }
-            else x.종목?.let { 빼기(it.id) }
+            if (pid != null) 플랜길?.빼기?.invoke(pid) else x.종목?.let { 빼기(it.id) }
         },
-        됨 = { x -> x.종목 != null || 플(x).isNotEmpty() },
+        됨 = { x -> x.플랜id != null || x.종목 != null },
         플랜카드 = 플랜길 != null,
     )
 }
