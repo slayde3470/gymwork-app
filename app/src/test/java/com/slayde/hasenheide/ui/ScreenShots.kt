@@ -412,6 +412,22 @@ class Shot_s09_plan : ShotBase() {
     @Test fun s09_plan() { 켜기(); 탭(4); 찍("09_플랜") }
 }
 
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+class Shot_s09b_planFilled : ShotBase() {
+    @Test fun s09b_planFilled() {
+        플랜폼상태.value = 플랜폼값(종목 = "벤치프레스", 목표방식 = com.slayde.hasenheide.data.목표형식.무게횟수, 목표무게 = "100", 목표횟수 = "5", 현재무게 = "60", 현재횟수 = "8")
+        try { 켜기(); 탭(4); 찍("09b_플랜_입력") } finally { 플랜폼상태.value = 플랜폼값() }
+    }
+}
+
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+class Shot_s09c_planPullup : ShotBase() {
+    @Test fun s09c_planPullup() {
+        플랜폼상태.value = 플랜폼값(종목 = "턱걸이", 목표개수 = "12", 보조모드 = 1, 보조무게 = "20", 보조횟수 = "5")
+        try { 켜기(); 탭(4); 찍("09c_플랜_턱걸이") } finally { 플랜폼상태.value = 플랜폼값() }
+    }
+}
+
 
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class Shot_s10_memo : ShotBase() {
