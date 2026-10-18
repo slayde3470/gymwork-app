@@ -19,8 +19,22 @@ android {
 
         minSdk = 26        // 안드로이드 8.0 이상에서 동작
         targetSdk = 35
-        versionCode = 36    // 새 APK를 낼 때마다 1씩 올린다 (덮어쓰기 설치에 필요)
+        // 10-19: 버전 번호는 GitHub 빌드 번호 + 100 으로 자동으로 오른다 (손으로 안 올려도 된다 · 36 에 멈춰 있어 덮어쓰기가 막혔다)
+        // 폰에서 만들 때(빌드 번호 없음)는 36
+        versionCode = (System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull()?.plus(100)) ?: 36
         versionName = "0.14.9"
+    }
+
+    // 10-19 홍겸 님 '업데이트가 안 되고 삭제 후 재설치만 된다': GitHub 가 빌드마다 새 서명 키를 만들어서 폰이 '다른 앱'으로 봤다.
+    // 이제 저장소의 고정 키(app/debug.keystore · 안드로이드 기본 디버그 키 모양)로 항상 같은 서명 → 덮어쓰기 설치가 된다.
+    // (비밀 키가 아니다 — 스토어 출시 때는 따로 만든다)
+    signingConfigs {
+        getByName("debug") {
+            storeFile = file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
     }
 
     buildTypes {
