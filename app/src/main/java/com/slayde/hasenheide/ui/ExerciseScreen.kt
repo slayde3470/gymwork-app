@@ -1,5 +1,7 @@
 package com.slayde.hasenheide.ui
 
+import com.slayde.hasenheide.data.줄전환모드
+import com.slayde.hasenheide.data.종목찾기
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -773,6 +775,16 @@ private fun 종목고치기(상태: 앱상태, t: 종목, 플랜있음: Boolean,
             글("기본 세팅", 크기값 = 크기.조금작게, 굵기 = FontWeight.Bold)
             if (플랜있음) 맞춤글("플랜으로 넣으면 플랜 처방대로", Modifier.weight(1f), 최대 = 크기.작게, 색 = c.옅음)
         }
+        // 10-19 홍겸 님: ⇄ 방식 바꾸기 — 바로 종목에 적용한다. 고치던 기본 세팅 줄은 새 방식의 처음 값으로 바꾸고 근육 · 칸은 그대로 둔다
+        d.줄전환모드(t.id, t.이름, null)?.let { 지금 ->
+            방식전환줄(지금, null, null, {
+                상태.방식바꾸기(t.id, t.이름, null)
+                if (상태.d.줄전환모드(t.id, t.이름, null) != 지금) {
+                    val 새세트 = 상태.d.편집초기(상태.d.종목찾기(t.id) ?: t).세트
+                    처음 = 처음.copy(세트 = 새세트); v = v.copy(세트 = 새세트)
+                }
+            }, {}, {})
+        }
         // 10-12 기록 방식: 맨몸 '추가 kg' · 어시스트 '보조 kg' + 칸 아래 '= 69kg'
         기본세트표(v.세트, d.설정.무게폭, { f -> v = v.copy(세트 = f(v.세트)) }, { 상태.알림.토스트(세트최대글) },
             머리 = 무게머리글(listOfNotNull(d.머리방식(t.id, t.이름, null)), "무게 kg"), 작은글 = { w -> d.실제무게글(t.id, t.이름, null, w) },
@@ -1015,6 +1027,7 @@ private fun 종목세팅(상태: 앱상태, 열쇠: String, 플랜있음: Boolea
             글("기본 세팅", 크기값 = 크기.조금작게, 굵기 = FontWeight.Bold)
             if (플랜있음) 맞춤글("플랜으로 넣으면 플랜 처방대로", Modifier.weight(1f), 최대 = 크기.작게, 색 = c.옅음)
         }
+        전환행(상태, 열쇠, 열쇠, null)   // 10-19 홍겸 님: ⇄ 방식 바꾸기 — 턱걸이 · 딥스 · 친업
         세트줄표(
             상태.d.종목기본세트(열쇠), 상태.d.설정.무게폭,
             { f -> 상태.바꿈 { it.종목세트고침(열쇠, f) } },

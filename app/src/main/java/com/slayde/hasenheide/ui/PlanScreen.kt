@@ -1,5 +1,9 @@
 package com.slayde.hasenheide.ui
 
+import com.slayde.hasenheide.data.다음
+import com.slayde.hasenheide.data.보조모드로
+import com.slayde.hasenheide.data.전환모드
+import com.slayde.hasenheide.data.전환표
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
@@ -607,7 +611,12 @@ internal fun 플랜고치기시트(상태: 앱상태, p: 플랜, 닫기: () -> U
         }
         if (맨몸 && t?.보조옵션 == true) {
             Box(Modifier.height(간격.좁게))
-            칩줄(보조말, 보조말[보조모드.coerceIn(0, 2)], { v -> 보조모드 = 보조말.indexOf(v).coerceAtLeast(0) })
+            // 10-19 홍겸 님: ⇄ — 일반 → 어시스트 → 중량. 고치는 동안은 저장 전까지 플랜에 닿지 않는다 (무게는 아래 칸에서 그 자리에서 고친다)
+            방식전환줄(보조모드로(보조모드), null, null, {
+                val 새 = 보조모드로(보조모드).다음()
+                보조모드 = 새.ordinal
+                보조w = when (새) { 전환모드.어시스트 -> 무게글(전환표.플랜어시스트기본); 전환모드.중량 -> 무게글(전환표.플랜중량기본); else -> "" }
+            }, {}, {})
             if (보조모드 != 0) Row(Modifier.padding(top = 간격.좁게)) {
                 폼칸(if (보조모드 == 1) "보조 무게" else "추가 무게", 보조w, "kg", Modifier.weight(1f)) { 보조w = it }
             }

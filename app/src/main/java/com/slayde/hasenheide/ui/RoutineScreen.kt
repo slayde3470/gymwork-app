@@ -110,6 +110,7 @@ import com.slayde.hasenheide.data.거리한칸
 import com.slayde.hasenheide.data.거리칸
 import com.slayde.hasenheide.data.기록방식
 import com.slayde.hasenheide.data.방식
+import com.slayde.hasenheide.data.줄방식
 import com.slayde.hasenheide.data.무게반올림
 import com.slayde.hasenheide.data.묶음정리
 import com.slayde.hasenheide.data.분초
@@ -722,7 +723,7 @@ private fun 종목추가뜸(modifier: Modifier, on누름: () -> Unit) {
  * 공용 [버튼] 은 모서리가 8 이라 모양만 여기서 그린다 (속은 버튼과 같다 — 그림 16 · 사이 6 · 13 굵게). 루틴 목록 · 상세가 같이 쓴다
  */
 @Composable
-private fun 떠있는단추(글자: String, 설명: String, 강조: Boolean, modifier: Modifier, on누름: () -> Unit) {
+internal fun 떠있는단추(글자: String, 설명: String, 강조: Boolean, modifier: Modifier, on누름: () -> Unit) {
     val c = Local색.current
     val 판 = remember루톡(true)
     val 모양 = RoundedCornerShape(모서리.보통)
@@ -945,8 +946,10 @@ private fun 슈퍼상자(
                 Modifier.fillMaxWidth().padding(start = 간격.아주좁게, end = 간격.아주좁게, top = 간격.아주좁게, bottom = 간격.좁게),
                 verticalArrangement = Arrangement.spacedBy(간격.아주좁게),
             ) {
+                // 10-19 홍겸 님: ⇄ 방식 바꾸기 — 턱걸이 · 딥스 · 친업 (일반 → 어시스트 → 중량)
+                es.forEach { x -> 전환행(상태, x.종id, x.이름, x.플랜id, 이름보임 = es.size > 1) }
                 // 2단계 기록 방식: 무게 칸이 있는 종목이 하나라도 있어야 무게 칸을 둔다 · 시간 종목은 칸이 m:ss (무게 칸 자리까지 넓게)
-                val 방들 = es.map { x -> 상태.d.방식(x.종id, x.이름) }
+                val 방들 = es.map { x -> 상태.d.줄방식(x.종id, x.이름, x.플랜id) }
                 val 무게있음 = 방들.any { it.무게칸있음() }
                 세트칸줄(
                     { Text("세트", Modifier.wrapContentSize(unbounded = true), style = 글꼴.보통(크기.작게), color = c.옅음, maxLines = 1, softWrap = false, overflow = TextOverflow.Visible) },
@@ -1089,7 +1092,8 @@ private fun 종목상자(
                 Modifier.fillMaxWidth().padding(start = 간격.아주좁게, end = 간격.아주좁게, top = 간격.아주좁게, bottom = 간격.좁게),
                 verticalArrangement = Arrangement.spacedBy(간격.아주좁게),
             ) {
-                val 방 = 상태.d.방식(e.종id, e.이름)   // 2단계: 횟수만 · 시간은 무게 칸이 없고, 시간은 횟수 칸이 m:ss (5초씩)
+                전환행(상태, e.종id, e.이름, e.플랜id)   // 10-19 홍겸 님: ⇄ 방식 바꾸기 — 턱걸이 · 딥스 · 친업 (일반 → 어시스트 → 중량)
+                val 방 = 상태.d.줄방식(e.종id, e.이름, e.플랜id)   // 2단계: 횟수만 · 시간은 무게 칸이 없고, 시간은 횟수 칸이 m:ss (5초씩)
                 val 무게있음 = 방.무게칸있음(); val 시간 = 방.시간칸(); val 거리 = 방.거리칸()
                 세트칸줄(
                     { Text("세트", Modifier.wrapContentSize(unbounded = true), style = 글꼴.보통(크기.작게), color = c.옅음, maxLines = 1, softWrap = false, overflow = TextOverflow.Visible) },
