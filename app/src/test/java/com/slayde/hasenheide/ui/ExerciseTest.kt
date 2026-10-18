@@ -102,6 +102,14 @@ class ExerciseTest {
         assertEquals(listOf("턱걸이"), 판.묶음.first { it.first == "등" }.second.map { it.이름 })
     }
 
+    @Test fun 종목탭판_꺼둔플랜도_따로_상자_일반상자는_그대로() {
+        // 10-19 홍겸 님: 일반 벤치프레스와 플랜 벤치프레스는 이름이 같아도 따로 존재한다 (종목 탭도)
+        val d = 바탕().copy(플랜들 = listOf(플랜("p1", "벤치 플랜", "벤치프레스", 80.0).copy(켬 = false)))
+        val 가슴 = d.플랜상자나눔(d.종목탭판("전체"), 켠것만 = false).묶음.first { it.first == "가슴" }.second
+        assertEquals(listOf("벤치프레스", "벤치 플랜"), 가슴.map { it.이름 })
+        assertEquals(listOf(null, "p1"), 가슴.map { it.플랜id })
+    }
+
     @Test fun 넣기판_플랜만남은종목은_플랜상자만() {
         val d = 바탕().copy(플랜들 = listOf(플랜("p1", "스쿼트 플랜", "백 스쿼트", 100.0)))
         val 기타 = d.플랜상자나눔(d.종목탭판("전체")).묶음.last().second

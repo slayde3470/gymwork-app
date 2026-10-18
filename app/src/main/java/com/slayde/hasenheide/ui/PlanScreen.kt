@@ -20,7 +20,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.verticalScroll
@@ -104,11 +113,29 @@ fun 플랜화면(상태: 앱상태, 설정으로: () -> Unit, 종목으로: () -
     var 오류 by remember { mutableStateOf("") }
     var 결과 by remember { mutableStateOf<플랜?>(null) }
     var 방식열림 by remember { mutableStateOf(false) }
+    var 종목열림 by remember { mutableStateOf(false) }
+    var 종목줄아래 by remember { mutableStateOf(0f) }   // 종목 고르기 줄의 아래끝(창 좌표) — 목록 카드가 여기서 열린다 (U4-9)
     /** 칸을 고치면 오류 글을 지운다 (시안 `폼값`) */
     fun 폼(g: (플랜폼값) -> 플랜폼값) { 플랜폼상태.value = g(플랜폼상태.value); 오류 = "" }
     val 판 = 폼판정(f, d.몸)
     val 맨몸 = t?.맨몸인가 == true
     val 안함 = f.입력안함
+    // 10-19 홍겸 님: 단계는 앞 단계를 채워야 다음이 열린다 — ① 종목 고르면 ② 목표 → ② 채우면 ③ 현재 → ③ 채우면 ④ 방식 · [플랜 만들기]
+    val 골랐나 = 플랜종목골랐나.value && t != null
+    val 목표완료 = if (맨몸) f.목표개수.isNotBlank() else if (f.목표방식 == 목표형식.RM) f.목표무게.isNotBlank() else f.목표무게.isNotBlank() && f.목표횟수.isNotBlank()
+    val 현재완료 = 안함 || (if (맨몸) { if (t?.보조옵션 == true && f.보조모드 != 0) f.보조무게.isNotBlank() && f.보조횟수.isNotBlank() else f.정자세.isNotBlank() } else f.현재무게.isNotBlank() && f.현재횟수.isNotBlank())
+    // 한 번 열린 단계는 칸을 지워도 닫지 않는다 (쓰는 중에 아래가 접히면 손이 헷갈린다) — 종목을 바꾸면 처음부터
+    var 연3 by remember(f.종목, 골랐나) { mutableStateOf(골랐나 && 목표완료) }
+    var 연4 by remember(f.종목, 골랐나) { mutableStateOf(골랐나 && 목표완료 && 현재완료) }
+    LaunchedEffect(골랐나, 목표완료, 현재완료) {
+        if (골랐나 && 목표완료) 연3 = true
+        if (골랐나 && 목표완료 && 현재완료) 연4 = true
+    }
+    val 보임2 = 골랐나
+    val 보임3 = 보임2 && 연3
+    val 보임4 = 보임3 && 연4
+    val 끝단계 = if (!보임2) 1 else if (!보임3) 2 else if (맨몸 || !보임4) 3 else 4
+    val 만들수있음 = 보임4   // [플랜 만들기] 는 마지막 단계까지 열린 뒤에 나온다
 
     // 10-19 홍겸 님 '플랜탭 ui 개편': 띠 · 단계 레일(①~④ + 카드) · 떠 있는 [플랜 만들기] (루틴 · 종목 탭과 같은 단추)
     Box(Modifier.fillMaxSize()) {
@@ -118,20 +145,22 @@ fun 플랜화면(상태: 앱상태, 설정으로: () -> Unit, 종목으로: () -
             Column(
                 Modifier.fillMaxSize().verticalScroll(rememberScrollState())
                     .padding(start = 간격.보통, end = 간격.보통, top = 간격.보통, bottom = 간격.보통 + 높이.보통 + 간격.보통),
-                verticalArrangement = Arrangement.spacedBy(간격.좁게),
-            ) {
+            ) {   // 단계 사이 간격은 단계가 직접 준다 (닫힌 단계가 빈 간격을 남기지 않게)
                 // 10-19 홍겸 님 '대대적으로 개편': 단계 레일 ①종목 → ②목표 → ③현재 → ④방식 (시안 https://claude.ai/artifact/JqshoSvYXC3gVC5Z4ai8Nn)
-                val 끝단계 = if (t == null) 1 else if (맨몸) 3 else 4
                 val 오류글: @Composable () -> Unit = { if (오류.isNotEmpty()) 글(오류, 크기값 = 크기.조금작게, 색 = c.나쁨, 줄 = 2) }
 
                 // ── 플0 · 종목 — 바꾸면 칸을 모두 비운다 (시안 `폼값` 종목) ──
                 단계(1, "종목", 끝단계 == 1) {
-                    칩줄(플랜표.종목들.map { it.이름 }, f.종목, { v -> if (v != f.종목) { 플랜폼상태.value = 플랜폼값(종목 = v); 오류 = "" } }, Modifier.번호("플0"))
+                    카드(Modifier.번호("플0")) {
+                        // 종목 단추를 늘어놓지 않는다 — 이 줄을 누르면 목록 카드가 위에서 아래로 펼쳐진다 (한 줄에 한 종목)
+                        고름줄(if (골랐나) f.종목 else "종목 선택하기", 골랐나, 아이콘.아래,
+                            Modifier.onGloballyPositioned { 종목줄아래 = it.positionInWindow().y + it.size.height }) { 종목열림 = true }
+                    }
                 }
 
                 if (t != null) {
                     // ── 플2 · 목표 근력 (위) ──
-                    단계(2, "목표 근력", false, 판정 = 판.second) {
+                    단계열림(보임2) { 단계(2, "목표 근력", 끝단계 == 2, 판정 = 판.second) {
                         카드(Modifier.번호("플2")) {
                             if (맨몸) {
                                 Row { 폼칸("목표 개수 (한 번에)", f.목표개수, "회", Modifier.weight(1f)) { v -> 폼 { it.copy(목표개수 = v) } } }
@@ -145,10 +174,10 @@ fun 플랜화면(상태: 앱상태, 설정으로: () -> Unit, 종목으로: () -
                                 }
                             }
                         }
-                    }
+                    } }
 
                     // ── 플1 · 현재 근력 (아래) — [입력하지 않음] 은 제목 줄 맨 오른쪽 ──
-                    단계(3, "현재 근력", 끝단계 == 3, 판정 = 판.first, 오른쪽 = {
+                    단계열림(보임3) { 단계(3, "현재 근력", 끝단계 == 3, 판정 = 판.first, 오른쪽 = {
                         안함단추(안함) { 폼 { it.copy(입력안함 = !it.입력안함) } }   // sjb8 다시 누르면 풀린다
                     }) {
                         카드(Modifier.번호("플1")) {
@@ -173,21 +202,34 @@ fun 플랜화면(상태: 앱상태, 설정으로: () -> Unit, 종목으로: () -
                             if (안내.isNotEmpty()) 맞춤글(안내, Modifier.padding(top = 간격.아주좁게), 색 = c.흐림)
                         }
                         if (끝단계 == 3) 오류글()
-                    }
+                    } }
 
                     // ── 플3 · 훈련 방식 — 누르는 줄 하나 (v8 15lk · 맨몸은 1번 하나뿐이라 없다) ──
-                    if (!맨몸) 단계(4, "훈련 방식", true) {
+                    if (!맨몸) 단계열림(보임4) { 단계(4, "훈련 방식", true) {
                         카드(Modifier.번호("플3")) { 방식고름줄(방식찾기(f.방식번호)) { 방식열림 = true } }
                         오류글()
-                    }
+                    } }
                 }
             }
         }
       }
         // 떠 있는 [플랜 만들기] — 루틴 · 종목 탭의 떠 있는 단추와 같은 모양 · 같은 자리 (오른쪽 아래)
-        떠있는단추("플랜 만들기", "플랜 만들기", true, Modifier.align(Alignment.BottomEnd).padding(간격.보통)) {
+        if (만들수있음) 떠있는단추("플랜 만들기", "플랜 만들기", true, Modifier.align(Alignment.BottomEnd).padding(간격.보통)) {
             val (p, 막힘) = 플랜만들기(플랜폼상태.value, 상태.d.몸, 상태.d.플랜들, "p" + System.currentTimeMillis(), 상태.오늘, 상태.d.향상기록들)
             if (p == null) 오류 = 막힘 else { 오류 = ""; 결과 = p }
+        }
+        // ── 종목 목록 — 고르는 줄 바로 아래에서 위→아래로 펼쳐진다 · 한 줄에 한 종목 (11 지침 U4-9) ──
+        if (종목열림) 단추아래팝업({ 종목줄아래 }, { 종목열림 = false }) {
+            Column(Modifier.heightIn(max = 종목목록최대높이).verticalScroll(rememberScrollState())) {
+                플랜표.종목들.forEachIndexed { i, p ->
+                    종목줄(p.이름, 골랐나 && p.이름 == f.종목) {
+                        if (p.이름 != f.종목) { 플랜폼상태.value = 플랜폼값(종목 = p.이름); 오류 = "" }
+                        플랜종목골랐나.value = true
+                        종목열림 = false
+                    }
+                    if (i < 플랜표.종목들.lastIndex) 구분선()
+                }
+            }
         }
     }
 
@@ -202,6 +244,7 @@ fun 플랜화면(상태: 앱상태, 설정으로: () -> Unit, 종목으로: () -
             발자취.적기("플랜 저장 · ${p.이름}")
             결과 = null
             플랜폼상태.value = 플랜폼값()
+            플랜종목골랐나.value = false
             종목으로()
             상태.알림.토스트("종목 탭에 넣었습니다")
         }
@@ -210,6 +253,11 @@ fun 플랜화면(상태: 앱상태, 설정으로: () -> Unit, 종목으로: () -
 
 /** 플랜 탭 입력 — 탭을 옮겨도 남는다 (시안 `U.플랜폼` · 09-24 '쓰던 글이 사라졌다'). 앱을 끄면 처음으로 */
 internal val 플랜폼상태 = mutableStateOf(플랜폼값())
+
+/** 10-19: 종목을 골랐나 — 고르기 전에는 ① 만 보인다 (플랜폼값.종목 은 처음부터 '벤치프레스' 라 따로 센다). 플랜을 저장하면 다시 false */
+internal val 플랜종목골랐나 = mutableStateOf(false)
+
+private val 종목목록최대높이 = 480.dp
 
 private val 보조말 = listOf("정자세", "어시스트", "과부하")
 
@@ -302,16 +350,39 @@ private fun 단위칸(값: String, 단위: String, 안내: String, 바꿈: (Stri
     }
 }
 
-/** 훈련 방식 줄 — 카드 안 한 줄: [1. 꾸준히 늘리기 ………… ›] (이름은 위 구역 이름표 '훈련 방식' · 자기 테두리 없음) */
+/** 단계가 열릴 때 — 흐려지며 아래로 펼쳐진다 (움직임.펼침) */
 @Composable
-private fun 방식고름줄(m: 훈련방식, onClick: () -> Unit) {
+private fun 단계열림(보임: Boolean, content: @Composable () -> Unit) {
+    AnimatedVisibility(보임, enter = fadeIn(tween(움직임.펼침)) + expandVertically(tween(움직임.펼침)), exit = fadeOut(tween(움직임.색))) { content() }
+}
+
+/** 훈련 방식 줄 — 카드 안 한 줄: [1. 꾸준히 늘리기 ………… ›] (이름은 위 단계 제목 '훈련 방식' · 자기 테두리 없음) */
+@Composable
+private fun 방식고름줄(m: 훈련방식, onClick: () -> Unit) = 고름줄("${m.번호}. ${m.이름}", true, 아이콘.오른쪽, Modifier, onClick)
+
+/** 카드 안에서 누르는 줄 하나 — [글 ………… ›]. [고름] 이면 굵게 · 아니면 옅게 (아직 안 골랐다) */
+@Composable
+private fun 고름줄(글자: String, 고름: Boolean, 그림: ImageVector, modifier: Modifier = Modifier, onClick: () -> Unit) {
     val c = Local색.current
     Row(
-        Modifier.fillMaxWidth().heightIn(min = 높이.보통).눌림(onClick),
+        modifier.fillMaxWidth().heightIn(min = 높이.보통).눌림(onClick),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.좁게),
     ) {
-        글("${m.번호}. ${m.이름}", Modifier.weight(1f), 크기값 = 크기.본문, 굵기 = FontWeight.Bold)
-        Icon(아이콘.오른쪽, null, Modifier.size(18.dp), tint = c.강조)
+        글(글자, Modifier.weight(1f), 크기값 = 크기.본문, 굵기 = if (고름) FontWeight.Bold else FontWeight.Normal, 색 = if (고름) c.글 else c.옅음)
+        Icon(그림, null, Modifier.size(18.dp), tint = c.강조)
+    }
+}
+
+/** 종목 목록 한 줄 — 높이 44 · 이름 · 고른 것은 굵게 강조색 + ✓ (한 줄에 한 종목) */
+@Composable
+private fun 종목줄(이름: String, 고름: Boolean, onClick: () -> Unit) {
+    val c = Local색.current
+    Row(
+        Modifier.fillMaxWidth().heightIn(min = 높이.높게).눌림(onClick),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.좁게),
+    ) {
+        글(이름, Modifier.weight(1f), 크기값 = 크기.본문, 굵기 = if (고름) FontWeight.Bold else FontWeight.Medium, 색 = if (고름) c.강조 else c.글)
+        if (고름) Icon(아이콘.체크, null, Modifier.size(18.dp), tint = c.강조)
     }
 }
 
