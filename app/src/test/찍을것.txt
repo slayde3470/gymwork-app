@@ -1,1 +1,6 @@
+Shot_s06_*
+Shot_s07_*
+Shot_s07e*
+Shot_s07h*
+Shot_s07i*
 Shot_s09*

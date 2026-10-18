@@ -103,7 +103,7 @@ class Shot_s07d_musclePopup : ShotBase() {
 
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class Shot_s07e_planEdit : ShotBase() {
-    @Test fun t() { 켜기(); 탭(3); 누름("벤치프레스"); 누름("변경"); 찍("07e_플랜고치기시트"); 누름("훈련 방식 ›"); 찍("07f_플랜고치기_훈련방식") }
+    @Test fun t() { 켜기(); 탭(3); 누름("벤치프레스", 1); 누름("변경"); 찍("07e_플랜고치기시트"); 누름("훈련 방식 ›"); 찍("07f_플랜고치기_훈련방식") }
 }
 
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -113,7 +113,7 @@ class Shot_s07g_exerciseDelete : ShotBase() {
 
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class Shot_s07h_planDelete : ShotBase() {
-    @Test fun t() { 켜기(); 탭(3); 누름("벤치프레스"); 누름("지우기", -1); 찍("07h_플랜_지움_되돌리기띠") }
+    @Test fun t() { 켜기(); 탭(3); 누름("벤치프레스", 1); 누름("지우기", -1); 찍("07h_플랜_지움_되돌리기띠") }
 }
 
 // ───────── 새 종목 ─────────
@@ -138,27 +138,27 @@ class Shot_s08e_newCustom : ShotBase() {
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class Shot_s09b_planResult : ShotBase() {
     @Test fun t() {
-        플랜폼상태.value = 플랜폼값(종목 = "백 스쿼트", 현재무게 = "80", 현재횟수 = "6", 목표무게 = "120")
+        플랜폼상태.value = 플랜폼값(종목 = "백 스쿼트", 현재무게 = "80", 현재횟수 = "6", 목표무게 = "120"); 플랜종목골랐나.value = true
         켜기(); 탭(4); 찍("09b_플랜_입력함"); 누름("플랜 만들기"); 찍("09c_플랜_결과시트")
-        플랜폼상태.value = 플랜폼값()
+        플랜폼상태.value = 플랜폼값(); 플랜종목골랐나.value = false
     }
 }
 
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class Shot_s09d_planMethod : ShotBase() {
     @Test fun t() {
-        플랜폼상태.value = 플랜폼값(종목 = "백 스쿼트", 현재무게 = "80", 현재횟수 = "6", 목표무게 = "120")
+        플랜폼상태.value = 플랜폼값(종목 = "백 스쿼트", 현재무게 = "80", 현재횟수 = "6", 목표무게 = "120"); 플랜종목골랐나.value = true
         켜기(); 탭(4); 누름("훈련 방식"); 찍("09d_플랜_훈련방식시트")
-        플랜폼상태.value = 플랜폼값()
+        플랜폼상태.value = 플랜폼값(); 플랜종목골랐나.value = false
     }
 }
 
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class Shot_s09e_planBodyweight : ShotBase() {
     @Test fun t() {
-        플랜폼상태.value = 플랜폼값(종목 = "턱걸이")
+        플랜폼상태.value = 플랜폼값(종목 = "턱걸이", 목표개수 = "12"); 플랜종목골랐나.value = true
         켜기(); 탭(4); 찍("09e_플랜_맨몸종목")
-        플랜폼상태.value = 플랜폼값()
+        플랜폼상태.value = 플랜폼값(); 플랜종목골랐나.value = false
     }
 }
 

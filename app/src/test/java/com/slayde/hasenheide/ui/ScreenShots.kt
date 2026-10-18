@@ -415,16 +415,16 @@ class Shot_s09_plan : ShotBase() {
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class Shot_s09b_planFilled : ShotBase() {
     @Test fun s09b_planFilled() {
-        플랜폼상태.value = 플랜폼값(종목 = "벤치프레스", 목표방식 = com.slayde.hasenheide.data.목표형식.무게횟수, 목표무게 = "100", 목표횟수 = "5", 현재무게 = "60", 현재횟수 = "8")
-        try { 켜기(); 탭(4); 찍("09b_플랜_입력") } finally { 플랜폼상태.value = 플랜폼값() }
+        플랜폼상태.value = 플랜폼값(종목 = "벤치프레스", 목표방식 = com.slayde.hasenheide.data.목표형식.무게횟수, 목표무게 = "100", 목표횟수 = "5", 현재무게 = "60", 현재횟수 = "8"); 플랜종목골랐나.value = true
+        try { 켜기(); 탭(4); 찍("09b_플랜_입력") } finally { 플랜폼상태.value = 플랜폼값(); 플랜종목골랐나.value = false }
     }
 }
 
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class Shot_s09c_planPullup : ShotBase() {
     @Test fun s09c_planPullup() {
-        플랜폼상태.value = 플랜폼값(종목 = "턱걸이", 목표개수 = "12", 보조모드 = 1, 보조무게 = "20", 보조횟수 = "5")
-        try { 켜기(); 탭(4); 찍("09c_플랜_턱걸이") } finally { 플랜폼상태.value = 플랜폼값() }
+        플랜폼상태.value = 플랜폼값(종목 = "턱걸이", 목표개수 = "12", 보조모드 = 1, 보조무게 = "20", 보조횟수 = "5"); 플랜종목골랐나.value = true
+        try { 켜기(); 탭(4); 찍("09c_플랜_턱걸이") } finally { 플랜폼상태.value = 플랜폼값(); 플랜종목골랐나.value = false }
     }
 }
 
@@ -553,4 +553,21 @@ class Shot_s05b_addSheetOpen : ShotBase() {
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class Shot_s07c_exerciseOpenNoPlan : ShotBase() {
     @Test fun s07c_exerciseOpenNoPlan() { 켜기(); 탭(3); 위로올림("스쿼트"); 누름("스쿼트"); 찍("07c_종목_펼침_스쿼트") }
+}
+
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+class Shot_s09f_planPicker : ShotBase() {
+    @Test fun s09f_planPicker() { 켜기(); 탭(4); 누름("종목 선택하기"); 찍("09f_플랜_종목목록") }
+}
+
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+class Shot_s09g_planStep2 : ShotBase() {
+    @Test fun s09g_planStep2() {
+        try { 켜기(); 탭(4); 누름("종목 선택하기"); 누름("백 스쿼트"); 찍("09g_플랜_2단계열림") } finally { 플랜폼상태.value = 플랜폼값(); 플랜종목골랐나.value = false }
+    }
+}
+
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+class Shot_s07i_planBox : ShotBase() {
+    @Test fun s07i_planBox() { 켜기(); 탭(3); 누름("벤치프레스", 1); 찍("07i_종목_플랜상자_펼침") }
 }
