@@ -1,31 +1,48 @@
+PlanTest > 전부 FAILED
+RecordModeTest > 전부 FAILED
+> Task :app:testDebugUnitTest FAILED
+* Exception is:
+org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':app:testDebugUnitTest'.
+	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+Caused by: org.gradle.api.internal.exceptions.MarkedVerificationException: There were failing tests. See the report at: file:///home/runner/work/gymwork-app/gymwork-app/app/build/reports/tests/testDebugUnitTest/index.html
+	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+BUILD FAILED in 3m 1s
 --- 로그 끝 30줄 ---
-> Task :app:mergeDebugShaders
-> Task :app:compileDebugShaders NO-SOURCE
-> Task :app:generateDebugAssets UP-TO-DATE
-> Task :app:mergeDebugAssets
-> Task :app:processDebugResources
-> Task :app:packageDebugUnitTestForUnitTest
-> Task :app:generateDebugUnitTestConfig
-> Task :app:compileDebugKotlin
-w: file:///home/runner/work/gymwork-app/gymwork-app/app/src/main/java/com/slayde/hasenheide/ui/SettingsScreen.kt:173:51 'val LocalLifecycleOwner: ProvidableCompositionLocal<LifecycleOwner>' is depreca
-w: file:///home/runner/work/gymwork-app/gymwork-app/app/src/main/java/com/slayde/hasenheide/ui/StatsScreen.kt:641:27 Condition is always 'true'.
-w: file:///home/runner/work/gymwork-app/gymwork-app/app/src/main/java/com/slayde/hasenheide/ui/WorkoutScreen.kt:831:36 Condition is always 'true'.
+	at org.gradle.api.internal.tasks.execution.ResolveTaskExecutionModeExecuter.execute(ResolveTaskExecutionModeExecuter.java:51)
+	at org.gradle.api.internal.tasks.execution.SkipTaskWithNoActionsExecuter.execute(SkipTaskWithNoActionsExecuter.java:57)
+	at org.gradle.api.internal.tasks.execution.SkipOnlyIfTaskExecuter.execute(SkipOnlyIfTaskExecuter.java:74)
+	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.executeTask(EventFiringTaskExecuter.java:77)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:55)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:52)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:209)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:204)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:66)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:59)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:166)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:59)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:53)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter.execute(EventFiringTaskExecuter.java:52)
+	at org.gradle.execution.plan.LocalTaskNodeExecutor.execute(LocalTaskNodeExecutor.java:42)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:331)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:318)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.lambda$execute$0(DefaultTaskExecutionGraph.java:314)
+	at org.gradle.internal.operations.CurrentBuildOperationRef.with(CurrentBuildOperationRef.java:85)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:314)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:303)
+	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.execute(DefaultPlanExecutor.java:459)
+	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.run(DefaultPlanExecutor.java:376)
+	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
+	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:48)
 
-> Task :app:compileDebugJavaWithJavac
-> Task :app:processDebugJavaRes
-> Task :app:bundleDebugClassesToCompileJar
-> Task :app:bundleDebugClassesToRuntimeJar
 
-> Task :app:compileDebugUnitTestKotlin
-w: file:///home/runner/work/gymwork-app/gymwork-app/app/src/test/java/com/slayde/hasenheide/ui/ScreenShots.kt:158:15 This declaration needs opt-in. Its usage should be marked with '@com.github.takahir
-w: file:///home/runner/work/gymwork-app/gymwork-app/app/src/test/java/com/slayde/hasenheide/ui/ScreenShots.kt:286:81 This declaration needs opt-in. Its usage should be marked with '@com.github.takahir
-w: file:///home/runner/work/gymwork-app/gymwork-app/app/src/test/java/com/slayde/hasenheide/ui/ScreenShots.kt:288:54 This declaration needs opt-in. Its usage should be marked with '@com.github.takahir
-
-> Task :app:compileDebugUnitTestJavaWithJavac NO-SOURCE
-> Task :app:processDebugUnitTestJavaRes
-> Task :app:testDebugUnitTest
-> Task :app:finalizeTestRoborazziDebug SKIPPED
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run-1792202896261.json
-
-BUILD SUCCESSFUL in 3m 2s
+BUILD FAILED in 3m 1s
 28 actionable tasks: 28 executed
+    <failure message="java.lang.AssertionError: 시험 364 개 중 1 개 실패:&#10; · 인클라인 109kg · 1RM 100 = 초급(0.92배)" type="java.lang.AssertionError">java.lang.AssertionError: 시험 364 개 중 1 개 실패:
+ · 인클라인 109kg · 1RM 100 = 초급(0.92배)
+	at com.slayde.hasenheide.data.플랜시험.전부(PlanTest.kt:77)
+	at com.slayde.hasenheide.data.PlanTest.전부(PlanTest.kt:24)
+    <failure message="java.lang.AssertionError: 기록 방식 시험 틀림 2개 / 218 개:&#10;피로 맨몸비 그 밖의 맨몸 — 기대 0.6 · 실제 1.0&#10;피로 딥스 +0 (표에 없음 = 0.6) — 기대 42.0 · 실제 70.0" type="java.lang.AssertionError">java.lang.AssertionError: 기록 방식 시험 틀림 2개 / 218 개:
+피로 맨몸비 그 밖의 맨몸 — 기대 0.6 · 실제 1.0
+피로 딥스 +0 (표에 없음 = 0.6) — 기대 42.0 · 실제 70.0
+	at com.slayde.hasenheide.data.기록방식시험.전부(RecordModeTest.kt:29)
