@@ -20,7 +20,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
@@ -108,7 +110,7 @@ fun 플랜화면(상태: 앱상태, 설정으로: () -> Unit, 종목으로: () -
     val 맨몸 = t?.맨몸인가 == true
     val 안함 = f.입력안함
 
-    // 10-19 홍겸 님 '플랜탭 ui 개편': 다른 탭과 같은 짜임 — 띠 · (구역 이름표 + 카드) · 떠 있는 단추 (설정 · 루틴 · 종목 탭과 같은 값)
+    // 10-19 홍겸 님 '플랜탭 ui 개편': 띠 · 단계 레일(①~④ + 카드) · 떠 있는 [플랜 만들기] (루틴 · 종목 탭과 같은 단추)
     Box(Modifier.fillMaxSize()) {
       Column(Modifier.fillMaxSize()) {
         머리띠("운동 플랜")
@@ -118,59 +120,66 @@ fun 플랜화면(상태: 앱상태, 설정으로: () -> Unit, 종목으로: () -
                     .padding(start = 간격.보통, end = 간격.보통, top = 간격.보통, bottom = 간격.보통 + 높이.보통 + 간격.보통),
                 verticalArrangement = Arrangement.spacedBy(간격.좁게),
             ) {
+                // 10-19 홍겸 님 '대대적으로 개편': 단계 레일 ①종목 → ②목표 → ③현재 → ④방식 (시안 https://claude.ai/artifact/JqshoSvYXC3gVC5Z4ai8Nn)
+                val 끝단계 = if (t == null) 1 else if (맨몸) 3 else 4
+                val 오류글: @Composable () -> Unit = { if (오류.isNotEmpty()) 글(오류, 크기값 = 크기.조금작게, 색 = c.나쁨, 줄 = 2) }
+
                 // ── 플0 · 종목 — 바꾸면 칸을 모두 비운다 (시안 `폼값` 종목) ──
-                칩줄(플랜표.종목들.map { it.이름 }, f.종목, { v -> if (v != f.종목) { 플랜폼상태.value = 플랜폼값(종목 = v); 오류 = "" } }, Modifier.번호("플0"))
+                단계(1, "종목", 끝단계 == 1) {
+                    칩줄(플랜표.종목들.map { it.이름 }, f.종목, { v -> if (v != f.종목) { 플랜폼상태.value = 플랜폼값(종목 = v); 오류 = "" } }, Modifier.번호("플0"))
+                }
 
                 if (t != null) {
                     // ── 플2 · 목표 근력 (위) ──
-                    구역머리("목표 근력", 판.second)
-                    카드(Modifier.번호("플2")) {
-                        if (맨몸) {
-                            Row { 폼칸("목표 개수 (한 번에)", f.목표개수, "회", Modifier.weight(1f)) { v -> 폼 { it.copy(목표개수 = v) } } }
-                        } else {
-                            칩줄(listOf("1RM", "무게 × 횟수"), if (f.목표방식 == 목표형식.RM) "1RM" else "무게 × 횟수",
-                                { v -> 폼 { it.copy(목표방식 = if (v == "1RM") 목표형식.RM else 목표형식.무게횟수) } })
-                            Box(Modifier.height(간격.좁게))
-                            Row(horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
-                                폼칸("목표 무게", f.목표무게, "kg", Modifier.weight(1f)) { v -> 폼 { it.copy(목표무게 = v) } }
-                                if (f.목표방식 == 목표형식.무게횟수) 폼칸("횟수", f.목표횟수, "회", Modifier.weight(1f)) { v -> 폼 { it.copy(목표횟수 = v) } }
+                    단계(2, "목표 근력", false, 판정 = 판.second) {
+                        카드(Modifier.번호("플2")) {
+                            if (맨몸) {
+                                Row { 폼칸("목표 개수 (한 번에)", f.목표개수, "회", Modifier.weight(1f)) { v -> 폼 { it.copy(목표개수 = v) } } }
+                            } else {
+                                칩줄(listOf("1RM", "무게 × 횟수"), if (f.목표방식 == 목표형식.RM) "1RM" else "무게 × 횟수",
+                                    { v -> 폼 { it.copy(목표방식 = if (v == "1RM") 목표형식.RM else 목표형식.무게횟수) } })
+                                Box(Modifier.height(간격.좁게))
+                                Row(horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
+                                    폼칸("목표 무게", f.목표무게, "kg", Modifier.weight(1f)) { v -> 폼 { it.copy(목표무게 = v) } }
+                                    if (f.목표방식 == 목표형식.무게횟수) 폼칸("횟수", f.목표횟수, "회", Modifier.weight(1f)) { v -> 폼 { it.copy(목표횟수 = v) } }
+                                }
                             }
                         }
                     }
 
                     // ── 플1 · 현재 근력 (아래) — [입력하지 않음] 은 제목 줄 맨 오른쪽 ──
-                    구역머리("현재 근력", 판.first) {
+                    단계(3, "현재 근력", 끝단계 == 3, 판정 = 판.first, 오른쪽 = {
                         안함단추(안함) { 폼 { it.copy(입력안함 = !it.입력안함) } }   // sjb8 다시 누르면 풀린다
-                    }
-                    카드(Modifier.번호("플1")) {
-                        흐린칸(안함) {
-                            if (맨몸) {
-                                if (t.보조옵션) {
-                                    칩줄(보조말, 보조말[f.보조모드.coerceIn(0, 2)], { v -> 폼 { it.copy(보조모드 = 보조말.indexOf(v).coerceAtLeast(0)) } })
-                                    Box(Modifier.height(간격.좁게))
-                                }
-                                if (f.보조모드 == 0 || !t.보조옵션) {
-                                    Row { 폼칸("정자세 개수", f.정자세, "회", Modifier.weight(1f)) { v -> 폼 { it.copy(정자세 = v) } } }
+                    }) {
+                        카드(Modifier.번호("플1")) {
+                            흐린칸(안함) {
+                                if (맨몸) {
+                                    if (t.보조옵션) {
+                                        칩줄(보조말, 보조말[f.보조모드.coerceIn(0, 2)], { v -> 폼 { it.copy(보조모드 = 보조말.indexOf(v).coerceAtLeast(0)) } })
+                                        Box(Modifier.height(간격.좁게))
+                                    }
+                                    if (f.보조모드 == 0 || !t.보조옵션) {
+                                        Row { 폼칸("정자세 개수", f.정자세, "회", Modifier.weight(1f)) { v -> 폼 { it.copy(정자세 = v) } } }
+                                    } else Row(horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
+                                        폼칸(if (f.보조모드 == 1) "보조 무게" else "추가 무게", f.보조무게, "kg", Modifier.weight(1f)) { v -> 폼 { it.copy(보조무게 = v) } }
+                                        폼칸("횟수", f.보조횟수, "회", Modifier.weight(1f)) { v -> 폼 { it.copy(보조횟수 = v) } }
+                                    }
                                 } else Row(horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
-                                    폼칸(if (f.보조모드 == 1) "보조 무게" else "추가 무게", f.보조무게, "kg", Modifier.weight(1f)) { v -> 폼 { it.copy(보조무게 = v) } }
-                                    폼칸("횟수", f.보조횟수, "회", Modifier.weight(1f)) { v -> 폼 { it.copy(보조횟수 = v) } }
+                                    폼칸("무게", f.현재무게, "kg", Modifier.weight(1f)) { v -> 폼 { it.copy(현재무게 = v) } }
+                                    폼칸("횟수", f.현재횟수, "회", Modifier.weight(1f)) { v -> 폼 { it.copy(현재횟수 = v) } }
                                 }
-                            } else Row(horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
-                                폼칸("무게", f.현재무게, "kg", Modifier.weight(1f)) { v -> 폼 { it.copy(현재무게 = v) } }
-                                폼칸("횟수", f.현재횟수, "회", Modifier.weight(1f)) { v -> 폼 { it.copy(현재횟수 = v) } }
                             }
+                            val 안내 = 폼안내(f, d.몸)
+                            if (안내.isNotEmpty()) 맞춤글(안내, Modifier.padding(top = 간격.아주좁게), 색 = c.흐림)
                         }
-                        val 안내 = 폼안내(f, d.몸)
-                        if (안내.isNotEmpty()) 맞춤글(안내, Modifier.padding(top = 간격.아주좁게), 색 = c.흐림)
+                        if (끝단계 == 3) 오류글()
                     }
 
                     // ── 플3 · 훈련 방식 — 누르는 줄 하나 (v8 15lk · 맨몸은 1번 하나뿐이라 없다) ──
-                    if (!맨몸) {
-                        구역머리("훈련 방식")
+                    if (!맨몸) 단계(4, "훈련 방식", true) {
                         카드(Modifier.번호("플3")) { 방식고름줄(방식찾기(f.방식번호)) { 방식열림 = true } }
+                        오류글()
                     }
-
-                    if (오류.isNotEmpty()) 글(오류, 크기값 = 크기.조금작게, 색 = c.나쁨, 줄 = 2)
                 }
             }
         }
@@ -207,18 +216,37 @@ private val 보조말 = listOf("정자세", "어시스트", "과부하")
 // ═══════════════════ 플랜 탭 부품 ═══════════════════
 
 /**
- * 구역 머리 — 카드 위의 이름표 한 줄 (설정 탭 '신체 정보' 와 같은 [이름표]) · 목표/현재 근력은 옆에 판정 알약 · 맨 오른쪽 [입력하지 않음]
- * (시안 v9 9zt1 · 4v24 — 카드 안에 있던 제목 줄을 카드 밖 이름표로 옮겼다)
+ * 단계 — 왼쪽 레일(동그란 번호 + 이어지는 선)과 오른쪽 내용 (10-19 홍겸 님 '플랜탭 대대적 개편' · 시안 JqshoSvYXC3gVC5Z4ai8Nn).
+ * 번호 = 높이 28 동그라미(강조 바탕 · 강조글 13 굵게) · 선 = 굵게 2 · 선 색 · 제목 15 굵게 · 판정 알약은 제목 옆 · [오른쪽] 은 제목 줄 맨 오른쪽.
+ * 마지막 단계는 선을 긋지 않는다
  */
 @Composable
-private fun 구역머리(제목: String, 판정: String = "", 오른쪽: (@Composable RowScope.() -> Unit)? = null) {
+private fun 단계(
+    번호: Int, 제목: String, 마지막: Boolean, 판정: String = "",
+    오른쪽: (@Composable RowScope.() -> Unit)? = null, content: @Composable ColumnScope.() -> Unit,
+) {
+    val c = Local색.current
+    val 뱃지 = 높이.아주낮게
     Row(
-        Modifier.fillMaxWidth().padding(top = 간격.좁게).then(if (오른쪽 != null) Modifier.heightIn(min = 높이.낮게) else Modifier),
-        verticalAlignment = Alignment.CenterVertically,
+        Modifier.fillMaxWidth().drawBehind {
+            if (!마지막) drawLine(c.선, Offset((뱃지 / 2).toPx(), 뱃지.toPx()), Offset((뱃지 / 2).toPx(), size.height), strokeWidth = 선굵기.굵게.toPx())
+        },
+        horizontalArrangement = Arrangement.spacedBy(간격.보통),
     ) {
-        이름표(제목)
-        if (판정.isNotEmpty()) { Box(Modifier.width(간격.좁게)); 판정알약(판정, 강조 = true) }
-        if (오른쪽 != null) { Box(Modifier.weight(1f)); 오른쪽() }
+        Box(Modifier.size(뱃지).clip(CircleShape).background(c.강조), contentAlignment = Alignment.Center) {
+            글("$번호", 크기값 = 크기.버튼, 굵기 = FontWeight.Bold, 색 = c.강조글)
+        }
+        Column(
+            Modifier.weight(1f).padding(bottom = if (마지막) 0.dp else 간격.보통),
+            verticalArrangement = Arrangement.spacedBy(간격.좁게),
+        ) {
+            Row(Modifier.fillMaxWidth().heightIn(min = if (오른쪽 != null) 높이.낮게 else 뱃지), verticalAlignment = Alignment.CenterVertically) {
+                글(제목, 크기값 = 크기.본문, 굵기 = FontWeight.Bold)
+                if (판정.isNotEmpty()) { Box(Modifier.width(간격.좁게)); 판정알약(판정, 강조 = true) }
+                if (오른쪽 != null) { Box(Modifier.weight(1f)); 오른쪽() }
+            }
+            content()
+        }
     }
 }
 
@@ -256,20 +284,20 @@ private const val 흐림비 = 0.4f
 
 /** 이름표 + 숫자 칸 + 단위 (시안 `폼입력` — label.칸 · 입력줄 · em) */
 @Composable
-private fun 폼칸(이름: String, 값: String, 단위: String, modifier: Modifier = Modifier, 바꿈: (String) -> Unit) {
+private fun 폼칸(이름: String, 값: String, 단위: String, modifier: Modifier = Modifier, 큰숫자: Boolean = true, 바꿈: (String) -> Unit) {
     val c = Local색.current
     Column(modifier) {
         글(이름, 크기값 = 크기.아주작게, 색 = c.옅음)
-        단위칸(값, 단위, "", 바꿈)
+        단위칸(값, 단위, if (큰숫자) "0" else "", 바꿈, 큰숫자 = 큰숫자)
     }
 }
 
 /** 숫자 입력칸 + 오른쪽 단위 글 (시안 `.입력줄`) */
 @Composable
-private fun 단위칸(값: String, 단위: String, 안내: String, 바꿈: (String) -> Unit, modifier: Modifier = Modifier) {
+private fun 단위칸(값: String, 단위: String, 안내: String, 바꿈: (String) -> Unit, modifier: Modifier = Modifier, 큰숫자: Boolean = false) {
     val c = Local색.current
     Row(modifier, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
-        입력칸(값, 바꿈, Modifier.weight(1f), 안내 = 안내, 숫자 = true)
+        입력칸(값, 바꿈, Modifier.weight(1f), 안내 = 안내, 숫자 = true, 글크기 = if (큰숫자) 크기.큰숫자 else 크기.본문)
         if (단위.isNotEmpty()) 글(단위, 크기값 = 크기.조금작게, 색 = c.옅음)
     }
 }
@@ -627,7 +655,7 @@ internal fun 플랜고치기시트(상태: 앱상태, p: 플랜, 닫기: () -> U
                 보조w = when (새) { 전환모드.어시스트 -> 무게글(전환표.플랜어시스트기본); 전환모드.중량 -> 무게글(전환표.플랜중량기본); else -> "" }
             }, {}, {})
             if (보조모드 != 0) Row(Modifier.padding(top = 간격.좁게)) {
-                폼칸(if (보조모드 == 1) "보조 무게" else "추가 무게", 보조w, "kg", Modifier.weight(1f)) { 보조w = it }
+                폼칸(if (보조모드 == 1) "보조 무게" else "추가 무게", 보조w, "kg", Modifier.weight(1f), 큰숫자 = false) { 보조w = it }
             }
         }
 
