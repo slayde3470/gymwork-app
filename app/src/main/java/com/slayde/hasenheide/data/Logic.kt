@@ -315,6 +315,21 @@ fun 앱데이터.예정옮기기(원: String, D: String, 오늘: String): 앱데
 fun 앱데이터.예정지우기(D: String, 오늘: String): 앱데이터 =
     if (D < 오늘 || 기록.containsKey(D)) this else copy(예정 = 예정 - D, 예정고정 = 예정고정 + (D to ""))
 
+/**
+ * 지난 날 '미실시' 지우기 (10-20 홍겸 님 — 캘린더 우측 하단 [기록 삭제]). 기록이 없는 지난 날만.
+ * 그 날 예정 · 그 날만 쓰는 운동도 같이 뺀다 — 예정이 남으면 [놓친날담기] 가 다시 미실시로 담는다.
+ */
+fun 앱데이터.미실시지우기(D: String, 오늘: String): 앱데이터 =
+    if (D >= 오늘 || !미실시.containsKey(D) || 기록.keys.any { 날짜만(it) == D }) this
+    // 10-20 감시관: 자정을 넘긴 운동이 그 날 운동을 쓰고 있으면(세션 · 보고서) 그 운동은 남긴다 — 그날운동치움과 같은 예외
+    else copy(미실시 = 미실시 - D, 예정 = 예정 - D,
+        그날운동 = 그날운동.filter { it.id != 그날운동id(D) || it.id == 세션?.루틴id || it.id == 결과?.루틴id })
+
+/** [미실시지우기] 되돌리기 — 미실시 이름표만 되살린다 (예정은 지난 날이라 다시 깔지 않는다). 그 사이 기록이 생겼으면 그대로 */
+fun 앱데이터.미실시되살림(D: String, 이름: String, 오늘: String): 앱데이터 =
+    if (D >= 오늘 || 미실시.containsKey(D) || 기록.keys.any { 날짜만(it) == D }) this
+    else copy(미실시 = 미실시 + (D to 이름))
+
 /** 그 날만 다른 루틴으로 — 앞뒤 순서는 그대로 (10-01. '이 날부터 다시 깔기' 는 꽂기) */
 fun 앱데이터.그날만바꾸기(rid: String, D: String, 오늘: String): 앱데이터 =
     if (D < 오늘 || 기록.containsKey(D) || 루틴(rid) == null) this else copy(예정 = 예정 + (D to rid), 예정고정 = 예정고정 + (D to rid))

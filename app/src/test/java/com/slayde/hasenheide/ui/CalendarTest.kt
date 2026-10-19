@@ -14,6 +14,10 @@ import com.slayde.hasenheide.data.오늘볼륨
 import com.slayde.hasenheide.data.종목기록
 import com.slayde.hasenheide.data.한세트수
 import com.slayde.hasenheide.data.흐른초
+import com.slayde.hasenheide.data.미실시지우기
+import com.slayde.hasenheide.data.미실시되살림
+import com.slayde.hasenheide.data.놓친날담기
+import com.slayde.hasenheide.data.업적살필것
 import java.time.YearMonth
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -265,5 +269,44 @@ class CalendarTest {
         val 오늘예정 = d.copy(예정 = d.예정 + ("2026-10-05" to "b"))
         assertEquals("진행 중인 운동은 옮길 수 없습니다", 오늘예정.캘집기막힘("2026-10-05", "2026-10-05"))
         assertNull(오늘예정.캘집기막힘("2026-10-07", "2026-10-05"))   // 앞으로의 같은 루틴 날은 옮길 수 있다
+    }
+
+    // 10-20 홍겸 님: 지난 '미실시' 날 [기록 삭제]
+    @Test fun 미실시_지우기_되돌리기() {
+        val 오늘 = "2026-10-20"
+        val 등루틴 = 루틴("b", "등", 종목 = listOf(루틴종목("턱걸이")))
+        val d = 앱데이터(루틴들 = listOf(등루틴), 예정 = mapOf("2026-10-19" to "b"), 미실시 = mapOf("2026-10-19" to "등", "2026-10-18" to "등"))
+        val 새 = d.미실시지우기("2026-10-19", 오늘)
+        assertEquals(mapOf("2026-10-18" to "등"), 새.미실시)   // 그 날만
+        assertFalse(새.예정.containsKey("2026-10-19"))          // 예정도 빠져서
+        assertEquals(새, 새.놓친날담기(오늘))                     // 다시 미실시로 안 담긴다
+        assertNull(새.캘칸내용("2026-10-19"))                     // 칸이 빈다
+        assertEquals(d.미실시, 새.미실시되살림("2026-10-19", "등", 오늘).미실시)
+    }
+
+    @Test fun 미실시_지우기_막힌_날() {
+        val 오늘 = "2026-10-20"
+        val d = 앱데이터(미실시 = mapOf("2026-10-19" to "등", "2026-10-20" to "등"), 기록 = mapOf("2026-10-19~2" to 기록("등")))
+        assertEquals(d, d.미실시지우기("2026-10-19", 오늘))   // 기록 있는 날
+        assertEquals(d, d.미실시지우기("2026-10-20", 오늘))   // 오늘
+        assertEquals(d, d.미실시지우기("2026-10-17", 오늘))   // 미실시 없는 날
+        val 지움 = 앱데이터(미실시 = mapOf("2026-10-19" to "등")).미실시지우기("2026-10-19", 오늘)
+        val 사이기록 = 지움.copy(기록 = mapOf("2026-10-19" to 기록("등")))
+        assertEquals(사이기록, 사이기록.미실시되살림("2026-10-19", "등", 오늘))   // 그 사이 기록이 생기면 되살리지 않는다
+    }
+
+    @Test fun 미실시_지우기_그날운동() {
+        val 오늘 = "2026-10-20"
+        val 날운 = 루틴("날2026-10-19", "딥스", 종목 = listOf(루틴종목("딥스")))
+        val d = 앱데이터(그날운동 = listOf(날운), 예정 = mapOf("2026-10-19" to 날운.id), 미실시 = mapOf("2026-10-19" to "딥스"))
+        assertTrue(d.미실시지우기("2026-10-19", 오늘).그날운동.isEmpty())   // 보통은 그 날 운동도 치운다
+        val 운동중 = d.copy(세션 = 운동세션(날운.id, "딥스", 0L))            // 자정을 넘긴 운동이 쓰고 있으면
+        assertEquals(listOf(날운.id), 운동중.미실시지우기("2026-10-19", 오늘).그날운동.map { it.id })
+    }
+
+    @Test fun 미실시_지우기만_하면_업적을_안_본다() {
+        val 전 = 앱데이터(미실시 = mapOf("2026-10-19" to "등", "2026-10-18" to "등"))
+        assertNull(업적살필것(전, 전.미실시지우기("2026-10-19", "2026-10-20")))
+        assertNotNull(업적살필것(전.copy(미실시 = emptyMap()), 전))   // 늘면 본다
     }
 }

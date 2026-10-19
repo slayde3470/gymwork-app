@@ -96,6 +96,8 @@ import com.slayde.hasenheide.data.방식
 import com.slayde.hasenheide.data.예정루틴
 import com.slayde.hasenheide.data.예정옮기기
 import com.slayde.hasenheide.data.예정지우기
+import com.slayde.hasenheide.data.미실시지우기
+import com.slayde.hasenheide.data.미실시되살림
 import com.slayde.hasenheide.data.예정초기화
 import com.slayde.hasenheide.data.운동량
 import com.slayde.hasenheide.data.운동세션
@@ -428,6 +430,16 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
             }
         }
     }
+    // 10-20 홍겸 님: 지난 '미실시' 날 지우기 — 되돌리기 띠 · 발자취는 [초기화] 와 같게
+    fun 미실시비움(k: String) {
+        val 이름 = 상태.d.미실시[k] ?: return
+        상태.바꿈 { it.미실시지우기(k, 상태.오늘) }
+        if (상태.d.미실시.containsKey(k)) return   // 지울 수 없는 날 (오늘 이후 · 기록 있는 날)
+        발자취.적기("${캘날글(k)} 미실시 지움")
+        상태.알림.되돌림("캘린더미실시", { n -> if (n > 1) "미실시 ${n}개를 지웠습니다" else "${캘날글(k)} $이름 미실시를 지웠습니다" }) {
+            상태.바꿈 { it.미실시되살림(k, 이름, 상태.오늘) }
+        }
+    }
     fun 기록지움(k: String) {
         val (새, x) = 상태.d.캘기록지우기(k, 록골) ?: return
         상태.바꿈 { 새.예정초기화(상태.오늘) }
@@ -503,7 +515,8 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
                     록골 = if (켬) 상태.d.캘기록목록(고른날).let { l -> if (l.size == 1) setOf(l[0].first) else emptySet() } else emptySet()
                 },
                 시작 = { S -> 한번 { 시작(S) } }, 지움 = { kk -> 한번 { 기록지움(kk) } }, 보고서 = { kk, rr -> 한번 { 보고서(kk, rr) } },
-                계획 = { kk -> 한번 { 시트날 = kk; 열린 = 캘시트.루틴 } }, 초기화 = { kk -> 한번 { 예정비움(kk) } })
+                계획 = { kk -> 한번 { 시트날 = kk; 열린 = 캘시트.루틴 } }, 초기화 = { kk -> 한번 { 예정비움(kk) } },
+                미실시지움 = { kk -> 한번 { 미실시비움(kk) } })
         }
 
         val k = 시트날
@@ -997,7 +1010,7 @@ private val 그림작게 = 16.dp   // 11 지침 U3-6 글 옆 · 체크 안
 private fun 판단추(
     상태: 앱상태, k: String, 록골: Set<String>, 지움모드: Boolean, on지움모드: (Boolean) -> Unit,
     시작: (운동세션?) -> Unit, 지움: (String) -> Unit, 보고서: (String, 날기록) -> Unit,
-    계획: (String) -> Unit, 초기화: (String) -> Unit,
+    계획: (String) -> Unit, 초기화: (String) -> Unit, 미실시지움: (String) -> Unit,
 ) {
     val c = Local색.current
     val d = 상태.d
@@ -1005,7 +1018,15 @@ private fun 판단추(
     val 록 = d.캘기록목록(k)
     val r = d.예정루틴(k)
     val 운동예정 = r != null && !r.휴식일
-    if (록.isEmpty() && k < 오늘) return   // 지난 날 · 기록 없음 = 단추 없음
+    if (록.isEmpty() && k < 오늘) {
+        // 10-20 홍겸 님: 지난 '미실시' 날은 우측 하단 [기록 삭제] 로 지운다 — 자리 · 폭은 [초기화] 와 같게 (U5-4 묻지 않고 지우고 띠로 되돌림)
+        if (d.미실시[k] == null) return   // 미실시도 없는 지난 날 = 단추 없음
+        Row(Modifier.fillMaxWidth().background(c.바탕).padding(7.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.weight(판단추폭.계획))
+            버튼("기록 삭제", { 미실시지움(k) }, Modifier.weight(판단추폭.초기화), 작게 = true, 세로여백 = 4.dp, 글색 = c.나쁨, 줄임 = true, 글배율 = 0.9f)
+        }
+        return
+    }
     if (록.isEmpty() && k == 오늘 && d.세션 != null) return   // 10-11 홍겸 님: 운동 중에는 [운동 시작] · [초기화] 를 없앤다 (그 자리에 [돌아가기] 가 있다)
     Row(
         Modifier.fillMaxWidth().background(c.바탕).padding(7.dp),   // 10-11 홍겸 님: 상하좌우 7
