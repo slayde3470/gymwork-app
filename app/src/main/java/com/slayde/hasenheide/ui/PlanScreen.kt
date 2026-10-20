@@ -676,6 +676,9 @@ internal fun 플랜고치기시트(상태: 앱상태, p: 플랜, 닫기: () -> U
     var 방식번호 by remember(p.id) { mutableStateOf(처음.방식번호) }
     var 보조모드 by remember(p.id) { mutableStateOf(처음.보조모드) }
     var 보조w by remember(p.id) { mutableStateOf(if (처음.보조무게 > 0) 무게글(처음.보조무게) else "") }
+    // 10-20 홍겸 님: ⇄ 로 돌아도 모드마다 적은 무게를 기억한다 (돌아오면 되살림 · 저장하면 플랜에도 적힌다)
+    var 기억어 by remember(p.id) { mutableStateOf(if (p.어시스트기억 > 0) 무게글(p.어시스트기억) else "") }
+    var 기억중 by remember(p.id) { mutableStateOf(if (p.중량기억 > 0) 무게글(p.중량기억) else "") }
     var 안함 by remember(p.id) { mutableStateOf(false) }
     var 측w by remember(p.id) { mutableStateOf("") }
     var 측r by remember(p.id) { mutableStateOf("") }
@@ -721,9 +724,15 @@ internal fun 플랜고치기시트(상태: 앱상태, p: 플랜, 닫기: () -> U
             Box(Modifier.height(간격.좁게))
             // 10-19 홍겸 님: ⇄ — 일반 → 어시스트 → 중량. 고치는 동안은 저장 전까지 플랜에 닿지 않는다 (무게는 아래 칸에서 그 자리에서 고친다)
             방식전환줄(보조모드로(보조모드), null, null, {
-                val 새 = 보조모드로(보조모드).다음()
+                val 옛 = 보조모드로(보조모드)
+                val 새 = 옛.다음()
+                when (옛) { 전환모드.어시스트 -> 기억어 = 보조w; 전환모드.중량 -> 기억중 = 보조w; else -> {} }
                 보조모드 = 새.ordinal
-                보조w = when (새) { 전환모드.어시스트 -> 무게글(전환표.플랜어시스트기본); 전환모드.중량 -> 무게글(전환표.플랜중량기본); else -> "" }
+                보조w = when (새) {
+                    전환모드.어시스트 -> 기억어.ifBlank { 무게글(전환표.플랜어시스트기본) }
+                    전환모드.중량 -> 기억중.ifBlank { 무게글(전환표.플랜중량기본) }
+                    else -> ""
+                }
             }, {}, {})
             if (보조모드 != 0) Row(Modifier.padding(top = 간격.좁게)) {
                 폼칸(if (보조모드 == 1) "보조 무게" else "추가 무게", 보조w, "kg", Modifier.weight(1f), 큰숫자 = false) { 보조w = it }
@@ -764,6 +773,7 @@ internal fun 플랜고치기시트(상태: 앱상태, p: 플랜, 닫기: () -> U
                 val g = 플랜고침값(
                     이름 = 이름, 목표방식 = 목표방식, 목표무게 = 숫(목w), 목표횟수 = max(1, 숫(목r).roundToInt()), 목표개수 = 숫(목개수),
                     방식번호 = 방식번호, 강도 = p.강도, 세트수 = p.세트수, 직접횟수 = p.직접횟수, 보조모드 = 보조모드, 보조무게 = 숫(보조w),
+                    어시스트기억 = 숫(if (보조모드 == 1) 보조w else 기억어), 중량기억 = 숫(if (보조모드 == 2) 보조w else 기억중),
                 )
                 val (고친, 오류) = 상태.d.플랜고치기(p.id, g)
                 if (오류 != null) { 상태.알림.토스트(오류); return@버튼 }
