@@ -710,7 +710,7 @@ private fun 운이름(d: 앱데이터, S: 운동세션, 본: Int, e: 세션종�
     val 밀도 = LocalDensity.current
     val 딱꼴 = 글꼴.보통(크기.작게, FontWeight.Bold).copy(lineHeight = 부품치수.딱지글높이, fontFeatureSettings = "tnum")
     val 딱폭 = remember(딱) {
-        딱?.let { t -> with(밀도) { (측정.measure(t, 딱꼴).size.width + (간격.아주좁게 * 2 + 부품치수.딱지겹침).toPx()).toSp() } }
+        딱?.let { t -> with(밀도) { (측정.measure(t, 딱꼴).size.width + (간격.아주좁게 * 2 + 부품치수.딱지띄움).toPx()).toSp() } }
     }
     val 글 = buildAnnotatedString {
         append(e.이름.trim())
@@ -736,7 +736,7 @@ private fun 띠딱지(글: String, 꼴: TextStyle, 숫자: Boolean) {
     val 모양 = RoundedCornerShape(모서리.작게)
     Box(
         Modifier.wrapContentSize(Alignment.TopStart, unbounded = true)
-            .offset(x = 부품치수.딱지겹침, y = if (숫자) 부품치수.번호딱지위 else 부품치수.딱지위)
+            .offset(x = 부품치수.딱지띄움, y = if (숫자) 부품치수.번호딱지위 else 부품치수.딱지위)
             .clip(모양).background(c.강조).border(선굵기.보통, c.강조글, 모양)
             .padding(horizontal = 간격.아주좁게),
         contentAlignment = Alignment.Center,

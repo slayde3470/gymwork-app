@@ -615,7 +615,7 @@ fun 이름딱지(
 ) {
     Row(modifier, verticalAlignment = Alignment.CenterVertically) {
         Text(이름, Modifier.weight(1f, fill = false), style = 글꼴.보통(크기값, 굵기), color = 색, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        if (번호 > 0 || 플랜) Row(Modifier.offset(x = 부품치수.딱지겹침), horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
+        if (번호 > 0 || 플랜) Row(Modifier.padding(start = 부품치수.딱지띄움), horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
             번호딱지(번호)
             if (플랜) 플랜딱지()
         }
