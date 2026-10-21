@@ -78,6 +78,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
@@ -94,6 +95,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.toSize
 import com.slayde.hasenheide.data.같은이름번호
 import com.slayde.hasenheide.data.루틴
 import com.slayde.hasenheide.data.루틴바꿈
@@ -367,7 +369,7 @@ private fun 루틴카드(
     val 끝 by rememberUpdatedState(on끌기끝)
     Column(
         modifier.fillMaxWidth()
-            .onGloballyPositioned { if (끌.원 == null) { 끌.자리[i] = it.boundsInRoot(); 끌.좌표[i] = it } }
+            .onGloballyPositioned { if (끌.원 == null) { 끌.자리[i] = it.잘리지않은틀(); 끌.좌표[i] = it } }
             .alpha(if (끌.원 == i) 움직임.끌림투명 else 1f)
             .clip(모양)
             .background(c.면)
@@ -433,7 +435,7 @@ private fun 끌기손잡이(끌: 세로끌기, 이름: String, 시작: (Offset) 
     val 손잡이좌표 = remember { arrayOfNulls<LayoutCoordinates>(1) }
     Box(
         Modifier.size(높이.낮게)
-            .onGloballyPositioned { if (끌.원 == null) { 틀 = it.boundsInRoot(); 손잡이좌표[0] = it } }
+            .onGloballyPositioned { if (끌.원 == null) { 틀 = it.잘리지않은틀(); 손잡이좌표[0] = it } }
             .semantics { contentDescription = "$이름 끌어서 순서 바꾸기" }
             .pointerInput(끌) {
                 awaitEachGesture {
@@ -442,7 +444,7 @@ private fun 끌기손잡이(끌: 세로끌기, 이름: String, 시작: (Offset) 
                     // 10-12 홍겸 님: 손잡이도 꾹 눌러야 집는다 (스치기만 해도 끌려 가던 것) — 그 전에 움직이면 끌지 않고 놓아 준다
                     val 눌렸음 = awaitLongPressOrCancellation(처음.id) ?: return@awaitEachGesture
                     if (끌.원 != null) return@awaitEachGesture
-                    val 지금틀 = 손잡이좌표[0]?.takeIf { it.isAttached }?.boundsInRoot() ?: 틀최신   // 스크롤 뒤 옛 자리로 집지 않게
+                    val 지금틀 = 손잡이좌표[0]?.takeIf { it.isAttached }?.잘리지않은틀() ?: 틀최신   // 스크롤 뒤 옛 자리로 집지 않게
                     시작최신(Offset(지금틀.left + 눌렸음.position.x, 지금틀.top + 눌렸음.position.y))
                     val 끝까지 = drag(눌렸음.id) { ch ->
                         val 양 = ch.positionChange()
@@ -587,7 +589,7 @@ private fun 루틴상세화면(상태: 앱상태, r: 루틴, 닫기: () -> Unit)
                                 val e = r.종목[j]
                                 val 표시 = if (끌.원 != null) 끌.표시(j, 넘김.value) else -1
                                 val 자리줄 = Modifier
-                                    .onGloballyPositioned { if (끌.원 == null) { 끌.자리[j] = it.boundsInRoot(); 끌.좌표[j] = it } }
+                                    .onGloballyPositioned { if (끌.원 == null) { 끌.자리[j] = it.잘리지않은틀(); 끌.좌표[j] = it } }
                                     .alpha(if (끌.원 == j) 움직임.끌림투명 else 1f)
                                 // 줄 꾹 눌러 끌기 · 오른쪽 손잡이가 같은 시작을 쓴다 (10-09)
                                 val 끌시작: (Offset) -> Unit = { 손 ->
@@ -963,11 +965,11 @@ private fun 끌기손(끌: 세로끌기, rid: String, j: Int, 놓기: () -> Unit
     val 틀최신 by rememberUpdatedState(줄틀)
     val 줄좌표 = remember { arrayOfNulls<LayoutCoordinates>(1) }
     return Modifier
-        .onGloballyPositioned { if (끌.원 == null) { 줄틀 = it.boundsInRoot(); 줄좌표[0] = it } }
+        .onGloballyPositioned { if (끌.원 == null) { 줄틀 = it.잘리지않은틀(); 줄좌표[0] = it } }
         .pointerInput(끌, rid, j) {
             detectDragGesturesAfterLongPress(
                 onDragStart = { p ->
-                    val 틀 = 줄좌표[0]?.takeIf { it.isAttached }?.boundsInRoot() ?: 틀최신   // 스크롤 뒤 옛 자리로 집지 않게 지금 자리를 다시 잰다
+                    val 틀 = 줄좌표[0]?.takeIf { it.isAttached }?.잘리지않은틀() ?: 틀최신   // 스크롤 뒤 옛 자리로 집지 않게 지금 자리를 다시 잰다
                     시작최신(Offset(틀.left + p.x, 틀.top + p.y))
                 },
                 onDrag = { ch, 양 -> ch.consume(); 끌.움직임(양) },
@@ -1444,7 +1446,7 @@ private class 세로끌기 {
 
     /** [수] = 지금 줄 수 — 그보다 큰 번호의 옛 자리(지운 줄)는 버린다. [손x] · [가로] = 2열 격자 */
     fun 시작(i: Int, 이름: String, 손y: Float, 넘김: Int, 수: Int, 손x: Float? = null, 가로: Set<Int> = emptySet(), 손가락x: Float = 0f) {
-        for ((k, lc) in 좌표) if (lc.isAttached) 자리[k] = lc.boundsInRoot()
+        for ((k, lc) in 좌표) if (lc.isAttached) 자리[k] = lc.잘리지않은틀()
         굳은 = 자리.filterKeys { it < 수 }.map { (k, r) -> 끌칸(k, r.left, r.top, r.right, r.bottom) }
         this.가로 = 가로; 시작넘김 = 넘김
         this.이름 = 이름; y = 손y; x = 손x; this.손x = 손가락x; 원 = i
@@ -1665,6 +1667,12 @@ internal fun 루격자줄(넓음: List<Boolean>): List<List<Int>> {
     }
     return 줄
 }
+
+/**
+ * 10-21 홍겸 님 ("화면은 올라가는데 칸을 옮길 수는 없네"): [boundsInRoot] 는 스크롤 목록 밖으로 나간 · 걸친 칸을 **잘라서** 돌려준다 —
+ * 화면 밖에 있던 칸은 높이 0 으로 잡혀, 자동으로 넘긴 뒤 그 칸 위에 놓아도 놓을 곳을 못 찾았다. 잘리지 않은 자리(위치 + 크기)로 잰다
+ */
+private fun LayoutCoordinates.잘리지않은틀(): Rect = Rect(positionInRoot(), size.toSize())
 
 /** 끌기 칸 자리 (화면 기준 px) — 시험하려고 Rect 대신 */
 internal data class 끌칸(val 번호: Int, val 왼: Float, val 위: Float, val 오른: Float, val 아래: Float)
