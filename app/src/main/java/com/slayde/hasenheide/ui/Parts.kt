@@ -581,7 +581,7 @@ fun 휴식한칸(전: Int, 방향: Int): Int {
 
 /** [플랜] 딱지 (시안 jmg1 `.플랜표`) — 이름 오른쪽 위에 겹친다. 11 굵게 · 강조 바탕 · 강조글 */
 @Composable
-fun 플랜딱지(modifier: Modifier = Modifier) = 딱지글("플랜", false, modifier)
+fun 플랜딱지(modifier: Modifier = Modifier) = 딱지글("P", false, modifier)   // 10-21 홍겸 님: [플랜] → [P]
 
 /** 같은 이름 번호 딱지 (시안 v19 D ② `.번호표`) — [n] 이 0 이면 그리지 않는다. 번호는 데이터 `같은이름번호` */
 @Composable
@@ -590,13 +590,14 @@ fun 번호딱지(n: Int, modifier: Modifier = Modifier) { if (n > 0) 딱지글("
 @Composable
 private fun 딱지글(글: String, 번호: Boolean, modifier: Modifier) {
     val c = Local색.current
+    val 짧음 = 번호 || 글.length == 1   // 번호 · 한 글자(P)는 좁은 알약
     Box(
         modifier
             .offset(y = if (번호) 부품치수.번호딱지위 else 부품치수.딱지위)
             .clip(RoundedCornerShape(모서리.작게))
             .background(c.강조)
-            .then(if (번호) Modifier.widthIn(min = 부품치수.번호딱지폭) else Modifier)
-            .padding(horizontal = if (번호) 부품치수.번호딱지옆 else 부품치수.딱지옆),
+            .then(if (짧음) Modifier.widthIn(min = 부품치수.번호딱지폭) else Modifier)
+            .padding(horizontal = if (짧음) 부품치수.번호딱지옆 else 부품치수.딱지옆),
         contentAlignment = Alignment.Center,
     ) {
         Text(

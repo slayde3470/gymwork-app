@@ -717,7 +717,7 @@ private fun 운이름(d: 앱데이터, S: 운동세션, 본: Int, e: 세션종�
     val c = Local색.current
     val p = e.플랜id?.let { id -> d.플랜들.firstOrNull { it.id == id } }
     val 번 = if (p != null) 0 else d.같은이름번호(e.종id, e.이름)
-    val 딱 = if (p != null) "플랜" else if (번 > 0) "$번" else null
+    val 딱 = if (p != null) "P" else if (번 > 0) "$번" else null   // 10-21 홍겸 님: [플랜] → [P]
     val 곁 = when {
         p != null -> {
             val 계 = p.다음회(d.몸, d.향상기록들)
