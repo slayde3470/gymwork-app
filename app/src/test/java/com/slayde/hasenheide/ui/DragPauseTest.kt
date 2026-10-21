@@ -75,4 +75,20 @@ class DragPauseTest {
         assertEquals(true, 양(880f) > 양(840f))
         assertEquals(0f, 끌기넘김량(500f, 0f, 1000f, 0f, 10f))   // 띠 0 이면 안 넘김
     }
+
+    @Test fun 켜진_뒤에는_더_넓게_움직여도_켜_둔다() {
+        val 켜진흔들 = 90f   // 켜기 전 30 · 켜진 뒤 90 (10dp · 30dp 비율)
+        val m = 묶기멈춤(500)
+        m.갱신(2, null, 100f, 0, 흔들)
+        assertEquals(2, m.갱신(2, null, 100f, 500, 흔들))                                           // 켜짐
+        assertEquals(2, m.갱신(2, null, 170f, 600, 흔들, 켜짐 = 2, 켜진흔들림px = 켜진흔들))           // 70 움직여도 (90 안) 그대로
+        assertEquals(2, m.갱신(null, null, 160f, 700, 흔들, 켜짐 = 2, 켜진흔들림px = 켜진흔들))        // 가운데를 벗어나도 (후보 없음) 그대로
+        assertNull(m.갱신(null, null, 220f, 800, 흔들, 켜짐 = 2, 켜진흔들림px = 켜진흔들))             // 120 움직임 → 꺼짐
+    }
+
+    @Test fun 켜지기_전에는_옛날처럼_좁다() {
+        val m = 묶기멈춤(500)
+        m.갱신(2, null, 100f, 0, 흔들)
+        assertNull(m.갱신(2, null, 170f, 300, 흔들, 켜짐 = null, 켜진흔들림px = 90f))   // 아직 안 켜졌으니 70 움직이면 다시 센다
+    }
 }

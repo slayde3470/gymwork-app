@@ -1455,12 +1455,12 @@ private class 세로끌기 {
     fun 움직임(양: Offset) { y += 양.y; x = x?.plus(양.x); 손x += 양.x }
     fun 끝() { 원 = null; 장전 = null; 멈춤?.비움() }
     /** 끄는 동안 16ms 마다 — 손가락이 묶을 수 있는 칸 가운데에서 멈췄나 살펴 [장전] 을 켜고 끈다. 새로 켜지면 true */
-    fun 장전살피기(넘김: Int, 지금: Long, 흔들림px: Float): Boolean {
+    fun 장전살피기(넘김: Int, 지금: Long, 흔들림px: Float, 켜진흔들림px: Float = 흔들림px): Boolean {
         val m = 멈춤 ?: return false
         val a = 원
         if (a == null) { 장전 = null; return false }
         val 후보 = 끌가운데(굳은, x, y, (넘김 - 시작넘김).toFloat())?.takeIf { it != a && 묶음가능(a, it) }
-        val 새 = m.갱신(후보, x, y + 넘김, 지금, 흔들림px)
+        val 새 = m.갱신(후보, x, y + 넘김, 지금, 흔들림px, 장전, 켜진흔들림px)
         val 켜짐 = 새 != null && 장전 == null
         if (새 != 장전) 장전 = 새
         return 켜짐
@@ -1496,7 +1496,15 @@ internal class 묶기멈춤(private val 멈춤ms: Long = 부품치수.묶기멈�
     private var 기준x = 0f
     private var 기준y = 0f
     fun 비움() { 후보 = null }
-    fun 갱신(지금후보: Int?, x: Float?, y: Float, 지금: Long, 흔들림px: Float): Int? {
+    /**
+     * [켜짐] = 지금 장전돼 있는 칸. 한 번 켜진 칸은 [켜진흔들림px](더 넓다) 안에서 움직이는 동안 — 가운데를 조금 벗어나도 — 그대로 켜 둔다
+     * (10-21 홍겸 님: 활성화된 뒤에는 손가락 흔들림 30dp 까지)
+     */
+    fun 갱신(지금후보: Int?, x: Float?, y: Float, 지금: Long, 흔들림px: Float, 켜짐: Int? = null, 켜진흔들림px: Float = 흔들림px): Int? {
+        if (켜짐 != null && 켜짐 == 후보) {
+            val 벗어남 = abs(y - 기준y) > 켜진흔들림px || (x != null && abs(x - 기준x) > 켜진흔들림px)
+            if (!벗어남) return 켜짐
+        }
         if (지금후보 == null) { 후보 = null; return null }
         val 움직임 = abs(y - 기준y) > 흔들림px || (x != null && abs(x - 기준x) > 흔들림px)
         if (지금후보 != 후보 || 움직임) {
@@ -1511,10 +1519,11 @@ internal class 묶기멈춤(private val 멈춤ms: Long = 부품치수.묶기멈�
 @Composable
 private fun 끌기멈춤살핌(끌: 세로끌기, 넘김: ScrollState, 진동: androidx.compose.ui.hapticfeedback.HapticFeedback) {
     val 흔들림 = with(LocalDensity.current) { 부품치수.묶기흔들림.toPx() }
+    val 켜진흔들림 = with(LocalDensity.current) { 부품치수.묶기켜진흔들림.toPx() }
     val 진동최신 by rememberUpdatedState(진동)
     LaunchedEffect(끌.원 != null) {
         while (끌.원 != null) {
-            if (끌.장전살피기(넘김.value, System.nanoTime() / 1_000_000L, 흔들림)) 진동최신.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+            if (끌.장전살피기(넘김.value, System.nanoTime() / 1_000_000L, 흔들림, 켜진흔들림)) 진동최신.performHapticFeedback(HapticFeedbackType.TextHandleMove)
             delay(16)
         }
     }
