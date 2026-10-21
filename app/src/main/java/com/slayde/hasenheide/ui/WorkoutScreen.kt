@@ -152,6 +152,8 @@ import com.slayde.hasenheide.data.세트추가
 import com.slayde.hasenheide.data.세트휴식
 import com.slayde.hasenheide.data.식구
 import com.slayde.hasenheide.data.앱데이터
+import com.slayde.hasenheide.data.돌림
+import com.slayde.hasenheide.data.돌림차례바꿈
 import com.slayde.hasenheide.data.열쇠
 import com.slayde.hasenheide.data.운동세션
 import com.slayde.hasenheide.data.운동중목표볼륨
@@ -274,6 +276,7 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
     // 칸 줄을 '보는 칸 맨 앞' 으로 다시 맞추라는 신호 (시안 `운자리.당김`)
     var 당김 by remember { mutableIntStateOf(0) }
     var 넣기열림 by remember { mutableStateOf(false) }
+    var 돌림시트 by remember { mutableStateOf<String?>(null) }   // 10-21: 돌아가며 [n/N ⇄] → 오늘 할 차례 고르기 (칸 id)
 
     /** 세션을 바꾸는 행동 — 최신 세션으로 계산하고, 보는 칸도 함께 옮긴다. 손댄 시각을 남긴다(오래 손대지 않으면 저절로 끝낸다) */
     fun 함(f: (운동세션) -> 운결과?) {
@@ -353,7 +356,8 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
                         }
                         .기록층(층A),
                 ) {
-                    운머리아랫줄(상태, S, 본, e, if (그림켬 && 그림숨김) ({ 발자취.적기("그림 칸 다시 보임"); 그림칸기억.숨긴운동 = "" }) else null)
+                    운머리아랫줄(상태, S, 본, e, if (그림켬 && 그림숨김) ({ 발자취.적기("그림 칸 다시 보임"); 그림칸기억.숨긴운동 = "" }) else null,
+                        돌림열기 = { id -> 돌림시트 = id })
                     Box(Modifier.weight(1f).clipToBounds()) {   // 영역 B
                         Column(
                             Modifier.fillMaxSize()
@@ -446,6 +450,18 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
                 함 { s -> s.넣은것빼기(운보기.본) { it.플랜id == pid }?.let { 뺌 = true; 운결과(it.세션, it.본 ?: 운보기.본) } }
                 if (!뺌) 상태.알림.토스트("이미 시작한 종목은 뺄 수 없습니다")
             },
+        )
+        // 10-21 홍겸 님: 돌아가며 — 오늘 할 차례 바꾸기. 한 세트도 안 한 줄은 새 차례로 바뀌고, 한 줄은 오늘만 종목으로 남는다
+        val 창 = 돌림시트
+        if (창 != null) 돌림차례시트(
+            상태, 창, 지금 = S.종목들.firstOrNull { it.돌림id == 창 }?.돌림k,
+            고르기 = { k ->
+                발자취.적기("돌아가며 차례 바꿈 · ${k + 1}")
+                var 바뀜 = false
+                함 { s -> 상태.d.copy(세션 = s).돌림차례바꿈(창, k, 운보기.본)?.let { r -> 바뀜 = true; 운결과(r.세션, r.본 ?: 운보기.본) } }
+                if (!바뀜) 상태.알림.토스트("차례를 바꿀 수 없습니다")
+            },
+            닫기 = { 돌림시트 = null },
         )
     }
 }
@@ -657,7 +673,7 @@ private fun 운머리윗줄(S: 운동세션, d: 앱데이터, 지금: Long, 나�
 
 /** 띠 아랫줄 (10-11) — 지금 종목 이름(잘리지 않는다 · 두 줄까지) · 오른쪽에 [그림] 칩(그림을 감췄을 때). 아래쪽 모서리만 둥글다 */
 @Composable
-private fun 운머리아랫줄(상태: 앱상태, S: 운동세션, 본: Int, e: 세션종목, 그림보기: (() -> Unit)?) {
+private fun 운머리아랫줄(상태: 앱상태, S: 운동세션, 본: Int, e: 세션종목, 그림보기: (() -> Unit)?, 돌림열기: ((String) -> Unit)? = null) {
     val c = Local색.current
     // 10-06 v22 검수: 보고서에서 ‹ 로 돌아왔으면 저장 전 플랜 회차 · 기록으로 (다음 회차 · 측정일로 보이지 않게)
     val d = 상태.d.let { x -> remember(x) { x.저장전 } }
@@ -668,6 +684,13 @@ private fun 운머리아랫줄(상태: 앱상태, S: 운동세션, 본: Int, e: 
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.좁게),
     ) {
         운이름(d, S, 본, e, 상태.오늘, Modifier.weight(1f))
+        // 10-21 홍겸 님: 돌아가며 칸에서 온 종목이면 이름 옆 [n/N ⇄] — 누르면 오늘 할 차례 고르기 (강조 띠 위 = 강조글 · U1-2)
+        val 칸 = e.돌림id?.let { d.돌림(it) }
+        if (칸 != null && 돌림열기 != null) Box(
+            Modifier.clip(CircleShape).border(선굵기.보통, c.강조글, CircleShape).눌림 { 돌림열기(칸.id) }
+                .padding(horizontal = 간격.좁게, vertical = 간격.아주좁게)
+                .semantics { contentDescription = "돌아가며 다른 차례로 바꾸기" },
+        ) { Text("${e.돌림k + 1}/${칸.차례들.size} ⇄", style = 글꼴.보통(크기.버튼, FontWeight.Bold).copy(fontFeatureSettings = "tnum"), color = c.강조글, maxLines = 1, softWrap = false) }
         if (그림보기 != null) Box(
             Modifier.clip(RoundedCornerShape(모서리.작게)).background(c.강조글).눌림(그림보기)
                 .padding(horizontal = 간격.좁게, vertical = 간격.아주좁게),

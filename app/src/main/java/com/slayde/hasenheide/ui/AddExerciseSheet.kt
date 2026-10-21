@@ -110,6 +110,8 @@ fun 종목넣기시트(
     겹: Int = 0,
     /** 10-09 홍겸 님: 루틴 탭은 책장 겹침을 없앴다 → 안의 새 종목 시트도 0 으로 받는다 */
     새종목겹: Int = 겹 + 1,
+    /** 10-21 홍겸 님: 목록 맨 위에 끼우는 것 — 루틴의 '돌아가며 칸' 고르기 (시안 v27 `.넣기돌림`). 스크롤 속 맨 위. 기본 null */
+    맨위: (@Composable () -> Unit)? = null,
 ) {
     var 새로 by remember { mutableStateOf(false) }
     // 시안 v19 C ① 열 때마다 [전체] — 시트를 새로 열면 처음 값 (새 종목 시트를 다녀와도 이 값은 남는다)
@@ -128,7 +130,7 @@ fun 종목넣기시트(
         val 창구멍 = remember { mutableStateOf<Rect?>(null) }
         val 어둠 = remember { androidx.compose.animation.core.Animatable(0f) }   // 0 ~ 1 — 펼침 · 접힘과 같이 움직이는 어둠 농도
         시트(제목, 닫기, 위끝고정 = true, 닫기글 = "", 위틈 = 7.65.dp, 겹 = 겹, 가림구멍 = 창구멍, 가림농도 = { 어둠.value }) {
-            넣기속(상태, 칸고름, { 칸고름 = it }, 개수, 넣기, 빼기, 새종목만들기, { 새로 = true }, 플랜길, 창구멍, 어둠)
+            넣기속(상태, 칸고름, { 칸고름 = it }, 개수, 넣기, 빼기, 새종목만들기, { 새로 = true }, 플랜길, 창구멍, 어둠, 맨위)
         }
     }
 }
@@ -157,6 +159,7 @@ private fun 넣기속(
     플랜길: 플랜손?,
     창구멍: androidx.compose.runtime.MutableState<Rect?>,
     어둠: androidx.compose.animation.core.Animatable<Float, androidx.compose.animation.core.AnimationVector1D>,
+    맨위: (@Composable () -> Unit)? = null,
 ) {
     val d = 상태.d
     val 밀도 = LocalDensity.current
@@ -320,6 +323,7 @@ private fun 넣기속(
                         ) {
                             Column(Modifier.fillMaxWidth()) {
                                 Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(간격.좁게)) {
+                                    if (맨위 != null && 펼친 == null) 맨위()   // 10-21: 돌아가며 칸 (종목을 펼쳐 고치는 동안은 숨긴다 — 어두운 구멍 자리가 안 밀리게)
                                     종목묶음들(
                                         상태, 판, 끌판, 펼친,
                                         { k -> if (접는키 != null) Unit else if (펼친 == k) 접기() else { 마지막 = null; 마지막틀[0] = null; 펼친 = k } },

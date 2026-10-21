@@ -137,6 +137,22 @@ import com.slayde.hasenheide.data.다음회
 import com.slayde.hasenheide.data.처방세트
 import com.slayde.hasenheide.data.회처방
 import com.slayde.hasenheide.data.플랜
+import com.slayde.hasenheide.data.실제루틴
+import com.slayde.hasenheide.data.돌림
+import com.slayde.hasenheide.data.돌림넣기
+import com.slayde.hasenheide.data.돌림만들기
+import com.slayde.hasenheide.data.돌림빼기
+import com.slayde.hasenheide.data.돌림없애기
+import com.slayde.hasenheide.data.돌림자리
+import com.slayde.hasenheide.data.돌림종목더하기
+import com.slayde.hasenheide.data.돌림종목빼기
+import com.slayde.hasenheide.data.돌림줄바꿈
+import com.slayde.hasenheide.data.돌림차례빼기
+import com.slayde.hasenheide.data.돌림쓰는루틴
+import com.slayde.hasenheide.data.돌림칸
+import com.slayde.hasenheide.data.지금차례
+import com.slayde.hasenheide.data.차례글
+import com.slayde.hasenheide.data.차례칩글
 import com.slayde.hasenheide.data.플랜줄채움
 import com.slayde.hasenheide.data.플랜표
 import com.slayde.hasenheide.data.휴식
@@ -189,6 +205,9 @@ private object 루틴기억 {
     val 펼침 = mutableStateMapOf<String, Set<Int>>()
     /** 방금 [+ 루틴] 으로 만든 루틴 (id · 처음 이름 · 휴식일 빼고) — [뒤로] 때 아무것도 안 했으면 치운다 (10-07) */
     var 새것: Pair<String, String>? = null
+
+    /** 10-21: 돌아가며 칸 id → 상자에서 보고 있는 차례 번호 (없으면 다음 차례) */
+    val 돌림본 = mutableStateMapOf<String, Int>()
 
     /**
      * 10-14 홍겸 님: 종목 편집의 [+ 세트] 를 눌러 단추가 아래 떠 있는 [자동] · [종목 추가] 에 가려질 자리로 내려갔으면 한 번 부드럽게 올린다
@@ -341,7 +360,7 @@ private fun 루틴카드(
     on끌기시작: (Offset) -> Unit, on끌기끝: () -> Unit,
 ) {
     val c = Local색.current
-    val 실 = 상태.d.플랜줄채움(r)
+    val 실 = 상태.d.실제루틴(r)
     val 모양 = RoundedCornerShape(모서리.보통)
     val 시작 by rememberUpdatedState(on끌기시작)
     val 끝 by rememberUpdatedState(on끌기끝)
@@ -456,6 +475,8 @@ private fun 루틴상세화면(상태: 앱상태, r: 루틴, 닫기: () -> Unit)
     val 진동 = LocalHapticFeedback.current
     val 초점 = LocalFocusManager.current
     var 넣기열림 by remember(rid) { mutableStateOf(false) }
+    // 10-21: 돌아가며 칸에 종목 넣기 시트 — (칸 id, 차례 번호 · -1 = 새 차례)
+    var 돌림창 by remember(rid) { mutableStateOf<Pair<String, Int>?>(null) }
     val 펼침 = 루틴기억.펼침[rid] ?: emptySet()
     fun 펼침바꿈(f: (Set<Int>) -> Set<Int>) { 루틴기억.펼침[rid] = f(루틴기억.펼침[rid] ?: emptySet()) }
     // 손댐 = 쳐 넣던 값은 넣는다(초점을 놓아 칸이 값을 넣게)
@@ -465,6 +486,16 @@ private fun 루틴상세화면(상태: 앱상태, r: 루틴, 닫기: () -> Unit)
 
     fun 줄고침(j: Int, f: (루틴종목) -> 루틴종목) = 상태.바꿈 { dd ->
         dd.루틴바꿈(rid) { x -> if (j in x.종목.indices) x.copy(종목 = x.종목.mapIndexed { k, y -> if (k == j) f(y) else y }) else x }
+    }
+    // 10-21 홍겸 님: [+ 돌아가며] — 이 종목을 첫 차례로 하는 칸을 만들고 그 자리에 두고, 바로 '새 차례' 고르기
+    fun 돌아가며만들기(j: Int) {
+        손댐()
+        val 전 = 상태.d
+        val 새 = 전.돌림만들기(rid, j) ?: return
+        val 이름 = 전.루틴(rid)?.종목?.getOrNull(j)?.이름 ?: ""
+        발자취.적기("돌아가며 칸 만들기 · $이름")
+        상태.바꿈 { 새 }
+        새.돌림들.lastOrNull()?.let { 돌림창 = it.id to -1 }
     }
     // 끌어 놓기 길 — 슈퍼세트 묶음은 종목옮기기가 통째로 옮긴다. 아무것도 안 바뀌면(묶음 안 이웃 등) 쓰지 않는다
     fun 옮기기(원: Int, 대상: Int, 뒤에: Boolean) {
@@ -595,7 +626,11 @@ private fun 루틴상세화면(상태: 앱상태, r: 루틴, 닫기: () -> Unit)
                                         })
                                     return
                                 }
-                                if (e.플랜id != null) 플랜상자(상태, e, p, j + 1, 자리줄, 표시, 끌기길, 손잡이,
+                                if (e.돌림자리) 돌림상자(상태, e, j + 1, j in 펼침, 자리줄, 표시, 끌기길, 손잡이,
+                                    on펼침 = { 손댐(); 펼침바꿈 { s -> if (j in s) s - j else s + j } },
+                                    on빼기 = { 종목뺌(j) },
+                                    on넣기 = { id, k -> 돌림창 = id to k })
+                                else if (e.플랜id != null) 플랜상자(상태, e, p, j + 1, 자리줄, 표시, 끌기길, 손잡이,
                                     on고치기 = { 손댐(); if (p != null) { 발자취.적기("루틴에서 플랜 고치기 · ${p.이름}"); 플랜고침.value = p.id } },
                                     on빼기 = { 종목뺌(j) })
                                 else 종목상자(상태, e, j + 1, j in 펼침, 자리줄, 표시, 끌기길, 손잡이,
@@ -603,6 +638,7 @@ private fun 루틴상세화면(상태: 앱상태, r: 루틴, 닫기: () -> Unit)
                                             val 식구 = r.종목.indices.filter { r.종목[it].슈퍼 == g }
                                             "슈퍼 ${식구.indexOf(j) + 1}/${식구.size}"
                                         },
+                                        on돌아가며 = if (e.슈퍼 == null) ({ 돌아가며만들기(j) }) else null,   // 10-21
                                         on풀기 = {
                                             손댐()
                                             val g = 상태.d.루틴(rid)?.종목?.getOrNull(j)?.슈퍼
@@ -661,6 +697,7 @@ private fun 루틴상세화면(상태: 앱상태, r: 루틴, 닫기: () -> Unit)
         val 이름 = r.이름
         종목넣기시트(
             상태, "${이름}에 넣기", 겹 = 0, 새종목겹 = 0,   // 10-09 홍겸 님: 루틴 탭 전체 책장 겹침 삭제
+            맨위 = if (상태.d.돌림들.isNotEmpty()) ({ 돌림넣기목록(상태, rid) }) else null,   // 10-21: 만들어 둔 돌아가며 칸
             개수 = { 키 -> 상태.d.루틴(rid)?.종목?.count { it.플랜id == null && it.열쇠 == 키 } ?: 0 },
             넣기 = { 키 -> 상태.바꿈 { dd -> dd.루틴바꿈(rid) { x -> x.copy(종목 = x.종목 + dd.루틴줄(키)) } } },
             빼기 = { 키 ->
@@ -678,6 +715,33 @@ private fun 루틴상세화면(상태: 앱상태, r: 루틴, 닫기: () -> Unit)
                 val j = 상태.d.루틴(rid)?.종목?.indexOfLast { it.플랜id == pid } ?: -1
                 if (j >= 0) { 상태.바꿈 { dd -> dd.루틴바꿈(rid) { x -> 루줄빼기(x, j) } }; 펼침바꿈 { 펼침뺌(it, j) } }
             },
+        )
+    }
+
+    // 10-21 홍겸 님: 돌아가며 칸에 종목 넣기 — 루틴과 같은 시트 (플랜 칸은 없다). 새 차례(-1)는 처음 넣을 때 만들고, 이어 넣으면 그 차례에
+    val 창 = 돌림창
+    if (창 != null) {
+        val 칸 = 상태.d.돌림(창.first)
+        if (칸 == null) 돌림창 = null
+        else 종목넣기시트(
+            상태, if (창.second < 0) "돌아가며 · 새 차례" else "돌아가며 · ${창.second + 1}차례에 더하기", 겹 = 0, 새종목겹 = 0,
+            개수 = { 키 -> 상태.d.돌림(창.first)?.차례들?.getOrNull(돌림창?.second ?: -1)?.count { it.열쇠 == 키 } ?: 0 },
+            넣기 = { 키 ->
+                val 지금 = 돌림창
+                if (지금 != null) {
+                    val 번 = if (지금.second >= 0) 지금.second else (상태.d.돌림(지금.first)?.차례들?.size ?: 0)
+                    상태.바꿈 { dd -> dd.돌림종목더하기(지금.first, 지금.second, dd.루틴줄(키)) }
+                    발자취.적기("돌아가며에 넣기 $키")
+                    루틴기억.돌림본[지금.first] = 번
+                    돌림창 = 지금.first to 번
+                }
+            },
+            빼기 = { 키 ->
+                val 지금 = 돌림창
+                val j = 지금?.let { 상태.d.돌림(it.first)?.차례들?.getOrNull(it.second)?.indexOfLast { x -> x.열쇠 == 키 } } ?: -1
+                if (지금 != null && j >= 0) 상태.바꿈 { dd -> dd.돌림종목빼기(지금.first, 지금.second, j) }
+            },
+            닫기 = { 돌림창 = null },
         )
     }
 }
@@ -1038,6 +1102,8 @@ private fun 종목상자(
     묶음글: String?, on풀기: () -> Unit,
     on펼침: () -> Unit, on빼기: () -> Unit,
     on고침: ((루틴종목) -> 루틴종목) -> Unit, on세트지움: (Int) -> Unit,
+    /** 10-21: 있으면 [+ 세트] 옆에 [+ 돌아가며] — 이 종목을 첫 차례로 하는 돌아가며 칸을 만든다 (슈퍼세트 · 플랜 줄 · 이미 칸 안의 종목은 null) */
+    on돌아가며: (() -> Unit)? = null,
 ) {
     val c = Local색.current
     val 모양 = RoundedCornerShape(모서리.보통)
@@ -1156,12 +1222,17 @@ private fun 종목상자(
                 val 범위 = rememberCoroutineScope()
                 // 10-11 홍겸 님: 쳐 넣던 칸이 있으면 먼저 초점을 놓아(깜빡임 사라짐 · 값 저장) 그 값으로 세트를 더한다
                 val 단추아래 = remember { floatArrayOf(0f) }
+                val 세트누름: () -> Unit = {
+                    판.톡(); 발자취.적기("세트 더하기 · ${e.이름}")
+                    초점.clearFocus()
+                    범위.launch { withFrameNanos { }; withFrameNanos { }; on고침 { it.세트더하기() }; withFrameNanos { }; withFrameNanos { }; 루틴기억.보이게(단추아래[0]) }
+                }
                 Box(Modifier.fillMaxWidth().onGloballyPositioned { 단추아래[0] = it.boundsInRoot().bottom }, contentAlignment = Alignment.Center) {
-                    버튼("세트", {
-                        판.톡(); 발자취.적기("세트 더하기 · ${e.이름}")
-                        초점.clearFocus()
-                        범위.launch { withFrameNanos { }; withFrameNanos { }; on고침 { it.세트더하기() }; withFrameNanos { }; withFrameNanos { }; 루틴기억.보이게(단추아래[0]) }
-                    }, Modifier.fillMaxWidth(0.6f).루톡(판), 낮게 = true, 그림 = 아이콘.더하기)
+                    if (on돌아가며 == null) 버튼("세트", 세트누름, Modifier.fillMaxWidth(0.6f).루톡(판), 낮게 = true, 그림 = 아이콘.더하기)
+                    else Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {   // 10-21: [+ 세트][+ 돌아가며]
+                        버튼("세트", 세트누름, Modifier.weight(1f).루톡(판), 낮게 = true, 그림 = 아이콘.더하기)
+                        버튼("돌아가며", { 초점.clearFocus(); on돌아가며() }, Modifier.weight(1f), 낮게 = true, 그림 = 아이콘.더하기, 줄임 = true)
+                    }
                 }
                 if (묶음글 != null) 버튼("슈퍼세트 풀기", on풀기, Modifier.fillMaxWidth(), 낮게 = true)
             }
@@ -1661,4 +1732,157 @@ internal fun 플랜줄(d: 앱데이터, p: 플랜): 루틴종목 {   // 10-05 �
         세트값 = 세트값,
         플랜id = p.id,
     )
+}
+
+// ─────────────── 돌아가며 칸 (10-21 홍겸 님 · 시안 v26 · v27) ───────────────
+
+/**
+ * 돌아가며 칸 상자 — 루틴 줄 하나가 "이 칸을 쓴다"는 자리표시다. 칸은 앱 전체에 하나라 다른 루틴에서 고쳐도 같이 바뀐다.
+ * 접힘 = [번호][다음 차례 종목들][돌아가며 n/N] … [∨][손잡이]. 펼침 = [돌림속]. 머리 줄 누름 = 펼치기 · 접기, 꾹 = 끌기 (보통 종목 상자와 같다)
+ */
+@Composable
+private fun 돌림상자(
+    상태: 앱상태, e: 루틴종목, 번호: Int, 펼침: Boolean, modifier: Modifier, 표시: Int, 끌기길: Modifier, 손잡이: @Composable () -> Unit,
+    on펼침: () -> Unit, on빼기: () -> Unit, on넣기: (String, Int) -> Unit,
+) {
+    val c = Local색.current
+    val 모양 = RoundedCornerShape(모서리.보통)
+    val g = 상태.d.돌림(e.돌림id ?: "")
+    val 오 = g?.지금차례() ?: 0
+    val 글 = g?.차례들?.getOrNull(오)?.차례글() ?: "없어진 돌아가며 칸"
+    Column(
+        modifier.fillMaxWidth().clip(모양).background(c.면).border(선굵기.보통, c.속선, 모양).놓을선(표시, c.강조),
+    ) {
+        상자머리(시작 = 7.dp, 끝 = 7.dp) {
+            Row(
+                Modifier.weight(1f).heightIn(min = 38.dp).then(끌기길)
+                    .semantics(mergeDescendants = true) { contentDescription = "돌아가며 $글 ${if (펼침) "접기" else "펼치기"}" }
+                    .눌림(on펼침),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(7.dp),
+            ) {
+                상자번호(번호, 좁게 = true)
+                Text(글, Modifier.weight(1f, fill = false), style = 글꼴.보통(크기.본문, FontWeight.Medium), color = c.글, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                if (g != null) 알약("돌아가며 ${오 + 1}/${g.차례들.size}", c.강조)
+            }
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.5.dp)) {
+                val 각 by androidx.compose.animation.core.animateFloatAsState(if (펼침) 180f else 0f, tween(움직임.펼침), label = "돌림펼침단추")
+                Box(Modifier.width(18.dp).height(높이.낮게).눌림(on펼침), contentAlignment = Alignment.Center) {
+                    Icon(아이콘.아래, if (펼침) "접기" else "펼치기", Modifier.size(18.dp).graphicsLayer { rotationZ = 각 }, tint = c.옅음)
+                }
+                if (펼침 || g == null) Box(Modifier.width(18.dp).height(높이.낮게).눌림(on빼기), contentAlignment = Alignment.Center) {
+                    Icon(아이콘.지우기, "돌아가며 빼기", Modifier.size(20.dp), tint = c.글)   // 이 루틴에서만 뺀다 — 칸은 다른 루틴이 쓸 수 있어 남는다
+                } else Box(Modifier.width(18.dp).height(높이.낮게), contentAlignment = Alignment.Center) { 손잡이() }
+            }
+        }
+        if (펼침 && g != null) 돌림속(상태, g, on넣기)
+    }
+}
+
+/**
+ * 돌아가며 칸 펼침 (시안 v27) — 차례 칩줄(번호 + 첫 종목 · 다음 차례엔 "다음") + 보고 있는 차례의 종목 상자들 + 들어간 루틴 + [+ 종목][+ 차례][차례 빼기].
+ * 종목 상자는 루틴의 보통 종목 상자 그대로라 세트 수 · 무게 · 횟수 · 휴식을 똑같이 고친다 (고친 값은 칸에 저장)
+ */
+@Composable
+private fun 돌림속(상태: 앱상태, g: 돌림칸, on넣기: (String, Int) -> Unit) {
+    val c = Local색.current
+    val 초점 = LocalFocusManager.current
+    val n = g.차례들.size
+    val 오 = g.지금차례()
+    val 본 = (루틴기억.돌림본[g.id] ?: 오).coerceIn(0, max(0, n - 1))
+    var 펼친줄 by remember(g.id, 본) { mutableStateOf(emptySet<Int>()) }
+    val 차례 = g.차례들.getOrNull(본) ?: emptyList()
+    val 든곳 = 상태.d.돌림쓰는루틴(g.id).map { it.이름 }
+    fun 칩글(k: Int) = "${k + 1} ${g.차례들[k].차례칩글()}" + if (k == 오) " · 다음" else ""
+    Column(
+        Modifier.fillMaxWidth().padding(start = 간격.아주좁게, end = 간격.아주좁게, top = 간격.아주좁게, bottom = 간격.좁게),
+        verticalArrangement = Arrangement.spacedBy(간격.좁게),
+    ) {
+        칩줄(g.차례들.indices.map { 칩글(it) }, 칩글(본), { t ->
+            g.차례들.indices.firstOrNull { 칩글(it) == t }?.let { 초점.clearFocus(); 루틴기억.돌림본[g.id] = it }
+        })
+        if (차례.isEmpty()) 글("이 차례에 종목을 넣어 주세요", 크기값 = 크기.작게, 색 = c.옅음)
+        차례.forEachIndexed { j, x ->
+            key(j, x.열쇠) {
+                종목상자(
+                    상태, x, j + 1, j in 펼친줄, Modifier, -1, Modifier, {},
+                    묶음글 = null, on풀기 = {},
+                    on펼침 = { 초점.clearFocus(); 펼친줄 = if (j in 펼친줄) 펼친줄 - j else 펼친줄 + j },
+                    on빼기 = {
+                        초점.clearFocus()
+                        발자취.적기("돌아가며에서 빼기 · ${x.이름}")
+                        상태.지우고알림("${조사(x.이름, "을", "를")} 뺐습니다") { dd -> dd.돌림종목빼기(g.id, 본, j) }
+                        펼친줄 = 펼침뺌(펼친줄, j)
+                    },
+                    on고침 = { f -> 상태.바꿈 { dd -> dd.돌림줄바꿈(g.id, 본, j, f) } },
+                    on세트지움 = { k ->
+                        초점.clearFocus()
+                        val 그줄 = 상태.d.돌림(g.id)?.차례들?.getOrNull(본)?.getOrNull(j)
+                        if (그줄 != null && 그줄.세트 > 1 && k in 0 until 그줄.세트) {
+                            발자취.적기("세트 지움 · ${그줄.이름} ${k + 1}세트")
+                            상태.지우고알림("${그줄.이름} ${k + 1}세트를 지웠습니다") { dd -> dd.돌림줄바꿈(g.id, 본, j) { it.세트빼기(k) } }
+                        }
+                    },
+                )
+            }
+        }
+        글(
+            "${든곳.joinToString(" · ")}에 들어 있음 — 어느 루틴에서 하든 다음 차례로 넘어갑니다",
+            크기값 = 크기.작게, 색 = c.옅음, 줄 = 2,
+        )
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
+            버튼("종목", { 초점.clearFocus(); on넣기(g.id, 본) }, Modifier.weight(1f), 낮게 = true, 그림 = 아이콘.더하기)
+            버튼("차례", { 초점.clearFocus(); on넣기(g.id, -1) }, Modifier.weight(1f), 낮게 = true, 그림 = 아이콘.더하기)
+            버튼("이 차례 빼기", {
+                초점.clearFocus()
+                발자취.적기("돌아가며 차례 빼기")
+                루틴기억.돌림본.remove(g.id)
+                상태.지우고알림(if (n <= 1) "돌아가며 칸을 없앴습니다" else "${본 + 1}차례를 뺐습니다") { dd -> dd.돌림차례빼기(g.id, 본) }
+            }, Modifier.weight(1.4f), 낮게 = true, 글색 = c.나쁨, 줄임 = true)
+        }
+    }
+}
+
+/**
+ * 종목 넣기 시트 맨 위 — 만들어 둔 돌아가며 칸 (시안 v27 `.넣기돌림`). 누름 = 이 루틴에 넣기 / 들어 있으면 빼기.
+ * 어느 루틴에도 안 쓰는 칸은 휴지통으로 없앤다 (되돌리기 띠)
+ */
+@Composable
+private fun 돌림넣기목록(상태: 앱상태, rid: String) {
+    val c = Local색.current
+    val d = 상태.d
+    val 모양 = RoundedCornerShape(모서리.작게)
+    Column(Modifier.fillMaxWidth().padding(bottom = 간격.보통), verticalArrangement = Arrangement.spacedBy(간격.좁게)) {
+        이름표("돌아가며 칸")
+        d.돌림들.forEach { g ->
+            key(g.id) {
+                val 안 = d.루틴(rid)?.종목?.any { it.돌림자리 && it.돌림id == g.id } == true
+                val 놀고 = d.돌림쓰는루틴(g.id).isEmpty()
+                Row(
+                    Modifier.fillMaxWidth().heightIn(min = 높이.높게).clip(모양)
+                        .background(if (안) c.강조옅음 else c.면)
+                        .border(선굵기.보통, if (안) c.강조 else c.속선, 모양)
+                        .눌림 {
+                            if (안) { 발자취.적기("돌아가며 칸 빼기 · ${g.id}"); 상태.바꿈 { it.돌림빼기(rid, g.id) } }
+                            else { 발자취.적기("돌아가며 칸 넣기 · ${g.id}"); 상태.바꿈 { it.돌림넣기(rid, g.id) } }
+                        }
+                        .padding(start = 간격.보통, end = 간격.좁게),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(간격.좁게),
+                ) {
+                    알약("${g.차례들.size}차례", c.강조)
+                    Text(
+                        g.차례들.joinToString(" / ") { it.차례칩글() }, Modifier.weight(1f),
+                        style = 글꼴.보통(크기.본문), color = c.글, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    )
+                    if (안) Icon(아이콘.체크, "들어 있음", Modifier.size(18.dp), tint = c.강조)
+                    else if (놀고) Box(
+                        Modifier.size(높이.낮게).눌림 { 상태.지우고알림("돌아가며 칸을 없앴습니다") { it.돌림없애기(g.id) } },
+                        contentAlignment = Alignment.Center,
+                    ) { Icon(아이콘.지우기, "돌아가며 칸 없애기", Modifier.size(18.dp), tint = c.옅음) }
+                    else Spacer(Modifier.size(높이.낮게))
+                }
+            }
+        }
+    }
 }
