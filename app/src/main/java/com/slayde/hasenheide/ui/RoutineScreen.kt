@@ -599,7 +599,21 @@ private fun 루틴상세화면(상태: 앱상태, r: 루틴, 닫기: () -> Unit)
                                 if (식구.size > 1 && e.플랜id == null) {
                                     // 10-11 홍겸 님: 슈퍼세트는 한 상자 — 맨 앞 종목 자리에서만 그린다 (번호도 맨 앞 종목 것)
                                     if (j != 식구.first()) { 끌.자리.remove(j); return }   // 10-12: 안 그려지는 줄의 옛 자리가 남아 엉뚱한 칸으로 튀던 것
-                                    슈퍼상자(상태, 식구, 식구.map { r.종목[it] }, j + 1, j in 펼침, 자리줄, 표시, 끌기길, 손잡이,
+                                    // 10-21 홍겸 님: 돌아가며 칸도 슈퍼세트에 묶인다 — 묶음 안에서는 그 칸의 '다음 차례' 종목들이 보통 종목처럼 보이고, 고친 값은 칸에 저장된다
+                                    val 칸들 = 식구.flatMap { i ->
+                                        val x = r.종목[i]
+                                        if (!x.돌림자리) listOf(슈퍼칸(x) { f -> 줄고침(i, f) })
+                                        else {
+                                            val gg = d.돌림(x.돌림id ?: "")
+                                            val kk = gg?.지금차례() ?: 0
+                                            (gg?.차례들?.getOrNull(kk) ?: emptyList()).mapIndexed { t, y ->
+                                                슈퍼칸(y) { f -> 상태.바꿈 { dd -> dd.돌림줄바꿈(gg!!.id, kk, t, f) } }
+                                            }
+                                        }
+                                    }
+                                    val 묶인칸 = 식구.mapNotNull { i -> r.종목[i].takeIf { it.돌림자리 }?.돌림id?.let { d.돌림(it) } }
+                                    슈퍼상자(상태, 식구, 칸들.map { it.e }, j + 1, j in 펼침, 자리줄, 표시, 끌기길, 손잡이,
+                                        돌림들 = 묶인칸, on돌림넣기 = { id, k -> 돌림창 = id to k },
                                         on풀기 = {
                                             손댐()
                                             val g = e.슈퍼
@@ -611,18 +625,19 @@ private fun 루틴상세화면(상태: 앱상태, r: 루틴, 닫기: () -> Unit)
                                         },
                                         on펼침 = { 손댐(); 펼침바꿈 { s -> if (j in s) s - j else s + j } },
                                         on빼기 = { 식구.sortedDescending().forEach { 종목뺌(it) } },
-                                        on고침 = { q, f -> 줄고침(식구[q], f) },
-                                        on세트더하기 = { 손댐(); 식구.forEach { q -> 줄고침(q) { it.세트더하기() } }; 발자취.적기("슈퍼세트 세트 더함") },
+                                        on고침 = { q, f -> 칸들[q].고침(f) },
+                                        on세트더하기 = { 손댐(); 칸들.forEach { 칸 -> 칸.고침 { it.세트더하기() } }; 발자취.적기("슈퍼세트 세트 더함") },
                                         on세트지움 = { k ->
                                             손댐()
-                                            val 옛 = 식구.mapNotNull { q -> 상태.d.루틴(rid)?.종목?.getOrNull(q)?.let { z -> if (z.세트 > 1 && k in 0 until z.세트) Triple(q, z.목표(k), z.휴식(k)) else null } }
+                                            val 옛 = 칸들.mapIndexedNotNull { q, 칸 -> 칸.e.let { z -> if (z.세트 > 1 && k in 0 until z.세트) Triple(q, z.목표(k), z.휴식(k)) else null } }
                                             if (옛.isNotEmpty()) {
-                                                옛.forEach { (q, _, _) -> 줄고침(q) { it.세트빼기(k) } }
+                                                옛.forEach { (q, _, _) -> 칸들[q].고침 { it.세트빼기(k) } }
                                                 발자취.적기("슈퍼세트 세트 지움 · ${k + 1}세트")
                                                 상태.알림.되돌림("루세트지움", { n -> if (n > 1) "세트 ${n}개를 지웠습니다" else "${k + 1}세트를 지웠습니다" }) {
-                                                    상태.바꿈 { dd -> dd.루틴바꿈(rid) { x ->
-                                                        x.copy(종목 = x.종목.mapIndexed { q, y -> 옛.firstOrNull { it.first == q }?.let { (_, 뺀, 뺀휴) -> 루세트끼움(y, k, 뺀, 뺀휴) } ?: y })
-                                                    } }
+                                                    옛.forEach { (q, 뺀, 뺀휴) ->
+                                                        val 이름 = 칸들[q].e.이름
+                                                        칸들[q].고침 { y -> if (y.이름 == 이름) 루세트끼움(y, k, 뺀, 뺀휴) else y }
+                                                    }
                                                 }
                                             }
                                         })
@@ -949,16 +964,21 @@ private fun 빼기단추(이름: String, on누름: () -> Unit) {
  * 펼치면 묶인 종목 모두 한꺼번에 — 세트마다 종목 줄이 위아래로 붙고 세트 번호는 그 가운데. 휴식은 마지막 종목 줄에만(앞 종목은 흐리고 못 누름).
  * [+ 세트] = 묶인 종목마다 하나씩 · 세트 휴지통 = 그 세트 번호를 묶인 종목 모두에서 뺀다. 집계는 종목별 세트 수 그대로
  */
+/** 슈퍼세트 상자 안의 종목 한 칸 — 보이는 줄 + 그 줄을 고치는 길 (보통 줄은 루틴, 돌아가며 칸에서 온 줄은 칸에 저장) */
+private class 슈퍼칸(val e: 루틴종목, val 고침: ((루틴종목) -> 루틴종목) -> Unit)
+
 @Composable
 private fun 슈퍼상자(
     상태: 앱상태, 식구: List<Int>, es: List<루틴종목>, 번호: Int, 펼침: Boolean, modifier: Modifier, 표시: Int, 끌기길: Modifier, 손잡이: @Composable () -> Unit,
     on풀기: () -> Unit, on펼침: () -> Unit, on빼기: () -> Unit,
     on고침: (Int, (루틴종목) -> 루틴종목) -> Unit, on세트더하기: () -> Unit, on세트지움: (Int) -> Unit,
+    /** 10-21: 이 묶음에 들어온 돌아가며 칸들 — 머리에 [돌아가며 n/N] 을 달고, 펼치면 차례 보기 · 고치기 */
+    돌림들: List<돌림칸> = emptyList(), on돌림넣기: (String, Int) -> Unit = { _, _ -> },
 ) {
     val c = Local색.current
     val 모양 = RoundedCornerShape(모서리.보통)
     val 합 = es.sumOf { it.세트 }
-    val 최대 = es.maxOf { it.세트 }
+    val 최대 = es.maxOfOrNull { it.세트 } ?: 0
     Column(
         modifier.fillMaxWidth().clip(모양).background(c.슈퍼옅음).border(선굵기.굵게, c.슈퍼, 모양).놓을선(표시, c.슈퍼),
     ) {
@@ -977,7 +997,10 @@ private fun 슈퍼상자(
                 상자번호(번호, 좁게 = true)
                 Column(Modifier.weight(1f, fill = false)) {
                     es.forEach { e -> 종목이름딱지(상태.d, e.종id, e.이름, Modifier) }
-                    Text("${합}세트", Modifier.padding(top = 2.dp), style = 글꼴.보통((크기.조금작게.value * 0.5f + 1f).sp).copy(fontFeatureSettings = "tnum"), color = c.흐림, maxLines = 1, softWrap = false)
+                    Row(Modifier.padding(top = 2.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
+                        Text("${합}세트", style = 글꼴.보통((크기.조금작게.value * 0.5f + 1f).sp).copy(fontFeatureSettings = "tnum"), color = c.흐림, maxLines = 1, softWrap = false)
+                        돌림들.forEach { g -> 알약("돌아가며 ${g.지금차례() + 1}/${g.차례들.size}", c.강조) }
+                    }
                 }
             }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.5.dp)) {
@@ -1070,6 +1093,14 @@ private fun 슈퍼상자(
                         초점.clearFocus()
                         범위.launch { withFrameNanos { }; withFrameNanos { }; on세트더하기(); withFrameNanos { }; withFrameNanos { }; 루틴기억.보이게(단추아래[0]) }
                     }, Modifier.fillMaxWidth(0.6f).루톡(판), 낮게 = true, 그림 = 아이콘.더하기)
+                }
+                if (돌림들.isNotEmpty()) {
+                    var 연 by remember { mutableStateOf(emptySet<String>()) }
+                    돌림들.forEach { g ->
+                        val 열림 = g.id in 연
+                        버튼(if (열림) "돌아가며 닫기" else "돌아가며 차례 보기 · 고치기", { 연 = if (열림) 연 - g.id else 연 + g.id }, Modifier.fillMaxWidth(), 낮게 = true)
+                        if (열림) 돌림속(상태, g, on돌림넣기)
+                    }
                 }
                 버튼("슈퍼세트 풀기", on풀기, Modifier.fillMaxWidth(), 낮게 = true)
             }

@@ -1108,7 +1108,7 @@ fun 앱데이터.루틴합치기(위id: String, 아래id: String, 새id: String)
     val 합 = 옮김(a, "a") + 옮김(b, "b")
     val 본칸 = mutableSetOf<String>()
     val 줄 = 합.filter { e -> !e.돌림자리 || e.돌림id?.let { 본칸.add(it) } != false }   // 같은 돌아가며 칸은 한 번만
-    val 새 = 루틴(새id, "${a.이름} + ${b.이름}", 종목 = 줄, 자동생성 = false)
+    val 새 = 루틴(새id, "${a.이름} + ${b.이름}", 종목 = 줄, 자동생성 = false).묶음정리()   // 같은 칸을 버려 짝 없이 남은 묶음은 푼다
     return copy(루틴들 = 루틴들 + 새)
 }
 
@@ -1145,7 +1145,7 @@ fun 루틴.종목옮기기(from: Int, to: Int, 뒤에: Boolean): 루틴 {
 fun 루틴.묶을수있다(from: Int, to: Int): Boolean {
     val a = 종목.getOrNull(from) ?: return false
     val b = 종목.getOrNull(to) ?: return false
-    if (from == to || a.플랜id != null || b.플랜id != null || a.돌림자리 || b.돌림자리) return false
+    if (from == to || a.플랜id != null || b.플랜id != null) return false   // 10-21: 돌아가며 자리표시 줄도 묶을 수 있다
     return !(a.슈퍼 != null && a.슈퍼 == b.슈퍼)
 }
 

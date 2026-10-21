@@ -32,8 +32,11 @@ fun 앱데이터.돌림펼침(r: 루틴): 루틴 {
         val c = 돌림(e.돌림id ?: "") ?: return@flatMap emptyList()
         if (c.차례들.isEmpty()) return@flatMap emptyList()
         val k = c.지금차례()
-        c.차례들[k].map { it.copy(돌림id = c.id, 돌림k = k) }
-    })
+        // 10-21 홍겸 님: 자리표시 줄이 슈퍼세트에 묶여 있으면 펼친 종목들도 같은 묶음 — a+c 다음날은 b+c. 차례 안쪽의 묶음 이름은 쓰지 않는다(이름 겹침 방지)
+        c.차례들[k].map { it.copy(돌림id = c.id, 돌림k = k, 슈퍼 = e.슈퍼) }
+    }).let { 펼침 ->
+        if (r.종목.none { it.돌림자리 && it.슈퍼 != null }) 펼침 else 펼침.묶음정리()   // 차례가 비어 혼자 남은 묶음은 푼다
+    }
 }
 
 /** 화면에 보이거나 운동을 시작할 루틴 — 돌아가며 칸을 펼치고 플랜 줄을 지금 회차로 채운다 */
@@ -97,7 +100,7 @@ internal fun 앱데이터.돌림도(f: (루틴) -> 루틴): 앱데이터 {
         c.copy(차례들 = 남김.map { 고침[it] }, 다음 = if (새다음 in 0 until 남김.size) 새다음 else 0)   // 끝 차례가 빠져 넘치면 한 바퀴 돌아 처음
     }
     if (지움.isEmpty()) return copy(돌림들 = 새들)
-    fun 루틴.자리뺌() = copy(종목 = 종목.filterNot { it.돌림자리 && it.돌림id in 지움 })
+    fun 루틴.자리뺌() = copy(종목 = 종목.filterNot { it.돌림자리 && it.돌림id in 지움 }).묶음정리()   // 묶음 짝이 빠져 혼자 남은 슈퍼세트는 푼다
     return copy(돌림들 = 새들, 루틴들 = 루틴들.map { it.자리뺌() }, 그날운동 = 그날운동.map { it.자리뺌() })
 }
 
@@ -118,17 +121,24 @@ fun 앱데이터.돌림차례바꿈(id: String, k: Int, 본: Int?): 운동자리
     if (옛.isEmpty()) return null
     if (옛.all { S.종목들[it].돌림k == k }) return 운동자리(S, 본, S.종목들.indices.toList())
     val 자리 = 옛.first()
-    val 새줄 = c.차례들[k].map { it.copy(돌림id = id, 돌림k = k).세션줄() }
+    val 묶음 = S.종목들[자리].슈퍼   // 자리표시 줄이 슈퍼세트에 묶여 있었으면 새 차례도 같은 묶음
+    val 새줄 = c.차례들[k].map { it.copy(돌림id = id, 돌림k = k, 슈퍼 = 묶음).세션줄() }
+    // 묶음이면 새 줄을 옛 줄들 바로 뒤에 끼운다 — 이미 한 옛 줄은 묶음에서 떨어져(안 그러면 남은 세트가 슈퍼 진행에 계속 걸린다) 앞에 남고, 묶음은 붙어 있다
+    val 끼움 = if (묶음 != null) 옛.last() else 자리
     val 새들 = ArrayList<세션종목>()
     val 표 = MutableList<Int?>(S.종목들.size) { null }
     var 첫새 = -1
     for (j in S.종목들.indices) {
-        if (j == 자리) { 첫새 = 새들.size; 새들.addAll(새줄) }
+        if (묶음 == null && j == 자리) { 첫새 = 새들.size; 새들.addAll(새줄) }
         val e = S.종목들[j]
         if (j in 옛) {
-            if (e.찬것().isNotEmpty()) { 표[j] = 새들.size; 새들.add(e.copy(돌림id = null, 돌림k = 0, 임시 = true)) }
+            if (e.찬것().isNotEmpty()) { 표[j] = 새들.size; 새들.add(e.copy(돌림id = null, 돌림k = 0, 임시 = true, 슈퍼 = if (묶음 != null) null else e.슈퍼)) }
         } else { 표[j] = 새들.size; 새들.add(e) }
+        if (묶음 != null && j == 끼움) { 첫새 = 새들.size; 새들.addAll(새줄) }
     }
+    // 새 차례가 비어 짝 없이 혼자 남은 묶음은 푼다
+    val 수 = 새들.groupingBy { it.슈퍼 }.eachCount()
+    for (i in 새들.indices) { val q = 새들[i].슈퍼; if (q != null && (수[q] ?: 0) < 2) 새들[i] = 새들[i].copy(슈퍼 = null) }
     if (새들.isEmpty()) return null
     val 새i = 표.getOrNull(S.i) ?: 첫새.coerceAtLeast(0)
     var T = S.번호맞춤(새들, 표, 새i.coerceIn(0, 새들.size - 1))
@@ -152,7 +162,7 @@ fun 앱데이터.돌림만들기(루틴id: String, 줄: Int): 앱데이터? {
     if (e.플랜id != null || e.돌림id != null) return null
     val id = 새돌림id()
     return copy(돌림들 = 돌림들 + 돌림칸(id, listOf(listOf(e.copy(돌림id = null, 돌림k = -1, 슈퍼 = null))), 0),   // 슈퍼세트 이름이 루틴 밖으로 새지 않게
-        루틴들 = 루틴들.map { x -> if (x.id != 루틴id) x else x.copy(종목 = x.종목.mapIndexed { j, y -> if (j == 줄) 돌림자리줄(id) else y }) })
+        루틴들 = 루틴들.map { x -> if (x.id != 루틴id) x else x.copy(종목 = x.종목.mapIndexed { j, y -> if (j == 줄) 돌림자리줄(id).copy(슈퍼 = y.슈퍼) else y }) })
 }
 
 /** 칸의 [차례] 번째에 종목을 더한다. 차례가 칸 밖이면(예: -1) 새 차례로. 플랜 줄은 못 넣는다 */
@@ -193,7 +203,7 @@ fun 앱데이터.돌림차례빼기(id: String, 차례: Int): 앱데이터 {
 
 /** 칸을 통째로 없앤다 — 모든 루틴의 자리표시 줄도 뺀다 */
 fun 앱데이터.돌림없애기(id: String): 앱데이터 {
-    fun 루틴.자리뺌() = copy(종목 = 종목.filterNot { it.돌림자리 && it.돌림id == id })
+    fun 루틴.자리뺌() = copy(종목 = 종목.filterNot { it.돌림자리 && it.돌림id == id }).묶음정리()
     return copy(돌림들 = 돌림들.filter { it.id != id }, 루틴들 = 루틴들.map { it.자리뺌() }, 그날운동 = 그날운동.map { it.자리뺌() })
 }
 
@@ -207,7 +217,7 @@ fun 앱데이터.돌림넣기(루틴id: String, 칸id: String, 줄: Int = Int.MA
 
 /** 루틴에서 칸을 뺀다 (자리표시 줄만 — 칸은 다른 루틴이 쓸 수 있어 남긴다) */
 fun 앱데이터.돌림빼기(루틴id: String, 칸id: String): 앱데이터 =
-    copy(루틴들 = 루틴들.map { x -> if (x.id != 루틴id) x else x.copy(종목 = x.종목.filterNot { it.돌림자리 && it.돌림id == 칸id }) })
+    copy(루틴들 = 루틴들.map { x -> if (x.id != 루틴id) x else x.copy(종목 = x.종목.filterNot { it.돌림자리 && it.돌림id == 칸id }).묶음정리() })
 
 /** 한 차례를 글로 — "레그 컬 + 레그 익스텐션" (빈 차례는 "빈 차례") */
 fun List<루틴종목>.차례글(): String = if (isEmpty()) "빈 차례" else joinToString(" + ") { it.이름 }
