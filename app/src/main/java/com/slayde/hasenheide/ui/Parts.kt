@@ -21,6 +21,7 @@ import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
@@ -151,6 +152,8 @@ fun 머리띠(
     위여백: Dp = 간격.보통,
     왼쪽: (@Composable RowScope.() -> Unit)? = null,
     오른쪽: (@Composable RowScope.() -> Unit)? = null,
+    /** 10-21 홍겸 님: 제목 글 대신 가운데에 이것을 (루틴 상세 = 이름 칸 + 연필). 왼쪽 · 오른쪽 단추와 안 겹치게 양옆을 비운다 */
+    가운데: (@Composable BoxScope.() -> Unit)? = null,
 ) {
     val c = Local색.current
     val 글색 = if (회색) c.글 else c.강조글
@@ -164,7 +167,8 @@ fun 머리띠(
             .padding(horizontal = 간격.보통, vertical = 부품치수.띠세로여백),
         contentAlignment = Alignment.Center,
     ) {
-        Text(
+        if (가운데 != null) Box(Modifier.fillMaxWidth().padding(horizontal = 높이.아주낮게 + 간격.좁게), contentAlignment = Alignment.Center, content = 가운데)
+        else Text(
             제목, Modifier.fillMaxWidth(), style = 글꼴.보통(크기.크게, FontWeight.Bold), color = 글색,
             maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center,
         )

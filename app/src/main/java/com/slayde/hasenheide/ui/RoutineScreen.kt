@@ -556,17 +556,19 @@ private fun 루틴상세화면(상태: 앱상태, r: 루틴, 닫기: () -> Unit)
                         .눌림 { 초점.clearFocus(); 닫기() },
                     contentAlignment = Alignment.Center,
                 ) { Icon(아이콘.왼쪽, null, Modifier.size(20.dp), tint = c.강조) }
-            })   // 10-06 v22 ① 상세에서도 맨 위 「루틴」 띠는 목록과 같은 띠 그대로
+            }, 가운데 = { 루틴이름칸(상태, r, {}) })   // 10-21 홍겸 님: 이름은 새 띠 없이 맨 위 띠 가운데에 (전에는 「루틴」 띠 아래 둘째 띠)
             // 10-09 홍겸 님: 루틴 탭 전체 — 책장 겹침(쪽겹) 삭제
             Column(Modifier.weight(1f).fillMaxWidth().background(c.바탕)) {
-                루틴상세띠(상태, r, { 초점.clearFocus(); 닫기() }, {})
                 당겨새로고침({ 발자취.적기("루틴 새로고침") }, Modifier.weight(1f).fillMaxWidth(), 켬 = 끌.원 == null) {
                     // 10-06 v23 ⑤ 목록 안 [+ 종목 추가](위 · 끝)는 없다 — 오른쪽 아래에 떠 있다.
                     // 목록 아래 여백 = 12 + 40 + 12 (떠 있는 [자동] · [종목 추가] 에 마지막 상자가 가리지 않게)
                     val 아래가림px = with(LocalDensity.current) { (높이.보통 + 간격.보통 * 2 + 간격.좁게).toPx() }   // 떠 있는 단추 자리 + 단추 아래 조금
                     Column(
                         Modifier.fillMaxSize()
-                            .onGloballyPositioned { 루틴기억.넘김 = 넘김; 루틴기억.아래끝 = it.boundsInRoot().bottom - 아래가림px }
+                            .onGloballyPositioned {
+                                루틴기억.넘김 = 넘김; 루틴기억.아래끝 = it.boundsInRoot().bottom - 아래가림px
+                                끌.보임틀 = it.boundsInRoot().let { b -> Rect(b.left, b.top, b.right, b.bottom - 아래가림px) }   // 10-21: 떠 있는 단추 위까지만 '보이는 목록'
+                            }
                             .verticalScroll(넘김)
                             .padding(start = 간격.보통, end = 간격.보통, top = 간격.보통, bottom = 간격.보통 + 높이.보통 + 간격.보통),
                     ) {
@@ -827,13 +829,11 @@ private fun 루자동뜸(켜짐: Boolean, modifier: Modifier, 바꿈: (Boolean) 
 }
 
 /**
- * 「루틴」 띠 아래 줄 (시안 401d · v22 ① `루틴상세띠`) — [‹ 뒤로][이름 칸 + 끝 연필][빈자리]. (10-06: 예상 · 세트 글 뺌 · 이름 칸 75% · 10-07: [취소] 뺌 → 목록 카드 휴지통)
- * 10-15: 흰 박스 없음 — 띠 위 흰 글자 이름 + 연필(누르면 고친다). 이름은 칸을 떠날 때(완료 · 다른 곳 누름 · 화면 나감) 넣는다.
+ * 루틴 이름 칸 (시안 `루틴상세띠` → 10-21 홍겸 님: 둘째 띠를 없애고 맨 위 띠 가운데로) — [끝 연필 + 이름]. 띠 위 흰 글자 이름 + 연필(누르면 고친다).
+ * 이름은 칸을 떠날 때(완료 · 다른 곳 누름 · 화면 나감) 넣는다. (10-15: 흰 박스 없음)
  */
 @Composable
-private fun 루틴상세띠(
-    상태: 앱상태, r: 루틴, 닫기: () -> Unit, 손댐: () -> Unit,
-) {
+private fun 루틴이름칸(상태: 앱상태, r: 루틴, 손댐: () -> Unit) {
     val c = Local색.current
     var 이름 by remember(r.id) { mutableStateOf(r.이름) }
     var 고치는중 by remember(r.id) { mutableStateOf(false) }
@@ -851,43 +851,29 @@ private fun 루틴상세띠(
     val 초점 = LocalFocusManager.current
     val 칸초점 = remember { FocusRequester() }
     Row(
-        // 10-09 홍겸 님: 띠도 좌우 여백 12 · 모서리 8 · 위 「루틴」 띠와 8 띄움
-        Modifier.padding(start = 간격.보통, end = 간격.보통, top = 간격.좁게).fillMaxWidth().heightIn(min = 높이.보통)
-            .clip(RoundedCornerShape(모서리.작게)).background(c.강조)
-            .padding(horizontal = 간격.보통, vertical = 부품치수.띠세로여백),
+        // 이름 칸 어디를 눌러도 쳐 넣는다 · 이름이 끝나는 곳에 연필 그림(고칠 수 있다는 표시)
+        Modifier.widthIn(min = 루틴값.이름칸최소).height(높이.낮게)
+            .눌림 { try { 칸초점.requestFocus() } catch (_: Exception) { } },
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(간격.좁게),
+        horizontalArrangement = Arrangement.spacedBy(간격.아주좁게),
     ) {
-        // 10-11 홍겸 님: [‹ 뒤로] 는 없앴다 — 맨 위 「루틴」 띠 왼쪽 동그라미 ‹ 가 대신한다
-        // 이름 칸 — 10-06 홍겸 님: 예상 · 세트 글은 뺐고, 칸 너비는 남는 자리의 75%(25% 줄임 · 가운데),
-        //   이름이 끝나는 곳에 연필 그림(고칠 수 있다는 표시). 칸 어디를 눌러도 쳐 넣는다
-        Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-            Row(
-                // 10-15 홍겸 님: 흰 박스는 없앴다 — 띠 바탕 위에 흰 글자 이름 + 연필만 (이름 · 연필 어디를 눌러도 고친다)
-                Modifier.widthIn(min = 루틴값.이름칸최소).height(높이.낮게)
-                    .눌림 { try { 칸초점.requestFocus() } catch (_: Exception) { } },
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(간격.아주좁게),
-            ) {
-                Icon(아이콘.연필, "이름 고치기", Modifier.size(루틴값.연필그림), tint = c.강조글)
-                BasicTextField(
-                    value = 이름,
-                    onValueChange = { 이름 = it.replace("\n", "") },
-                    singleLine = true,
-                    textStyle = 글꼴.보통(크기.본문, FontWeight.Bold).copy(color = c.강조글),
-                    cursorBrush = SolidColor(c.강조글),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Done),
-                    keyboardActions = KeyboardActions(onDone = { 초점.clearFocus() }),
-                    modifier = Modifier.weight(1f, fill = false)
-                        .focusRequester(칸초점)
-                        .semantics { contentDescription = "루틴 이름" }
-                        .onFocusChanged { f ->
-                            if (f.isFocused) { 고치는중 = true; 손댐() }
-                            else if (고치는중) { 고치는중 = false; 넣기(이름); 이름 = 상태.d.루틴(r.id)?.이름 ?: 이름 }
-                        },
-                )
-            }
-        }
+        Icon(아이콘.연필, "이름 고치기", Modifier.size(루틴값.연필그림), tint = c.강조글)
+        BasicTextField(
+            value = 이름,
+            onValueChange = { 이름 = it.replace("\n", "") },
+            singleLine = true,
+            textStyle = 글꼴.보통(크기.크게, FontWeight.Bold).copy(color = c.강조글),   // 맨 위 띠 제목과 같은 크기
+            cursorBrush = SolidColor(c.강조글),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = { 초점.clearFocus() }),
+            modifier = Modifier.weight(1f, fill = false)
+                .focusRequester(칸초점)
+                .semantics { contentDescription = "루틴 이름" }
+                .onFocusChanged { f ->
+                    if (f.isFocused) { 고치는중 = true; 손댐() }
+                    else if (고치는중) { 고치는중 = false; 넣기(이름); 이름 = 상태.d.루틴(r.id)?.이름 ?: 이름 }
+                },
+        )
     }
 }
 
@@ -1380,6 +1366,8 @@ private class 세로끌기 {
     /** 이름표가 손가락 위를 따라오게 — 판정에는 안 쓴다 (세로 목록도 늘 갖고 있다) */
     var 손x by mutableFloatStateOf(0f)
     var 틀 by mutableStateOf(Rect.Zero)
+    /** 10-21 홍겸 님: 자동으로 넘기는 위 · 아래 끝 = 화면 전체가 아니라 **실제로 보이는 목록**(띠 아래 ~ 떠 있는 단추 위). 비어 있으면 [틀] */
+    var 보임틀 = Rect.Zero
     /** 칸 자리 — 그리기에는 안 쓴다(끌기 시작할 때만) → 상태가 아닌 그냥 표 */
     val 자리 = HashMap<Int, Rect>()
     private var 굳은: List<끌칸> = emptyList()
@@ -1494,7 +1482,8 @@ private fun 끌기자동넘김(끌: 세로끌기, 넘김: ScrollState) {
     val 한번 = with(밀도) { 부품치수.끌기넘김.toPx() }
     LaunchedEffect(끌.원 != null) {
         while (끌.원 != null) {
-            val 양 = 끌기넘김량(끌.y, 끌.틀.top, 끌.틀.bottom, 끝px, 한번)   // 10-12: 가장자리에 깊이 들어갈수록 빠르게 (전에는 늘 같은 빠르기)
+            val 틀 = if (끌.보임틀 != Rect.Zero) 끌.보임틀 else 끌.틀
+            val 양 = 끌기넘김량(끌.y, 틀.top, 틀.bottom, 끝px, 한번)   // 10-12: 가장자리에 깊이 들어갈수록 빠르게 (전에는 늘 같은 빠르기)
             if (양 != 0f) 넘김.scrollBy(양)
             delay(16)
         }
@@ -1780,7 +1769,7 @@ private fun 돌림상자(
 }
 
 /**
- * 돌아가며 칸 펼침 (시안 v27) — 차례 칩줄(번호 + 첫 종목 · 다음 차례엔 "다음") + 보고 있는 차례의 종목 상자들 + 들어간 루틴 + [+ 종목][+ 차례][차례 빼기].
+ * 돌아가며 칸 펼침 (시안 v27) — 차례 칩줄(번호 + 첫 종목) + 보고 있는 차례의 종목 상자들 + 들어간 루틴 + [+ 종목][+ 차례][차례 빼기].
  * 종목 상자는 루틴의 보통 종목 상자 그대로라 세트 수 · 무게 · 횟수 · 휴식을 똑같이 고친다 (고친 값은 칸에 저장)
  */
 @Composable
@@ -1793,7 +1782,7 @@ private fun 돌림속(상태: 앱상태, g: 돌림칸, on넣기: (String, Int) -
     var 펼친줄 by remember(g.id, 본) { mutableStateOf(emptySet<Int>()) }
     val 차례 = g.차례들.getOrNull(본) ?: emptyList()
     val 든곳 = 상태.d.돌림쓰는루틴(g.id).map { it.이름 }
-    fun 칩글(k: Int) = "${k + 1} ${g.차례들[k].차례칩글()}" + if (k == 오) " · 다음" else ""
+    fun 칩글(k: Int) = "${k + 1} ${g.차례들[k].차례칩글()}"   // 10-21 홍겸 님: '· 다음' 표시는 뺐다 (몇 번째가 다음인지는 머리 줄 [돌아가며 n/N] 이 말한다)
     Column(
         Modifier.fillMaxWidth().padding(start = 간격.아주좁게, end = 간격.아주좁게, top = 간격.아주좁게, bottom = 간격.좁게),
         verticalArrangement = Arrangement.spacedBy(간격.좁게),
