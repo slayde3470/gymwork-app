@@ -1054,8 +1054,10 @@ fun 플랜반영(d: 앱데이터, 종목들: List<종목기록>, 날: String, �
     if (d.플랜들.isEmpty()) return d
     var 향 = d.향상기록들
     val 새 = d.플랜들.map { p ->
-        val e = 종목들.firstOrNull { it.플랜id == p.id } ?: return@map p
-        val 세트들 = e.세트들.filter { it.종류 != 세트종류.워밍업 && it.r > 0 }
+        // 10-21: 같은 플랜 줄이 루틴과 로테이션 칸에 둘 다 있으면 한 번에 합쳐 센다 (전에는 첫 줄만 봤다)
+        val 줄들 = 종목들.filter { it.플랜id == p.id }
+        if (줄들.isEmpty()) return@map p
+        val 세트들 = 줄들.flatMap { it.세트들 }.filter { it.종류 != 세트종류.워밍업 && it.r > 0 }
         if (세트들.isEmpty()) return@map p
         val 계획 = p.다음회(d.몸, 향)
         val 회 = p.한회 + 1
@@ -1084,7 +1086,7 @@ fun 플랜반영(d: 앱데이터, 종목들: List<종목기록>, 날: String, �
         q
     }
     val 바뀐 = d.copy(플랜들 = 새, 향상기록들 = 향)
-    return 바뀐.copy(루틴들 = 바뀐.루틴들.map { 바뀐.플랜줄채움(it) })
+    return 바뀐.플랜줄모두채움()
 }
 
 /**
@@ -1096,7 +1098,7 @@ fun 플랜반영(d: 앱데이터, 종목들: List<종목기록>, 날: String, �
 fun 앱데이터.플랜줄정리(): 앱데이터 {
     val 있는 = 플랜들.map { it.id }.toSet()
     var 바뀜 = false
-    val 새 = 루틴들.map { r ->
+    val 정리 = { r: 루틴 ->
         if (r.종목.none { it.플랜id != null }) r
         else {
             val l = r.종목.mapNotNull { e ->
@@ -1110,7 +1112,11 @@ fun 앱데이터.플랜줄정리(): 앱데이터 {
             r.copy(종목 = l).묶음정리()
         }
     }
-    return if (바뀜) copy(루틴들 = 새) else this
+    val 새 = 루틴들.map(정리)
+    // 10-21: 로테이션 칸 안의 플랜 줄도 똑같이 (지운 플랜의 줄은 빼고, 빈 차례는 차례째 뺀다)
+    val 칸에있다 = 돌림들.any { c -> c.차례들.any { t -> t.any { it.플랜id != null && (it.플랜id !in 있는 || it.슈퍼 != null) } } }
+    if (!바뀜 && !칸에있다) return this
+    return copy(루틴들 = 새).돌림도(정리)
 }
 
 /**
@@ -1459,7 +1465,7 @@ fun 앱데이터.플랜고치기(id: String, g: 플랜고침값): Pair<앱데이
         플랜들 = 플랜들.map { if (it.id == id) 새 else it },
         루틴들 = 루틴들.map { r -> if (r.종목.none { it.플랜id == id }) r else r.copy(종목 = r.종목.map { e -> if (e.플랜id == id) e.copy(이름 = 새.이름) else e }) },
     ).그날운동도 { r -> r.copy(종목 = r.종목.map { e -> if (e.플랜id == id) e.copy(이름 = 새.이름) else e }) }
-        .let { it.copy(루틴들 = it.루틴들.map { r -> it.플랜줄채움(r) }) } to null
+        .플랜줄모두채움() to null
 }
 
 /**
@@ -1472,11 +1478,20 @@ fun 앱데이터.현재수행넣기(id: String, 날: String, 무게: Double, 횟
     val w = if (p.횟수진행) (p.표?.유효부하(몸.체중) ?: 0.0) else 무게
     if (!(r >= 1 && w > 0)) return null
     val 넣음 = 측정넣기(id, 날, w, r)
-    return 넣음.copy(루틴들 = 넣음.루틴들.map { 넣음.플랜줄채움(it) })
+    return 넣음.플랜줄모두채움()
 }
 
 /** 지운 플랜 — [되돌리기] 로 제자리에 다시 넣으려고 (자리 · 루틴에서 뺀 줄의 자리까지) */
-data class 지운플랜(val 플랜값: 플랜, val 자리: Int, val 줄들: List<Triple<String, Int, 루틴종목>>)
+data class 지운플랜(
+    val 플랜값: 플랜, val 자리: Int, val 줄들: List<Triple<String, Int, 루틴종목>>,
+    /** 10-21: 플랜 지우기가 함께 바꾸거나 없앤 로테이션 칸 (지우기 전 · 지운 뒤 · 원래 자리) — 되돌릴 때 그 사이 손대지 않은 칸만 되살린다 */
+    val 칸들: List<지운칸> = emptyList(),
+)
+
+data class 지운칸(val 앞: 돌림칸, val 뒤: 돌림칸?, val 자리: Int)
+
+/** 루틴 · 로테이션 칸 안의 플랜 줄을 지금 회차 처방으로 채운다 (플랜을 고치거나 회차가 바뀐 뒤) */
+fun 앱데이터.플랜줄모두채움(): 앱데이터 = copy(루틴들 = 루틴들.map { 플랜줄채움(it) }).돌림도 { 플랜줄채움(it) }
 
 /**
  * 플랜 지우기 (시안 `플랜지움`) — 플랜과 **루틴에 넣어 둔 그 플랜 줄**(플랜id)을 같이 뺀다.
@@ -1494,7 +1509,12 @@ fun 앱데이터.플랜지우기(id: String): Pair<앱데이터, 지운플랜>? 
         }
     }
     // 10-09: 그 날 운동의 그 플랜 줄도 뺀다 (되돌리기는 루틴 줄만 되살린다)
-    return copy(플랜들 = 플랜들.filterIndexed { j, _ -> j != i }, 루틴들 = 새루틴).그날운동도 { r -> r.copy(종목 = r.종목.filter { it.플랜id != id }) } to 지운플랜(플랜들[i], i, 줄들)
+    val 뒤 = copy(플랜들 = 플랜들.filterIndexed { j, _ -> j != i }, 루틴들 = 새루틴).그날운동도 { r -> r.copy(종목 = r.종목.filter { it.플랜id != id }) }
+    // 10-21: 로테이션 칸 안의 플랜 줄도 같이 빠진다 — 바뀐 칸 · 통째로 없어진 칸(루틴의 자리표시 줄 포함)을 기억해 되돌릴 때 되살린다
+    val 칸들 = 돌림들.mapIndexedNotNull { n, c -> 뒤.돌림(c.id).let { 후 -> if (후 == c) null else 지운칸(c, 후, n) } }
+    val 없어진칸 = 칸들.filter { it.뒤 == null }.map { it.앞.id }.toSet()
+    if (없어진칸.isNotEmpty()) 루틴들.forEach { r -> r.종목.forEachIndexed { j, e -> if (e.돌림자리 && e.돌림id in 없어진칸) 줄들.add(Triple(r.id, j, e)) } }
+    return 뒤 to 지운플랜(플랜들[i], i, 줄들, 칸들)
 }
 
 /**
@@ -1513,8 +1533,14 @@ fun 앱데이터.플랜되살리기(x: 지운플랜): 앱데이터 {
             r.copy(종목 = m)
         }
     }
-    val 되 = copy(플랜들 = l, 루틴들 = 새루틴)
-    return 되.copy(루틴들 = 되.루틴들.map { 되.플랜줄채움(it) })
+    // 10-21: 로테이션 칸도 되살린다 — 그 사이 손대지 않은 칸만 (지울 때 그대로면 지우기 전 모양으로)
+    var 칸들 = 돌림들
+    x.칸들.forEach { k ->
+        val 지금 = 칸들.firstOrNull { it.id == k.앞.id }
+        if (지금 == k.뒤) 칸들 = if (지금 == null) 칸들.toMutableList().also { it.add(k.자리.coerceIn(0, it.size), k.앞) } else 칸들.map { if (it.id == k.앞.id) k.앞 else it }
+    }
+    val 되 = copy(플랜들 = l, 루틴들 = 새루틴, 돌림들 = 칸들)
+    return 되.플랜줄모두채움()
 }
 
 /** 플랜 카드 게이지 — (지금 − 시작) ÷ (목표 − 시작), 0~1 (시안 `플랜달성률`) */

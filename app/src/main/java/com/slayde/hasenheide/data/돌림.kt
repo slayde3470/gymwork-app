@@ -33,7 +33,7 @@ fun 앱데이터.돌림펼침(r: 루틴): 루틴 {
         if (c.차례들.isEmpty()) return@flatMap emptyList()
         val k = c.지금차례()
         // 10-21 홍겸 님: 자리표시 줄이 슈퍼세트에 묶여 있으면 펼친 종목들도 같은 묶음 — a+c 다음날은 b+c. 차례 안쪽의 묶음 이름은 쓰지 않는다(이름 겹침 방지)
-        c.차례들[k].map { it.copy(돌림id = c.id, 돌림k = k, 슈퍼 = e.슈퍼) }
+        c.차례들[k].map { it.copy(돌림id = c.id, 돌림k = k, 슈퍼 = if (it.플랜id != null) null else e.슈퍼) }   // 플랜 줄은 슈퍼세트로 묶지 않는다
     }).let { 펼침 ->
         if (r.종목.none { it.돌림자리 && it.슈퍼 != null }) 펼침 else 펼침.묶음정리()   // 차례가 비어 혼자 남은 묶음은 푼다
     }
@@ -122,7 +122,7 @@ fun 앱데이터.돌림차례바꿈(id: String, k: Int, 본: Int?): 운동자리
     if (옛.all { S.종목들[it].돌림k == k }) return 운동자리(S, 본, S.종목들.indices.toList())
     val 자리 = 옛.first()
     val 묶음 = S.종목들[자리].슈퍼   // 자리표시 줄이 슈퍼세트에 묶여 있었으면 새 차례도 같은 묶음
-    val 새줄 = c.차례들[k].map { it.copy(돌림id = id, 돌림k = k, 슈퍼 = 묶음).세션줄() }
+    val 새줄 = c.차례들[k].map { 플랜줄채움(it.copy(돌림id = id, 돌림k = k, 슈퍼 = if (it.플랜id != null) null else 묶음)).세션줄() }   // 플랜 줄은 지금 회차 처방으로
     // 묶음이면 새 줄을 옛 줄들 바로 뒤에 끼운다 — 이미 한 옛 줄은 묶음에서 떨어져(안 그러면 남은 세트가 슈퍼 진행에 계속 걸린다) 앞에 남고, 묶음은 붙어 있다
     val 끼움 = if (묶음 != null) 옛.last() else 자리
     val 새들 = ArrayList<세션종목>()
@@ -165,10 +165,9 @@ fun 앱데이터.돌림만들기(루틴id: String, 줄: Int): 앱데이터? {
         루틴들 = 루틴들.map { x -> if (x.id != 루틴id) x else x.copy(종목 = x.종목.mapIndexed { j, y -> if (j == 줄) 돌림자리줄(id).copy(슈퍼 = y.슈퍼) else y }) })
 }
 
-/** 칸의 [차례] 번째에 종목을 더한다. 차례가 칸 밖이면(예: -1) 새 차례로. 플랜 줄은 못 넣는다 */
+/** 칸의 [차례] 번째에 종목을 더한다. 차례가 칸 밖이면(예: -1) 새 차례로. 플랜 줄도 넣는다(10-21 홍겸 님) — 값은 운동을 시작할 때 지금 회차로 채워지고 슈퍼세트에는 안 묶인다 */
 fun 앱데이터.돌림종목더하기(id: String, 차례: Int, e: 루틴종목): 앱데이터 {
-    if (e.플랜id != null) return this
-    val 줄 = e.copy(돌림id = null, 돌림k = -1)
+    val 줄 = e.copy(돌림id = null, 돌림k = -1, 슈퍼 = null)
     return copy(돌림들 = 돌림들.map { c ->
         if (c.id != id) c
         else if (차례 in c.차례들.indices) c.copy(차례들 = c.차례들.mapIndexed { j, t -> if (j == 차례) t + 줄 else t })

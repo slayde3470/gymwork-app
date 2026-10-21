@@ -609,7 +609,7 @@ private fun 루틴상세화면(상태: 앱상태, r: 루틴, 닫기: () -> Unit)
                                         else {
                                             val gg = d.돌림(x.돌림id ?: "")
                                             val kk = gg?.지금차례() ?: 0
-                                            (gg?.차례들?.getOrNull(kk) ?: emptyList()).mapIndexed { t, y ->
+                                            (gg?.차례들?.getOrNull(kk) ?: emptyList()).mapIndexed { t, y -> t to y }.filter { (_, y) -> y.플랜id == null }.map { (t, y) ->   // 플랜 줄은 슈퍼세트에 안 들어간다 — [로테이션 차례 보기 · 고치기] 에서 본다
                                                 슈퍼칸(y) { f -> 상태.바꿈 { dd -> dd.돌림줄바꿈(gg!!.id, kk, t, f) } }
                                             }
                                         }
@@ -745,7 +745,7 @@ private fun 루틴상세화면(상태: 앱상태, r: 루틴, 닫기: () -> Unit)
         if (칸 == null) 돌림창 = null
         else 종목넣기시트(
             상태, if (창.second < 0) "로테이션 · 새 차례" else "로테이션 · ${창.second + 1}차례에 더하기", 겹 = 0, 새종목겹 = 0,
-            개수 = { 키 -> 상태.d.돌림(창.first)?.차례들?.getOrNull(돌림창?.second ?: -1)?.count { it.열쇠 == 키 } ?: 0 },
+            개수 = { 키 -> 상태.d.돌림(창.first)?.차례들?.getOrNull(돌림창?.second ?: -1)?.count { it.플랜id == null && it.열쇠 == 키 } ?: 0 },
             넣기 = { 키 ->
                 val 지금 = 돌림창
                 if (지금 != null) {
@@ -758,10 +758,28 @@ private fun 루틴상세화면(상태: 앱상태, r: 루틴, 닫기: () -> Unit)
             },
             빼기 = { 키 ->
                 val 지금 = 돌림창
-                val j = 지금?.let { 상태.d.돌림(it.first)?.차례들?.getOrNull(it.second)?.indexOfLast { x -> x.열쇠 == 키 } } ?: -1
+                val j = 지금?.let { 상태.d.돌림(it.first)?.차례들?.getOrNull(it.second)?.indexOfLast { x -> x.플랜id == null && x.열쇠 == 키 } } ?: -1
                 if (지금 != null && j >= 0) 상태.바꿈 { dd -> dd.돌림종목빼기(지금.first, 지금.second, j) }
             },
             닫기 = { 돌림창 = null },
+            // 10-21 홍겸 님: 로테이션에도 플랜 종목을 넣는다 — 루틴과 같은 플랜 칸 (값은 운동을 시작할 때 지금 회차로 채워진다)
+            플랜개수 = { pid -> 상태.d.돌림(창.first)?.차례들?.getOrNull(돌림창?.second ?: -1)?.count { it.플랜id == pid } ?: 0 },
+            플랜넣기 = { pid ->
+                val 지금 = 돌림창
+                val p = 상태.d.플랜들.firstOrNull { it.id == pid }
+                if (지금 != null && p != null) {
+                    val 번 = if (지금.second >= 0) 지금.second else (상태.d.돌림(지금.first)?.차례들?.size ?: 0)
+                    상태.바꿈 { dd -> dd.돌림종목더하기(지금.first, 지금.second, 플랜줄(dd, p)) }
+                    발자취.적기("로테이션에 플랜 넣기 · ${p.이름}")
+                    루틴기억.돌림본[지금.first] = 번
+                    돌림창 = 지금.first to 번
+                }
+            },
+            플랜빼기 = { pid ->
+                val 지금 = 돌림창
+                val j = 지금?.let { 상태.d.돌림(it.first)?.차례들?.getOrNull(it.second)?.indexOfLast { x -> x.플랜id == pid } } ?: -1
+                if (지금 != null && j >= 0) 상태.바꿈 { dd -> dd.돌림종목빼기(지금.first, 지금.second, j) }
+            },
         )
     }
 }
@@ -1847,8 +1865,21 @@ private fun 돌림속(상태: 앱상태, g: 돌림칸, on넣기: (String, Int) -
         })
         if (차례.isEmpty()) 글("이 차례에 종목을 넣어 주세요", 크기값 = 크기.작게, 색 = c.옅음)
         차례.forEachIndexed { j, x ->
-            key(j, x.열쇠) {
-                종목상자(
+            key(j, x.열쇠, x.플랜id) {
+                if (x.플랜id != null) {
+                    // 10-21: 플랜 줄 — 무게 · 횟수는 플랜이 정한다 (루틴의 플랜 상자와 같다). 누르면 플랜 고치기
+                    val p = 상태.d.플랜들.firstOrNull { it.id == x.플랜id }
+                    플랜상자(
+                        상태, x, p, j + 1, Modifier, -1, Modifier, {},
+                        on고치기 = { 초점.clearFocus(); if (p != null) { 발자취.적기("로테이션에서 플랜 고치기 · ${p.이름}"); 플랜고침.value = p.id } },
+                        on빼기 = {
+                            초점.clearFocus()
+                            발자취.적기("로테이션에서 빼기 · ${x.이름}")
+                            상태.지우고알림("${조사(x.이름, "을", "를")} 뺐습니다") { dd -> dd.돌림종목빼기(g.id, 본, j) }
+                            펼친줄 = 펼침뺌(펼친줄, j)
+                        },
+                    )
+                } else 종목상자(
                     상태, x, j + 1, j in 펼친줄, Modifier, -1, Modifier, {},
                     묶음글 = null, on풀기 = {},
                     on펼침 = { 초점.clearFocus(); 펼친줄 = if (j in 펼친줄) 펼친줄 - j else 펼친줄 + j },
