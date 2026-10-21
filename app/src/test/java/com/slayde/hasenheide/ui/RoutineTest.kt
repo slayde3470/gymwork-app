@@ -168,15 +168,15 @@ class RoutineTest {
 
     // ─────────────── 10-10 홍겸 님: 꾹 눌러 끌어 가운데에 놓으면 슈퍼세트 ───────────────
 
-    @Test fun 끌기_가운데_40퍼센트만_묶기() {
+    @Test fun 끌기_가운데_50퍼센트만_묶기() {
         val 세로 = listOf(끌칸(0, 0f, 0f, 100f, 100f), 끌칸(1, 0f, 108f, 100f, 208f))
-        assertNull(끌가운데(세로, null, 20f, 0f))           // 위 30% = 앞
-        assertEquals(0, 끌가운데(세로, null, 30f, 0f))      // 경계(30%)부터 가운데
-        assertEquals(0, 끌가운데(세로, null, 69f, 0f))
-        assertNull(끌가운데(세로, null, 70f, 0f))           // 아래 30% = 뒤
+        assertNull(끌가운데(세로, null, 20f, 0f))           // 위 25% = 앞
+        assertEquals(0, 끌가운데(세로, null, 25f, 0f))      // 경계(25%)부터 가운데
+        assertEquals(0, 끌가운데(세로, null, 74f, 0f))
+        assertNull(끌가운데(세로, null, 75f, 0f))           // 아래 25% = 뒤
         assertEquals(1, 끌가운데(세로, null, 158f, 0f))
         assertNull(끌가운데(세로, null, 104f, 0f))          // 틈
-        assertEquals(1, 끌가운데(세로, null, 128f, 30f))    // 칸 1 은 30 위로: 78~178 → 가운데 108~148
+        assertEquals(1, 끌가운데(세로, null, 128f, 30f))    // 칸 1 은 30 위로: 78~178 → 가운데 103~153
         assertNull(끌가운데(세로, 50f, 50f, 0f))            // 2열 격자(x 있음)에는 가운데 묶기가 없다
     }
 

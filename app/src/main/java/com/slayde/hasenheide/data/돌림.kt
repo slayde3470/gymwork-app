@@ -218,6 +218,25 @@ fun 앱데이터.돌림넣기(루틴id: String, 칸id: String, 줄: Int = Int.MA
 fun 앱데이터.돌림빼기(루틴id: String, 칸id: String): 앱데이터 =
     copy(루틴들 = 루틴들.map { x -> if (x.id != 루틴id) x else x.copy(종목 = x.종목.filterNot { it.돌림자리 && it.돌림id == 칸id }).묶음정리() })
 
+/**
+ * 로테이션 풀기 (10-21 홍겸 님 "로테이션 되돌릴 수 있게") — 루틴의 [줄] 번째 자리표시 줄을 그 칸의 **지금 차례** 종목들로 바꿔 놓는다.
+ * 그 루틴에서만 일반 종목이 되고, 칸은 그대로 남는다(다른 루틴이 쓰고 있을 수 있다). 자리표시 줄이 슈퍼세트에 묶여 있었으면
+ * 풀린 종목들(플랜 줄 빼고)도 같은 묶음에 남는다. 자리표시 줄이 아니거나 칸이 없거나 지금 차례가 비어 있으면 null
+ */
+fun 앱데이터.돌림풀기(루틴id: String, 줄: Int): 앱데이터? {
+    val r = 루틴(루틴id) ?: return null
+    val e = r.종목.getOrNull(줄) ?: return null
+    if (!e.돌림자리) return null
+    val c = 돌림(e.돌림id ?: "") ?: return null
+    val 차례 = c.차례들.getOrNull(c.지금차례()) ?: return null
+    if (차례.isEmpty()) return null
+    val 풀림 = 차례.map { it.copy(돌림id = null, 돌림k = -1, 슈퍼 = if (it.플랜id != null) null else e.슈퍼) }
+    return copy(루틴들 = 루틴들.map { x ->
+        if (x.id != 루틴id) x
+        else x.copy(종목 = x.종목.flatMapIndexed { j, y -> if (j == 줄) 풀림 else listOf(y) }).묶음정리()
+    })
+}
+
 /** 한 차례를 글로 — "레그 컬 + 레그 익스텐션" (빈 차례는 "빈 차례") */
 fun List<루틴종목>.차례글(): String = if (isEmpty()) "빈 차례" else joinToString(" + ") { it.이름 }
 

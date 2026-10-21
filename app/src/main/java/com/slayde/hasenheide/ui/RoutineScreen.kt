@@ -150,6 +150,7 @@ import com.slayde.hasenheide.data.돌림자리
 import com.slayde.hasenheide.data.돌림종목더하기
 import com.slayde.hasenheide.data.돌림종목빼기
 import com.slayde.hasenheide.data.돌림줄바꿈
+import com.slayde.hasenheide.data.돌림풀기
 import com.slayde.hasenheide.data.돌림차례빼기
 import com.slayde.hasenheide.data.돌림쓰는루틴
 import com.slayde.hasenheide.data.돌림칸
@@ -502,6 +503,16 @@ private fun 루틴상세화면(상태: 앱상태, r: 루틴, 닫기: () -> Unit)
         상태.바꿈 { 새 }
         새.돌림들.lastOrNull()?.let { 돌림창 = it.id to -1 }
     }
+    // 10-21 홍겸 님: 로테이션 되돌리기 — 이 루틴의 로테이션을 지금 차례 종목들로 풀어 일반 종목으로 (칸은 남는다 · 다른 루틴은 그대로 · 되돌리기 띠)
+    fun 로테이션풀기(j: Int) {
+        손댐()
+        val 전 = 상태.d
+        val 새 = 전.돌림풀기(rid, j)
+        if (새 == null) { 상태.알림.토스트("풀 수 있는 종목이 없습니다"); return }
+        발자취.적기("로테이션 풀기 · ${전.루틴(rid)?.종목?.getOrNull(j)?.돌림id ?: ""}")
+        상태.지우고알림("로테이션을 일반 종목으로 풀었습니다") { _ -> 새 }
+        펼침바꿈 { emptySet() }   // 줄 번호가 바뀌므로 펼침은 모두 접는다
+    }
     // 끌어 놓기 길 — 슈퍼세트 묶음은 종목옮기기가 통째로 옮긴다. 아무것도 안 바뀌면(묶음 안 이웃 등) 쓰지 않는다
     fun 옮기기(원: Int, 대상: Int, 뒤에: Boolean) {
         val 지금 = 상태.d.루틴(rid) ?: return
@@ -619,6 +630,7 @@ private fun 루틴상세화면(상태: 앱상태, r: 루틴, 닫기: () -> Unit)
                                     val 묶인칸 = 식구.mapNotNull { i -> r.종목[i].takeIf { it.돌림자리 }?.돌림id?.let { d.돌림(it) } }
                                     슈퍼상자(상태, 식구, 칸들.map { it.e }, j + 1, j in 펼침, 자리줄, 표시, 끌기길, 손잡이,
                                         돌림들 = 묶인칸, on돌림넣기 = { id, k -> 돌림창 = id to k },
+                                        on돌림풀기 = { gid -> 식구.firstOrNull { r.종목[it].돌림자리 && r.종목[it].돌림id == gid }?.let { 로테이션풀기(it) } },
                                         on풀기 = {
                                             손댐()
                                             val g = e.슈퍼
@@ -651,7 +663,8 @@ private fun 루틴상세화면(상태: 앱상태, r: 루틴, 닫기: () -> Unit)
                                 if (e.돌림자리) 돌림상자(상태, e, j + 1, j in 펼침, 자리줄, 표시, 끌기길, 손잡이,
                                     on펼침 = { 손댐(); 펼침바꿈 { s -> if (j in s) s - j else s + j } },
                                     on빼기 = { 종목뺌(j) },
-                                    on넣기 = { id, k -> 돌림창 = id to k })
+                                    on넣기 = { id, k -> 돌림창 = id to k },
+                                    on풀기 = { 로테이션풀기(j) })
                                 else if (e.플랜id != null) 플랜상자(상태, e, p, j + 1, 자리줄, 표시, 끌기길, 손잡이,
                                     on고치기 = { 손댐(); if (p != null) { 발자취.적기("루틴에서 플랜 고치기 · ${p.이름}"); 플랜고침.value = p.id } },
                                     on빼기 = { 종목뺌(j) })
@@ -1001,6 +1014,7 @@ private fun 슈퍼상자(
     on고침: (Int, (루틴종목) -> 루틴종목) -> Unit, on세트더하기: () -> Unit, on세트지움: (Int) -> Unit,
     /** 10-21: 이 묶음에 들어온 돌아가며 칸들 — 머리에 [돌아가며 n/N] 을 달고, 펼치면 차례 보기 · 고치기 */
     돌림들: List<돌림칸> = emptyList(), on돌림넣기: (String, Int) -> Unit = { _, _ -> },
+    on돌림풀기: (String) -> Unit = {},
 ) {
     val c = Local색.current
     val 모양 = RoundedCornerShape(모서리.보통)
@@ -1127,6 +1141,7 @@ private fun 슈퍼상자(
                         val 열림 = g.id in 연
                         버튼(if (열림) "로테이션 닫기" else "로테이션 차례 보기 · 고치기", { 연 = if (열림) 연 - g.id else 연 + g.id }, Modifier.fillMaxWidth(), 낮게 = true)
                         if (열림) 돌림속(상태, g, on돌림넣기)
+                        버튼("일반 종목으로 풀기", { on돌림풀기(g.id) }, Modifier.fillMaxWidth(), 낮게 = true)
                     }
                 }
                 버튼("슈퍼세트 풀기", on풀기, Modifier.fillMaxWidth(), 낮게 = true)
@@ -1470,7 +1485,7 @@ private class 세로끌기 {
         if (원 == null) return null
         return 끌대상(굳은, x, y, (넘김 - 시작넘김).toFloat(), 가로)
     }
-    /** 손가락이 묶을 수 있는 칸의 가운데(위 30% · 아래 30% 를 뺀 40%)에 있으면 그 칸 번호 — 세로 목록에서만 */
+    /** 손가락이 묶을 수 있는 칸의 가운데(위 25% · 아래 25% 를 뺀 50% · 10-21 전에는 40%)에 있으면 그 칸 번호 — 세로 목록에서만 */
     fun 묶기대상(넘김: Int): Int? {
         val a = 원 ?: return null
         if (멈춤 != null) return 장전?.takeIf { it != a }   // 10-12: 멈춰서 장전된 칸만
@@ -1712,15 +1727,15 @@ internal fun 끌가까운(칸들: List<끌칸>, y: Float, dy: Float): Pair<Int, 
 }
 
 /**
- * 세로 목록에서 손가락(y)이 칸의 **가운데 40%**(위 30% · 아래 30% 를 뺀 곳)에 있으면 그 칸 번호 (동작방식 D3-9).
+ * 세로 목록에서 손가락(y)이 칸의 **가운데 50%**(위 25% · 아래 25% 를 뺀 곳 · 10-21 홍겸 님: 40% → 50%)에 있으면 그 칸 번호 (동작방식 D3-9).
  * [x] 가 있으면(2열 격자) 가운데 묶기는 없다 → null. [dy] = 끌기 시작 뒤 넘긴 만큼
  */
 internal fun 끌가운데(칸들: List<끌칸>, x: Float?, y: Float, dy: Float): Int? {
     if (x != null) return null
     val k = 칸들.firstOrNull { c -> y >= c.위 - dy && y < c.아래 - dy } ?: return null
     val 높 = k.아래 - k.위
-    val 위선 = k.위 - dy + 높 * 3f / 10f
-    val 아래선 = k.위 - dy + 높 * 7f / 10f
+    val 위선 = k.위 - dy + 높 * 1f / 4f      // 10-21 홍겸 님: 가운데 40% → 50%
+    val 아래선 = k.위 - dy + 높 * 3f / 4f
     return if (y >= 위선 && y < 아래선) k.번호 else null
 }
 
@@ -1822,7 +1837,7 @@ internal fun 플랜줄(d: 앱데이터, p: 플랜): 루틴종목 {   // 10-05 �
 @Composable
 private fun 돌림상자(
     상태: 앱상태, e: 루틴종목, 번호: Int, 펼침: Boolean, modifier: Modifier, 표시: Int, 끌기길: Modifier, 손잡이: @Composable () -> Unit,
-    on펼침: () -> Unit, on빼기: () -> Unit, on넣기: (String, Int) -> Unit,
+    on펼침: () -> Unit, on빼기: () -> Unit, on넣기: (String, Int) -> Unit, on풀기: () -> Unit,
 ) {
     val c = Local색.current
     val 모양 = RoundedCornerShape(모서리.보통)
@@ -1854,7 +1869,12 @@ private fun 돌림상자(
                 } else Box(Modifier.width(18.dp).height(높이.낮게), contentAlignment = Alignment.Center) { 손잡이() }
             }
         }
-        if (펼침 && g != null) 돌림속(상태, g, on넣기)
+        if (펼침 && g != null) {
+            돌림속(상태, g, on넣기)
+            Box(Modifier.fillMaxWidth().padding(start = 간격.아주좁게, end = 간격.아주좁게, bottom = 간격.좁게)) {
+                버튼("이 루틴에서 일반 종목으로 풀기", on풀기, Modifier.fillMaxWidth(), 낮게 = true)
+            }
+        }
     }
 }
 
