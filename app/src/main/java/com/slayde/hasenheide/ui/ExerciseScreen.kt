@@ -30,6 +30,7 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.zIndex
@@ -479,8 +480,18 @@ private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modif
     var 들어옴 by remember(x.열쇠, 펼) { mutableStateOf(!시트펼침) }
     if (시트펼침) LaunchedEffect(Unit) { 들어옴 = true }
     val 체크보임 = !펼 && 넣기 != null && 수 >= 0
+    // 10-21 홍겸 님: 넣기 시트 — 상자의 ∨ 둘레(좌우 15%)만 펼치고 접는다 · 나머지를 누르면 체크 상자와 똑같이 넣기(꾹 = 하나 더)
+    val 넣기누름: () -> Unit = { if (넣기 != null) { if (넣기.수(x) > 0) 넣기.빼기(x) else { 넣기.넣기(x); 꾹안내(상태) } } }
+    val 상자오목: () -> Unit = { 오목범위.launch { 오목.animateTo(0.91f, tween(110)); 오목.animateTo(1f, androidx.compose.animation.core.spring(dampingRatio = 0.5f, stiffness = 400f)) }; Unit }
+    val 넣기누름최신 by rememberUpdatedState(넣기누름)
+    val 상자오목최신 by rememberUpdatedState(상자오목)
+    val 펼침최신 by rememberUpdatedState<() -> Unit>({ 펼침(x.열쇠) })
+    val 꾹더최신 by rememberUpdatedState<() -> Unit>({ 넣기?.넣기(x); Unit })
+    val 카드폭 = remember { intArrayOf(0) }
+    val 진동 = LocalHapticFeedback.current
+    val 펼침구역더 = with(LocalDensity.current) { 종목치수.펼침그림.toPx() / 2f }   // ∨ 가운데에서 오른쪽 끝까지
     Column(
-        modifier.graphicsLayer { scaleX = 오목.value; scaleY = 오목.value }.clip(모양).background(상자바탕)
+        modifier.onSizeChanged { 카드폭[0] = it.width }.graphicsLayer { scaleX = 오목.value; scaleY = 오목.value }.clip(모양).background(상자바탕)
             .border(if (시트펼침) 선굵기.굵게 else 선굵기.보통, 상자테, 모양)
             .then(if (마지막 != null && !펼) Modifier.drawWithContent {
                 drawContent()
@@ -497,12 +508,25 @@ private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modif
             // 10-08 홍겸 님: 펼친 상자 머리에는 체크 상자를 두지 않는다 (접힌 줄에만)
             // 10-11 홍겸 님: 체크 상자는 이름 왼쪽 맨 앞 (전: 오른쪽 끝)
             if (!펼 && 넣기 != null && 수 >= 0) 넣기체크(x.이름, 수, 즐겨,
-                누름 = { if (넣기.수(x) > 0) 넣기.빼기(x) else { 넣기.넣기(x); 꾹안내(상태) } },   // 10-09 홍겸 님: 눌러 넣을 때 '꾸욱 누르면…' 토스트
+                누름 = 넣기누름,   // 10-09 홍겸 님: 눌러 넣을 때 '꾸욱 누르면…' 토스트
                 꾹 = { 넣기.넣기(x) },
-                눌렀다 = { 오목범위.launch { 오목.animateTo(0.91f, tween(110)); 오목.animateTo(1f, androidx.compose.animation.core.spring(dampingRatio = 0.5f, stiffness = 400f)) } })
+                눌렀다 = 상자오목)
             if (펼 && t != null) 즐겨칸(상태, t)
             // 10-07 꾹 눌러 끌기 — 손은 누름보다 안쪽(먼저 받아야 끊기지 않는다). 꾹 누르고 떼어도 펼치지 않게 길게 누름은 빈 동작
-            Column(Modifier.weight(1f).눌림길게({ 펼침(x.열쇠) }, { }).격자끌기손(끌판, x.끌기키, x.이름, 켬 = false)) {
+            Column(
+                Modifier.weight(1f)
+                    .then(
+                        if (체크보임) Modifier.pointerInput(x.열쇠) {
+                            // ∨ 가운데에서 좌우 상자 폭의 15% (오른쪽은 상자 끝까지) = 펼침 · 접기 구역. 그 밖은 넣기
+                            val 구역 = { 0.15f * (if (카드폭[0] > 0) 카드폭[0] else size.width) + 펼침구역더 }
+                            detectTapGestures(
+                                onLongPress = { o -> if (o.x < size.width - 구역()) { 진동.performHapticFeedback(HapticFeedbackType.LongPress); 상자오목최신(); 꾹더최신() } },
+                                onTap = { o -> if (o.x >= size.width - 구역()) 펼침최신() else { 상자오목최신(); 넣기누름최신() } },
+                            )
+                        } else Modifier.눌림길게({ 펼침(x.열쇠) }, { }),
+                    )
+                    .격자끌기손(끌판, x.끌기키, x.이름, 켬 = false),
+            ) {
                 Row(
                     Modifier.fillMaxWidth().heightIn(min = maxOf(높이.아주낮게, 이름높이)),
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(if (펼) 간격.아주좁게 else 종목치수.접힌그림앞),
