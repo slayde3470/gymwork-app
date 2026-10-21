@@ -1854,15 +1854,18 @@ private fun 돌림상자(
             ) {
                 상자번호(번호, 좁게 = true)
                 // 10-21 홍겸 님: 플랜 종목에는 플랜 딱지 — 이름마다 딱지를 달아야 해서 한 글이 아니라 이름별로 그린다
+                // 10-21 홍겸 님: 한 차례에 종목이 둘 이상이면 슈퍼세트 상자처럼 종목마다 한 줄 · 로테이션 n/N 알약은 그 아래
                 val 차례 = g?.차례들?.getOrNull(오) ?: emptyList()
-                if (차례.isEmpty()) 줄이는이름(글, Modifier.weight(1f, fill = false), 크기.본문, FontWeight.Medium, c.글)
-                else Row(Modifier.weight(1f, fill = false), verticalAlignment = Alignment.CenterVertically) {
-                    차례.forEachIndexed { i, x ->
-                        if (i > 0) Text(" + ", style = 글꼴.보통(크기.본문, FontWeight.Medium), color = c.글, maxLines = 1, softWrap = false)
-                        종목이름딱지(상태.d, x.종id, x.이름, Modifier.weight(1f, fill = false), x.플랜id != null)
-                    }
+                if (차례.isEmpty()) {
+                    줄이는이름(글, Modifier.weight(1f, fill = false), 크기.본문, FontWeight.Medium, c.글)
+                    if (g != null) 알약("로테이션 ${오 + 1}/${g.차례들.size}", c.강조)
+                } else if (차례.size == 1) {
+                    종목이름딱지(상태.d, 차례[0].종id, 차례[0].이름, Modifier.weight(1f, fill = false), 차례[0].플랜id != null)
+                    if (g != null) 알약("로테이션 ${오 + 1}/${g.차례들.size}", c.강조)
+                } else Column(Modifier.weight(1f, fill = false)) {
+                    차례.forEach { x -> 종목이름딱지(상태.d, x.종id, x.이름, Modifier, x.플랜id != null) }
+                    if (g != null) Box(Modifier.padding(top = 2.dp)) { 알약("로테이션 ${오 + 1}/${g.차례들.size}", c.강조) }
                 }
-                if (g != null) 알약("로테이션 ${오 + 1}/${g.차례들.size}", c.강조)
             }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.5.dp)) {
                 val 각 by androidx.compose.animation.core.animateFloatAsState(if (펼침) 180f else 0f, tween(움직임.펼침), label = "돌림펼침단추")
