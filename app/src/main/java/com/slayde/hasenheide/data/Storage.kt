@@ -43,6 +43,7 @@ object 저장소 {
         o.put("카테고리", JSONArray().also { a -> d.카테고리.forEach { a.put(it) } })
         o.put("루틴들", JSONArray().also { a -> d.루틴들.forEach { a.put(루틴to(it)) } })
         o.put("그날운동", JSONArray().also { a -> d.그날운동.forEach { a.put(루틴to(it)) } })   // 10-09
+        o.put("돌림들", JSONArray().also { a -> d.돌림들.forEach { a.put(돌림to(it)) } })   // 10-21 (스키마 16)
         o.put("기록", JSONObject().also { m -> d.기록.forEach { (k, v) -> m.put(k, 날기록to(v)) } })
         o.put("예정", JSONObject().also { m -> d.예정.forEach { (k, v) -> m.put(k, v) } })
         o.put("일정", JSONObject().also { m -> d.일정.forEach { (k, v) -> m.put(k, JSONArray().also { a -> v.forEach { a.put(it) } }) } })
@@ -102,6 +103,15 @@ object 저장소 {
         .also { if (e.휴식값.isNotEmpty()) it.put("휴식값", JSONArray().also { h -> e.휴식값.forEach { h.put(it) } }) }
         .also { if (e.플랜id != null) it.put("플랜id", e.플랜id) }
         .also { if (e.종id != null) it.put("종id", e.종id) }
+        .also { if (e.돌림id != null) it.put("돌림id", e.돌림id).put("돌림k", e.돌림k) }   // 10-21 (스키마 16)
+
+    /** 10-21 (스키마 16) — 돌아가며 칸. 차례 하나 = 루틴 줄 목록 */
+    private fun 돌림to(g: 돌림칸) = JSONObject().put("id", g.id).put("다음", g.다음)
+        .put("차례들", JSONArray().also { a -> g.차례들.forEach { t -> a.put(JSONArray().also { b -> t.forEach { e -> b.put(루틴종목to(e)) } }) } })
+    private fun 돌림from(o: JSONObject): 돌림칸 {
+        val 차례 = 목록(o.optJSONArray("차례들")) { a, i -> a.optJSONArray(i)?.let { b -> 목록(b) { x, j -> 루틴종목from(x.getJSONObject(j)) } } ?: emptyList() }
+        return 돌림칸(o.getString("id"), 차례, o.optInt("다음", 0).let { if (차례.isEmpty()) 0 else it.coerceIn(0, 차례.size - 1) })
+    }
 
     private fun 루틴to(r: 루틴) = JSONObject().put("id", r.id).put("이름", r.이름).put("휴식일", r.휴식일).put("자동생성", r.자동생성)
         .also { o -> r.원래예정?.let { o.put("원래예정", it) }; r.원래고정?.let { o.put("원래고정", it) } }   // 10-09 그 날 운동
@@ -170,6 +180,7 @@ object 저장소 {
         .put("보고서보임", JSONObject().put("프로필", s.보고서보임.프로필).put("루틴", s.보고서보임.루틴))
         .put("큰운동추가", JSONArray().also { a -> s.큰운동추가.forEach { a.put(it) } })
         .put("업적정렬", s.업적정렬)
+        .put("돌림건너뜀", s.돌림건너뜀)   // 10-21 (스키마 16)
 
     private fun 세션to(S: 운동세션) = JSONObject().put("루틴id", S.루틴id).put("루틴이름", S.루틴이름)
         .put("시작시각", S.시작시각).put("i", S.i).put("s", S.s).put("무게", S.무게).put("횟수", S.횟수)
@@ -184,6 +195,7 @@ object 저장소 {
                     .put("임시", e.임시).put("마감", e.마감).also { if (e.슈퍼 != null) it.put("슈퍼", e.슈퍼) }
                     .also { if (e.플랜id != null) it.put("플랜id", e.플랜id) }
                     .also { if (e.종id != null) it.put("종id", e.종id) }
+                    .also { if (e.돌림id != null) it.put("돌림id", e.돌림id).put("돌림k", e.돌림k) }   // 10-21 (스키마 16)
                     .also { if (e.원번호.isNotEmpty()) it.put("원번호", JSONArray().also { a2 -> e.원번호.forEach { n -> a2.put(n ?: JSONObject.NULL) } }) })
             }
         })
@@ -206,6 +218,7 @@ object 저장소 {
         .put("향상", JSONArray().also { a -> z.향상.forEach { a.put(향상to(it)) } })
         .put("예정", JSONObject().also { m -> z.예정.forEach { (k, v) -> m.put(k, v) } })
         .also { o -> z.조절?.let { v -> o.put("조절", 조절to(v)) } }
+        .also { o -> if (z.돌림.isNotEmpty()) o.put("돌림", JSONArray().also { a -> z.돌림.forEach { a.put(돌림to(it)) } }) }   // 10-21 (스키마 16)
 
     private fun 피로to(f: Map<String, 피로상태>) = JSONObject().also { m -> f.forEach { (k, x) -> m.put(k, JSONArray().put(x.lv0).put(x.시작).put(x.끝)) } }
     private fun 조절to(v: 오늘조절) = JSONObject().put("볼륨", v.볼륨).put("무게", v.무게).put("세트", v.세트)
@@ -228,6 +241,7 @@ object 저장소 {
             카테고리 = if (o.has("카테고리")) 목록(o.optJSONArray("카테고리")) { a, i -> a.getString(i) } else 앱데이터.기본카테고리,
             루틴들 = 목록(o.optJSONArray("루틴들")) { a, i -> 루틴from(a.getJSONObject(i)) },
             그날운동 = 목록(o.optJSONArray("그날운동")) { a, i -> 루틴from(a.getJSONObject(i)).copy(자동생성 = false) },
+            돌림들 = 목록(o.optJSONArray("돌림들")) { a, i -> 돌림from(a.getJSONObject(i)) },   // 10-21 (스키마 16) — 옛 파일은 빈 목록
             기록 = 사전(o.optJSONObject("기록")) { m, k -> 날기록from(m.getJSONObject(k)) },
             예정 = 사전(o.optJSONObject("예정")) { m, k -> m.getString(k) },
             일정 = 사전(o.optJSONObject("일정")) { m, k -> 목록(m.optJSONArray(k)) { a, i -> a.getString(i) } },
@@ -337,7 +351,8 @@ object 저장소 {
         it.optInt("휴식", 90), 글또는널(it, "슈퍼"),
         세트들from(it.optJSONArray("세트값")).filterNotNull(),
         목록(it.optJSONArray("휴식값")) { h, j -> h.getInt(j) },
-        글또는널(it, "플랜id"), 종id = 글또는널(it, "종id"))
+        글또는널(it, "플랜id"), 종id = 글또는널(it, "종id"),
+        돌림id = 글또는널(it, "돌림id"), 돌림k = it.optInt("돌림k", -1))
 
     private fun 피로from(m: JSONObject?): Map<String, 피로상태> =
         사전(m) { x, k -> x.getJSONArray(k).let { a -> 피로상태(a.optDouble(0, 0.0), a.optLong(1, 0L), a.optLong(2, 0L)) } }
@@ -357,6 +372,7 @@ object 저장소 {
                 향상 = 목록(o.optJSONArray("향상")) { a, i -> 향상from(a.getJSONObject(i)) },
                 예정 = 사전(o.optJSONObject("예정")) { m, k -> m.getString(k) },
                 조절 = o.optJSONObject("조절")?.let { 조절from(it) },
+                돌림 = 목록(o.optJSONArray("돌림")) { a, i -> 돌림from(a.getJSONObject(i)) },   // 10-21 (스키마 16)
             )
         } catch (_: Exception) { null }   // 깨진 되감기 자료 때문에 세션 전체를 잃지 않게
     }
@@ -472,6 +488,7 @@ object 저장소 {
                 if (o.has("큰운동추가")) 목록(o.optJSONArray("큰운동추가")) { a, i -> a.optString(i, "") }
                 else when (o.optInt("큰운동", 0)) { 5 -> listOf("오버헤드 프레스", "바벨 로우"); 4 -> listOf("오버헤드 프레스"); else -> emptyList() }),
             업적정렬 = o.optString("업적정렬", "최신순").let { if (it in 업적정렬목록) it else "최신순" },
+            돌림건너뜀 = o.optString("돌림건너뜀", "다시").let { if (it == "넘어감") it else "다시" },   // 10-21 (스키마 16) — 옛 파일은 "다시"
         )
     }
 
@@ -486,6 +503,7 @@ object 저장소 {
                     목록(e.optJSONArray("휴식들")) { h, j -> if (h.isNull(j)) null else h.getInt(j) },
                     e.optBoolean("임시"), e.optBoolean("마감"), 글또는널(e, "슈퍼"),
                     플랜id = 글또는널(e, "플랜id"), 종id = 글또는널(e, "종id"),
+                    돌림id = 글또는널(e, "돌림id"), 돌림k = e.optInt("돌림k", 0),   // 10-21 (스키마 16)
                     원번호 = 목록(e.optJSONArray("원번호")) { n, j -> if (n.isNull(j)) null else n.getInt(j) },
                 )
             }

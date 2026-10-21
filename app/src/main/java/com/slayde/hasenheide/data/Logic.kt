@@ -233,7 +233,9 @@ private fun 앱데이터.그날예정되돌림(날: String, r: 루틴): 앱데�
  * 루틴 줄을 고치는 일(종목 이름 바꾸기 · 지우기 · 카테고리 지우기 · 플랜 이름 바꾸기 · 지우기)을 그 날 운동에도 똑같이 (10-09 감시관).
  * 종목이 하나도 안 남은 그 날 운동은 치우고 그 날 예정도 푼다(다음 예정맞추기가 다시 깐다)
  */
-internal fun 앱데이터.그날운동도(f: (루틴) -> 루틴): 앱데이터 {
+internal fun 앱데이터.그날운동도(f: (루틴) -> 루틴): 앱데이터 = 돌림도(f).그날운동도0(f)   // 10-21: 돌아가며 칸 안 종목도 같이 고친다
+
+private fun 앱데이터.그날운동도0(f: (루틴) -> 루틴): 앱데이터 {
     if (그날운동.isEmpty()) return this
     val 고친 = 그날운동.map { r -> f(r).let { it.copy(이름 = 그날운동이름(it)) } }
     val 빈 = 고친.filter { it.종목.isEmpty() }
@@ -602,14 +604,19 @@ fun 루틴종목.요약(): String {
 
 fun 운동시작(r: 루틴, 지금: Long): 운동세션? {
     if (r.휴식일 || r.종목.isEmpty()) return null
-    val 들 = r.종목.map {
-        val 첫 = it.목표(0)
-        세션종목(it.이름, it.세트, it.세트, 첫.w, 첫.r, it.휴식,
-            예정값 = if (it.세트값.isEmpty()) emptyList() else List(it.세트) { k -> it.목표(k) },
-            휴식들 = List(it.세트) { k -> it.휴식(k) }, 슈퍼 = it.슈퍼, 플랜id = it.플랜id, 종id = it.종id,
-            원번호 = List(it.세트) { k -> k })
-    }
+    // 10-21: 돌아가며 자리표시 줄은 [앱데이터.실제루틴] 으로 펼친 뒤에 온다 — 혹시 남아 있으면 건너뛴다
+    val 들 = r.종목.filter { !it.돌림자리 }.map { it.세션줄() }
+    if (들.isEmpty()) return null
     return 운동세션(r.id, r.이름, 지금, 0, 0, 들[0].무게, 들[0].횟수, 들)
+}
+
+/** 루틴 줄 → 운동 중 줄 (돌아가며 칸에서 온 줄이면 그 칸 · 차례를 달고 간다) */
+internal fun 루틴종목.세션줄(): 세션종목 {
+    val 첫 = 목표(0)
+    return 세션종목(이름, 세트, 세트, 첫.w, 첫.r, 휴식,
+        예정값 = if (세트값.isEmpty()) emptyList() else List(세트) { k -> 목표(k) },
+        휴식들 = List(세트) { k -> 휴식(k) }, 슈퍼 = 슈퍼, 플랜id = 플랜id, 종id = 종id,
+        원번호 = List(세트) { k -> k }, 돌림id = 돌림id, 돌림k = 돌림k.coerceAtLeast(0))
 }
 
 private fun 운동세션.종목바꿈(idx: Int, f: (세션종목) -> 세션종목): 운동세션 =
@@ -910,7 +917,7 @@ fun 앱데이터.운동저장(오늘: String, 지금: Long, 고정열쇠: String
         // 10-10: 자정을 걸쳐 끝난 운동은 시작한 날 예정이 '미실시'로 먼저 담겨 있다 → 그 날 기록이 생기면 미실시 · 쉰날 표시를 뺀다
         미실시 = 미실시 - 날짜만(열쇠), 쉰날 = 쉰날 - 날짜만(열쇠),
         루틴들 = 루틴들.map { if (it.id == S.루틴id && !S.조절됨) it.오늘반영(S).let { r -> if (올릴까) r.볼륨올리기(설정) { e -> 방식(e.종id, e.이름) } else r } else it },
-    )
+    ).돌림저장(S, 올릴까)   // 10-21: 돌아가며 칸 — 오늘 한 차례의 값을 그 칸에 되쓰고 다음 차례로
     val 줄 = 순번
     val i = 줄.indexOfFirst { it.id == S.루틴id }
     // 자동생성이 꺼진 루틴으로 운동했으면 순서는 건드리지 않는다
@@ -1010,13 +1017,14 @@ private fun 세션종목.원칸(k: Int): Int? = if (원번호.isEmpty()) k else 
  *  ② 무게 · 횟수 · 휴식 → 넘어간다. 세트마다 따로, 체크한 세트만, 루틴에 있던 세트 번호까지만
  * 같은 이름이 루틴에 두 번 있으면 나오는 순서대로 짝짓는다.
  */
-fun 루틴.오늘반영(S: 운동세션): 루틴 {
+fun 루틴.오늘반영(S: 운동세션, 돌림만: Boolean = false): 루틴 {
     // 10-01: 플랜 줄은 빼고 짝짓는다 — 플랜 줄의 값은 플랜이 정한다 (운동 중 바꾼 값은 플랜 계산에 들어간다)
-    val 정식 = S.종목들.filter { !it.임시 && it.플랜id == null }
+    // 10-21: 돌아가며 칸에서 온 줄은 루틴이 아니라 그 칸에 되쓴다 ([돌림만] = true 일 때만 그 줄들을 본다)
+    val 정식 = S.종목들.filter { !it.임시 && it.플랜id == null && (it.돌림id != null) == 돌림만 }
     // 10-05 (스키마 15): 열쇠(종id, 없으면 이름)로 짝짓는다 — 같은 이름의 다른 종목이 섞이지 않게. 옛 줄은 둘 다 이름이라 전과 같다
     val 쓴 = mutableMapOf<String, Int>()
     return copy(종목 = 종목.map { re ->
-        if (re.플랜id != null) return@map re
+        if (re.플랜id != null || re.돌림자리) return@map re
         val 열 = 종목열쇠(re.종id, re.이름)
         val n = 쓴.getOrDefault(열, 0); 쓴[열] = n + 1
         val e = 정식.filter { 종목열쇠(it.종id, it.이름) == 열 }.getOrNull(n) ?: return@map re
@@ -1097,7 +1105,10 @@ fun 앱데이터.루틴합치기(위id: String, 아래id: String, 새id: String)
     val b = 루틴(아래id) ?: return this
     if (위id == 아래id || a.휴식일 || b.휴식일) return this
     fun 옮김(r: 루틴, 표: String) = r.종목.map { e -> e.copy(슈퍼 = e.슈퍼?.let { "$새id-$표-$it" }) }
-    val 새 = 루틴(새id, "${a.이름} + ${b.이름}", 종목 = 옮김(a, "a") + 옮김(b, "b"), 자동생성 = false)
+    val 합 = 옮김(a, "a") + 옮김(b, "b")
+    val 본칸 = mutableSetOf<String>()
+    val 줄 = 합.filter { e -> !e.돌림자리 || e.돌림id?.let { 본칸.add(it) } != false }   // 같은 돌아가며 칸은 한 번만
+    val 새 = 루틴(새id, "${a.이름} + ${b.이름}", 종목 = 줄, 자동생성 = false)
     return copy(루틴들 = 루틴들 + 새)
 }
 
@@ -1134,7 +1145,7 @@ fun 루틴.종목옮기기(from: Int, to: Int, 뒤에: Boolean): 루틴 {
 fun 루틴.묶을수있다(from: Int, to: Int): Boolean {
     val a = 종목.getOrNull(from) ?: return false
     val b = 종목.getOrNull(to) ?: return false
-    if (from == to || a.플랜id != null || b.플랜id != null) return false
+    if (from == to || a.플랜id != null || b.플랜id != null || a.돌림자리 || b.돌림자리) return false
     return !(a.슈퍼 != null && a.슈퍼 == b.슈퍼)
 }
 
@@ -1501,7 +1512,7 @@ data class 뺀종목(
 private fun 운동세션.휴식종목(h: 휴식중): Int = if (h.종목 >= 0) h.종목 else i
 
 /** 입력 칸 값 — 그 세트에 적힌 것 · 따로 고친 것 · 종목 기본값 (자리로 와 같지만 끝화면은 건드리지 않는다) */
-private fun 운동세션.자리값(ni: Int, ns: Int): 운동세션 {
+internal fun 운동세션.자리값(ni: Int, ns: Int): 운동세션 {
     val e = 종목들.getOrNull(ni) ?: return copy(i = ni, s = ns)
     val v = e.기록.칸(ns) ?: e.예정값.칸(ns) ?: 세트(e.무게, e.횟수)
     return copy(i = ni, s = ns, 무게 = v.w, 횟수 = v.r)
@@ -1511,7 +1522,7 @@ private fun 운동세션.자리값(ni: Int, ns: Int): 운동세션 {
 private fun 세션종목.남음(): Boolean = !마감 && 덜한가()
 
 /** 번호를 새 순서로 — 휴식 · 다음i 도 함께. 휴식의 종목이 빠졌으면 휴식을 치우고, 다음i 가 빠졌으면 다음i · 다음s 를 비운다 */
-private fun 운동세션.번호맞춤(새종목들: List<세션종목>, 표: List<Int?>, 새i: Int): 운동세션 {
+internal fun 운동세션.번호맞춤(새종목들: List<세션종목>, 표: List<Int?>, 새i: Int): 운동세션 {
     val h = 휴식?.let { h0 ->
         val 새h = 표.getOrNull(휴식종목(h0)) ?: return@let null
         val 다음 = h0.다음i?.let { 표.getOrNull(it) }
@@ -1638,6 +1649,7 @@ fun 앱데이터.저장되감기(): Pair<앱데이터, 저장앞?> {
     val 향 = 향상기록들.toMutableList()
     z.향상.forEach { h -> val i = 향.lastIndexOf(h); if (i >= 0) 향.removeAt(i) }
     var d = copy(
+        돌림들 = 돌림들.되감음(z.돌림),
         기록 = if (지금열쇠 != null) 기록 - 지금열쇠 else 기록, 루틴들 = 루틴들2, 플랜들 = 플랜들2, 향상기록들 = 향, 피로 = z.피로, 최대볼륨 = z.최대볼륨,
         // 10-10: 저장 전 예정으로 돌리되, 그 사이 지운 루틴을 가리키는 날은 뺀다 (지운 루틴이 예정에 되살아나던 것)
         예정 = z.예정.filterValues { id -> 루틴(id) != null },
@@ -1679,6 +1691,7 @@ fun 앱데이터.보고저장(오늘: String, 지금: Long): Pair<앱데이터, 
         루틴 = d.루틴(S.루틴id)?.종목,
         플랜 = d.플랜들.filter { p -> S.종목들.any { it.플랜id == p.id } },
         피로 = d.피로, 최대볼륨 = d.최대볼륨, 예정 = d.예정, 조절 = d.조절[날],
+        돌림 = d.돌림들.filter { c -> S.종목들.any { it.돌림id == c.id } },   // 10-21: 이 운동이 만지는 돌아가며 칸
     )
     val 저 = d.운동저장하기(날, 지금, 앞.열쇠)
     val 새향 = if (저.향상기록들.size >= d.향상기록들.size) 저.향상기록들.drop(d.향상기록들.size) else emptyList()

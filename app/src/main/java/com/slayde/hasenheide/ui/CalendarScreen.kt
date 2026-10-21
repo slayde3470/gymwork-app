@@ -110,7 +110,8 @@ import com.slayde.hasenheide.data.조절해시작
 import com.slayde.hasenheide.data.측정워밍업붙임
 import com.slayde.hasenheide.data.콤마
 import com.slayde.hasenheide.data.총세트
-import com.slayde.hasenheide.data.플랜줄채움
+import com.slayde.hasenheide.data.실제루틴
+import com.slayde.hasenheide.data.돌림펼침
 import com.slayde.hasenheide.ui.theme.Local색
 import com.slayde.hasenheide.ui.theme.간격
 import com.slayde.hasenheide.ui.theme.글꼴
@@ -253,7 +254,7 @@ internal fun 캘판배치(n: Int, 펼침: Boolean): 캘판배치값 {
 
 /** 지난 기록 → 결과 화면에 넘길 운동세션 (끝난 모양). 달성 · 볼륨 · 시간이 기록과 같게 */
 internal fun 앱데이터.캘기록세션(rec: 날기록, 날: String): 운동세션 {
-    val 짝 = 루틴(rec.루틴id)
+    val 짝 = 루틴(rec.루틴id)?.let { 돌림펼침(it) }   // 10-21: 돌아가며 칸에서 온 종목도 계획 세트를 찾게
     val 초 = rec.걸린초.coerceAtLeast(0) * 1000L
     // 끝 = 기록의 끝 시각 (결과 화면이 이것으로 '방금 그 기록' 을 빼고 견준다). 시간 = 걸린초 (마무리에 머문 시간은 빠진 값)
     val 끝 = if (rec.끝시각 > 0) rec.끝시각
@@ -532,7 +533,7 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
                     이름표("루틴 고르기")   // 10-09 홍겸 님: 목록은 펼친 채, 무엇을 고르는지 작은 제목만 다시
                     Box(Modifier.height(간격.아주좁게))
                     d.루틴들.forEach { r ->
-                        val 곁 = (if (r.휴식일) "휴식" else "예상 ${시간글(예상초(d.플랜줄채움(r), d))}") + if (r.자동생성) "" else " · 수동"
+                        val 곁 = (if (r.휴식일) "휴식" else "예상 ${시간글(예상초(d.실제루틴(r), d))}") + if (r.자동생성) "" else " · 수동"
                         고르기줄(r.이름, 곁, 오른쪽 = if (d.예정[k] == r.id) 아이콘.체크 else null) {
                             열린 = null
                             상태.바꿈 { it.그날만바꾸기(r.id, k, 상태.오늘) }
@@ -843,7 +844,7 @@ private fun 날판(
 }
 
 /** 날짜 판에 보이는 그 날 루틴 — 플랜 줄은 지금 회차 처방으로, 그 날만 조절이 있으면 적용 (운동 시작 `조절해시작` 과 같은 차례) */
-private fun 앱데이터.보일루틴(k: String, r: 루틴): 루틴 = 플랜줄채움(r).조절적용(조절[k], 설정.무게폭) { e -> 방식(e.종id, e.이름) }
+private fun 앱데이터.보일루틴(k: String, r: 루틴): 루틴 = 실제루틴(r).조절적용(조절[k], 설정.무게폭) { e -> 방식(e.종id, e.이름) }
 
 /** 기록의 종목 줄 — '60kg × 9회'. 워밍업은 넣지 않는다. 세트 수는 보이지 않는다 (10-06 홍겸 님 ⑤ — 기록머리 칩에 합계가 있다) */
 private fun 기록줄들(rec: 날기록): List<Pair<String, String>> =
@@ -893,7 +894,7 @@ private fun Modifier.semanticsDesc(글: String): Modifier = this.semantics { con
 private fun 기록머리(d: 앱데이터, rec: 날기록, 켬: Boolean, 선위: Boolean, 지움모드: Boolean, on고름: () -> Unit) {
     val c = Local색.current
     val 량 = 운동량(rec)
-    val 짝 = d.루틴(rec.루틴id)
+    val 짝 = d.루틴(rec.루틴id)?.let { d.돌림펼침(it) }   // 10-21: 돌아가며 칸은 펼친 줄로 센다 (자리표시 줄은 세트 0)
     val 계획 = 짝?.let { r -> if (r.휴식일) null else 총세트(r) }
     // 달성이면 '13세트'(알약이 이미 다 했다고 말한다) · 미달성이면 '10/13세트'
     val 세트글 = if (!rec.달성 && 계획 != null && 계획 > 량.세트) "${량.세트}/${계획}세트" else "${량.세트}세트"
@@ -1044,7 +1045,7 @@ private fun 판단추(
                 // 측정일이면 플랜 줄 앞에 워밍업 (20 B-3 · 조절해시작과 같은 함수). 저장하면 그 날 '~2' 기록으로 따로 남는다
                 val dd = 상태.d
                 val rr = dd.루틴(다시.id)
-                시작(rr?.let { 운동시작(dd.측정워밍업붙임(dd.플랜줄채움(it)), System.currentTimeMillis()) })
+                시작(rr?.let { 운동시작(dd.측정워밍업붙임(dd.실제루틴(it)), System.currentTimeMillis()) })
             }, Modifier.weight(판단추폭.넓게), 주요 = true, 작게 = true, 세로여백 = 4.dp, 글배율 = 0.9f, 줄임 = true)
             // 10-08 홍겸 님: '기록 삭제' 로 줄이고 폭을 줄인다 — 줄어든 만큼 [한 번 더 운동하기] 가 넓어진다. 누르면 지움 모드
             버튼("기록 삭제", { on지움모드(true) }, Modifier.weight(판단추폭.좁게), 작게 = true, 세로여백 = 4.dp, 글배율 = 0.9f, 글색 = c.나쁨, 줄임 = true)

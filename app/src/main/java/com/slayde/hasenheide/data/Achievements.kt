@@ -304,7 +304,8 @@ class 판정자료(val d: 앱데이터, val 오늘: String) {
     fun 하루체중(번: Int): Long? = 체중들.groupBy { 시각날(it.시각) }.values.filter { it.size >= 번 }.minOfOrNull { it[번 - 1].시각 }
 
     /** 하체날 루틴 — 종목 줄 중 부위 '하체' 가 절반 이상 (2-11 [제안]) */
-    private fun 하체날(r: 루틴?): Boolean {
+    private fun 하체날(r0: 루틴?): Boolean {
+        val r = r0?.let { d.돌림펼침(it) }   // 10-21: 돌아가며 칸은 지금 차례 종목으로 본다
         if (r == null || r.휴식일 || r.종목.isEmpty()) return false
         val 하 = r.종목.count { 부위(종목기록(it.이름, emptyList(), 플랜id = it.플랜id)) == "하체" }
         return 하 * 2 >= r.종목.size
@@ -318,7 +319,8 @@ class 판정자료(val d: 앱데이터, val 오늘: String) {
 
     /** 2-32 — 루틴(또는 지금 운동)의 휴식이 [초] 이상인 줄이 있나 */
     fun 긴휴식(초: Int): Boolean =
-        d.루틴들.any { r -> r.종목.any { e -> e.휴식 >= 초 || e.휴식값.any { it >= 초 } } } ||
+        d.루틴들.any { r -> r.종목.any { e -> !e.돌림자리 && (e.휴식 >= 초 || e.휴식값.any { it >= 초 }) } } ||
+            d.돌림들.any { c -> c.차례들.any { t -> t.any { e -> e.휴식 >= 초 || e.휴식값.any { it >= 초 } } } } ||
             d.세션?.종목들?.any { e -> e.휴식 >= 초 || e.휴식들.any { (it ?: 0) >= 초 } } == true
 
     /** 1-44 — 1년(365일) 전 스탯기록과 견줘 둘 다 값이 있는 스탯이 모두 올랐나 (스트레스 뺌) */
@@ -463,7 +465,7 @@ private val 정의표: Map<String, 정의> = linkedMapOf(
     "2-15" to 사건 { z, i -> (z.시작시(i) ?: -1) in 3..4 },
     "2-16" to 사건 { z, i -> z.기록들[i].걸린초 in 1..300 },
     "2-17" to 세기(세기이름.연속건너뜀, 10),
-    "2-19" to 정의(판정법.상태 { z, 지금 -> if (z.d.루틴들.any { r -> r.종목.groupingBy { it.이름 }.eachCount().values.any { it >= 5 } }) 지금 else null }),
+    "2-19" to 정의(판정법.상태 { z, 지금 -> if (z.d.루틴들.any { r -> r.종목.filter { !it.돌림자리 }.groupingBy { it.이름 }.eachCount().values.any { it >= 5 } }) 지금 else null }),
     "2-20" to 정의(판정법.상태 { z, _ -> z.하루체중(3) }),
     // '목표' = 그 회차 계획값 [제안] — 측정할 때 남는 향상기록의 예상값
     "2-24" to 정의(판정법.상태 { z, _ -> z.d.향상기록들.filter { it.예상값 > 0 && it.측정값 >= it.예상값 * 1.2 - 업적글.여유 }.minOfOrNull { it.날짜 }?.let { 날시각(it) } }),
