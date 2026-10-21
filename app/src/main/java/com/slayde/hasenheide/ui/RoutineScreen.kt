@@ -960,6 +960,7 @@ private fun 상자머리(시작: Dp = 간격.보통, 끝: Dp = 간격.아주좁�
 /** 상자 머리 맨 앞 번호 (1부터) — 13 굵게 · 흐림 · tnum · 폭 고정 */
 @Composable
 private fun 상자번호(번호: Int, 좁게: Boolean = false) {
+    if (번호 <= 0) return   // 10-21 홍겸 님: 로테이션 차례 안 종목은 번호를 안 단다 (0 = 번호 없음)
     Text(
         번호.toString(), if (좁게) Modifier.widthIn(min = 9.dp) else Modifier.width(루틴값.상자번호폭),
         style = 글꼴.보통(크기.조금작게, FontWeight.Bold).copy(fontFeatureSettings = "tnum"),
@@ -1852,7 +1853,15 @@ private fun 돌림상자(
                 horizontalArrangement = Arrangement.spacedBy(7.dp),
             ) {
                 상자번호(번호, 좁게 = true)
-                줄이는이름(글, Modifier.weight(1f, fill = false), 크기.본문, FontWeight.Medium, c.글)
+                // 10-21 홍겸 님: 플랜 종목에는 플랜 딱지 — 이름마다 딱지를 달아야 해서 한 글이 아니라 이름별로 그린다
+                val 차례 = g?.차례들?.getOrNull(오) ?: emptyList()
+                if (차례.isEmpty()) 줄이는이름(글, Modifier.weight(1f, fill = false), 크기.본문, FontWeight.Medium, c.글)
+                else Row(Modifier.weight(1f, fill = false), verticalAlignment = Alignment.CenterVertically) {
+                    차례.forEachIndexed { i, x ->
+                        if (i > 0) Text(" + ", style = 글꼴.보통(크기.본문, FontWeight.Medium), color = c.글, maxLines = 1, softWrap = false)
+                        종목이름딱지(상태.d, x.종id, x.이름, Modifier.weight(1f, fill = false), x.플랜id != null)
+                    }
+                }
                 if (g != null) 알약("로테이션 ${오 + 1}/${g.차례들.size}", c.강조)
             }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.5.dp)) {
@@ -1903,7 +1912,7 @@ private fun 돌림속(상태: 앱상태, g: 돌림칸, on넣기: (String, Int) -
                     // 10-21: 플랜 줄 — 무게 · 횟수는 플랜이 정한다 (루틴의 플랜 상자와 같다). 누르면 플랜 고치기
                     val p = 상태.d.플랜들.firstOrNull { it.id == x.플랜id }
                     플랜상자(
-                        상태, x, p, j + 1, j in 펼친줄, Modifier, -1, Modifier,
+                        상태, x, p, 0, j in 펼친줄, Modifier, -1, Modifier,
                         on펼침 = { 초점.clearFocus(); 펼친줄 = if (j in 펼친줄) 펼친줄 - j else 펼친줄 + j },
                         on고치기 = { 초점.clearFocus(); if (p != null) { 발자취.적기("로테이션에서 플랜 고치기 · ${p.이름}"); 플랜고침.value = p.id } },
                         on빼기 = {
@@ -1914,7 +1923,7 @@ private fun 돌림속(상태: 앱상태, g: 돌림칸, on넣기: (String, Int) -
                         },
                     )
                 } else 종목상자(
-                    상태, x, j + 1, j in 펼친줄, Modifier, -1, Modifier, {},
+                    상태, x, 0, j in 펼친줄, Modifier, -1, Modifier, {},
                     묶음글 = null, on풀기 = {},
                     on펼침 = { 초점.clearFocus(); 펼친줄 = if (j in 펼친줄) 펼친줄 - j else 펼친줄 + j },
                     on빼기 = {
