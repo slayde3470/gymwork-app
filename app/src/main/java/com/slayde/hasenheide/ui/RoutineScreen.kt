@@ -1387,15 +1387,16 @@ private fun 플랜상자(
     val 비율 = p?.let { 플랜달성률(it) } ?: 0.0
     val 퍼 = (비율 * 100).roundToInt()
     Column(modifier.fillMaxWidth().clip(모양).background(c.강조옅음).border(선굵기.보통, c.속선, 모양).놓을선(표시, c.강조)) {
-        상자머리 {
+        // 10-21 홍겸 님: 일반 종목 줄과 같게 — 번호 좁게 · 번호 좌우 7 (플랜만 번호 옆이 넓었다)
+        상자머리(시작 = 7.dp) {
             Row(
                 Modifier.weight(1f).heightIn(min = 높이.낮게).then(끌기길)
                     .semantics(mergeDescendants = true) { contentDescription = "${e.이름} 플랜 고치기 · ${세트수}세트 · 달성률 ${퍼}%" }
                     .then(if (p != null) Modifier.눌림(on고치기) else Modifier),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(간격.아주좁게),
+                horizontalArrangement = Arrangement.spacedBy(7.dp),
             ) {
-                상자번호(번호)
+                상자번호(번호, 좁게 = true)
                 이름딱지(e.이름, Modifier.weight(1f, fill = false), 플랜 = true)
                 루플랜글("${세트수}세트 · ${if (회 != null) "${회.회}회차" else "목표 달성"}")
             }
@@ -1405,7 +1406,7 @@ private fun 플랜상자(
             }
         }
         Row(
-            Modifier.fillMaxWidth().then(if (p != null) Modifier.눌림(on고치기) else Modifier).padding(start = 간격.보통, end = 간격.보통, bottom = 간격.좁게),
+            Modifier.fillMaxWidth().then(if (p != null) Modifier.눌림(on고치기) else Modifier).padding(start = 7.dp, end = 간격.보통, bottom = 간격.좁게),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(간격.아주좁게),
         ) {
