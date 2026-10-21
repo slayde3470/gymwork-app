@@ -633,7 +633,7 @@ fun 이름딱지(
     번호: Int = 0,
     플랜: Boolean = false,
     크기값: TextUnit = 크기.본문,
-    굵기: FontWeight = FontWeight.Bold,
+    굵기: FontWeight = FontWeight.Medium,
     색: Color = Local색.current.글,
 ) {
     Row(modifier, verticalAlignment = Alignment.CenterVertically) {

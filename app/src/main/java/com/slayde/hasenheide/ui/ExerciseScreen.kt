@@ -515,7 +515,7 @@ private fun 종목상자(상태: 앱상태, x: 종목칸값, 펼: Boolean, modif
                                     .semantics(mergeDescendants = true) { contentDescription = "${x.이름} 이름 고치기" }
                                     .눌림 { 이름고침 = true },
                                 contentAlignment = Alignment.CenterStart,
-                            ) { 이름맞춤(x.이름, Modifier, 바탕크기 = 종목치수.이름글 * 1.25f, 굵기 = FontWeight.Bold) }   // 10-11 홍겸 님: 펼친 머리 이름 키우고 굵게
+                            ) { 이름맞춤(x.이름, Modifier, 바탕크기 = 종목치수.이름글 * 1.25f, 굵기 = FontWeight.Medium) }   // 10-11 홍겸 님: 펼친 머리 이름 키우고 굵게
                             else { if (!펼 && 넣기 == null && 즐겨) 별(true, 15.dp, c.즐겨, Modifier.padding(end = 2.dp))   // 10-11: 종목 탭엔 체크 상자가 없으니 이름 앞 노란 별
                             이름맞춤(x.이름, Modifier.weight(1f, fill = false), 바탕크기 = 종목치수.이름글, 굵기 = FontWeight.Medium, 두줄촘촘 = !펼, 자간넓힘폭 = if (체크보임) 넣기값.체크옆넓힘 else 0.dp) }
                             if (번 > 0 || 플.isNotEmpty()) Row(Modifier.padding(start = if (번 > 0) 부품치수.딱지띄움 else 0.dp), horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
