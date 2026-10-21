@@ -625,7 +625,27 @@ private fun 딱지글(글: String, 번호: Boolean, modifier: Modifier) {
     }
 }
 
-/** 이름 + [번호][플랜] 딱지 — 이름은 길면 … (U2-7 이름만). 딱지는 이름 오른쪽 위에 5 겹친다 (시안 `번호이름` · `이름플랜`) */
+/**
+ * 종목 이름 한 줄 — 안 들어가면 **글씨를 먼저 줄인다** (15 → 13 → 11, U2-1 의 크기 단계만 · 10-21 홍겸 님).
+ * 11 로도 안 들어갈 때만 … 로 자른다 (U2-7 이름만)
+ */
+@Composable
+fun 줄이는이름(
+    이름: String,
+    modifier: Modifier = Modifier,
+    크기값: TextUnit = 크기.본문,
+    굵기: FontWeight = FontWeight.Medium,
+    색: Color = Local색.current.글,
+) {
+    val 단계 = remember(크기값) { listOf(크기값) + listOf(크기.조금작게, 크기.작게).filter { it.value < 크기값.value } }
+    var 칸 by remember(이름, 크기값) { mutableIntStateOf(0) }
+    Text(
+        이름, modifier, style = 글꼴.보통(단계[칸], 굵기), color = 색, maxLines = 1, overflow = TextOverflow.Ellipsis,
+        onTextLayout = { r -> if (r.hasVisualOverflow && 칸 < 단계.lastIndex) 칸 += 1 },
+    )
+}
+
+/** 이름 + [번호][플랜] 딱지 — 이름은 안 들어가면 글씨를 줄이고, 그래도 길면 … (U2-7 이름만). 딱지는 이름 오른쪽 위에 5 겹친다 (시안 `번호이름` · `이름플랜`) */
 @Composable
 fun 이름딱지(
     이름: String,
@@ -637,7 +657,7 @@ fun 이름딱지(
     색: Color = Local색.current.글,
 ) {
     Row(modifier, verticalAlignment = Alignment.CenterVertically) {
-        Text(이름, Modifier.weight(1f, fill = false), style = 글꼴.보통(크기값, 굵기), color = 색, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        줄이는이름(이름, Modifier.weight(1f, fill = false), 크기값, 굵기, 색)
         if (번호 > 0 || 플랜) Row(Modifier.padding(start = if (번호 > 0) 부품치수.딱지띄움 else 0.dp), horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
             번호딱지(번호)
             if (플랜) 플랜딱지()

@@ -1856,7 +1856,7 @@ private fun 돌림상자(
                 horizontalArrangement = Arrangement.spacedBy(7.dp),
             ) {
                 상자번호(번호, 좁게 = true)
-                Text(글, Modifier.weight(1f, fill = false), style = 글꼴.보통(크기.본문, FontWeight.Medium), color = c.글, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                줄이는이름(글, Modifier.weight(1f, fill = false), 크기.본문, FontWeight.Medium, c.글)
                 if (g != null) 알약("로테이션 ${오 + 1}/${g.차례들.size}", c.강조)
             }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.5.dp)) {
