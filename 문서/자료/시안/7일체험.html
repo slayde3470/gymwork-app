@@ -1691,6 +1691,13 @@ button.칭호표.잠김{font-family:inherit;background:none;cursor:pointer}
 .넘김.루넘김{padding-bottom:calc(12px + 40px + 12px)}
 /* ④ 2열 격자 — 가로 먼저. 펼친 상자(.루펼)는 한 줄 전체. 빈칸 채우기(dense)는 하지 않는다 = 순서 그대로
    (오른쪽 상자를 펼치면 다음 줄 전체로 내려가고 앞 줄 오른쪽은 빈다) */
+/* 10-21 v26 돌아가는 종목 칸 */
+.돌림표{flex:none;border:1px solid var(--강조);color:var(--강조)}
+.돌림칩줄{margin:8px 0}
+.돌림다음{font-style:normal;font-weight:400;font-size:11px;margin-left:4px}
+.돌림단추{margin-top:8px}
+.돌림단추>.버튼{flex:1 1 0;min-width:0}
+.돌림빼기{color:var(--나쁨)}
 .루격자{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:8px}
 .루격자>.종목상자{margin-bottom:0;min-width:0}
 .루격자>.루펼{grid-column:1/-1}
@@ -2626,6 +2633,7 @@ function 루틴종목상자(e,i){
   if(e.플랜id){ const p=플랜(e.플랜id), x=p&&플랜처방(p), fr=p?플랜달성률(p):0, 퍼=Math.round(fr*100);
     const 글=`${줄세트(e).length}세트</span><span class="루플랜글 숫">${x?`${x.계.회}회차`:"목표 달성"}</span><i class="루줄바꿈" aria-hidden="true"></i><span class="게이지3 루플랜게" aria-hidden="true"><i style="width:${퍼}%"></i></span><span class="루플랜퍼 숫" aria-label="달성률 ${퍼}%">${퍼}%`;
     return `<div class="종목상자 루플랜" data-drag="종목줄" data-i="${i}" data-drop="종목줄"><div class="루머리"><div class="채움 루플랜줄"${p?` data-act="플랜고치기" data-v="${p.id}" role="button" tabindex="0" aria-label="${esc(e.이름)} 플랜 고치기"`:""}><span class="이름플랜"><b>${esc(e.이름)}</b>${플랜딱지}</span><span class="루플랜글 숫">${글}</span></div>${빼기}</div></div>`; }
+  if(e.돌림) return 돌림상자(e,i,빼기);   // 10-21 v26
   /* h627 · 9kht 세트 줄 = [번호][무게][횟수][휴식][휴지통] · 높이 28. 세트가 하나면 휴지통은 꺼 둔다 */
   const 하나 = e.세트.length<=1;
   /* 10-04 v18 D ① 처음엔 접힘 — 이름 줄([이름 · N세트 ▾])만. 줄을 누르면 펼침/접힘. 줄은 div(끌기 살리려고 · 플랜 줄과 같은 까닭) */
@@ -2634,7 +2642,18 @@ function 루틴종목상자(e,i){
   return `<div class="종목상자 루펼" data-drag="종목줄" data-i="${i}" data-drop="종목줄">${머리}
     <div class="세트머리 루 아주작 옅음"><span>세트</span><span>무게 kg</span><span>횟수</span><span>휴식</span><span></span></div>
     ${e.세트.map((s,k)=>`<div class="루세트"><span class="k">${k+1}</span>${루값("w",s.w,i,k)}${루값("r",s.r,i,k)}${루값("휴",s.휴,i,k)}<button class="루지움" data-act="루세트지움" data-i="${i}" data-k="${k}" aria-label="${k+1}세트 지우기"${하나?" disabled":""}>${아이콘.휴지통}</button></div>`).join("")}
-    <button class="버튼 낮 넓" data-act="루세트" data-i="${i}" data-d="1">+ 세트</button></div>`; }
+    <div class="줄 돌림단추"><button class="버튼 낮" data-act="루세트" data-i="${i}" data-d="1">+ 세트</button><button class="버튼 낮" data-act="돌림추가" data-i="${i}">+ 돌아가며</button></div></div>`; }   /* 10-21 v26 [+ 돌아가며] */
+/* 10-21 v26 돌아가는 종목 칸 — e.돌림 = 칸 안 종목들(지금 보는 것은 e 자신에 펼쳐 둔다 · e.본) · e.차례 = 다음에 할 것 */
+function 돌림이름(e,k){ return k===e.본 ? e.이름 : e.돌림[k].이름; }
+function 돌림맞춤(e,k){ e.돌림[e.본]={이름:e.이름, ...(e.종id?{종id:e.종id}:{}), 세트:e.세트}; const t=e.돌림[k]; e.이름=t.이름; if(t.종id) e.종id=t.종id; else delete e.종id; e.세트=t.세트; e.본=k; }
+function 돌림상자(e,i,빼기){ const n=e.돌림.length, 오=e.차례, 펼=U.루펼침.has(e), 하나=e.세트.length<=1;
+  const 머리=`<div class="루머리"><div class="채움 루접줄" data-act="루펼침" data-i="${i}" role="button" tabindex="0" aria-expanded="${펼}"><b>${esc(돌림이름(e,오))}</b><span class="알약 돌림표 숫" aria-label="돌아가며 ${n}개 중 ${오+1}번째">돌아가며 ${오+1}/${n}</span><span class="접힘표 ${펼?"펼":""}">▾</span></div>${빼기}</div>`;
+  if(!펼) return `<div class="종목상자 루접힘 돌림칸" data-drag="종목줄" data-i="${i}" data-drop="종목줄">${머리}</div>`;
+  return `<div class="종목상자 루펼 돌림칸" data-drag="종목줄" data-i="${i}" data-drop="종목줄">${머리}
+    <div class="칩줄 돌림칩줄">${e.돌림.map((t,k)=>`<button class="칩 ${k===e.본?"켬":""}" data-act="돌림보기" data-i="${i}" data-k="${k}">${esc(돌림이름(e,k))}${k===오?`<i class="돌림다음">다음</i>`:""}</button>`).join("")}</div>
+    <div class="세트머리 루 아주작 옅음"><span>세트</span><span>무게 kg</span><span>횟수</span><span>휴식</span><span></span></div>
+    ${e.세트.map((s,k)=>`<div class="루세트"><span class="k">${k+1}</span>${루값("w",s.w,i,k)}${루값("r",s.r,i,k)}${루값("휴",s.휴,i,k)}<button class="루지움" data-act="루세트지움" data-i="${i}" data-k="${k}" aria-label="${k+1}세트 지우기"${하나?" disabled":""}>${아이콘.휴지통}</button></div>`).join("")}
+    <div class="줄 돌림단추"><button class="버튼 낮" data-act="루세트" data-i="${i}" data-d="1">+ 세트</button><button class="버튼 낮" data-act="돌림추가" data-i="${i}">+ 돌아가며</button><button class="버튼 낮 돌림빼기" data-act="돌림빼기" data-i="${i}">이 종목 빼기</button></div></div>`; }
 
 /* ── 플랜 만들기 ── */
 function 폼입력(f, 라벨, 단위){ return `<label class="칸">${라벨}<span class="입력줄"><input class="입력" data-in="폼" data-f="${f}" inputmode="decimal" value="${esc(U.플랜폼[f])}"><em>${단위}</em></span></label>`; }
@@ -3280,7 +3299,7 @@ function 시트(){ if(!U.시트) return ""; const 종=U.시트.종류; let 안="
   else if(종==="종목넣기"){ const r=넣을곳(); if(!r){ U.시트=null; return ""; }
     /* jmg1 '운동 플랜' 묶음 없음 — 플랜은 목록 안에서 [플랜] 표로. w0fo [전체] 맨 왼쪽 · 칩 7개가 360 폭 한 줄에 들어가게 같은 폭 */
     /* v19 C ④ 칩줄 한 줄 + 넘칠 때만 끝에 ‹ › (숨김/보임은 칩화살맞춤) · ② 새 종목 단추는 오른쪽 아래 구석에 떠 있다 · ③ 상시 설명 지움 */
-    안 = 머리(`${esc(r.이름)}에 넣기`, "확인") + `<div class="넣기칩">${칩줄("칸고름","",["전체",...S.카테고리],U.칸고름)}<button class="칩화살 왼" aria-label="칩 왼쪽 보기" hidden>${칩화살그림("M15 6l-6 6 6 6")}</button><button class="칩화살 오" aria-label="칩 오른쪽 보기" hidden>${칩화살그림("M9 6l6 6-6 6")}</button></div>`
+    안 = 머리(U.시트.대상==="돌림" ? `돌아가며 넣기 · ${esc(r.종목[U.시트.돌림i]?.이름??"")}` : `${esc(r.이름)}에 넣기`, "확인")   /* 10-21 v26 */ + `<div class="넣기칩">${칩줄("칸고름","",["전체",...S.카테고리],U.칸고름)}<button class="칩화살 왼" aria-label="칩 왼쪽 보기" hidden>${칩화살그림("M15 6l-6 6 6 6")}</button><button class="칩화살 오" aria-label="칩 오른쪽 보기" hidden>${칩화살그림("M9 6l6 6-6 6")}</button></div>`
       + `<div class="넣기목록" data-k="${esc(U.칸고름)}">${넣기목록(r)}</div>`
       + `<button class="버튼 낮 주 넣기새" data-act="새종목열기">+ 새 종목 만들기</button>`; 높=true; }
   else if(종==="새종목"){ 안 = 새종목시트(); 높=true; }   // 10-04 v18 C ⑤
@@ -3939,9 +3958,19 @@ function 행동(a, d){
       setTimeout(()=>{ if(U.세트지움?.id!==id) return; U.세트지움=null; document.querySelectorAll(".루지움띠").forEach(el=>{ el.classList.add("나감띠"); setTimeout(()=>el.remove(),200); }); }, 6000); break; }
     case "루세트되돌림": { const x=U.세트지움; U.세트지움=null; const r=x&&루틴(x.r); if(r&&r.종목.includes(x.e)){ x.e.세트.splice(Math.min(x.k,x.e.세트.length),0,x.세트); 발자취(`세트 되돌림 · ${x.이름}`); } break; }
     case "종목빼기": { const r=루틴(U.루틴열림); r.종목.splice(+d.i,1); break; }
+    case "돌림보기": { const e=루틴(U.루틴열림)?.종목[+d.i]; if(e?.돌림 && +d.k!==e.본) 돌림맞춤(e,+d.k); break; }   // 10-21 v26
+    case "돌림추가": U.시트={종류:"종목넣기", 대상:"돌림", 돌림i:+d.i, 모드:"이 날만"}; U.방금=[]; U.칸고름="전체"; break;
+    case "돌림빼기": { const e=루틴(U.루틴열림)?.종목[+d.i]; if(!e?.돌림) break; const k=e.본; e.돌림.splice(k,1);
+      if(e.차례>k) e.차례--; if(e.차례>=e.돌림.length) e.차례=0;
+      const m=Math.min(k,e.돌림.length-1), t=e.돌림[m]; e.이름=t.이름; if(t.종id) e.종id=t.종id; else delete e.종id; e.세트=t.세트; e.본=m;
+      if(e.돌림.length<2){ delete e.돌림; delete e.본; delete e.차례; } break; }
     case "루펼침": { const e=루틴(U.루틴열림)?.종목[+d.i]; if(e){ if(U.루펼침.has(e)) U.루펼침.delete(e); else U.루펼침.add(e); } break; }   // v18 D ①
     case "칸고름": U.칸고름=d.v; break;
-    case "종목넣기": { const r=넣을곳(), 운=r===S.세션, 열=`e:${d.v}`;
+    case "종목넣기": if(U.시트?.대상==="돌림"){ const e=루틴(U.루틴열림)?.종목[U.시트.돌림i];   // 10-21 v26
+        if(e){ const t=종목표찾기(d.v); if(!e.돌림){ e.돌림=[{이름:e.이름, ...(e.종id?{종id:e.종id}:{}), 세트:e.세트}]; e.본=0; e.차례=0; }
+          e.돌림.push({이름:t?t.이름:d.v, ...(t?.id?{종id:t.id}:{}), 세트:종목기본세트(d.v)}); U.루펼침.add(e); }
+        U.시트=null; break; }
+    { const r=넣을곳(), 운=r===S.세션, 열=`e:${d.v}`;
       const 맞=e=>줄키(e)===d.v&&!e.플랜id;   // v19 D ② d.v = 열쇠
       if(!d.더 && r.종목.some(맞)){ 넣은것뺌(r, 맞); }   // v19 C ③ 들어간 칸 누름 = 하나 빼기 · 안 들어간 칸 누름 · 꾹 = 하나 넣기
       else { const 세=종목기본세트(d.v), t=종목표찾기(d.v); r.종목.push({이름:t?t.이름:d.v, ...(t?.id?{종id:t.id}:{}), 세트:운?운세트로(세):세}); U.방금.push(열); if(!운) 업적알림(업적판정("루틴")); if(!d.더) setTimeout(()=>넣기말풍선(열)); } break; }
