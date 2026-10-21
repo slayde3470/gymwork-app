@@ -129,6 +129,9 @@ object 종목사전 {
         사전종목("스컬 크러셔", "팔", listOf("라잉 트라이셉스 익스텐션", "EZ바 스컬 크러셔"), mapOf("triceps" to "P")),
         사전종목("덤벨 킥백", "팔", listOf("트라이셉스 킥백")),
         사전종목("클로즈그립 벤치프레스", "팔", listOf("클로즈 그립 벤치프레스", "내로우 그립 벤치"), mapOf("triceps" to "P", "chest_mid" to "S", "delt_front" to "S")),
+        // 10-21 홍겸 님 요청. JM 블레이클리(파워리프터)가 만든 클로즈그립 벤치 + 스컬크러셔 혼합 동작 (EliteFTS 본인 설명 · Catalyst Athletics · Garage Gym Reviews).
+        // 근육 = 삼두 주동 · 가슴 · 전면 어깨 보조 — 글 서술에 근거한 추정이고 EMG 직접 근거는 약하다 (학생 포스터 n=1 뿐 · 논문 못 찾음). 클로즈그립 벤치프레스와 같은 값
+        사전종목("JM 프레스", "팔", listOf("JM Press", "제이엠 프레스"), mapOf("triceps" to "P", "chest_mid" to "S", "delt_front" to "S")),
         사전종목("벤치 딥스", "맨몸", listOf("체어 딥스"), mapOf("triceps" to "P", "delt_front" to "S", "chest_lower" to "Y")),
         사전종목("팔굽혀펴기", "가슴", listOf("푸시업", "푸쉬업")),   // 10-06 v22 ⑪ 카테고리 = 가슴 (시안 종목사전 칸 · 전에는 맨몸 → 칸이 비었다)
         사전종목("인클라인 푸시업", "맨몸", emptyList(), mapOf("chest_lower" to "P", "chest_mid" to "S", "triceps" to "S", "delt_front" to "Y")),
