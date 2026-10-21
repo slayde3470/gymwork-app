@@ -665,7 +665,8 @@ private fun 루틴상세화면(상태: 앱상태, r: 루틴, 닫기: () -> Unit)
                                     on빼기 = { 종목뺌(j) },
                                     on넣기 = { id, k -> 돌림창 = id to k },
                                     on풀기 = { 로테이션풀기(j) })
-                                else if (e.플랜id != null) 플랜상자(상태, e, p, j + 1, 자리줄, 표시, 끌기길, 손잡이,
+                                else if (e.플랜id != null) 플랜상자(상태, e, p, j + 1, j in 펼침, 자리줄, 표시, 끌기길,
+                                    on펼침 = { 손댐(); 펼침바꿈 { s -> if (j in s) s - j else s + j } },
                                     on고치기 = { 손댐(); if (p != null) { 발자취.적기("루틴에서 플랜 고치기 · ${p.이름}"); 플랜고침.value = p.id } },
                                     on빼기 = { 종목뺌(j) })
                                 else 종목상자(상태, e, j + 1, j in 펼침, 자리줄, 표시, 끌기길, 손잡이,
@@ -992,12 +993,6 @@ private fun 끌기손(끌: 세로끌기, rid: String, j: Int, 놓기: () -> Unit
         }
 }
 
-/** 휴지통 — 루틴에서 이 종목 빼기 (v22 ⑤ ✕ → 휴지통 · 세트 줄 휴지통과 같은 아이콘 · 옅음 · 누르는 칸 32 · 그림 18) */
-@Composable
-private fun 빼기단추(이름: String, on누름: () -> Unit) {
-    아이콘버튼(아이콘.지우기, "$이름 빼기", on누름, 칠함 = false, 색 = Local색.current.옅음, 크기칸 = 높이.낮게)
-}
-
 /**
  * 슈퍼세트 상자 (10-11 홍겸 님) — 묶인 종목을 한 상자로: 주황 굵은 테두리 · 연한 주황 바탕.
  * 번호는 묶음 맨 앞 종목의 번호(6 · 7 이어도 6). 머리 = [번호][종목 이름들(줄마다)][합친 세트 수는 맨 아래] … [∨][손잡이 / 펼치면 휴지통].
@@ -1051,7 +1046,7 @@ private fun 슈퍼상자(
                 }
                 if (펼침) Box(Modifier.width(18.dp).height(높이.낮게).눌림(on빼기), contentAlignment = Alignment.Center) {
                     Icon(아이콘.지우기, "슈퍼세트 종목 모두 빼기", Modifier.size(20.dp), tint = c.글)
-                } else Box(Modifier.width(18.dp).height(높이.낮게), contentAlignment = Alignment.Center) { 손잡이() }
+                }
             }
         }
         if (펼침) {
@@ -1207,7 +1202,7 @@ private fun 종목상자(
                 }
                 if (펼침) Box(Modifier.width(18.dp).height(높이.낮게).눌림(on빼기), contentAlignment = Alignment.Center) {
                     Icon(아이콘.지우기, "${e.이름} 빼기", Modifier.size(20.dp), tint = c.글)   // 굵게 눈에 띄게 — 진한 색 · 조금 크게
-                } else Box(Modifier.width(18.dp).height(높이.낮게), contentAlignment = Alignment.Center) { 손잡이() }
+                }
             }
         }
         if (펼침) {
@@ -1371,54 +1366,54 @@ private fun 톡단추(그림: androidx.compose.ui.graphics.vector.ImageVector, �
 }
 
 /**
- * 플랜 상자 (시안 c1gz · v19 C ⑤) — 10-08 한 줄 전체. 머리 [번호][이름[플랜]][흐린 N세트 · N회차] … [휴지통][손잡이] + 아래 줄 [게이지 %].
- * 플랜 상자는 펼치지 않는다. 무게 · 횟수는 플랜이 정한다 — 손으로 고치지 않는다. 줄을 누르면 플랜 고치기 (플랜이 없어졌으면 누를 수 없다)
+ * 플랜 상자 (시안 c1gz · v19 C ⑤) — 10-21 홍겸 님: 일반 종목 줄과 같게. 머리 [번호][이름[플랜]] … [∨] · 펼치면 [휴지통] + 게이지 % + [플랜 고치기].
+ * 무게 · 횟수는 플랜이 정한다 — 손으로 고치지 않는다. 머리를 누르면 펼치기 · 접기 (고치기는 펼친 뒤 [플랜 고치기])
  */
 @Composable
 private fun 플랜상자(
-    상태: 앱상태, e: 루틴종목, p: 플랜?, 번호: Int, modifier: Modifier, 표시: Int, 끌기길: Modifier, 손잡이: @Composable () -> Unit,
-    on고치기: () -> Unit, on빼기: () -> Unit,
+    상태: 앱상태, e: 루틴종목, p: 플랜?, 번호: Int, 펼침: Boolean, modifier: Modifier, 표시: Int, 끌기길: Modifier,
+    on펼침: () -> Unit, on고치기: () -> Unit, on빼기: () -> Unit,
 ) {
     val c = Local색.current
-    val d = 상태.d
     val 모양 = RoundedCornerShape(모서리.보통)
-    val 세트수 = d.플랜줄채움(e).세트
-    val 회 = p?.다음회(d.몸, d.향상기록들)
     val 비율 = p?.let { 플랜달성률(it) } ?: 0.0
     val 퍼 = (비율 * 100).roundToInt()
     Column(modifier.fillMaxWidth().clip(모양).background(c.강조옅음).border(선굵기.보통, c.속선, 모양).놓을선(표시, c.강조)) {
-        // 10-21 홍겸 님: 일반 종목 줄과 같게 — 번호 좁게 · 번호 좌우 7 (플랜만 번호 옆이 넓었다)
-        상자머리(시작 = 7.dp) {
+        // 10-21 홍겸 님: 일반 종목 줄과 같게 — 번호 좁게 · 번호 좌우 7 · [∨] 로 접고 펼친다 · 휴지통은 펼치면 나온다 · N세트 · N회차 글은 뺐다
+        상자머리(시작 = 7.dp, 끝 = 7.dp) {
             Row(
-                Modifier.weight(1f).heightIn(min = 높이.낮게).then(끌기길)
-                    .semantics(mergeDescendants = true) { contentDescription = "${e.이름} 플랜 고치기 · ${세트수}세트 · 달성률 ${퍼}%" }
-                    .then(if (p != null) Modifier.눌림(on고치기) else Modifier),
+                Modifier.weight(1f).heightIn(min = 38.dp).then(끌기길)
+                    .semantics(mergeDescendants = true) { contentDescription = "${e.이름} 플랜 · 달성률 ${퍼}% ${if (펼침) "접기" else "펼치기"}" }
+                    .눌림(on펼침),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(7.dp),
             ) {
                 상자번호(번호, 좁게 = true)
                 이름딱지(e.이름, Modifier.weight(1f, fill = false), 플랜 = true)
-                루플랜글("${세트수}세트 · ${if (회 != null) "${회.회}회차" else "목표 달성"}")
             }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                빼기단추(e.이름, on빼기)
-                손잡이()
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.5.dp)) {
+                val 각 by androidx.compose.animation.core.animateFloatAsState(if (펼침) 180f else 0f, tween(움직임.펼침), label = "플랜펼침단추")
+                Box(Modifier.width(18.dp).height(높이.낮게).눌림(on펼침), contentAlignment = Alignment.Center) {
+                    Icon(아이콘.아래, if (펼침) "접기" else "펼치기", Modifier.size(18.dp).graphicsLayer { rotationZ = 각 }, tint = c.옅음)
+                }
+                if (펼침) Box(Modifier.width(18.dp).height(높이.낮게).눌림(on빼기), contentAlignment = Alignment.Center) {
+                    Icon(아이콘.지우기, "${e.이름} 빼기", Modifier.size(20.dp), tint = c.글)
+                }
             }
         }
-        Row(
-            Modifier.fillMaxWidth().then(if (p != null) Modifier.눌림(on고치기) else Modifier).padding(start = 7.dp, end = 간격.보통, bottom = 간격.좁게),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(간격.아주좁게),
-        ) {
-            진행막대(비율.toFloat(), Modifier.weight(1f).widthIn(min = 루틴값.게이지최소))
-            Text("${퍼}%", style = 글꼴.보통(크기.작게, FontWeight.Bold).copy(fontFeatureSettings = "tnum"), color = c.흐림, maxLines = 1, softWrap = false)
+        if (펼침) {
+            Column(
+                Modifier.fillMaxWidth().padding(start = 7.dp, end = 간격.보통, bottom = 간격.좁게),
+                verticalArrangement = Arrangement.spacedBy(간격.좁게),
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
+                    진행막대(비율.toFloat(), Modifier.weight(1f).widthIn(min = 루틴값.게이지최소))
+                    Text("${퍼}%", style = 글꼴.보통(크기.작게, FontWeight.Bold).copy(fontFeatureSettings = "tnum"), color = c.흐림, maxLines = 1, softWrap = false)
+                }
+                if (p != null) 버튼("플랜 고치기", on고치기, Modifier.fillMaxWidth(), 낮게 = true)
+            }
         }
     }
-}
-
-@Composable
-private fun 루플랜글(글자: String) {
-    Text(글자, style = 글꼴.보통(크기.조금작게).copy(fontFeatureSettings = "tnum"), color = Local색.current.흐림, maxLines = 1, softWrap = false)
 }
 
 // ═════════════════════ 끌기 (세로 목록 — 루틴 카드 · 루틴 안 종목) ═════════════════════
@@ -1867,7 +1862,7 @@ private fun 돌림상자(
                 }
                 if (펼침 || g == null) Box(Modifier.width(18.dp).height(높이.낮게).눌림(on빼기), contentAlignment = Alignment.Center) {
                     Icon(아이콘.지우기, "로테이션 빼기", Modifier.size(20.dp), tint = c.글)   // 이 루틴에서만 뺀다 — 칸은 다른 루틴이 쓸 수 있어 남는다
-                } else Box(Modifier.width(18.dp).height(높이.낮게), contentAlignment = Alignment.Center) { 손잡이() }
+                }
             }
         }
         if (펼침 && g != null) {
@@ -1908,7 +1903,8 @@ private fun 돌림속(상태: 앱상태, g: 돌림칸, on넣기: (String, Int) -
                     // 10-21: 플랜 줄 — 무게 · 횟수는 플랜이 정한다 (루틴의 플랜 상자와 같다). 누르면 플랜 고치기
                     val p = 상태.d.플랜들.firstOrNull { it.id == x.플랜id }
                     플랜상자(
-                        상태, x, p, j + 1, Modifier, -1, Modifier, {},
+                        상태, x, p, j + 1, j in 펼친줄, Modifier, -1, Modifier,
+                        on펼침 = { 초점.clearFocus(); 펼친줄 = if (j in 펼친줄) 펼친줄 - j else 펼친줄 + j },
                         on고치기 = { 초점.clearFocus(); if (p != null) { 발자취.적기("로테이션에서 플랜 고치기 · ${p.이름}"); 플랜고침.value = p.id } },
                         on빼기 = {
                             초점.clearFocus()
