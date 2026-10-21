@@ -1076,7 +1076,7 @@ private fun 슈퍼상자(
                         }
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
                             es.forEachIndexed { q, e ->
-                                if (k >= e.세트) { Spacer(Modifier.height(높이.아주낮게)); return@forEachIndexed }
+                                if (k >= e.세트) return@forEachIndexed   // 10-21: 세트 수가 다른 묶음 — 없는 세트는 빈 자리를 두지 않고 건너뛴다 (번호 · 휴지통이 남은 줄 가운데에 온다)
                                 val v = e.목표(k); val t = e.휴식(k)
                                 val 마지막종목 = q == es.lastIndex
                                 val 방 = 방들[q]; val 시간줄 = 방.시간칸(); val 버티기 = 방 == 기록방식.시간; val 거리줄 = 방.거리칸()   // 버티기(시간)만 무게 칸 자리까지 넓다 · 유산소는 무게 칸 자리가 거리
