@@ -200,6 +200,41 @@ fun 앱데이터.돌림차례빼기(id: String, 차례: Int): 앱데이터 {
     return copy(돌림들 = 돌림들.map { if (it.id == id) it.copy(차례들 = 새, 다음 = 다음) else it })
 }
 
+/**
+ * 차례 [원] 을 [대상] 차례의 앞(뒤에 = false) · 뒤(뒤에 = true)로 옮긴 새 순서 — 결과[새 자리] = 옛 번호.
+ * 옮길 게 없으면(범위 밖 · 같은 차례 · 순서가 그대로) null
+ */
+fun 차례옮김순서(수: Int, 원: Int, 대상: Int, 뒤에: Boolean): List<Int>? {
+    if (원 !in 0 until 수 || 대상 !in 0 until 수 || 원 == 대상) return null
+    val 순서 = (0 until 수).filter { it != 원 }.toMutableList()
+    순서.add(순서.indexOf(대상) + if (뒤에) 1 else 0, 원)
+    return 순서.takeIf { it != (0 until 수).toList() }
+}
+
+/** 차례를 [순서] 대로 다시 늘어놓는다 — '다음' 은 지금 할 차례(빈 차례를 건너뛴 뒤)를 계속 가리킨다 */
+internal fun 돌림칸.차례다시놓기(순서: List<Int>): 돌림칸 =
+    copy(차례들 = 순서.map { k -> 차례들[k] }, 다음 = 순서.indexOf(지금차례()).coerceAtLeast(0))
+
+/**
+ * 칸의 차례 순서를 바꾼다 (10-22 홍겸 님: 꾹 눌러 끌어 옮김). '다음 차례' 는 같은 차례를 계속 가리킨다. 옮길 게 없으면 null.
+ * 운동 중이거나 보고서를 저장한 채 순서를 바꿔도 어긋나지 않게 — 세션 줄의 돌림k 와 저장앞의 칸 사본도 같은 순서로 옮긴다
+ */
+fun 앱데이터.돌림차례옮김(id: String, 원: Int, 대상: Int, 뒤에: Boolean): 앱데이터? {
+    val c = 돌림(id) ?: return null
+    val 순서 = 차례옮김순서(c.차례들.size, 원, 대상, 뒤에) ?: return null
+    fun 세션옮김(S: 운동세션): 운동세션 {
+        val 줄바뀜 = S.종목들.map { e -> if (e.돌림id == id && e.돌림k in 순서.indices) e.copy(돌림k = 순서.indexOf(e.돌림k)) else e }
+        return S.copy(
+            종목들 = 줄바뀜,
+            저장 = S.저장?.let { z -> z.copy(돌림 = z.돌림.map { y -> if (y.id == id && y.차례들.size == 순서.size) y.차례다시놓기(순서) else y }) },
+        )
+    }
+    return copy(
+        돌림들 = 돌림들.map { if (it.id == id) it.차례다시놓기(순서) else it },
+        세션 = 세션?.let { 세션옮김(it) },
+    )
+}
+
 /** 칸을 통째로 없앤다 — 모든 루틴의 자리표시 줄도 뺀다 */
 fun 앱데이터.돌림없애기(id: String): 앱데이터 {
     fun 루틴.자리뺌() = copy(종목 = 종목.filterNot { it.돌림자리 && it.돌림id == id }).묶음정리()

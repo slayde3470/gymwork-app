@@ -152,6 +152,8 @@ import com.slayde.hasenheide.data.돌림종목빼기
 import com.slayde.hasenheide.data.돌림줄바꿈
 import com.slayde.hasenheide.data.돌림풀기
 import com.slayde.hasenheide.data.돌림차례빼기
+import com.slayde.hasenheide.data.돌림차례옮김
+import com.slayde.hasenheide.data.차례옮김순서
 import com.slayde.hasenheide.data.돌림쓰는루틴
 import com.slayde.hasenheide.data.돌림칸
 import com.slayde.hasenheide.data.지금차례
@@ -1905,9 +1907,19 @@ private fun 돌림속(상태: 앱상태, g: 돌림칸, on넣기: (String, Int) -
         Modifier.fillMaxWidth().padding(start = 간격.아주좁게, end = 간격.아주좁게, top = 간격.아주좁게, bottom = 간격.좁게),
         verticalArrangement = Arrangement.spacedBy(간격.좁게),
     ) {
+        // 10-22 홍겸 님: 차례 칩을 꾹 눌러 끌어 차례 순서를 바꾼다 — 보던 차례 · 다음 차례는 그 차례를 따라간다
+        val 차례판 = remember가로끌기판 { 원, 대상, 뒤에 ->
+            val 순서 = 차례옮김순서(n, 원, 대상, 뒤에)
+            if (순서 != null) {
+                초점.clearFocus()
+                발자취.적기("로테이션 차례 순서 바꿈 · ${원 + 1}번 → ${대상 + 1}번 ${if (뒤에) "뒤" else "앞"}")
+                상태.바꿈 { dd -> dd.돌림차례옮김(g.id, 원, 대상, 뒤에) ?: dd }
+                루틴기억.돌림본[g.id] = 순서.indexOf(본).coerceAtLeast(0)
+            }
+        }
         칩줄(g.차례들.indices.map { 칩글(it) }, 칩글(본), { t ->
             g.차례들.indices.firstOrNull { 칩글(it) == t }?.let { 초점.clearFocus(); 루틴기억.돌림본[g.id] = it }
-        })
+        }, 끌기 = 차례판)
         if (차례.isEmpty()) 글("이 차례에 종목을 넣어 주세요", 크기값 = 크기.작게, 색 = c.옅음)
         차례.forEachIndexed { j, x ->
             key(j, x.열쇠, x.플랜id) {

@@ -302,16 +302,18 @@ fun 칩줄(
     앞: (@Composable () -> Unit)? = null,
     /** 10-05: 밖에서 넘김을 쥘 때 (양끝 ‹ › 단추 — Parts.kt 화살칩줄). null 이면 전처럼 안에서 */
     밖넘김: androidx.compose.foundation.ScrollState? = null,
+    /** 10-22: 있으면 칩을 꾹 눌러 끌어 순서를 바꾼다 (놓으면 판의 옮김(원, 대상, 뒤에) — 번호는 [목록] 안 차례) */
+    끌기: 가로끌기판? = null,
 ) {
     val c = Local색.current
     val 안넘김 = rememberScrollState()
     val 넘김 = 밖넘김 ?: 안넘김
     Row(
-        modifier.fillMaxWidth().오른끝흐림(넘김).horizontalScroll(넘김),
+        modifier.fillMaxWidth().오른끝흐림(넘김).then(if (끌기 != null) Modifier.가로끌기줄(끌기, 넘김) else Modifier).horizontalScroll(넘김),
         horizontalArrangement = Arrangement.spacedBy(사이),
     ) {
         if (앞 != null) 앞()
-        목록.forEach { p -> key(p) {
+        목록.forEachIndexed { i, p -> key(p) {
             val 켬 = p == 선택
             // 10-02: 누르면 살짝 작아지고, 고르면 색이 옮겨 간다 (켠 칩의 테두리는 바탕과 같은 색이라 보이지 않는다 — 전과 같은 모양)
             val 손 = remember { MutableInteractionSource() }
@@ -321,6 +323,7 @@ fun 칩줄(
             Box(
                 Modifier
                     .height(높이.낮게)
+                    .then(if (끌기 != null) Modifier.가로끌기(끌기, i) else Modifier)
                     .배율(배)
                     .clip(CircleShape)
                     .background(바탕)
