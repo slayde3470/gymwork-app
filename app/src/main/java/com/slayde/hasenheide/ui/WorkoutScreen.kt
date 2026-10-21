@@ -731,9 +731,13 @@ private fun 운이름(d: 앱데이터, S: 운동세션, 본: Int, e: 세션종�
     val 진행 = if (슈퍼중) "(${S.식구(본).indexOf(본) + 1}/${S.식구(본).size})" else null
     val 측정 = rememberTextMeasurer()
     val 밀도 = LocalDensity.current
-    val 딱꼴 = 글꼴.보통(크기.작게, FontWeight.Bold).copy(lineHeight = 부품치수.딱지글높이, fontFeatureSettings = "tnum")
-    val 딱폭 = remember(딱) {
-        딱?.let { t -> with(밀도) { (측정.measure(t, 딱꼴).size.width + (간격.아주좁게 * 2 + 부품치수.딱지띄움).toPx()).toSp() } }
+    val 딱꼴 = if (p != null) 글꼴.보통(부품치수.플랜딱지글, FontWeight.Bold).copy(lineHeight = 부품치수.플랜딱지글높이)   // 10-21: P 딱지 −33%
+        else 글꼴.보통(크기.작게, FontWeight.Bold).copy(lineHeight = 부품치수.딱지글높이, fontFeatureSettings = "tnum")
+    val 딱폭 = remember(딱, p != null) {
+        딱?.let { t ->
+            val 옆 = if (p != null) 부품치수.플랜딱지옆 * 2 else 간격.아주좁게 * 2 + 부품치수.딱지띄움   // P = 이름에 5 겹치므로 앞 틈 없음
+            with(밀도) { (측정.measure(t, 딱꼴).size.width + 옆.toPx()).toSp() }
+        }
     }
     val 글 = buildAnnotatedString {
         append(e.이름.trim())
@@ -759,9 +763,9 @@ private fun 띠딱지(글: String, 꼴: TextStyle, 숫자: Boolean) {
     val 모양 = RoundedCornerShape(모서리.작게)
     Box(
         Modifier.wrapContentSize(Alignment.TopStart, unbounded = true)
-            .offset(x = 부품치수.딱지띄움, y = if (숫자) 부품치수.번호딱지위 else 부품치수.딱지위)
+            .offset(x = if (숫자) 부품치수.딱지띄움 else -부품치수.플랜딱지겹침, y = if (숫자) 부품치수.번호딱지위 else 부품치수.플랜딱지위)   // 10-21: P 는 이름 오른쪽 위에 5 겹침
             .clip(모양).background(c.강조).border(선굵기.보통, c.강조글, 모양)
-            .padding(horizontal = 간격.아주좁게),
+            .padding(horizontal = if (숫자) 간격.아주좁게 else 부품치수.플랜딱지옆),
         contentAlignment = Alignment.Center,
     ) { Text(글, style = 꼴, color = c.강조글, maxLines = 1, softWrap = false) }
 }

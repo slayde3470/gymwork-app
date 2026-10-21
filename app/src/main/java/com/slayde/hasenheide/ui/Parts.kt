@@ -579,9 +579,28 @@ fun 휴식한칸(전: Int, 방향: Int): Int {
 
 // ═════════════════════ 6. 딱지 — [플랜] · 같은 이름 번호 ═════════════════════
 
-/** [플랜] 딱지 (시안 jmg1 `.플랜표`) — 이름 오른쪽 위에 겹친다. 11 굵게 · 강조 바탕 · 강조글 */
+/**
+ * [P] 딱지 (시안 jmg1 `.플랜표` · 10-21 홍겸 님: 글자 [플랜] → P · 크기 −33% · 이름 오른쪽 위에 5 겹침 — 모든 화면 같게). 강조 바탕 · 강조글.
+ * 겹침은 딱지가 스스로 한다(자리는 딱지 폭만큼, 그림만 왼쪽 위로) → 부르는 쪽은 앞 틈을 두지 않는다
+ */
 @Composable
-fun 플랜딱지(modifier: Modifier = Modifier) = 딱지글("P", false, modifier)   // 10-21 홍겸 님: [플랜] → [P]
+fun 플랜딱지(modifier: Modifier = Modifier) {
+    val c = Local색.current
+    Box(
+        modifier
+            .offset(x = -부품치수.플랜딱지겹침, y = 부품치수.플랜딱지위)
+            .clip(RoundedCornerShape(모서리.작게))
+            .background(c.강조)
+            .widthIn(min = 부품치수.플랜딱지폭)
+            .padding(horizontal = 부품치수.플랜딱지옆),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            "P", style = 글꼴.보통(부품치수.플랜딱지글, FontWeight.Bold).copy(lineHeight = 부품치수.플랜딱지글높이),
+            color = c.강조글, maxLines = 1, softWrap = false,
+        )
+    }
+}
 
 /** 같은 이름 번호 딱지 (시안 v19 D ② `.번호표`) — [n] 이 0 이면 그리지 않는다. 번호는 데이터 `같은이름번호` */
 @Composable
@@ -590,14 +609,13 @@ fun 번호딱지(n: Int, modifier: Modifier = Modifier) { if (n > 0) 딱지글("
 @Composable
 private fun 딱지글(글: String, 번호: Boolean, modifier: Modifier) {
     val c = Local색.current
-    val 짧음 = 번호 || 글.length == 1   // 번호 · 한 글자(P)는 좁은 알약
     Box(
         modifier
             .offset(y = if (번호) 부품치수.번호딱지위 else 부품치수.딱지위)
             .clip(RoundedCornerShape(모서리.작게))
             .background(c.강조)
-            .then(if (짧음) Modifier.widthIn(min = 부품치수.번호딱지폭) else Modifier)
-            .padding(horizontal = if (짧음) 부품치수.번호딱지옆 else 부품치수.딱지옆),
+            .then(if (번호) Modifier.widthIn(min = 부품치수.번호딱지폭) else Modifier)
+            .padding(horizontal = if (번호) 부품치수.번호딱지옆 else 부품치수.딱지옆),
         contentAlignment = Alignment.Center,
     ) {
         Text(
@@ -620,7 +638,7 @@ fun 이름딱지(
 ) {
     Row(modifier, verticalAlignment = Alignment.CenterVertically) {
         Text(이름, Modifier.weight(1f, fill = false), style = 글꼴.보통(크기값, 굵기), color = 색, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        if (번호 > 0 || 플랜) Row(Modifier.padding(start = 부품치수.딱지띄움), horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
+        if (번호 > 0 || 플랜) Row(Modifier.padding(start = if (번호 > 0) 부품치수.딱지띄움 else 0.dp), horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
             번호딱지(번호)
             if (플랜) 플랜딱지()
         }
