@@ -456,7 +456,7 @@ fun 운동화면(상태: 앱상태, 폰: 폰기능) {
         if (창 != null) 돌림차례시트(
             상태, 창, 지금 = S.종목들.firstOrNull { it.돌림id == 창 }?.돌림k,
             고르기 = { k ->
-                발자취.적기("돌아가며 차례 바꿈 · ${k + 1}")
+                발자취.적기("로테이션 차례 바꿈 · ${k + 1}")
                 var 바뀜 = false
                 함 { s -> 상태.d.copy(세션 = s).돌림차례바꿈(창, k, 운보기.본)?.let { r -> 바뀜 = true; 운결과(r.세션, r.본 ?: 운보기.본) } }
                 if (!바뀜) 상태.알림.토스트("차례를 바꿀 수 없습니다")
@@ -689,7 +689,7 @@ private fun 운머리아랫줄(상태: 앱상태, S: 운동세션, 본: Int, e: 
         if (칸 != null && 돌림열기 != null) Box(
             Modifier.clip(CircleShape).border(선굵기.보통, c.강조글, CircleShape).눌림 { 돌림열기(칸.id) }
                 .padding(horizontal = 간격.좁게, vertical = 간격.아주좁게)
-                .semantics { contentDescription = "돌아가며 다른 차례로 바꾸기" },
+                .semantics { contentDescription = "로테이션 다른 차례로 바꾸기" },
         ) { Text("${e.돌림k + 1}/${칸.차례들.size} ⇄", style = 글꼴.보통(크기.버튼, FontWeight.Bold).copy(fontFeatureSettings = "tnum"), color = c.강조글, maxLines = 1, softWrap = false) }
         if (그림보기 != null) Box(
             Modifier.clip(RoundedCornerShape(모서리.작게)).background(c.강조글).눌림(그림보기)

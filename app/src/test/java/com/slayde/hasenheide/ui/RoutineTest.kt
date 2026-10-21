@@ -303,6 +303,17 @@ class RoutineTest {
         assertEquals(0 to false, 끌대상(세로, null, 10f, 0f, emptySet()))
     }
 
+    @Test fun 끌기_세로목록은_칸_밖에_놓아도_가장_가까운_자리() {
+        val 세로 = listOf(끌칸(0, 0f, 0f, 100f, 50f), 끌칸(1, 0f, 58f, 100f, 108f))
+        assertEquals(1 to false, 끌대상(세로, null, 55f, 0f, emptySet()))   // 틈 — 아래 칸이 더 가깝다
+        assertEquals(0 to true, 끌대상(세로, null, 52f, 0f, emptySet()))    // 틈 — 위 칸이 더 가깝다
+        assertEquals(1 to true, 끌대상(세로, null, 300f, 0f, emptySet()))   // 맨 아래 밖 = 마지막 칸 뒤
+        assertEquals(0 to false, 끌대상(세로, null, -20f, 0f, emptySet()))  // 맨 위 밖 = 첫 칸 앞
+        assertEquals(1 to true, 끌대상(세로, null, 140f, 30f, emptySet()))  // 넘긴 만큼 더해 견준다: 칸 1 은 28~78, 140 은 그 아래
+        assertNull(끌대상(emptyList(), null, 10f, 0f, emptySet()))
+        assertNull(끌대상(listOf(끌칸(0, 0f, 0f, 50f, 50f)), 120f, 300f, 0f, emptySet()))   // 2열 격자는 그대로 — 밖이면 없음
+    }
+
     // ─────────────── 10-06 v22 ⑦ 넣기 이름 · 연필 ───────────────
 
     @Test fun 넣기이름_낱말가운데서_끊기면_넘침() {
