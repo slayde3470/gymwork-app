@@ -744,11 +744,11 @@ private fun 루틴상세화면(상태: 앱상태, r: 루틴, 닫기: () -> Unit)
                 상태.바꿈 { dd -> dd.루틴바꿈(rid) { x -> x.copy(자동생성 = v) }.예정초기화(상태.오늘) }
                 발자취.적기("${r.이름} 자동 ${if (v) "켬" else "끔"}")
             }
-            if (!r.휴식일) 종목추가뜸(Modifier.align(Alignment.BottomEnd).padding(간격.보통)) { 손댐(); 추가메뉴 = !추가메뉴 }
+            if (!r.휴식일 && !추가메뉴) 종목추가뜸(Modifier.align(Alignment.BottomEnd).padding(간격.보통)) { 손댐(); 추가메뉴 = true }   // 10-22: 메뉴가 열리면 [운동 추가] 자리를 두 단추가 대신 쓴다 (세 개가 한꺼번에 뜨지 않게)
             if (추가메뉴 && !r.휴식일) {
                 Box(Modifier.fillMaxSize().눌림 { 추가메뉴 = false })   // 바깥을 누르면 닫는다
                 Column(
-                    Modifier.align(Alignment.BottomEnd).padding(end = 간격.보통, bottom = 간격.보통 + 높이.보통 + 간격.좁게),
+                    Modifier.align(Alignment.BottomEnd).padding(end = 간격.보통, bottom = 간격.보통),
                     verticalArrangement = Arrangement.spacedBy(간격.좁게), horizontalAlignment = Alignment.End,
                 ) {
                     떠있는단추("로테이션 추가", "로테이션 추가", false, Modifier) { 추가메뉴 = false; 발자취.적기("로테이션 추가 누름"); 로테이션추가() }
