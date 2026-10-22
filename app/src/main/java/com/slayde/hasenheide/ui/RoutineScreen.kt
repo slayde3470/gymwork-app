@@ -145,6 +145,7 @@ import com.slayde.hasenheide.data.돌림
 import com.slayde.hasenheide.data.돌림넣기
 import com.slayde.hasenheide.data.돌림만들기
 import com.slayde.hasenheide.data.돌림빼기
+import com.slayde.hasenheide.data.돌림새로
 import com.slayde.hasenheide.data.돌림없애기
 import com.slayde.hasenheide.data.돌림자리
 import com.slayde.hasenheide.data.돌림종목더하기
@@ -483,6 +484,9 @@ private fun 루틴상세화면(상태: 앱상태, r: 루틴, 닫기: () -> Unit)
     val 진동 = LocalHapticFeedback.current
     val 초점 = LocalFocusManager.current
     var 넣기열림 by remember(rid) { mutableStateOf(false) }
+    // 10-22 홍겸 님: [운동 추가] 를 누르면 [로테이션 추가] · [운동 종목 추가] 가 뜬다 · 만들어 둔 로테이션 고르기 시트
+    var 추가메뉴 by remember(rid) { mutableStateOf(false) }
+    var 돌림고름 by remember(rid) { mutableStateOf(false) }
     // 10-21: 돌아가며 칸에 종목 넣기 시트 — (칸 id, 차례 번호 · -1 = 새 차례)
     var 돌림창 by remember(rid) { mutableStateOf<Pair<String, Int>?>(null) }
     val 펼침 = 루틴기억.펼침[rid] ?: emptySet()
@@ -505,6 +509,15 @@ private fun 루틴상세화면(상태: 앱상태, r: 루틴, 닫기: () -> Unit)
         상태.바꿈 { 새 }
         새.돌림들.lastOrNull()?.let { 돌림창 = it.id to -1 }
     }
+    // 10-22 홍겸 님: [로테이션 추가] — 빈 새 로테이션을 이 루틴 맨 끝에 두고 바로 첫 차례에 넣을 종목 고르기
+    fun 새로테이션() {
+        손댐()
+        val 새 = 상태.d.돌림새로(rid) ?: return
+        발자취.적기("로테이션 칸 만들기 · 새 칸")
+        상태.바꿈 { 새.first }
+        돌림창 = 새.second to 0
+    }
+    fun 로테이션추가() { 손댐(); if (상태.d.돌림들.isEmpty()) 새로테이션() else 돌림고름 = true }
     // 10-21 홍겸 님: 로테이션 되돌리기 — 이 루틴의 로테이션을 지금 차례 종목들로 풀어 일반 종목으로 (칸은 남는다 · 다른 루틴은 그대로 · 되돌리기 띠)
     fun 로테이션풀기(j: Int) {
         손댐()
@@ -593,7 +606,7 @@ private fun 루틴상세화면(상태: 앱상태, r: 루틴, 닫기: () -> Unit)
                         if (r.휴식일) {
                             넣기빈칸("휴식일")
                         } else if (r.종목.isEmpty()) {
-                            넣기빈칸("이 루틴에 현재 추가된 종목이 없습니다. 운동 종목 추가 버튼을 눌러 종목을 추가해주세요.")
+                            넣기빈칸("이 루틴에 현재 추가된 종목이 없습니다. 운동 추가 버튼을 눌러 종목을 추가해주세요.")
                         } else {
                             // 10-08 홍겸 님: 한 줄에 종목 하나 (2열 격자는 없앴다) — [번호][이름][N세트] … [펼침][휴지통][손잡이]
                             val 수 = r.종목.size
@@ -726,16 +739,32 @@ private fun 루틴상세화면(상태: 앱상태, r: 루틴, 닫기: () -> Unit)
                 상태.바꿈 { dd -> dd.루틴바꿈(rid) { x -> x.copy(자동생성 = v) }.예정초기화(상태.오늘) }
                 발자취.적기("${r.이름} 자동 ${if (v) "켬" else "끔"}")
             }
-            if (!r.휴식일) 종목추가뜸(Modifier.align(Alignment.BottomEnd).padding(간격.보통)) { 손댐(); 넣기열림 = true }
+            if (!r.휴식일) 종목추가뜸(Modifier.align(Alignment.BottomEnd).padding(간격.보통)) { 손댐(); 추가메뉴 = !추가메뉴 }
+            if (추가메뉴 && !r.휴식일) {
+                Box(Modifier.fillMaxSize().눌림 { 추가메뉴 = false })   // 바깥을 누르면 닫는다
+                Column(
+                    Modifier.align(Alignment.BottomEnd).padding(end = 간격.보통, bottom = 간격.보통 + 높이.보통 + 간격.좁게),
+                    verticalArrangement = Arrangement.spacedBy(간격.좁게), horizontalAlignment = Alignment.End,
+                ) {
+                    떠있는단추("로테이션 추가", "로테이션 추가", false, Modifier) { 추가메뉴 = false; 발자취.적기("로테이션 추가 누름"); 로테이션추가() }
+                    떠있는단추("운동 종목 추가", "운동 종목 추가", true, Modifier) { 추가메뉴 = false; 발자취.적기("종목 넣기 시트 열기"); 손댐(); 넣기열림 = true }
+                }
+            }
         }
         끌기이름표(끌)
+    }
+
+    if (돌림고름) 시트("로테이션 추가", { 돌림고름 = false }) {
+        Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(간격.좁게)) {
+            돌림넣기목록(상태, rid)
+            버튼("새 로테이션 만들기", { 돌림고름 = false; 새로테이션() }, Modifier.fillMaxWidth(), 낮게 = true, 그림 = 아이콘.더하기)
+        }
     }
 
     if (넣기열림) {
         val 이름 = r.이름
         종목넣기시트(
             상태, "${이름}에 넣기", 겹 = 0, 새종목겹 = 0,   // 10-09 홍겸 님: 루틴 탭 전체 책장 겹침 삭제
-            맨위 = if (상태.d.돌림들.isNotEmpty()) ({ 돌림넣기목록(상태, rid) }) else null,   // 10-21: 만들어 둔 돌아가며 칸
             개수 = { 키 -> 상태.d.루틴(rid)?.종목?.count { it.플랜id == null && it.열쇠 == 키 } ?: 0 },
             넣기 = { 키 -> 상태.바꿈 { dd -> dd.루틴바꿈(rid) { x -> x.copy(종목 = x.종목 + dd.루틴줄(키)) } } },
             빼기 = { 키 ->
@@ -831,11 +860,11 @@ private fun 루틴지우기(상태: 앱상태, rid: String) {
 }
 
 /**
- * 떠 있는 [+ 운동 종목 추가] — 화면 오른쪽 아래 (시안 v23 ⑤ `.루추가뜸` — 주 단추 · 높이 40 · 모서리 16 · 옆 16 · 10-06 홍겸 님: 글 '운동 종목 추가').
+ * 떠 있는 [+ 운동 추가] — 화면 오른쪽 아래 (시안 v23 ⑤ `.루추가뜸` — 주 단추 · 높이 40 · 모서리 16 · 옆 16 · 10-22 홍겸 님: 글 '운동 추가' · 누르면 [로테이션 추가] [운동 종목 추가]).
  */
 @Composable
 private fun 종목추가뜸(modifier: Modifier, on누름: () -> Unit) {
-    떠있는단추("운동 종목 추가", "운동 종목 추가", true, modifier) { 발자취.적기("종목 넣기 시트 열기"); on누름() }
+    떠있는단추("운동 추가", "운동 추가", true, modifier) { 발자취.적기("운동 추가 메뉴"); on누름() }
 }
 
 /**
@@ -1977,7 +2006,7 @@ private fun 돌림속(상태: 앱상태, g: 돌림칸, on넣기: (String, Int) -
 }
 
 /**
- * 종목 넣기 시트 맨 위 — 만들어 둔 돌아가며 칸 (시안 v27 `.넣기돌림`). 누름 = 이 루틴에 넣기 / 들어 있으면 빼기.
+ * [로테이션 추가] 시트 속 — 만들어 둔 돌아가며 칸 (시안 v27 `.넣기돌림` · 10-22 전에는 종목 넣기 시트 맨 위). 누름 = 이 루틴에 넣기 / 들어 있으면 빼기.
  * 어느 루틴에도 안 쓰는 칸은 휴지통으로 없앤다 (되돌리기 띠)
  */
 @Composable
@@ -1986,7 +2015,6 @@ private fun 돌림넣기목록(상태: 앱상태, rid: String) {
     val d = 상태.d
     val 모양 = RoundedCornerShape(모서리.작게)
     Column(Modifier.fillMaxWidth().padding(bottom = 간격.보통), verticalArrangement = Arrangement.spacedBy(간격.좁게)) {
-        이름표("로테이션 칸")
         d.돌림들.forEach { g ->
             key(g.id) {
                 val 안 = d.루틴(rid)?.종목?.any { it.돌림자리 && it.돌림id == g.id } == true
