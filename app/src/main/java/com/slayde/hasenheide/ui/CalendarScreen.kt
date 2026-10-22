@@ -75,6 +75,13 @@ import com.slayde.hasenheide.data.근육계산
 import com.slayde.hasenheide.data.날기록
 import com.slayde.hasenheide.data.날짜만
 import com.slayde.hasenheide.data.남은슬롯
+import com.slayde.hasenheide.data.슬롯들
+import com.slayde.hasenheide.data.그날넣기
+import com.slayde.hasenheide.data.그날빼기
+import com.slayde.hasenheide.data.묶음날함
+import com.slayde.hasenheide.data.슬롯묶음
+import com.slayde.hasenheide.data.슬롯열쇠
+import com.slayde.hasenheide.data.채운슬롯
 import com.slayde.hasenheide.data.대비결과
 import com.slayde.hasenheide.data.두대비
 import com.slayde.hasenheide.data.루틴
@@ -157,24 +164,30 @@ internal fun 앱데이터.캘기록목록(날: String): List<Pair<String, 날기
 /** 그 날 기록이 하나라도 있나 (시안 `기록있음`) */
 internal fun 앱데이터.캘기록있음(날: String): Boolean = 기록.keys.any { 날짜만(it) == 날 }
 
+/** 10-22: 한 날에 칸이 여럿일 때 꾹 눌러 옮기는 칸 — 그 날 **아직 안 한** 첫 칸 (예정옮기기의 기본과 같다) */
+internal fun 앱데이터.캘옮길칸(원: String): String? = 남은슬롯(날짜만(원)).firstOrNull { 예정루틴(it) != null }
+
 /**
- * 10-10 홍겸 님: 달력 날을 꾹 눌러 다른 날로 옮기기 — 오늘 이전은 이미 지났고, 운동을 마친 날(기록 있는 날)은 옮길 수 없다(지우기만 된다).
+ * 10-10 홍겸 님: 달력 날을 꾹 눌러 다른 날로 옮기기 — 오늘 이전은 이미 지났고, 운동을 마친 날(옮길 칸이 없는 날)은 옮길 수 없다(지우기만 된다).
  * 집을 수 있으면 null, 아니면 토스트 글. 옮기는 계산은 [예정옮기기]
  */
-internal fun 앱데이터.캘집기막힘(원: String, 오늘: String): String? = when {
-    원 < 오늘 -> "지난 날은 옮길 수 없습니다"
-    캘기록있음(원) -> "운동을 마친 날은 옮길 수 없습니다 (기록 삭제만 됩니다)"
-    예정루틴(원) == null -> "옮길 운동이 없는 날입니다"
-    원 == 오늘 && 세션 != null && 세션.루틴id == 예정[원] -> "진행 중인 운동은 옮길 수 없습니다"   // 감시관: 그 날만 쓰는 운동이 사라지면 세션이 가리키는 루틴이 끊긴다
-    else -> null
+internal fun 앱데이터.캘집기막힘(원: String, 오늘: String): String? {
+    if (원 < 오늘) return "지난 날은 옮길 수 없습니다"
+    val 칸 = 캘옮길칸(원)
+    return when {
+        칸 == null -> if (캘기록있음(원)) "운동을 마친 날은 옮길 수 없습니다 (기록 삭제만 됩니다)" else "옮길 운동이 없는 날입니다"
+        원 == 오늘 && 세션 != null && 세션.루틴id == 예정[칸] -> "진행 중인 운동은 옮길 수 없습니다"   // 감시관: 그 날만 쓰는 운동이 사라지면 세션이 가리키는 루틴이 끊긴다
+        else -> null
+    }
 }
 
 /** [원] 날의 운동을 [D] 날에 놓을 수 있으면 null, 아니면 토스트 글 (이미 운동이 깔린 날은 놓을 수 있다 — 그 날 것을 대신한다) */
-internal fun 앱데이터.캘놓기막힘(원: String, D: String, 오늘: String): String? = when {
-    D == 원 -> "같은 날입니다"
-    D < 오늘 -> "지난 날로는 옮길 수 없습니다"
-    캘기록있음(D) -> "운동을 마친 날로는 옮길 수 없습니다"
-    else -> 캘집기막힘(원, 오늘)
+internal fun 앱데이터.캘놓기막힘(원: String, D: String, 오늘: String): String? {
+    if (D == 원) return "같은 날입니다"
+    if (D < 오늘) return "지난 날로는 옮길 수 없습니다"
+    val 칸 = 캘옮길칸(원) ?: return 캘집기막힘(원, 오늘)
+    if (묶음날함(슬롯묶음(칸), D)) return "운동을 마친 날로는 옮길 수 없습니다"   // 10-22: 다른 묶음 기록만 있는 날은 놓을 수 있다
+    return 캘집기막힘(원, 오늘)
 }
 
 /** 그 날 기록을 이 차례로 다시 놓는다 — 날짜 · ~2 · ~3 … 빈 번호 없이 (첫 기록 열쇠가 늘 날짜가 되게 — data 쪽 함수들이 그렇게 본다) */
@@ -227,13 +240,17 @@ internal data class 캘칸값(val 글: String, val 상: String?, val 종류: 캘
 
 internal fun 앱데이터.캘칸내용(k: String): 캘칸값? {
     val 록 = 캘기록목록(k)
+    // 10-22: 한 날에 루틴이 여럿이면 '이름 +N' — 지난 날 놓친 것(미실시) · 아직 안 한 예정 칸도 센다
+    val 미 = 미실시.filterKeys { 날짜만(it) == k }.toSortedMap(compareBy<String> { 슬롯묶음(it) })
+    val 남 = 남은슬롯(k).filter { it !in 미 && 예정루틴(it) != null }
     if (록.isNotEmpty()) {
-        val 글 = 록[0].second.루틴이름 + if (록.size > 1) " +${록.size - 1}" else ""
+        val 더 = 록.size - 1 + 미.size + 남.size
+        val 글 = 록[0].second.루틴이름 + if (더 > 0) " +$더" else ""
         return 캘칸값(글, if (록.all { it.second.달성 }) "달성" else "미달성", 캘칸종류.록)
     }
-    미실시[k]?.let { return 캘칸값(it, "미실시", 캘칸종류.미) }
-    val r = 예정루틴(k) ?: return null
-    return 캘칸값(r.이름, null, if (r.휴식일) 캘칸종류.휴 else 캘칸종류.예)
+    if (미.isNotEmpty()) return 캘칸값(미.values.first() + if (미.size + 남.size > 1) " +${미.size + 남.size - 1}" else "", "미실시", 캘칸종류.미)
+    val r = 남.firstOrNull()?.let { 예정루틴(it) } ?: return null
+    return 캘칸값(r.이름 + if (남.size > 1) " +${남.size - 1}" else "", null, if (r.휴식일) 캘칸종류.휴 else 캘칸종류.예)
 }
 
 /** "60kg × 9회" · "60~65kg × 8~10회" · 모두 0kg 이면 "맨몸 × 12회" (시안 `세트글`) */
@@ -373,8 +390,9 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
         val 전 = 상태.d
         val 막힘 = 전.캘놓기막힘(원, D, 상태.오늘)
         if (막힘 != null) { 상태.알림.토스트(막힘); return }
-        val 이름 = 전.예정루틴(원)?.이름 ?: ""
-        상태.바꿈 { it.예정옮기기(원, D, 상태.오늘) }
+        val 이름 = 전.예정루틴(전.캘옮길칸(원) ?: 원)?.이름 ?: ""
+        val 칸 = 전.캘옮길칸(원)   // 화면이 검사한 칸과 같은 칸을 옮긴다
+        상태.바꿈 { it.예정옮기기(원, D, 상태.오늘, 칸) }
         집기취소()
         if (상태.d.예정 == 전.예정 && 상태.d.예정고정 == 전.예정고정 && 상태.d.그날운동 == 전.그날운동) { 상태.알림.토스트("옮기지 못했습니다"); return }
         날고름(D)
@@ -542,14 +560,32 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
                     고르기줄("종목 골라 넣기", 그날?.let { "${it.종목.size}종목 · 그 날만" } ?: "그 날만 쓰는 운동") { 열린 = 캘시트.종목 }
                     Box(Modifier.height(간격.좁게))
                     이름표("루틴 고르기")   // 10-09 홍겸 님: 목록은 펼친 채, 무엇을 고르는지 작은 제목만 다시
+                    // 10-22: ✓ 는 이 날에 깔린 루틴 (여럿일 수 있다). ✓ 를 다시 누르면 뺀다 · 같은 묶음의 다른 루틴을 누르면 바꾼다 · 다른 묶음 루틴은 더한다
                     Box(Modifier.height(간격.아주좁게))
+                    val 날칸들 = d.슬롯들(k)
                     d.루틴들.forEach { r ->
                         val 곁 = (if (r.휴식일) "휴식" else "예상 ${시간글(예상초(d.실제루틴(r), d))}") + if (r.자동생성) "" else " · 수동"
-                        고르기줄(r.이름, 곁, 오른쪽 = if (d.예정[k] == r.id) 아이콘.체크 else null) {
+                        val 있는칸 = 날칸들.firstOrNull { d.예정[it] == r.id }
+                        고르기줄(r.이름, 곁, 오른쪽 = if (있는칸 != null) 아이콘.체크 else null) {
                             열린 = null
-                            상태.바꿈 { it.그날만바꾸기(r.id, k, 상태.오늘) }
-                            발자취.적기("${캘날글(k)} → ${r.이름}")
-                            상태.알림.토스트("${캘날글(k)} ${r.이름}")
+                            val 전 = 상태.d
+                            val 내칸 = 슬롯열쇠(k, r.묶음)
+                            if (있는칸 != null) {
+                                상태.바꿈 { it.그날빼기(있는칸, 상태.오늘) }
+                                if (상태.d.예정.containsKey(있는칸)) { 상태.알림.토스트("이미 한 운동은 뺄 수 없습니다"); return@고르기줄 }
+                                발자취.적기("${캘날글(k)} ${r.이름} 뺌")
+                                상태.알림.되돌림("캘린더계획", { n -> if (n > 1) "계획을 ${n}번 바꿨습니다" else "${캘날글(k)} ${조사(r.이름, "을", "를")} 뺐습니다" }) {
+                                    상태.바꿈 { dd -> dd.copy(예정 = 전.예정, 예정고정 = 전.예정고정) }
+                                }
+                            } else {
+                                상태.바꿈 { dd ->
+                                    // 같은 묶음 칸에 아직 안 한 다른 루틴이 있으면 그것을 바꾼다, 아니면 더한다
+                                    if (내칸 in dd.예정 && 내칸 !in dd.채운슬롯(k)) dd.그날만바꾸기(r.id, 내칸, 상태.오늘) else dd.그날넣기(r.id, k, 상태.오늘)
+                                }
+                                if (상태.d.예정 == 전.예정) { 상태.알림.토스트("이 날에는 더 넣을 수 없습니다"); return@고르기줄 }
+                                발자취.적기("${캘날글(k)} → ${r.이름}")
+                                상태.알림.토스트("${캘날글(k)} ${r.이름}")
+                            }
                         }
                     }
                     if (d.루틴들.isEmpty()) 고르기줄("루틴 만들러 가기") { 열린 = null; 루틴으로() }
@@ -801,8 +837,10 @@ private fun 날판(
     val d = 상태.d
     val 오늘 = 상태.오늘
     val 록 = d.캘기록목록(k)
-    val 예 = k >= 오늘 && !(k == 오늘 && 록.isNotEmpty())
-    val r = d.예정루틴(k)
+    val 예 = k >= 오늘
+    // 10-22: 한 날에 루틴이 여럿 — 아직 안 한 칸마다 이름 줄 하나 (묶음 순서). 오늘 이미 다 했으면 비어 있다
+    val 남칸 = if (예) d.남은슬롯(k).mapNotNull { c -> d.예정루틴(c)?.let { c to it } } else emptyList()
+    val 미실시들 = d.미실시.filterKeys { 날짜만(it) == k }.toList().sortedBy { 슬롯묶음(it.first) }
     // 띠 아래만 넘긴다 (④). 다른 날을 고르면 맨 위부터
     val 넘김 = rememberScrollState()
     LaunchedEffect(k) { 넘김.scrollTo(0) }
@@ -833,7 +871,7 @@ private fun 날판(
                 종목목록(기록줄들(rec), 예펼침 == 키) { on펼침(키) }
                 앞것 = true
             }
-            if (록.isEmpty()) d.미실시[k]?.let { 이름 ->
+            미실시들.forEach { (_, 이름) ->
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
                     글("미실시", Modifier.width(판이름폭), 크기값 = 크기.작게, 색 = c.옅음)
                     글(이름, Modifier.weight(1f), 굵기 = FontWeight.Bold)
@@ -841,14 +879,17 @@ private fun 날판(
                 앞것 = true
             }
             if (예) {
-                if (r != null) {
-                    val 실 = d.보일루틴(k, r)
-                    예머리(d, 실, 선위 = 앞것)
-                    if (!실.휴식일) {
-                        val 키 = "예$k"
-                        종목목록(실.종목.map { e -> e.이름 to "" }, 예펼침 == 키) { on펼침(키) }   // 10-06 홍겸 님 ①: 예정 줄은 이름만 (무게×횟수 글 뺌)
+                if (남칸.isNotEmpty()) {
+                    남칸.forEach { (칸, r) ->
+                        val 실 = d.보일루틴(k, r)
+                        예머리(d, 실, 선위 = 앞것)
+                        if (!실.휴식일) {
+                            val 키 = "예$칸"
+                            종목목록(실.종목.map { e -> e.이름 to "" }, 예펼침 == 키) { on펼침(키) }   // 10-06 홍겸 님 ①: 예정 줄은 이름만 (무게×횟수 글 뺌)
+                        }
+                        앞것 = true
                     }
-                } else Row(Modifier.fillMaxWidth().윗선(앞것, c.선)) { 글("예정 없음", 크기값 = 크기.조금작게, 색 = c.흐림) }
+                } else if (록.isEmpty()) Row(Modifier.fillMaxWidth().윗선(앞것, c.선)) { 글("예정 없음", 크기값 = 크기.조금작게, 색 = c.흐림) }
             }
         }
     }
@@ -1028,8 +1069,16 @@ private fun 판단추(
     val d = 상태.d
     val 오늘 = 상태.오늘
     val 록 = d.캘기록목록(k)
-    val r = d.예정루틴(k)
-    val 운동예정 = r != null && !r.휴식일
+    // 10-22: 한 날에 루틴이 여럿 — 아직 안 한 칸들 (묶음 순서). 휴식 칸은 시작할 수 없다
+    val 남칸 = if (k >= 오늘) d.남은슬롯(k).mapNotNull { c -> d.예정루틴(c)?.let { c to it } } else emptyList()
+    val 운동칸 = 남칸.filter { !it.second.휴식일 }
+    val 운동예정 = 운동칸.isNotEmpty()
+    fun 칸시작(칸: String) {
+        val dd = 상태.d
+        val 지금r = dd.예정루틴(칸)
+        if (지금r == null || 지금r.휴식일) return
+        시작(dd.조절해시작(지금r, k, System.currentTimeMillis()))
+    }
     if (록.isEmpty() && k < 오늘) {
         // 10-20 홍겸 님: 지난 '미실시' 날은 우측 하단 [기록 삭제] 로 지운다 — 자리 · 폭은 [초기화] 와 같게 (U5-4 묻지 않고 지우고 띠로 되돌림)
         if (d.미실시.keys.none { 날짜만(it) == k }) return   // 미실시도 없는 지난 날 = 단추 없음
@@ -1040,6 +1089,17 @@ private fun 판단추(
         return
     }
     if (록.isEmpty() && k == 오늘 && d.세션 != null) return   // 10-11 홍겸 님: 운동 중에는 [운동 시작] · [초기화] 를 없앤다 (그 자리에 [돌아가기] 가 있다)
+    // 10-22: 오늘 한 운동이 있어도 다른 묶음 운동이 남았으면 그것을 시작하는 단추 줄을 위에 더한다 (예: 헬스장 가슴을 하고 집 이두가 남음)
+    if (록.isNotEmpty() && !지움모드 && k == 오늘 && 운동예정 && d.세션 == null) {
+        Row(
+            Modifier.fillMaxWidth().background(c.바탕).padding(start = 7.dp, end = 7.dp, top = 7.dp),
+            horizontalArrangement = Arrangement.spacedBy(간격.좁게), verticalAlignment = Alignment.CenterVertically,
+        ) {
+            운동칸.forEach { (칸, rr) ->
+                버튼("${rr.이름} 시작", { 칸시작(칸) }, Modifier.weight(1f), 주요 = true, 작게 = true, 세로여백 = 4.dp, 줄임 = true, 글배율 = 0.9f)
+            }
+        }
+    }
     Row(
         Modifier.fillMaxWidth().background(c.바탕).padding(7.dp),   // 10-11 홍겸 님: 상하좌우 7
         horizontalArrangement = Arrangement.spacedBy(간격.좁게), verticalAlignment = Alignment.CenterVertically,
@@ -1062,15 +1122,15 @@ private fun 판단추(
             버튼("기록 삭제", { on지움모드(true) }, Modifier.weight(판단추폭.좁게), 작게 = true, 세로여백 = 4.dp, 글배율 = 0.9f, 글색 = c.나쁨, 줄임 = true)
         } else {
             // 10-08 홍겸 님: 기록 없는 오늘 이후. 휴식 예정이 있어도 [초기화] 는 오른쪽에 둔다
-            val 초기화있음 = r != null
+            val 초기화있음 = 남칸.isNotEmpty()
             val 큰폭 = if (초기화있음) 판단추폭.계획 else 1f
             if (운동예정 && k == 오늘) {
-                버튼("운동 시작", {
-                    val dd = 상태.d
-                    val 지금r = dd.예정루틴(k)
-                    if (지금r == null || 지금r.휴식일) return@버튼
-                    시작(dd.조절해시작(지금r, k, System.currentTimeMillis()))
-                }, Modifier.weight(큰폭).번호("캘3"), 주요 = true, 작게 = true, 세로여백 = 7.dp, 줄임 = true, 글배율 = 0.9f)
+                // 10-22: 운동이 둘 이상이면 단추도 이름별로 나눈다 (하나면 전처럼 [운동 시작])
+                Row(Modifier.weight(큰폭), horizontalArrangement = Arrangement.spacedBy(간격.좁게), verticalAlignment = Alignment.CenterVertically) {
+                    운동칸.forEachIndexed { i, (칸, rr) ->
+                        버튼(if (운동칸.size == 1) "운동 시작" else "${rr.이름} 시작", { 칸시작(칸) }, Modifier.weight(1f).then(if (i == 0) Modifier.번호("캘3") else Modifier), 주요 = true, 작게 = true, 세로여백 = 7.dp, 줄임 = true, 글배율 = 0.9f)
+                    }
+                }
             } else {
                 // 10-09 홍겸 님: 내일 이후 · 운동 예정이 있어도 이름은 [운동 계획 만들기] 로 통일
                 버튼("운동 계획 만들기", { 계획(k) }, Modifier.weight(큰폭).번호("캘3"), 주요 = true, 작게 = true, 세로여백 = 4.dp, 줄임 = true, 글배율 = 0.9f)

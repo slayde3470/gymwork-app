@@ -41,6 +41,7 @@ private val 표줄 = listOf(
 )
 private val 요일이름 = listOf("월", "화", "수", "목", "금", "토", "일")
 private val 이름칸폭 = 48.dp
+private val 묶음이름들 = listOf("묶음 1", "묶음 2", "묶음 3")
 
 /** [규칙들] 중 이 칸(종류 · 요일 · 주)에 해당하는 것이 있나 */
 private fun List<제외규칙>.있음(종류: Int, 요일: Int, 주: Int) = any { it.종류 == 종류 && it.요일 == 요일 && (종류 == 제외규칙.요일마다 || it.주 == 주) }
@@ -61,10 +62,15 @@ internal fun 제외단추글(규칙수: Int): String = if (규칙수 == 0) "제�
  * 제외 규칙 시트. [바꿈] 은 규칙 목록 전체를 새로 넘긴다 (화면이 저장하고 예정을 다시 깐다).
  */
 @Composable
-internal fun 제외시트(루틴이름: String, 지금: List<제외규칙>, 바꿈: (List<제외규칙>) -> Unit, 닫기: () -> Unit) {
+internal fun 제외시트(
+    루틴이름: String, 지금: List<제외규칙>, 바꿈: (List<제외규칙>) -> Unit,
+    /** 같은 날 함께 하는 묶음 (0~2) — 같은 묶음끼리 번갈아 하고, 다른 묶음은 같은 날 함께 깔린다 */
+    묶음: Int, 묶음바꿈: (Int) -> Unit,
+    닫기: () -> Unit,
+) {
     val c = Local색.current
     val 칸모양 = RoundedCornerShape(모서리.작게)
-    시트("$루틴이름 · 깔지 않을 날", 닫기) {
+    시트("$루틴이름 · 깔기 설정", 닫기) {
         Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(간격.보통)) {
             글("누른 날에는 이 루틴을 깔지 않고, 차례는 그대로 다음 날로 넘어갑니다", 크기값 = 크기.작게, 색 = c.옅음, 줄 = 2)
             Column(verticalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
@@ -91,6 +97,14 @@ internal fun 제외시트(루틴이름: String, 지금: List<제외규칙>, 바�
             }
             val 휴 = 지금.any { it.종류 == 제외규칙.공휴일 }
             설정줄("공휴일", "대체공휴일 · 선거일 포함 (2026~2030년 표)") { 스위치(휴) { 바꿈(지금.공휴일바꿈(it)) } }
+            if ((1..7).all { 지금.있음(제외규칙.요일마다, it, 0) }) {
+                글("일곱 요일을 모두 빼면 이 루틴 차례에서 멈춰, 같은 묶음 다른 루틴도 깔리지 않습니다", 크기값 = 크기.작게, 색 = c.나쁨, 줄 = 2)
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(간격.좁게)) {
+                글("함께 하는 묶음", 굵기 = FontWeight.Medium)
+                글("같은 묶음끼리는 번갈아 하고, 다른 묶음은 같은 날 함께 깔립니다", 크기값 = 크기.작게, 색 = c.옅음, 줄 = 2)
+                칩줄(묶음이름들, 묶음이름들[묶음.coerceIn(0, 묶음이름들.lastIndex)], { 고름 -> 묶음바꿈(묶음이름들.indexOf(고름).coerceAtLeast(0)) })
+            }
             if (지금.isNotEmpty()) 버튼("모두 지우기", { 바꿈(emptyList()) }, Modifier.fillMaxWidth(), 낮게 = true)
         }
     }
