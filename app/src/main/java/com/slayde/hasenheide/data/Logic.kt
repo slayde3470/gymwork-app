@@ -20,7 +20,7 @@ fun 날(k: String): LocalDate = LocalDate.parse(날짜만(k))
  * 기록 열쇠 — 보통은 날짜("2026-09-26"). 같은 날 '한 번 더' 운동하면 "2026-09-26~2", "~3" … (09-26 메모)
  * 글자 순서로 견줘도 그 날 첫 기록 뒤 · 다음 날 앞에 온다
  */
-fun 날짜만(k: String): String = k.substringBefore('~')
+fun 날짜만(k: String): String = k.substringBefore('~').substringBefore('#')   // 10-22: 예정 칸 열쇠의 '#2' 도 뗀다 ([슬롯열쇠])
 /** 그 날의 새 기록 열쇠 — 비어 있으면 날짜, 있으면 ~2, ~3 … */
 fun 앱데이터.새기록열쇠(날: String): String {
     if (!기록.containsKey(날)) return 날
@@ -139,13 +139,59 @@ const val 회차 = 2
  */
 val 앱데이터.순번: List<루틴> get() = 루틴들.filter { it.자동생성 }
 
-private fun 앱데이터.예정채움(시작날: String, 시작idx: Int, 바탕: Map<String, String>): Map<String, String> {
-    val 줄 = 순번
+/** 묶음 b 의 자동 순서 — 같은 묶음끼리 번갈아 깔린다 (10-22) */
+fun 앱데이터.묶음순번(b: Int): List<루틴> = 루틴들.filter { it.자동생성 && it.묶음 == b }
+
+/** 자동 루틴이 있는 묶음들 — 작은 수부터 */
+val 앱데이터.묶음들: List<Int> get() = 순번.map { it.묶음 }.distinct().sorted()
+
+/** 제외 규칙에 걸려 건너뛰는 날이 많아도 끝나게 — 시작날부터 이만큼 날만 본다 */
+private const val 깔기한계일 = 200
+
+/**
+ * 묶음 b 의 순서를 [시작날] 부터 깐다 — 루틴 [회차] 바퀴만큼. 다음 차례 루틴이 그 날 제외 규칙에 걸리면
+ * **그 날은 비우고 차례는 그대로** 다음 날로 간다 (10-22: 일요일 제외 → 토 가슴, 일 없음, 월 등).
+ * [첫강제] 면 첫 루틴은 규칙과 상관없이 시작날에 놓는다 (사용자가 그 날을 직접 고른 꽂기)
+ */
+private fun 앱데이터.예정채움(시작날: String, b: Int, 시작idx: Int, 바탕: Map<String, String>, 첫강제: Boolean = false): Map<String, String> {
+    val 줄 = 묶음순번(b)
     val n = 줄.size
     if (n == 0) return 바탕
     val m = 바탕.toMutableMap()
-    for (i in 0 until n * 회차) m[날더하기(시작날, i)] = 줄[((시작idx + i) % n + n) % n].id
-    return 고정덮기(m, 시작날)
+    // 10-22: 묶음이 여럿이면 가장 긴 묶음에 맞춰 같은 만큼 깐다 (짧은 묶음만 달력에서 일찍 끊기지 않게). 한 묶음이면 전과 같다
+    val 칸수 = max(n, 묶음들.maxOfOrNull { 묶음순번(it).size } ?: n) * 회차
+    var idx = ((시작idx % n) + n) % n
+    var 날 = 시작날
+    var 놓음 = 0
+    var 강제 = 첫강제
+    var 걸음 = 0
+    while (놓음 < 칸수 && 걸음 < 깔기한계일) {
+        val r = 줄[idx]
+        if (!강제 && r.제외됨(날)) { 날 = 날더하기(날, 1); 걸음++; continue }
+        강제 = false
+        m[슬롯열쇠(날, b)] = r.id
+        idx = (idx + 1) % n
+        놓음++
+        날 = 날더하기(날, 1)
+        걸음++
+    }
+    return 중복치움(고정덮기(m, 시작날))
+}
+
+/**
+ * 같은 날 같은 루틴이 두 칸에 있으면 하나만 남긴다 (10-22) — 손으로 더 넣은 칸(그날넣기)이 나중에 자동 깔기와 겹칠 때.
+ * 그 루틴의 묶음 칸을 남기고, 없으면 앞 묶음 칸을 남긴다
+ */
+private fun 앱데이터.중복치움(m: Map<String, String>): Map<String, String> {
+    val 겹침 = m.entries.groupBy { 날짜만(it.key) to it.value }.filterValues { it.size > 1 }
+    if (겹침.isEmpty()) return m
+    val 뺄 = HashSet<String>()
+    겹침.forEach { (열쇠, 줄) ->
+        val 내묶음 = 루틴(열쇠.second)?.묶음
+        val 남길 = 줄.map { it.key }.sortedBy { if (슬롯묶음(it) == 내묶음) -1 else 슬롯묶음(it) }.first()
+        줄.forEach { if (it.key != 남길) 뺄 += it.key }
+    }
+    return m.filterKeys { it !in 뺄 }
 }
 
 /** 그 날만 손으로 바꾼 것을 다시 덮는다 (10-01) — "" 은 그 날 비움 */
@@ -155,14 +201,18 @@ private fun 앱데이터.고정덮기(m: MutableMap<String, String>, 시작날: 
 }
 
 /**
- * 예정이 있었는데 기록 없이 지나간 날을 '미실시' 로 남긴다 (09-27 캘린더).
- * 지난 예정은 곧 지워지므로(예정맞추기 · 예정초기화) 지우기 전에 담아 둔다. 휴식일은 뺀다
+ * 예정이 있었는데 기록 없이 지나간 칸을 '미실시' 로 남긴다 (09-27 캘린더).
+ * 지난 예정은 곧 지워지므로(예정맞추기 · 예정초기화) 지우기 전에 담아 둔다. 휴식일은 뺀다.
+ * 10-22: 칸마다 따로 — 미실시의 열쇠도 칸 열쇠다 ("2026-10-21#2" = 그날 둘째 묶음 칸). 그 날 다른 묶음 기록이 있어도 이 칸은 안 한 것이다
  */
 fun 앱데이터.놓친날담기(오늘: String): 앱데이터 {
-    val 놓친 = 예정.filter { it.key < 오늘 && !기록.containsKey(it.key) && !미실시.containsKey(it.key) }
+    val 지난 = 예정.filter { it.key < 오늘 }
+    if (지난.isEmpty()) return this
+    val 한 = 지난.keys.map { 날짜만(it) }.distinct().flatMap { 채운슬롯(it) }.toSet()
+    val 놓친 = 지난.filter { it.key !in 한 && !미실시.containsKey(it.key) }
         .mapNotNull { (k, rid) -> 루틴(rid)?.takeIf { !it.휴식일 }?.let { k to it.이름 } }
     // 10-02 (스키마 14): 휴식일 예정이던 지난 날에 기록이 없으면 '쉰날' 로 남긴다 (업적 1-38 · 스탯명세 7-2)
-    val 쉼 = 예정.filter { it.key < 오늘 && !기록.containsKey(it.key) && it.key !in 쉰날 && 루틴(it.value)?.휴식일 == true }.keys
+    val 쉼 = 지난.filter { it.key !in 한 && 루틴(it.value)?.휴식일 == true && !날기록있음(날짜만(it.key)) }.keys.map { 날짜만(it) }.filter { it !in 쉰날 }
     if (쉼.isNotEmpty()) return copy(쉰날 = 쉰날 + 쉼, 미실시 = 미실시 + 놓친)
     return if (놓친.isEmpty()) this else copy(미실시 = 미실시 + 놓친)
 }
@@ -170,19 +220,66 @@ fun 앱데이터.놓친날담기(오늘: String): 앱데이터 {
 /** 마지막으로 한 운동의 '다음'부터 다시 깐다 (자동생성 루틴으로 한 마지막 운동 기준) */
 fun 앱데이터.예정초기화(오늘: String): 앱데이터 = 놓친날담기(오늘).예정초기화0(오늘)
 
+/**
+ * 그 날 이 묶음의 운동을 이미 했나 (10-22) — 이 묶음 루틴의 기록이 그 날 있으면 한 것.
+ * 맨 앞 묶음은 자동이 아닌 루틴(다른 루틴 · 그 날 운동)을 한 것도 센다 — 전에는 "그 날 기록이 있으면" 이었다
+ */
+fun 앱데이터.묶음날함(b: Int, 날: String): Boolean {
+    val ids = 묶음순번(b).map { it.id }.toSet()
+    val 맨앞 = (묶음들.firstOrNull() ?: 0) == b
+    return 기록.any { (k, r) -> 날짜만(k) == 날 && (r.루틴id in ids || (맨앞 && 루틴(r.루틴id)?.자동생성 != true)) }
+}
+private fun 앱데이터.묶음오늘함(b: Int, 오늘: String): Boolean = 묶음날함(b, 오늘)
+
+/** 묶음 b 에서 마지막으로 한 운동의 다음 차례 번호 — 기록이 없으면 0 */
+private fun 앱데이터.묶음다음idx(b: Int): Int {
+    val 줄 = 묶음순번(b)
+    if (줄.isEmpty()) return 0
+    val 마지막 = 기록.filter { (_, r) -> 줄.any { it.id == r.루틴id } }.keys.maxOrNull() ?: return 0
+    val i = 줄.indexOfFirst { it.id == 기록[마지막]!!.루틴id }
+    return if (i < 0) 0 else (i + 1) % 줄.size
+}
+
+/**
+ * 묶음마다 [시작(날 · 차례)] 으로 오늘 이후를 다시 깐다.
+ * 다시 까는 묶음의 자동 칸은 지우고(자동이 아닌 '다른 루틴' 칸은 그대로 위에 둔다), 다른 묶음 칸은 건드리지 않는다
+ */
+private fun 앱데이터.묶음다시깔기(오늘: String, 시작: Map<Int, Pair<String, Int>>): Map<String, String> {
+    val 수동 = 예정.filter { it.key >= 오늘 && 슬롯묶음(it.key) in 시작.keys && 루틴(it.value)?.자동생성 == false }
+    // 루틴의 묶음을 바꾼 뒤 옛 묶음 칸에 남은 자동 칸(손으로 놓은 것 아님)은 치운다 — 새 묶음에서 다시 깔리므로 안 치우면 같은 루틴이 두 칸이 된다
+    val 낡음 = { k: String, rid: String -> 루틴(rid)?.let { it.자동생성 && it.묶음 != 슬롯묶음(k) } == true && 예정고정[k] != rid }
+    val 남 = 예정.filter { (k, rid) -> k < 오늘 || (슬롯묶음(k) !in 시작.keys && !낡음(k, rid)) }
+    var m: Map<String, String> = emptyMap()
+    시작.toSortedMap().forEach { (b, 날idx) -> m = 예정채움(날idx.first, b, 날idx.second, m) }
+    return 중복치움(남 + m + 수동)
+}
+
 private fun 앱데이터.예정초기화0(오늘: String): 앱데이터 {
-    val 줄 = 순번
+    val bs = 묶음들
     // 자동생성이 꺼진 루틴을 '다른 루틴' 으로 넣어 둔 날(오늘 이후)은 지키고 그 위에 다시 깐다
-    val 수동 = 예정.filter { it.key >= 오늘 && 루틴(it.value)?.자동생성 == false }
-    if (줄.isEmpty()) return copy(예정 = 수동)
-    val 마지막 = 기록.keys.filter { k -> 줄.any { it.id == 기록[k]!!.루틴id } }.maxOrNull()
-    var idx = 0
-    if (마지막 != null) {
-        val i = 줄.indexOfFirst { it.id == 기록[마지막]!!.루틴id }
-        idx = if (i < 0) 0 else (i + 1) % 줄.size
+    if (bs.isEmpty()) return copy(예정 = 예정.filter { it.key >= 오늘 && 루틴(it.value)?.자동생성 == false })
+    val 내일 = 날더하기(오늘, 1)
+    return copy(예정 = 묶음다시깔기(오늘, bs.associateWith { b -> (if (묶음오늘함(b, 오늘)) 내일 else 오늘) to 묶음다음idx(b) }).filterKeys { it >= 오늘 })
+}
+
+/**
+ * 규칙 · 묶음이 바뀐 뒤 — **지금 차례는 그대로** 두고 오늘 이후를 다시 깐다 (10-22).
+ * 묶음마다 아직 안 한 가장 이른 자동 칸의 루틴이 시작 차례다. 그런 칸이 없으면 기록 기준(예정초기화)
+ */
+fun 앱데이터.예정다시깔기(오늘: String): 앱데이터 {
+    val d0 = 놓친날담기(오늘)
+    val bs = d0.묶음들
+    if (bs.isEmpty()) return d0.예정초기화0(오늘)
+    val 내일 = 날더하기(오늘, 1)
+    val 시작 = bs.associateWith { b ->
+        val 줄 = d0.묶음순번(b)
+        val 날 = if (d0.묶음오늘함(b, 오늘)) 내일 else 오늘
+        val 첫 = d0.예정.filter { (k, rid) -> k >= 날 && d0.루틴(rid).let { r -> r != null && r.자동생성 && r.묶음 == b } }
+            .keys.sorted().firstOrNull { k -> !d0.칸함(k) }
+        val idx = 첫?.let { k -> 줄.indexOfFirst { it.id == d0.예정[k] } }?.takeIf { it >= 0 } ?: d0.묶음다음idx(b)
+        날 to idx
     }
-    val 시작 = if (기록.containsKey(오늘)) 날더하기(오늘, 1) else 오늘
-    return copy(예정 = 예정채움(시작, idx, emptyMap()) + 수동)
+    return d0.copy(예정 = d0.묶음다시깔기(오늘, 시작).filterKeys { it >= 오늘 })
 }
 
 /**
@@ -257,84 +354,149 @@ private fun 앱데이터.그날운동치움(오늘: String): 앱데이터 {
 }
 
 private fun 앱데이터.예정맞추기0(오늘: String): 앱데이터 {
-    val 줄 = 순번
-    if (줄.isEmpty()) return this
-    // 빠진 날은 자동생성 루틴이 깔려 있던 날만 본다
-    val 빠진 = 예정.filter { it.key < 오늘 && !기록.containsKey(it.key) && 루틴(it.value)?.자동생성 == true }.toSortedMap()
-    val 앞으로 = 예정.any { it.key >= 오늘 && 루틴(it.value)?.자동생성 == true }
-    if (빠진.isEmpty()) return if (앞으로) copy(예정 = 예정.filterKeys { it >= 오늘 }) else 예정초기화(오늘)
-    val 운동날 = 빠진.values.firstOrNull { rid -> 루틴(rid)?.휴식일 == false }
-    val n = 줄.size
-    val 시작idx = if (운동날 != null) 줄.indexOfFirst { it.id == 운동날 }
-                  else (줄.indexOfFirst { it.id == 빠진.values.last() } + 1) % n
-    if (시작idx < 0) return 예정초기화(오늘)
-    val 시작 = if (기록.containsKey(오늘)) 날더하기(오늘, 1) else 오늘
-    val 수동 = 예정.filter { it.key >= 오늘 && 루틴(it.value)?.자동생성 == false }
-    return copy(예정 = 예정채움(시작, 시작idx, emptyMap()) + 수동)
+    val bs = 묶음들
+    if (bs.isEmpty()) return this
+    // 10-22: 묶음마다 따로 본다 — 빠진 칸 = 지난 날 그 묶음의 자동 칸 중 안 한 것
+    val 지난날들 = 예정.keys.filter { it < 오늘 }.map { 날짜만(it) }.distinct()
+    val 한 = 지난날들.flatMap { 채운슬롯(it) }.toSet()
+    val 내일 = 날더하기(오늘, 1)
+    val 시작 = HashMap<Int, Pair<String, Int>>()
+    for (b in bs) {
+        val 줄 = 묶음순번(b)
+        val 내것 = { rid: String -> 루틴(rid).let { r -> r != null && r.자동생성 && r.묶음 == b } }
+        val 빠진 = 예정.filter { it.key < 오늘 && it.key !in 한 && 내것(it.value) }.toSortedMap()
+        val 앞으로 = 예정.any { it.key >= 오늘 && 내것(it.value) }
+        if (빠진.isEmpty() && 앞으로) continue
+        val 날 = if (묶음오늘함(b, 오늘)) 내일 else 오늘
+        val idx = if (빠진.isEmpty()) 묶음다음idx(b) else {
+            val 운동날 = 빠진.values.firstOrNull { rid -> 루틴(rid)?.휴식일 == false }
+            val i = if (운동날 != null) 줄.indexOfFirst { it.id == 운동날 }
+                    else (줄.indexOfFirst { it.id == 빠진.values.last() } + 1) % 줄.size
+            if (i < 0) 묶음다음idx(b) else i   // 10-22: 옛 코드는 여기서 통째로 초기화했다 — 이제는 그 묶음만 기록 기준으로
+        }
+        시작[b] = 날 to idx
+    }
+    // 다시 깔 묶음이 없으면 지난 날 칸만 치운다 (옛 동작)
+    if (시작.isEmpty()) return copy(예정 = 예정.filterKeys { it >= 오늘 })
+    return copy(예정 = 묶음다시깔기(오늘, 시작).filterKeys { it >= 오늘 })
 }
 
-/** 날짜 D 에 루틴을 꽂고 그 날부터 순서를 다시 깐다. 앞선 날은 건드리지 않는다 (2-3) */
+/** 날짜 D 에 루틴을 꽂고 그 날부터 순서를 다시 깐다. 앞선 날은 건드리지 않는다 (2-3). 10-22: 그 루틴의 묶음만 다시 깐다 — 다른 묶음 칸은 그대로 */
 fun 앱데이터.꽂기(rid: String, D: String, 오늘: String): 앱데이터 {
     if (D < 오늘) return this
-    val idx = 순번.indexOfFirst { it.id == rid }
+    val r = 루틴(rid)
+    val b = r?.묶음 ?: 0
+    val idx = if (r?.자동생성 == true) 묶음순번(b).indexOfFirst { it.id == rid } else -1
+    val 칸 = 슬롯열쇠(D, b)
     // 자동생성이 꺼진 루틴은 그 날에만 넣고 나머지 예정은 그대로 둔다
     // 10-01 감시관: 수동 루틴도 그 날을 고정으로 남겨야 다음 저장 때 덮이지 않는다
-    if (idx < 0) return if (루틴(rid) != null) copy(예정 = 예정 + (D to rid), 예정고정 = 예정고정 + (D to rid)) else this
-    val 남김 = 예정.filterKeys { it < D }
-    // '이 날부터 순서대로' 는 그 날의 손댄 표시를 지운다
-    return copy(예정고정 = 예정고정 - D).let { it.copy(예정 = it.예정채움(D, idx, 남김)) }
+    if (idx < 0) {
+        if (r == null || 슬롯들(D).any { it != 칸 && 예정[it] == rid }) return this   // 같은 날 다른 칸에 이미 있다
+        return copy(예정 = 예정 + (칸 to rid), 예정고정 = 예정고정 + (칸 to rid))
+    }
+    val 남김 = 예정.filter { it.key < D || 슬롯묶음(it.key) != b }
+    // '이 날부터 순서대로' 는 그 날의 손댄 표시를 지운다. 사용자가 그 날을 골랐으니 제외 규칙에 걸려도 그 날에 놓는다
+    return copy(예정고정 = 예정고정 - 칸).let { it.copy(예정 = it.예정채움(D, b, idx, 남김, 첫강제 = true)) }
 }
 
 /**
  * 달력에서 꾹 눌러 옮기기 (2-3, 09-26 메모) — 원 날의 루틴을 D 로.
  * 자동생성 루틴: D 부터 순서를 다시 깐다(꽂기). 원 날이 D 보다 앞이면 원 날은 비운다.
  * 꺼진 루틴: 원 날에서 빼고 D 에만 넣는다. 기록이 있는 날 · 지난 날은 건드리지 않는다.
+ * 10-22: 한 날에 칸이 여럿이면 [원칸] (없으면 원 날의 **아직 안 한 첫 칸**) 을 옮기고, 같은 묶음 칸으로 간다.
  */
-fun 앱데이터.예정옮기기(원: String, D: String, 오늘: String): 앱데이터 {
-    if (원 == D || 원 < 오늘 || D < 오늘 || 기록.containsKey(원) || 기록.containsKey(D)) return this
-    val rid = 예정[원] ?: return this
-    val 자동 = 루틴(rid)?.자동생성 == true
-    val 풀린 = copy(예정고정 = 예정고정 - 원 - D)
+fun 앱데이터.예정옮기기(원: String, D: String, 오늘: String, 원칸: String? = null): 앱데이터 {
+    val 원날 = 날짜만(원)
+    if (원날 == D || 원날 < 오늘 || D < 오늘) return this
+    val 칸 = 원칸 ?: (if ('#' in 원) 원 else 남은슬롯(원날).firstOrNull()) ?: return this
+    val rid = 예정[칸] ?: return this
+    if (칸 in 채운슬롯(원날)) return this
+    val b = 슬롯묶음(칸)
+    if (묶음날함(b, D)) return this
+    val 대상칸 = 슬롯열쇠(D, b)
+    if (슬롯들(D).any { it != 대상칸 && 예정[it] == rid }) return this   // 그 날에 이미 같은 루틴이 다른 칸에 있다
+    val r = 루틴(rid)
+    val 자동 = r?.자동생성 == true && r.묶음 == b
+    val 풀린 = copy(예정고정 = 예정고정 - 칸 - 대상칸)
     if (!자동) {
-        val 이동 = 풀린.copy(예정 = 예정 - 원 + (D to rid), 예정고정 = 풀린.예정고정 + (D to rid) + (원 to ""))
+        val 이동 = 풀린.copy(예정 = 예정 - 칸 + (대상칸 to rid), 예정고정 = 풀린.예정고정 + (대상칸 to rid) + (칸 to ""))
         // 10-10: 그 날만 쓰는 운동은 id 가 날짜("날2026-10-06")라서 날짜가 바뀌면 id 도 새 날짜로 — 아니면 옮긴 날에서 '그 날 운동' 으로 안 읽힌다.
         // 옮겨 간 날의 옛 예정은 '넣기 전 예정'으로 기억해 둔다(다 빼면 그리로 돌아간다)
-        val 날운 = 그날운동.firstOrNull { it.id == rid && rid == 그날운동id(원) } ?: return 이동
-        val 새id = 그날운동id(D)
-        val 옛D = if (예정[D] == 새id) 그날운동.firstOrNull { it.id == 새id } else null
-        val 새 = 날운.copy(id = 새id, 원래예정 = 옛D?.원래예정 ?: (예정[D] ?: ""), 원래고정 = if (옛D != null) 옛D.원래고정 else 예정고정[D])
+        val 날운 = 그날운동.firstOrNull { it.id == rid && rid == 그날운동id(칸) } ?: return 이동
+        val 새id = 그날운동id(대상칸)
+        val 옛D = if (예정[대상칸] == 새id) 그날운동.firstOrNull { it.id == 새id } else null
+        val 새 = 날운.copy(id = 새id, 원래예정 = 옛D?.원래예정 ?: (예정[대상칸] ?: ""), 원래고정 = if (옛D != null) 옛D.원래고정 else 예정고정[대상칸])
         return 이동.copy(
             그날운동 = 그날운동.filter { it.id != rid && it.id != 새id } + 새,
-            예정 = 이동.예정 + (D to 새id),
-            예정고정 = 이동.예정고정 + (D to 새id),
+            예정 = 이동.예정 + (대상칸 to 새id),
+            예정고정 = 이동.예정고정 + (대상칸 to 새id),
         )
     }
     val 옮김 = 풀린.꽂기(rid, D, 오늘)
-    return if (원 < D) 옮김.copy(예정 = 옮김.예정 - 원, 예정고정 = 옮김.예정고정 + (원 to "")) else 옮김
+    return if (원날 < D) 옮김.copy(예정 = 옮김.예정 - 칸, 예정고정 = 옮김.예정고정 + (칸 to "")) else 옮김
 }
 
-/** 그 날 예정만 지운다 — 앞뒤 순서는 그대로 (10-01) */
-fun 앱데이터.예정지우기(D: String, 오늘: String): 앱데이터 =
-    if (D < 오늘 || 기록.containsKey(D)) this else copy(예정 = 예정 - D, 예정고정 = 예정고정 + (D to ""))
+/** 그 날 **아직 안 한** 예정을 전부 지운다 — 앞뒤 순서는 그대로 (10-01). 10-22: 칸이 여럿이면 안 한 칸 전부 (한 칸은 그대로) */
+fun 앱데이터.예정지우기(D: String, 오늘: String): 앱데이터 {
+    if (D < 오늘) return this
+    val 지울 = 남은슬롯(D)
+    if (지울.isEmpty()) return this
+    return copy(예정 = 예정 - 지울.toSet(), 예정고정 = 예정고정 + 지울.associateWith { "" })
+}
+
+/** 그 날 칸 하나만 지운다 (10-22 · 계획 시트에서 겹쳐 있던 루틴 하나를 뺄 때). 한 칸 · 지난 날은 그대로 */
+fun 앱데이터.그날빼기(칸: String, 오늘: String): 앱데이터 {
+    if (날짜만(칸) < 오늘 || !예정.containsKey(칸) || 칸함(칸)) return this
+    return copy(예정 = 예정 - 칸, 예정고정 = 예정고정 + (칸 to ""))
+}
+
+/**
+ * 그 날에 루틴 하나를 **더** 넣는다 (10-22 · 한 날에 루틴 여러 개) — 그 루틴 묶음의 칸이 비었으면 거기, 아니면 비어 있는 첫 칸.
+ * 이미 그 날에 있는 루틴이거나 칸이 가득(세 개)이면 그대로. 순서는 건드리지 않는다
+ */
+fun 앱데이터.그날넣기(rid: String, D: String, 오늘: String): 앱데이터 {
+    val r = 루틴(rid) ?: return this
+    if (D < 오늘 || 슬롯들(D).any { 예정[it] == rid }) return this
+    val 칸 = 놓을칸(D, r) ?: return this
+    if (묶음날함(슬롯묶음(칸), D)) return this
+    return copy(예정 = 예정 + (칸 to rid), 예정고정 = 예정고정 + (칸 to rid))
+}
 
 /**
  * 지난 날 '미실시' 지우기 (10-20 홍겸 님 — 캘린더 우측 하단 [기록 삭제]). 기록이 없는 지난 날만.
  * 그 날 예정 · 그 날만 쓰는 운동도 같이 뺀다 — 예정이 남으면 [놓친날담기] 가 다시 미실시로 담는다.
+ * 10-22: 그 날 미실시가 여럿이면 전부 (칸마다 열쇠가 다르다)
  */
-fun 앱데이터.미실시지우기(D: String, 오늘: String): 앱데이터 =
-    if (D >= 오늘 || !미실시.containsKey(D) || 기록.keys.any { 날짜만(it) == D }) this
+fun 앱데이터.미실시지우기(D: String, 오늘: String): 앱데이터 {
+    val 칸들 = 미실시.keys.filter { 날짜만(it) == D }
+    if (D >= 오늘 || 칸들.isEmpty() || 날기록있음(D)) return this
     // 10-20 감시관: 자정을 넘긴 운동이 그 날 운동을 쓰고 있으면(세션 · 보고서) 그 운동은 남긴다 — 그날운동치움과 같은 예외
-    else copy(미실시 = 미실시 - D, 예정 = 예정 - D,
-        그날운동 = 그날운동.filter { it.id != 그날운동id(D) || it.id == 세션?.루틴id || it.id == 결과?.루틴id })
+    val 날운 = (칸들 + D).map { 그날운동id(it) }.toSet()
+    return copy(미실시 = 미실시 - 칸들.toSet(), 예정 = 예정.filterKeys { 날짜만(it) != D },
+        그날운동 = 그날운동.filter { it.id !in 날운 || it.id == 세션?.루틴id || it.id == 결과?.루틴id })
+}
 
 /** [미실시지우기] 되돌리기 — 미실시 이름표만 되살린다 (예정은 지난 날이라 다시 깔지 않는다). 그 사이 기록이 생겼으면 그대로 */
-fun 앱데이터.미실시되살림(D: String, 이름: String, 오늘: String): 앱데이터 =
-    if (D >= 오늘 || 미실시.containsKey(D) || 기록.keys.any { 날짜만(it) == D }) this
-    else copy(미실시 = 미실시 + (D to 이름))
+fun 앱데이터.미실시되살림(D: String, 이름: String, 오늘: String): 앱데이터 = 미실시되살림(mapOf(D to 이름), 오늘)
 
-/** 그 날만 다른 루틴으로 — 앞뒤 순서는 그대로 (10-01. '이 날부터 다시 깔기' 는 꽂기) */
+/** 칸마다 이름표를 되살린다 — 열쇠는 칸 열쇠. 그 날 기록이 있거나 이미 미실시가 있는 날은 그대로 */
+fun 앱데이터.미실시되살림(이름표: Map<String, String>, 오늘: String): 앱데이터 {
+    val 살릴 = 이름표.filter { (k, _) -> 날짜만(k) < 오늘 && !미실시.containsKey(k) && !날기록있음(날짜만(k)) }
+    return if (살릴.isEmpty()) this else copy(미실시 = 미실시 + 살릴)
+}
+
+/** 기록이 생긴 날 — 그 기록이 채운 칸의 미실시(와 쉰날) 표시를 뺀다 (10-22). 다른 묶음의 미실시는 그대로 */
+fun 앱데이터.미실시풀기(날: String, rid: String?): 앱데이터 {
+    val 칸들 = 미실시.keys.filter { 날짜만(it) == 날 }.sortedBy { 슬롯묶음(it) }
+    val r = 루틴(rid)
+    // 이 기록이 대신할 칸: 자동 루틴이면 같은 묶음 칸, 아니면(다른 루틴 · 그 날 운동 · 지워진 루틴) 첫 칸
+    val 뺄 = if (r != null && r.자동생성) 칸들.filter { 슬롯묶음(it) == r.묶음 } else 칸들.take(1)
+    return copy(미실시 = 미실시 - 뺄.toSet(), 쉰날 = 쉰날 - 날)
+}
+
+/** 그 날만 다른 루틴으로 — 앞뒤 순서는 그대로 (10-01. '이 날부터 다시 깔기' 는 꽂기). D 는 날짜 또는 칸 열쇠 */
 fun 앱데이터.그날만바꾸기(rid: String, D: String, 오늘: String): 앱데이터 =
-    if (D < 오늘 || 기록.containsKey(D) || 루틴(rid) == null) this else copy(예정 = 예정 + (D to rid), 예정고정 = 예정고정 + (D to rid))
+    if (날짜만(D) < 오늘 || 묶음날함(슬롯묶음(D), 날짜만(D)) || 루틴(rid) == null || 슬롯들(날짜만(D)).any { it != D && 예정[it] == rid }) this else copy(예정 = 예정 + (D to rid), 예정고정 = 예정고정 + (D to rid))
 fun 앱데이터.다음차례(오늘: String): 루틴? {
     val k = 예정.keys.filter { it >= 오늘 }.minOrNull()
     return if (k != null) 예정루틴(k) else 순번.firstOrNull()
@@ -915,15 +1077,17 @@ fun 앱데이터.운동저장(오늘: String, 지금: Long, 고정열쇠: String
         피로 = 근.피로, 최대볼륨 = 근.최대볼륨,
         기록 = 기록 + (열쇠 to rec), 세션 = null, 조절 = 조절 - 오늘, 결과 = null,
         // 10-10: 자정을 걸쳐 끝난 운동은 시작한 날 예정이 '미실시'로 먼저 담겨 있다 → 그 날 기록이 생기면 미실시 · 쉰날 표시를 뺀다
-        미실시 = 미실시 - 날짜만(열쇠), 쉰날 = 쉰날 - 날짜만(열쇠),
+        // 10-22: 그 기록이 채운 칸의 것만 (다른 묶음 미실시는 그대로 — [미실시풀기])
         루틴들 = 루틴들.map { if (it.id == S.루틴id && !S.조절됨) it.오늘반영(S).let { r -> if (올릴까) r.볼륨올리기(설정) { e -> 방식(e.종id, e.이름) } else r } else it },
-    ).돌림저장(S, 올릴까)   // 10-21: 돌아가며 칸 — 오늘 한 차례의 값을 그 칸에 되쓰고 다음 차례로
-    val 줄 = 순번
+    ).돌림저장(S, 올릴까).미실시풀기(날짜만(열쇠), S.루틴id)   // 10-21: 돌아가며 칸 — 오늘 한 차례의 값을 그 칸에 되쓰고 다음 차례로
+    // 10-22: 한 묶음만 다시 깐다 — 다른 묶음(오늘 아직 안 한 칸 포함)은 그대로
+    val 한 = 루틴(S.루틴id)
+    val 줄 = 한?.let { 새.묶음순번(it.묶음) }.orEmpty()
     val i = 줄.indexOfFirst { it.id == S.루틴id }
     // 자동생성이 꺼진 루틴으로 운동했으면 순서는 건드리지 않는다
-    if (줄.isEmpty() || i < 0) return 새
-    val 남김 = 새.예정.filterKeys { it < 오늘 }
-    return 새.copy(예정 = 새.예정채움(날더하기(오늘, 1), (i + 1) % 줄.size, 남김))
+    if (한 == null || 줄.isEmpty() || i < 0) return 새
+    val 남김 = 새.예정.filter { it.key < 오늘 || 슬롯묶음(it.key) != 한.묶음 }
+    return 새.copy(예정 = 새.예정채움(날더하기(오늘, 1), 한.묶음, (i + 1) % 줄.size, 남김))
 }
 
 /**

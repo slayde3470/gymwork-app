@@ -115,6 +115,10 @@ object 저장소 {
 
     private fun 루틴to(r: 루틴) = JSONObject().put("id", r.id).put("이름", r.이름).put("휴식일", r.휴식일).put("자동생성", r.자동생성)
         .also { o -> r.원래예정?.let { o.put("원래예정", it) }; r.원래고정?.let { o.put("원래고정", it) } }   // 10-09 그 날 운동
+        .also { o ->   // 10-22 묶음 · 제외 규칙 — 기본값이면 적지 않아 옛 파일과 모양이 같다
+            if (r.묶음 != 0) o.put("묶음", r.묶음)
+            if (r.제외.isNotEmpty()) o.put("제외", JSONArray().also { a -> r.제외.forEach { x -> a.put(JSONArray().put(x.종류).put(x.요일).put(x.주)) } })
+        }
         .put("종목", JSONArray().also { a -> r.종목.forEach { a.put(루틴종목to(it)) } })
 
     // 종류는 본운동(0) 이 아닐 때만 적는다 · 거리(유산소 km)는 0 이 아닐 때만 네 번째로 적는다 — 옛 파일과 모양이 같아 읽는 쪽이 안 깨진다
@@ -384,6 +388,8 @@ object 저장소 {
         자동생성 = o.optBoolean("자동생성", true),
         원래예정 = if (o.has("원래예정")) o.optString("원래예정") else null,
         원래고정 = if (o.has("원래고정")) o.optString("원래고정") else null,
+        묶음 = o.optInt("묶음", 0).coerceIn(0, 최대묶음 - 1),
+        제외 = 목록(o.optJSONArray("제외")) { a, i -> a.getJSONArray(i).let { x -> 제외규칙(x.optInt(0), x.optInt(1), x.optInt(2)) } },
     )
 
     /**

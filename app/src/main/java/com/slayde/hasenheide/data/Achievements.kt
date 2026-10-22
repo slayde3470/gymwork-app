@@ -194,7 +194,7 @@ class 판정자료(val d: 앱데이터, val 오늘: String) {
             val 들 = 주색인[주]?.filter { it <= i } ?: return false
             if (들.isEmpty() || 들.any { !기록들[it].달성 }) return false
             val 상한 = minOf(LocalDate.parse(주).plusDays(6).toString(), 날들[i])
-            if (d.미실시.keys.any { it >= 주 && it <= 상한 }) return false
+            if (d.미실시.keys.any { k -> 날짜만(k).let { it >= 주 && it <= 상한 } }) return false
         }
         return true
     }
@@ -312,8 +312,8 @@ class 판정자료(val d: 앱데이터, val 오늘: String) {
     }
     /** 2-11 — 하체날을 건너뛰거나(건너뜀) 못 한(미실시) 날들. 미실시는 루틴 이름으로 찾는다 (이름이 바뀌면 못 찾는다) */
     fun 하체빠진날(): List<String> {
-        val a = d.건너뜀.filter { 하체날(d.루틴(it.value)) }.keys
-        val b = d.미실시.filter { (_, 이름) -> 하체날(d.루틴들.firstOrNull { it.이름 == 이름 }) }.keys
+        val a = d.건너뜀.filter { 하체날(d.루틴(it.value)) }.keys.map { 날짜만(it) }   // 10-22: 칸 열쇠('#2')는 날짜로
+        val b = d.미실시.filter { (_, 이름) -> 하체날(d.루틴들.firstOrNull { it.이름 == 이름 }) }.keys.map { 날짜만(it) }
         return (a + b).sorted()
     }
 

@@ -129,6 +129,8 @@ import com.slayde.hasenheide.data.열쇠
 import com.slayde.hasenheide.data.예상초
 import com.slayde.hasenheide.data.예정맞추기
 import com.slayde.hasenheide.data.예정초기화
+import com.slayde.hasenheide.data.예정다시깔기
+import com.slayde.hasenheide.data.말
 import com.slayde.hasenheide.data.루틴합치기
 import com.slayde.hasenheide.data.묶을수있다
 import com.slayde.hasenheide.data.새묶음이름
@@ -490,6 +492,7 @@ private fun 루틴상세화면(상태: 앱상태, r: 루틴, 닫기: () -> Unit)
     // 10-22 홍겸 님: [운동 추가] 를 누르면 [로테이션 추가] · [운동 종목 추가] 가 뜬다 · 만들어 둔 로테이션 고르기 시트
     var 추가메뉴 by remember(rid) { mutableStateOf(false) }
     var 돌림고름 by remember(rid) { mutableStateOf(false) }
+    var 제외열림 by remember(rid) { mutableStateOf(false) }   // 10-22: 깔지 않을 날 시트
     // 10-21: 돌아가며 칸에 종목 넣기 시트 — (칸 id, 차례 번호 · -1 = 새 차례)
     var 돌림창 by remember(rid) { mutableStateOf<Pair<String, Int>?>(null) }
     val 펼침 = 루틴기억.펼침[rid] ?: emptySet()
@@ -739,10 +742,14 @@ private fun 루틴상세화면(상태: 앱상태, r: 루틴, 닫기: () -> Unit)
         }
         // 10-06 v22 ③ · v23 ⑤ 떠 있는 단추 — 스크롤과 상관없이 제자리 (탭줄 바로 위 12). 자판이 떠 있으면 숨긴다(고치는 칸을 가리지 않게)
         if (!WindowInsets.isImeVisible) {
-            루자동뜸(r.자동생성, Modifier.align(Alignment.BottomStart).padding(간격.보통)) { v ->
-                손댐()
-                상태.바꿈 { dd -> dd.루틴바꿈(rid) { x -> x.copy(자동생성 = v) }.예정초기화(상태.오늘) }
-                발자취.적기("${r.이름} 자동 ${if (v) "켬" else "끔"}")
+            Row(Modifier.align(Alignment.BottomStart).padding(간격.보통), horizontalArrangement = Arrangement.spacedBy(간격.좁게)) {
+                루자동뜸(r.자동생성, Modifier) { v ->
+                    손댐()
+                    상태.바꿈 { dd -> dd.루틴바꿈(rid) { x -> x.copy(자동생성 = v) }.예정초기화(상태.오늘) }
+                    발자취.적기("${r.이름} 자동 ${if (v) "켬" else "끔"}")
+                }
+                // 10-22 홍겸 님: 자동으로 깔 때 뺄 날 (요일 · 몇째 주 · 공휴일). 자동이 켜진 루틴에만
+                if (r.자동생성) 루제외뜸(r.제외.size, Modifier) { 손댐(); 제외열림 = true }
             }
             if (!r.휴식일 && !추가메뉴) 종목추가뜸(Modifier.align(Alignment.BottomEnd).padding(간격.보통)) { 손댐(); 추가메뉴 = true }   // 10-22: 메뉴가 열리면 [운동 추가] 자리를 두 단추가 대신 쓴다 (세 개가 한꺼번에 뜨지 않게)
             if (추가메뉴 && !r.휴식일) {
@@ -757,6 +764,16 @@ private fun 루틴상세화면(상태: 앱상태, r: 루틴, 닫기: () -> Unit)
             }
         }
         끌기이름표(끌)
+    }
+
+    if (제외열림) {
+        val 지금루틴 = 상태.d.루틴(rid)
+        if (지금루틴 == null) 제외열림 = false
+        else 제외시트(지금루틴.이름, 지금루틴.제외, { 새 ->
+            손댐()
+            상태.바꿈 { dd -> dd.루틴바꿈(rid) { x -> x.copy(제외 = 새) }.예정다시깔기(상태.오늘) }
+            발자취.적기("${지금루틴.이름} 제외 규칙 · ${새.joinToString(" · ") { it.말() }.ifEmpty { "없음" }}")
+        }, { 제외열림 = false })
     }
 
     if (돌림고름) 시트("로테이션 추가", { 돌림고름 = false }) {
@@ -900,6 +917,18 @@ internal fun 떠있는단추(글자: String, 설명: String, 강조: Boolean, mo
  * 떠 있는 [자동 ◯] — 화면 왼쪽 아래 (시안 v22 ③ · v23 ⑤ `.루자동뜸` — 높이 40 · 모서리 16 · 면 바탕 · 속선 테 · 여백 왼 12 오 8 · 사이 8 · 13 굵게).
  * 스위치는 공용 [스위치] (띠 위가 아니라서 띠 스위치가 아니다)
  */
+@Composable
+private fun 루제외뜸(규칙수: Int, modifier: Modifier, 누름: () -> Unit) {
+    val c = Local색.current
+    val 모양 = RoundedCornerShape(모서리.보통)
+    Row(
+        modifier.height(높이.보통).clip(모양).background(c.면).border(선굵기.보통, c.속선, 모양)
+            .눌림 { 누름() }
+            .padding(horizontal = 간격.보통),
+        verticalAlignment = Alignment.CenterVertically,
+    ) { 글(제외단추글(규칙수), 크기값 = 크기.버튼, 색 = if (규칙수 > 0) c.강조 else c.글, 굵기 = FontWeight.Bold) }
+}
+
 @Composable
 private fun 루자동뜸(켜짐: Boolean, modifier: Modifier, 바꿈: (Boolean) -> Unit) {
     val c = Local색.current

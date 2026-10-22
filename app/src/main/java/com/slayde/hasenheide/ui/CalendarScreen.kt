@@ -74,6 +74,7 @@ import androidx.compose.ui.unit.sp
 import com.slayde.hasenheide.data.근육계산
 import com.slayde.hasenheide.data.날기록
 import com.slayde.hasenheide.data.날짜만
+import com.slayde.hasenheide.data.남은슬롯
 import com.slayde.hasenheide.data.대비결과
 import com.slayde.hasenheide.data.두대비
 import com.slayde.hasenheide.data.루틴
@@ -98,6 +99,7 @@ import com.slayde.hasenheide.data.예정옮기기
 import com.slayde.hasenheide.data.예정지우기
 import com.slayde.hasenheide.data.미실시지우기
 import com.slayde.hasenheide.data.미실시되살림
+import com.slayde.hasenheide.data.미실시풀기
 import com.slayde.hasenheide.data.예정초기화
 import com.slayde.hasenheide.data.운동량
 import com.slayde.hasenheide.data.운동세션
@@ -213,7 +215,10 @@ internal fun 앱데이터.캘기록되살림(x: 캘지움값): 앱데이터 {
     }
     줄 += 지금
     // 10-10: 되살린 날은 한 날이다 — 지우는 사이 자정이 지나 '미실시' · '쉰날' 로 담겼으면 뺀다
-    return 캘기록놓기(x.날, 줄).let { it.copy(미실시 = it.미실시 - x.날, 쉰날 = it.쉰날 - x.날) }
+    // 10-22: 되살린 기록이 채우는 칸의 미실시만 뺀다 (한 날에 칸이 여럿이면 다른 묶음 미실시는 그대로 — [미실시풀기])
+    val 놓음 = 캘기록놓기(x.날, 줄)
+    return if (줄.isEmpty()) 놓음.copy(미실시 = 놓음.미실시.filterKeys { 날짜만(it) != x.날 }, 쉰날 = 놓음.쉰날 - x.날)
+    else 줄.fold(놓음) { acc, r -> acc.미실시풀기(x.날, r.루틴id) }
 }
 
 /** 달력 칸 한 개의 글 (시안 `칸내용`) — 기록 > 미실시 > 예정. 기록이 여럿이면 '하체 +1' */
@@ -418,27 +423,33 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
     // 10-08 홍겸 님: [초기화] — 그 날 예정을 비운다. 전 '예정 지우기'(변경 시트) 처리 그대로 (되돌리기 띠 · 발자취 · 지울 수 없는 날)
     fun 예정비움(k: String) {
         val dd = 상태.d
-        val rid = dd.예정[k] ?: return
-        val 이름 = dd.예정루틴(k)?.이름 ?: ""
-        val 전고정 = dd.예정고정[k]
+        val 지울 = dd.남은슬롯(k)   // 10-22: 한 날에 칸이 여럿이면 안 한 칸을 전부
+        if (지울.isEmpty()) return
+        val 전 = 지울.mapNotNull { c -> dd.예정[c]?.let { Triple(c, it, dd.예정고정[c]) } }
+        val 이름 = 지울.mapNotNull { dd.루틴(dd.예정[it])?.이름 }.joinToString(" · ")
         상태.바꿈 { it.예정지우기(k, 상태.오늘) }
-        if (상태.d.예정.containsKey(k)) return   // 지울 수 없는 날(지난 날 · 기록 있는 날)
+        if (지울.any { 상태.d.예정.containsKey(it) }) return   // 지울 수 없는 날(지난 날 · 기록 있는 날)
         발자취.적기("${캘날글(k)} 예정 지움")
         상태.알림.되돌림("캘린더예정", { n -> if (n > 1) "예정 ${n}개를 지웠습니다" else "${캘날글(k)} $이름 예정을 지웠습니다" }) {
             상태.바꿈 { dd2 ->
-                if (dd2.예정.containsKey(k) || dd2.캘기록있음(k) || dd2.루틴(rid) == null) dd2
-                else dd2.copy(예정 = dd2.예정 + (k to rid), 예정고정 = if (전고정 == null) dd2.예정고정 - k else dd2.예정고정 + (k to 전고정))
+                if (dd2.캘기록있음(k)) dd2
+                else 전.fold(dd2) { acc, (c, rid, 고정) ->
+                    if (acc.예정.containsKey(c) || acc.루틴(rid) == null) acc
+                    else acc.copy(예정 = acc.예정 + (c to rid), 예정고정 = if (고정 == null) acc.예정고정 - c else acc.예정고정 + (c to 고정))
+                }
             }
         }
     }
     // 10-20 홍겸 님: 지난 '미실시' 날 지우기 — 되돌리기 띠 · 발자취는 [초기화] 와 같게
     fun 미실시비움(k: String) {
-        val 이름 = 상태.d.미실시[k] ?: return
+        val 이름표 = 상태.d.미실시.filterKeys { 날짜만(it) == k }   // 10-22: 칸마다
+        if (이름표.isEmpty()) return
+        val 이름 = 이름표.values.joinToString(" · ")
         상태.바꿈 { it.미실시지우기(k, 상태.오늘) }
-        if (상태.d.미실시.containsKey(k)) return   // 지울 수 없는 날 (오늘 이후 · 기록 있는 날)
+        if (상태.d.미실시.keys.any { 날짜만(it) == k }) return   // 지울 수 없는 날 (오늘 이후 · 기록 있는 날)
         발자취.적기("${캘날글(k)} 미실시 지움")
         상태.알림.되돌림("캘린더미실시", { n -> if (n > 1) "미실시 ${n}개를 지웠습니다" else "${캘날글(k)} $이름 미실시를 지웠습니다" }) {
-            상태.바꿈 { it.미실시되살림(k, 이름, 상태.오늘) }
+            상태.바꿈 { it.미실시되살림(이름표, 상태.오늘) }
         }
     }
     fun 기록지움(k: String) {
@@ -1021,7 +1032,7 @@ private fun 판단추(
     val 운동예정 = r != null && !r.휴식일
     if (록.isEmpty() && k < 오늘) {
         // 10-20 홍겸 님: 지난 '미실시' 날은 우측 하단 [기록 삭제] 로 지운다 — 자리 · 폭은 [초기화] 와 같게 (U5-4 묻지 않고 지우고 띠로 되돌림)
-        if (d.미실시[k] == null) return   // 미실시도 없는 지난 날 = 단추 없음
+        if (d.미실시.keys.none { 날짜만(it) == k }) return   // 미실시도 없는 지난 날 = 단추 없음
         Row(Modifier.fillMaxWidth().background(c.바탕).padding(7.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.weight(판단추폭.계획))
             버튼("기록 삭제", { 미실시지움(k) }, Modifier.weight(판단추폭.초기화), 작게 = true, 세로여백 = 4.dp, 글색 = c.나쁨, 줄임 = true, 글배율 = 0.9f)
