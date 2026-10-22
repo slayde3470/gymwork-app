@@ -351,4 +351,36 @@ class RoutineTest {
         // 목표가 시작보다 작으면(잘못 넣은 값) 0
         assertEquals(0.0, 플랜달성률(p.copy(목표무게 = 40.0)))
     }
+
+    // ─────────────── 끌 때 미리 미끄러지기 (10-22) ───────────────
+
+    // 높이 100 인 칸 4개, 틈 10 → 위 0 · 110 · 220 · 330
+    private val 네칸 = (0..3).map { 칸구간(it, it * 110f, it * 110f + 100f) }
+
+    @Test fun 미끄럼_아래로_옮기면_지나는_칸이_올라오고_나는_자리로() {
+        // 0번을 2번 뒤에 → 1 · 2번이 한 칸(110)씩 올라오고, 0번은 2번 끝(320)까지 220 내려간다
+        val 표 = 밀림(네칸, 0, 2 to true)
+        assertEquals(-110f, 표[1]); assertEquals(-110f, 표[2]); assertEquals(220f, 표[0]); assertNull(표[3])
+    }
+
+    @Test fun 미끄럼_위로_옮기면_지나는_칸이_내려가고_나는_자리로() {
+        // 3번을 1번 앞에 → 1 · 2번이 110 내려가고, 3번은 1번 시작(110)까지 220 올라간다
+        val 표 = 밀림(네칸, 3, 1 to false)
+        assertEquals(110f, 표[1]); assertEquals(110f, 표[2]); assertEquals(-220f, 표[3]); assertNull(표[0])
+    }
+
+    @Test fun 미끄럼_제자리면_아무도_안_비킨다() {
+        assertTrue(밀림(네칸, 1, 1 to true).isEmpty())    // 자기 뒤
+        assertTrue(밀림(네칸, 1, 1 to false).isEmpty())   // 자기 앞
+        assertTrue(밀림(네칸, 1, 0 to true).isEmpty())    // 바로 앞 칸의 뒤 = 제자리
+        assertTrue(밀림(네칸, 1, 2 to false).isEmpty())   // 바로 뒤 칸의 앞 = 제자리
+        assertTrue(밀림(네칸, 1, null).isEmpty())
+    }
+
+    @Test fun 미끄럼_높이가_다른_칸() {
+        // 100 · 300(펼친 칸) · 100, 틈 10 → 0 · 110 · 420. 0번을 1번 뒤로: 1번이 110 올라오고 0번은 410-100=310 내려간다
+        val 칸 = listOf(칸구간(0, 0f, 100f), 칸구간(1, 110f, 410f), 칸구간(2, 420f, 520f))
+        val 표 = 밀림(칸, 0, 1 to true)
+        assertEquals(-110f, 표[1]); assertEquals(310f, 표[0])
+    }
 }

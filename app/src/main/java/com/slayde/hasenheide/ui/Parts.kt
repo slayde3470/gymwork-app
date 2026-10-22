@@ -677,7 +677,7 @@ fun 종목이름딱지(d: 앱데이터, 종id: String?, 이름: String, modifier
  * 놓으면 `옮김(원, 대상, 뒤에)` — 데이터 `목옮김(l, 원, 대상, 뒤에)` 과 같은 뜻 (대상 칸의 앞 · 뒤).
  *  · 칸마다 `Modifier.가로끌기(판, 번호)`, 줄에 `Modifier.가로끌기줄(판, 넘김)` (끝에 가면 저절로 넘긴다)
  *  · 칸 자리는 끌기 **전에** 잰 것만 쓴다 (11 지침 U5-6 · 움직이는 중에는 재지 않는다). 넘긴 만큼은 더해서 견준다
- *  · 끄는 칸은 투명도 0.35 · 놓을 자리는 그 칸의 왼쪽 · 오른쪽 3dp 강조 선 (U5-5)
+ *  · 끄는 칸은 투명도 0.35 (U5-5) · 10-22 홍겸 님: 놓을 자리는 선 대신 다른 칸이 미리 미끄러져 비켜 준다 (Slide.kt)
  */
 @Stable
 class 가로끌기판 internal constructor(private val 옮김: (원: Int, 대상: Int, 뒤에: Boolean) -> Unit) {
@@ -692,7 +692,18 @@ class 가로끌기판 internal constructor(private val 옮김: (원: Int, 대상
     internal var x = 0f
     private var 시작넘김 = 0
 
-    internal fun 시작(i: Int, 손x: Float) { 원 = i; x = 손x; 시작넘김 = 넘김?.value ?: 0; 찾기() }
+    private var 비킴기억키: Pair<Int, Pair<Int, Boolean>?>? = null
+    private var 비킴기억: Map<Int, Float> = emptyMap()
+    /** 10-22: 끄는 동안 이 칸이 비켜야 할 양(px · 오른쪽이 +) — 끄는 칸 자신은 놓일 자리로 간다. 칸 자리는 끌기 전에 잰 것만 쓴다 */
+    internal fun 비킴(번호: Int): Float {
+        val a = 원 ?: return 0f
+        val t = 놓을곳
+        val 키 = a to t
+        if (키 != 비킴기억키) { 비킴기억키 = 키; 비킴기억 = 밀림(자리.map { (k, r) -> 칸구간(k, r.left, r.right) }, a, t) }
+        return 비킴기억[번호] ?: 0f
+    }
+
+    internal fun 시작(i: Int, 손x: Float) { 비킴기억키 = null; 원 = i; x = 손x; 시작넘김 = 넘김?.value ?: 0; 찾기() }
     internal fun 끌림(dx: Float) { x += dx; 찾기() }
     internal fun 찾기() {
         val 내용x = x + ((넘김?.value ?: 0) - 시작넘김)
@@ -735,20 +746,13 @@ fun Modifier.가로끌기줄(판: 가로끌기판, 넘김: ScrollState?, 오른�
 /** 칸 하나 — [번호] = 줄 안 차례 */
 fun Modifier.가로끌기(판: 가로끌기판, 번호: Int, 켬: Boolean = true): Modifier = composed {
     if (!켬) return@composed Modifier
-    val c = Local색.current
     val 진동 = LocalHapticFeedback.current
     DisposableEffect(판, 번호) { onDispose { 판.자리.remove(번호) } }
+    val 밀 = 미끄럼(if (판.원 != null) 판.비킴(번호) else 0f, 판.원 != null)
     Modifier
-        .onGloballyPositioned { if (판.원 == null) 판.자리[번호] = it.boundsInRoot() }
+        .onGloballyPositioned { if (판.원 == null) 판.자리[번호] = it.잘리지않은틀() }   // 10-22: 잘리지 않은 자리 (줄 밖으로 걸친 칸도 제 폭으로)
         .graphicsLayer { alpha = if (판.원 == 번호) 움직임.끌림투명 else 1f }
-        .drawWithContent {
-            drawContent()
-            val t = 판.놓을곳
-            if (t != null && t.first == 번호 && 판.원 != 번호) {
-                val w = 부품치수.놓을선.toPx()
-                drawRect(c.강조, topLeft = Offset(if (t.second) size.width - w else 0f, 0f), size = Size(w, size.height))
-            }
-        }
+        .미끄러짐(밀, 가로 = true) { 판.원 != null }
         .pointerInput(판, 번호) {
             detectDragGesturesAfterLongPress(
                 onDragStart = { p ->

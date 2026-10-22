@@ -327,6 +327,7 @@ private fun 루틴목록화면(상태: 앱상태, 열기: (String) -> Unit) {
                         key(r.id) {
                             루틴카드(상태, r, 번째[r.id], i, 끌, Modifier,
                                 놓을표 = if (끌.원 != null) 끌.표시(i, 넘김.value) else -1,
+                                비킴 = if (끌.원 != null) 끌.비킴(i, 넘김.value) else 0f,
                                 on열기 = { 발자취.적기("루틴 열기 · ${r.이름}"); 열기(r.id) },
                                 on지우기 = { 루틴지우기(상태, r.id) },
                                 on끌기시작 = { 손 ->
@@ -362,7 +363,7 @@ private fun 루틴더하기(상태: 앱상태, 휴식일: Boolean, 열기: (Stri
  */
 @Composable
 private fun 루틴카드(
-    상태: 앱상태, r: 루틴, 번째: Int?, i: Int, 끌: 세로끌기, modifier: Modifier, 놓을표: Int,
+    상태: 앱상태, r: 루틴, 번째: Int?, i: Int, 끌: 세로끌기, modifier: Modifier, 놓을표: Int, 비킴: Float,
     on열기: () -> Unit, on지우기: () -> Unit,
     on끌기시작: (Offset) -> Unit, on끌기끝: () -> Unit,
 ) {
@@ -371,10 +372,12 @@ private fun 루틴카드(
     val 모양 = RoundedCornerShape(모서리.보통)
     val 시작 by rememberUpdatedState(on끌기시작)
     val 끝 by rememberUpdatedState(on끌기끝)
+    val 밀 = 미끄럼(비킴, 끌.원 != null)
     Column(
         modifier.fillMaxWidth()
             .onGloballyPositioned { if (끌.원 == null) { 끌.자리[i] = it.잘리지않은틀(); 끌.좌표[i] = it } }
             .alpha(if (끌.원 == i) 움직임.끌림투명 else 1f)
+            .미끄러짐(밀) { 끌.원 != null }
             .clip(모양)
             .background(c.면)
             .border(선굵기.보통, c.속선, 모양)
@@ -614,9 +617,11 @@ private fun 루틴상세화면(상태: 앱상태, r: 루틴, 닫기: () -> Unit)
                             fun 상자(j: Int) {
                                 val e = r.종목[j]
                                 val 표시 = if (끌.원 != null) 끌.표시(j, 넘김.value) else -1
+                                val 밀 = 미끄럼(if (끌.원 != null) 끌.비킴(j, 넘김.value) else 0f, 끌.원 != null)
                                 val 자리줄 = Modifier
                                     .onGloballyPositioned { if (끌.원 == null) { 끌.자리[j] = it.잘리지않은틀(); 끌.좌표[j] = it } }
                                     .alpha(if (끌.원 == j) 움직임.끌림투명 else 1f)
+                                    .미끄러짐(밀) { 끌.원 != null }
                                 // 줄 꾹 눌러 끌기 · 오른쪽 손잡이가 같은 시작을 쓴다 (10-09)
                                 val 끌시작: (Offset) -> Unit = { 손 ->
                                     손댐()
@@ -1492,6 +1497,7 @@ private class 세로끌기 {
         for ((k, lc) in 좌표) if (lc.isAttached) 자리[k] = lc.잘리지않은틀()
         굳은 = 자리.filterKeys { it < 수 }.map { (k, r) -> 끌칸(k, r.left, r.top, r.right, r.bottom) }
         this.가로 = 가로; 시작넘김 = 넘김
+        비킴기억키 = null
         this.이름 = 이름; y = 손y; x = 손x; this.손x = 손가락x; 원 = i
     }
     /** 손가락이 [양] 만큼 움직였다 */
@@ -1525,7 +1531,21 @@ private class 세로끌기 {
         if (묶기대상(넘김) == i) return 4
         val t = 대상(넘김) ?: return -1
         if (t.first != i || t.first == 원) return -1
-        return if (i in 가로) (if (t.second) 3 else 1) else (if (t.second) 2 else 0)
+        return if (i in 가로) (if (t.second) 3 else 1) else -1   // 10-22: 세로 목록은 위·아래 선 대신 다른 칸이 미리 비켜 준다 ([비킴])
+    }
+    private var 비킴기억키: Pair<Int, Pair<Int, Boolean>?>? = null
+    private var 비킴기억: Map<Int, Float> = emptyMap()
+    /**
+     * 10-22 홍겸 님: 끄는 동안 이 칸이 비켜야 할 양(px · 아래가 +) — 끄는 칸 자신은 놓일 자리로 간다.
+     * 가운데에 놓아 묶는 중(둘레 테두리)이거나 2열 격자면 안 비킨다. 칸 자리는 끌기 전에 잰 것만 쓴다 (U5-6)
+     */
+    fun 비킴(i: Int, 넘김: Int): Float {
+        val a = 원 ?: return 0f
+        if (가로.isNotEmpty() || 묶기대상(넘김) != null) return 0f
+        val t = 대상(넘김)
+        val 키 = a to t
+        if (키 != 비킴기억키) { 비킴기억키 = 키; 비킴기억 = 밀림(굳은.map { 칸구간(it.번호, it.위, it.아래) }, a, t) }
+        return 비킴기억[i] ?: 0f
     }
 }
 
@@ -1719,12 +1739,6 @@ internal fun 루격자줄(넓음: List<Boolean>): List<List<Int>> {
     }
     return 줄
 }
-
-/**
- * 10-21 홍겸 님 ("화면은 올라가는데 칸을 옮길 수는 없네"): [boundsInRoot] 는 스크롤 목록 밖으로 나간 · 걸친 칸을 **잘라서** 돌려준다 —
- * 화면 밖에 있던 칸은 높이 0 으로 잡혀, 자동으로 넘긴 뒤 그 칸 위에 놓아도 놓을 곳을 못 찾았다. 잘리지 않은 자리(위치 + 크기)로 잰다
- */
-private fun LayoutCoordinates.잘리지않은틀(): Rect = Rect(positionInRoot(), size.toSize())
 
 /** 끌기 칸 자리 (화면 기준 px) — 시험하려고 Rect 대신 */
 internal data class 끌칸(val 번호: Int, val 왼: Float, val 위: Float, val 오른: Float, val 아래: Float)

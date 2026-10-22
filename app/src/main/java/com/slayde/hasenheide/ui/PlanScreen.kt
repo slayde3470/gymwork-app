@@ -49,6 +49,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
@@ -562,7 +563,7 @@ internal fun 플랜지움(상태: 앱상태, id: String) {
 
 /**
  * 플랜 카드 목록 (종목 탭 — 지금까지 ExerciseScreen 이 맨 위에서 부르던 것). 카드마다 이름 줄을 꾹 눌러 끌면 순서가 바뀐다
- * (동작방식 D3-9 · 11 지침 U5-5 — 끄는 것 0.35 · 놓을 자리 3dp 선). EX 가 종목 칸 안으로 옮기면 [플랜카드] 를 바로 부른다
+ * (동작방식 D3-9 · 11 지침 U5-5 — 끄는 것 0.35 · 10-22: 놓을 자리는 선 대신 다른 카드가 미리 비켜 준다). EX 가 종목 칸 안으로 옮기면 [플랜카드] 를 바로 부른다
  */
 @Composable
 fun 플랜종목칸(
@@ -581,21 +582,28 @@ fun 플랜종목칸(
     var 놓을 by remember { mutableStateOf(-1) }   // 놓일 자리 (목록 번호)
     val 높이들 = remember { mutableStateMapOf<String, Int>() }
     val 진동 = LocalHapticFeedback.current
+    val 틈px = with(LocalDensity.current) { 간격.좁게.toPx() }
 
     Column(Modifier.번호("종3"), verticalArrangement = Arrangement.spacedBy(간격.좁게)) {
         보임.forEachIndexed { i, p ->
             key(p.id) {
                 val 원 = 보임.indexOfFirst { it.id == 끄는 }
-                val 선 = if (끄는 != null && 놓을 == i && 놓을 != 원) (if (놓을 < 원) 0 else 2) else -1
-                val 선색 = c.강조
+                // 10-22 홍겸 님: 놓일 자리를 선으로 가리키는 대신, 지나가는 카드들이 미리 미끄러져 비켜 준다 (끄는 카드는 손가락을 따라간다)
+                val 비킴 = if (끄는 != null && 원 >= 0 && 놓을 >= 0 && 원 != i) {
+                    val h = (높이들[끄는] ?: 0) + 틈px
+                    when {
+                        놓을 > 원 && i in (원 + 1)..놓을 -> -h
+                        놓을 < 원 && i in 놓을 until 원 -> h
+                        else -> 0f
+                    }
+                } else 0f
+                val 밀 = 미끄럼(비킴, 끄는 != null)
                 Box(
                     Modifier.onSizeChanged { 높이들[p.id] = it.height }
                         .zIndex(if (끄는 == p.id) 1f else 0f)
-                        .graphicsLayer { translationY = if (끄는 == p.id) 거리 else 0f; alpha = if (끄는 == p.id) 움직임.끌림투명 else 1f }
-                        .drawBehind {
-                            val h = 부품치수.놓을선.toPx()
-                            if (선 == 0) drawRect(선색, size = Size(size.width, h))
-                            if (선 == 2) drawRect(선색, topLeft = Offset(0f, size.height - h), size = Size(size.width, h))
+                        .graphicsLayer {
+                            translationY = if (끄는 == p.id) 거리 else if (끄는 != null) 밀.value else 0f
+                            alpha = if (끄는 == p.id) 움직임.끌림투명 else 1f
                         },
                 ) {
                     플랜카드(상태, p, 횟수보임 = 횟수보임, 근육칸 = if (i == 0) 근육칸 else null, 끌기 = Modifier.pointerInput(p.id) {
