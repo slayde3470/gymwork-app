@@ -460,11 +460,12 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
     }
     // 10-20 홍겸 님: 지난 '미실시' 날 지우기 — 되돌리기 띠 · 발자취는 [초기화] 와 같게
     fun 미실시비움(k: String) {
-        val 이름표 = 상태.d.미실시.filterKeys { 날짜만(it) == k }   // 10-22: 칸마다
+        // 10-23: 이미 한 묶음 칸의 미실시는 지우지 않는다 — 지울 칸만 센다
+        val 이름표 = 상태.d.미실시.filterKeys { 날짜만(it) == k && !상태.d.묶음날함(슬롯묶음(it), k) }
         if (이름표.isEmpty()) return
         val 이름 = 이름표.values.joinToString(" · ")
         상태.바꿈 { it.미실시지우기(k, 상태.오늘) }
-        if (상태.d.미실시.keys.any { 날짜만(it) == k }) return   // 지울 수 없는 날 (오늘 이후 · 기록 있는 날)
+        if (이름표.keys.any { 상태.d.미실시.containsKey(it) }) return   // 지울 수 없는 날 (오늘 이후)
         발자취.적기("${캘날글(k)} 미실시 지움")
         상태.알림.되돌림("캘린더미실시", { n -> if (n > 1) "미실시 ${n}개를 지웠습니다" else "${캘날글(k)} $이름 미실시를 지웠습니다" }) {
             상태.바꿈 { it.미실시되살림(이름표, 상태.오늘) }
@@ -1098,6 +1099,15 @@ private fun 판단추(
             운동칸.forEach { (칸, rr) ->
                 버튼("${rr.이름} 시작", { 칸시작(칸) }, Modifier.weight(1f), 주요 = true, 작게 = true, 세로여백 = 4.dp, 줄임 = true, 글배율 = 0.9f)
             }
+        }
+    }
+    // 10-23 홍겸 님: 운동은 했지만 다른 묶음을 놓친 지난 날 — 그 미실시만 지운다 (기록은 그대로)
+    if (록.isNotEmpty() && !지움모드 && k < 오늘 && d.미실시.keys.any { 날짜만(it) == k && !d.묶음날함(슬롯묶음(it), k) }) {
+        Row(
+            Modifier.fillMaxWidth().background(c.바탕).padding(start = 7.dp, end = 7.dp, top = 7.dp),
+            horizontalArrangement = Arrangement.spacedBy(간격.좁게), verticalAlignment = Alignment.CenterVertically,
+        ) {
+            버튼("미실시 지우기", { 미실시지움(k) }, Modifier.weight(1f), 작게 = true, 세로여백 = 4.dp, 글색 = c.나쁨, 줄임 = true, 글배율 = 0.9f)
         }
     }
     Row(
