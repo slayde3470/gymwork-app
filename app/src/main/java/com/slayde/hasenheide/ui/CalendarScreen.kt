@@ -67,6 +67,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
@@ -528,6 +529,7 @@ fun 캘린더화면(상태: 앱상태, 루틴으로: () -> Unit, 운동으로: (
                         on꾹 = { k, 자리 -> 꾹눌림(k, 자리) },
                         on끌 = { 양 -> 손.value = 손.value?.plus(양) },
                         on놓음 = { 위 -> 끌어놓음(위) })
+                    범례줄()
                 }
                 // 10-11 홍겸 님: [오늘] 은 캘린더 우측 하단에 고정 — 달을 넘기는 밀기 밖에 둬서 자리가 안 변한다 (다른 달을 볼 때만 보임 · 전과 같음)
                 if (보는달 != 이번달) 흰칩("오늘", { 보는달 = 이번달; 날고름(오늘) }, Modifier.align(Alignment.BottomEnd).padding(end = 간격.보통, bottom = 간격.아주좁게))
@@ -684,6 +686,17 @@ private fun 요일줄() {
     }
 }
 
+/** 달력 아래 범례 한 줄 (10-23 시안 캘린더 A) — 칸 글 모양이 뜻이다: 함 · 예정 · 못 함 */
+@Composable
+private fun 범례줄() {
+    val c = Local색.current
+    Row(Modifier.fillMaxWidth().padding(top = 간격.좁게), horizontalArrangement = Arrangement.spacedBy(간격.보통)) {
+        글("함", 크기값 = 크기.작게, 색 = c.강조, 굵기 = FontWeight.Bold)
+        글("예정", 크기값 = 크기.작게, 색 = c.옅음, 굵기 = FontWeight.Medium)
+        Text("못 함", style = 글꼴.보통(크기.작게, FontWeight.Medium).copy(textDecoration = TextDecoration.LineThrough), color = c.나쁨, maxLines = 1)
+    }
+}
+
 /** 날 칸 사이 구분선 — 위 · 왼쪽(첫 칸 빼고) 1 선 (시안 v7 upy8 · v17 ②). 빈 칸에도 그어 반듯한 격자 */
 private fun Modifier.칸선(색: Color, 첫칸: Boolean): Modifier = drawBehind {
     val w = 선굵기.보통.toPx()
@@ -794,22 +807,16 @@ private fun 날칸(
             Text("$일", style = 글꼴.보통(크기.조금작게, FontWeight.Bold), color = 강조글, maxLines = 1)
         } else Text("$일", style = 글꼴.보통(크기.조금작게), color = 숫자색, maxLines = 1)   // 10-08 홍겸 님: 오늘만 굵게
         if (값 != null) {
-            val (칩바탕, 칩글) = when (값.종류) {
-                캘칸종류.예 -> c.강조옅음 to c.강조
-                캘칸종류.휴 -> Color.Transparent to c.옅음
-                else -> Color.Transparent to c.글
-            }
-            Box(
-                Modifier.clip(RoundedCornerShape(모서리.작게)).background(칩바탕)
-                    .then(if (값.종류 == 캘칸종류.휴) Modifier.border(선굵기.보통, c.속선, RoundedCornerShape(모서리.작게)) else Modifier)
-                    .padding(horizontal = 칸글옆),
-            ) {
-                Text(값.글, style = 글꼴.보통(크기.작게), color = 칩글, maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis)
-            }
-            if (값.상 != null) {
-                val 상색 = when { 값.상 == "달성" -> c.좋음; 값.상 == "미달성" -> c.나쁨; else -> c.옅음 }
-                Text(값.상, style = 글꼴.보통(크기.작게, FontWeight.Bold), color = 상색, maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis)
-            }
+            // 10-23 홍겸 님: 시안 캘린더 A — 칩 · 상태 글을 없애고 루틴 이름 한 줄. 상태는 글 모양으로 (함 = 강조 굵게 · 예정 = 옅음 · 못 함 = 나쁨 + 취소선)
+            val 함 = 값.종류 == 캘칸종류.록 && 값.상 == "달성"
+            val 못함 = 값.종류 == 캘칸종류.미
+            val 글색 = when { 함 -> c.강조; 못함 || 값.종류 == 캘칸종류.록 -> c.나쁨; else -> c.옅음 }
+            val 굵기 = when { 함 -> FontWeight.Bold; 값.종류 == 캘칸종류.휴 -> FontWeight.Normal; else -> FontWeight.Medium }
+            Text(
+                값.글,
+                style = 글꼴.보통(크기.작게, 굵기).copy(textDecoration = if (못함) TextDecoration.LineThrough else null),
+                color = 글색, maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis,
+            )
         }
     }
 }
