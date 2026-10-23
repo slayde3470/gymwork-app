@@ -270,7 +270,7 @@ fun 새종목시트(
             }
             Box(Modifier.fillMaxWidth().onSizeChanged { 표크기 = it }.bringIntoViewRequester(세트끝)) {
                 // 10-12 기록 방식: 이름으로 방식이 정해진다 — 맨몸 '추가 kg' · 어시스트 '보조 kg' + 칸 아래 '= 69kg'
-                새세트줄표(v.세트, 상태.d.설정.무게폭, { f -> v = v.copy(세트 = f(v.세트)) }, { 상태.알림.토스트(세트최대글) },
+                세트줄표(v.세트, 상태.d.설정.무게폭, { f -> v = v.copy(세트 = f(v.세트)) }, { 상태.알림.토스트(세트최대글) },
                     머리 = 무게머리글(listOf(상태.d.새종목방식(v)), "무게 kg"), 작은글 = { w -> 상태.d.새종목실제무게글(v, w) },
                     방식 = 상태.d.새종목방식(v))
             }
@@ -380,102 +380,6 @@ internal object 새시트치수 {
     const val 무게줄임 = 0.85f
     val 열무게: Float = 무게줄임 * 종목치수.열무게 * (종목치수.열횟수 + 종목치수.열휴식) /
         (종목치수.열무게 + 종목치수.열횟수 + 종목치수.열휴식 - 무게줄임 * 종목치수.열무게)
-}
-
-/**
- * 새 종목 시트의 세트 줄 목록 — 종목 탭의 [세트줄표](ExerciseScreen.kt)와 같은 동작에 10-06 홍겸 님 고침 둘:
- *  · 머리 '세트' 가 …로 잘리지 않게 번호 칸을 넓히고, 무게 칸을 좌우 15% 줄인다([새시트치수])
- *  · 쳐 넣는 중(칸에 초점)에도 − ＋ 를 누르면 화면 숫자가 바로 바뀐다([새세트값칸] · 전에는 친 글이 남아 숫자가 안 바뀌었다)
- * 합칠 때 공용 [세트줄표] 로 되돌린다 (원인 · 고칠 곳은 [새세트값칸] 설명)
- */
-@Composable
-private fun 새세트줄표(
-    세트: List<종목세트>, 무게폭: Double, 바꿈: ((List<종목세트>) -> List<종목세트>) -> Unit, 최대알림: () -> Unit,
-    머리: String = "무게 kg", 작은글: (Double) -> String? = { null }, 방식: 기록방식 = 기록방식.무게,
-) {
-    val c = Local색.current
-    val 무게있음 = 방식.무게칸있음(); val 시간 = 방식.시간칸(); val 넓힘 = 방식 == 기록방식.시간; val 거리 = 방식.거리칸()   // 2단계 기록 방식: 횟수만 · 시간은 무게 칸이 없고, 시간은 횟수 칸이 m:ss
-    Column(verticalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
-            글("세트", Modifier.width(새시트치수.번호칸), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)
-            if (무게있음) 글(머리, Modifier.weight(새시트치수.열무게), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)
-            글(if (시간) "시간" else "횟수", Modifier.weight(if (넓힘) 새시트치수.열무게 else 종목치수.열횟수), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)
-            글("휴식", Modifier.weight(종목치수.열휴식), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)
-            Box(Modifier.width(종목치수.지움칸))
-        }
-        val 하나 = 세트.size <= 1
-        val 앞 = 앞줄개수(세트.size)   // 10-08: 방금 더한 줄은 한 번 점멸 · 눌렸다 제자리
-        세트.forEachIndexed { k, x ->
-            key(k) {
-                Row(Modifier.새줄효과(k >= 앞), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
-                    글("${k + 1}", Modifier.width(새시트치수.번호칸), 크기값 = 크기.조금작게, 굵기 = FontWeight.Bold, 가운데 = true)
-                    if (무게있음) 무게칸아래글(작은글(x.w), Modifier.weight(새시트치수.열무게)) {
-                        새세트값칸(무게글(x.w), Modifier.fillMaxWidth(), if (거리) "${k + 1}세트 거리" else "${k + 1}세트 무게", x.w > 0,
-                            { 바꿈 { l -> 세트값바꿈(l, k, if (거리) 'd' else 'w', -1, 무게폭) } }, { 바꿈 { l -> 세트값바꿈(l, k, if (거리) 'd' else 'w', 1, 무게폭) } },
-                            { g -> 바꿈 { l -> 세트글넣음(l, k, 'w', g) } })
-                    }
-                    if (시간) 새세트값칸(분초(x.r), Modifier.weight(if (넓힘) 새시트치수.열무게 else 종목치수.열횟수), "${k + 1}세트 시간", x.r > 방식.시간최소(),
-                        { 바꿈 { l -> 세트값바꿈(l, k, if (거리) 'u' else 't', -1, 무게폭) } }, { 바꿈 { l -> 세트값바꿈(l, k, if (거리) 'u' else 't', 1, 무게폭) } },
-                        null, 더할수있음 = x.r < 방식.시간최대())
-                    else 새세트값칸("${x.r}", Modifier.weight(종목치수.열횟수), "${k + 1}세트 횟수", x.r > 1,
-                        { 바꿈 { l -> 세트값바꿈(l, k, 'r', -1, 무게폭) } }, { 바꿈 { l -> 세트값바꿈(l, k, 'r', 1, 무게폭) } },
-                        { g -> 바꿈 { l -> 세트글넣음(l, k, 'r', g) } }, 정수 = true)
-                    휴식값칸(x.휴, { 새 -> 바꿈 { l -> 세트휴식(l, k, 새) } }, Modifier.weight(종목치수.열휴식), 칸높이 = 높이.아주낮게)
-                    Box(
-                        Modifier.size(종목치수.지움칸).clip(RoundedCornerShape(모서리.작게))
-                            .then(if (하나) Modifier else Modifier.눌림 { 바꿈 { l -> 세트지움(l, k) } }),
-                        contentAlignment = Alignment.Center,
-                    ) { Icon(아이콘.지우기, "${k + 1}세트 지우기", Modifier.size(종목치수.지움그림), tint = if (하나) c.선 else c.옅음) }
-                }
-            }
-        }
-        버튼("+ 세트", { if (세트.size >= 종목세트최대) 최대알림() else 바꿈 { l -> 세트더함(l) } }, Modifier.fillMaxWidth(), 낮게 = true)
-    }
-}
-
-/**
- * − 값 ＋ (가운데 = 쳐서 넣는 칸) — 높이 28. 10-06 홍겸 님 버그: 쳐 넣는 칸(초점)이 켜져 있으면 − ＋ 를 눌러도 화면 숫자가 그대로였다
- * (35kg 에서 ＋ 3번 → 화면은 35 · 세트를 더하면 38 으로 복사됨).
- * 원인: ExerciseScreen.kt [세트값칸] 이 초점 동안 `value = 친글`(친 글 그대로)만 그리고, − ＋ 가 바꾼 저장값(값글)은 친글에 안 들어갔다
- *      (저장값은 바뀌어서 세트 복사에는 새 값이 쓰였다). Common.kt 숫자입력과는 무관.
- * 고침: − ＋ 를 누르면 [버튼값] 을 켜서 저장값을 보이고, 다시 치기 시작하면([onValueChange]) 끄고 친 글을 보인다. 초점이 나가면 끈다.
- */
-@Composable
-private fun 새세트값칸(
-    값글: String, modifier: Modifier, 이름: String, 뺄수있음: Boolean,
-    빼기: () -> Unit, 더하기: () -> Unit, 넣기: ((String) -> Unit)?, 정수: Boolean = false, 더할수있음: Boolean = true,
-) {
-    val c = Local색.current
-    val 모양 = RoundedCornerShape(모서리.작게)
-    var 초점 by remember { mutableStateOf(false) }
-    var 친글 by remember { mutableStateOf(값글) }
-    var 버튼값 by remember { mutableStateOf(false) }   // − ＋ 로 바뀐 뒤 — 칸에 저장값을 보인다
-    LaunchedEffect(값글, 초점) { if (!초점) 친글 = 값글 }
-    val 자판 = LocalFocusManager.current
-    Row(modifier.height(높이.아주낮게).clip(모양).border(선굵기.보통, c.속선, 모양), verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.width(새시트치수.값단추).fillMaxHeight().then(if (뺄수있음) Modifier.눌림 { 버튼값 = true; 빼기() } else Modifier), contentAlignment = Alignment.Center) {
-            Icon(아이콘.빼기, "$이름 빼기", Modifier.size(새시트치수.값그림), tint = if (뺄수있음) c.강조 else c.옅음)
-        }
-        val 판 = 가운데판(초점)
-        if (넣기 == null) Text(   // 2단계 시간 칸 — m:ss 는 쳐 넣지 않고 − ＋ (5초씩) 로만 (휴식 칸과 같다)
-            값글, Modifier.weight(1f), style = 글꼴.보통(크기.버튼, FontWeight.Bold).copy(fontFeatureSettings = "tnum"),
-            color = c.글, maxLines = 1, softWrap = false, textAlign = TextAlign.Center,
-        ) else key(판.번호) {
-            BasicTextField(
-                value = if (초점 && !버튼값) 친글 else 값글,
-                onValueChange = { t -> 버튼값 = false; 친글 = t; 넣기(t) },
-                singleLine = true,
-                textStyle = 글꼴.보통(크기.버튼, FontWeight.Bold).copy(color = c.글, textAlign = TextAlign.Center, fontFeatureSettings = "tnum"),
-                cursorBrush = SolidColor(c.강조),
-                keyboardOptions = KeyboardOptions(keyboardType = if (정수) KeyboardType.Number else KeyboardType.Decimal, imeAction = ImeAction.Done),
-                keyboardActions = KeyboardActions(onDone = { 자판.clearFocus() }),
-                modifier = Modifier.weight(1f).then(판.손).onFocusChanged { 초점 = it.isFocused; if (!it.isFocused) 버튼값 = false },
-            )
-        }
-        Box(Modifier.width(새시트치수.값단추).fillMaxHeight().then(if (더할수있음) Modifier.눌림 { 버튼값 = true; 더하기() } else Modifier), contentAlignment = Alignment.Center) {
-            Icon(아이콘.더하기, "$이름 더하기", Modifier.size(새시트치수.값그림), tint = if (더할수있음) c.강조 else c.옅음)
-        }
-    }
 }
 
 /**

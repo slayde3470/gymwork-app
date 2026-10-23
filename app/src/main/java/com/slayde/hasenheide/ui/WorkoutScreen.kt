@@ -533,7 +533,7 @@ private fun 밀기옛쪽(그림: ImageBitmap, 방향: Int, 진행값: () -> Floa
 }
 
 /** 지금 치고 있는 kg · 회 칸 — 다른 행동을 하기 전에 친 값을 넣는다 (한 번에 하나) */
-private object 운입력 { var 확정: (() -> Unit)? = null }
+internal object 운입력 { var 확정: (() -> Unit)? = null }
 
 /**
  * 3단계 시간 타이머 · 유산소 스톱워치 (10-12 홍겸 님) — 한 번에 하나. 시간(버티기)은 [목표]초에서 줄어들다 0 이면 진동 + 자동 체크 ·
@@ -577,7 +577,7 @@ private fun 타이머칸(글: String, 글크기: TextUnit, modifier: Modifier) {
 }
 
 /** 운동 화면에만 쓰는 값 (시안 v9 ~ v21) — 11 지침에 아직 이름이 없는 것. 합칠 때 Theme.kt `부품치수` 로 옮긴다 */
-private object 운치수 {
+internal object 운치수 {
     val 번호 = 36.dp                // 세트 번호 동그라미 (v10 · 줄 높이 44 = 36 + 위아래 4)
     val 값단추 = 20.dp              // 세트 줄 − ＋ 누르는 칸 폭 (시안 `.운세트들 .값칸 button`)
     val 칸폭 = 72.dp                // (옛) 아래 종목 칸 폭 — 10-08 부터 칸은 글 길이만큼
@@ -901,7 +901,7 @@ private fun 세트목록(
  * 세트 줄 칸 최소 폭 (dp) — 번호 · kg · 회 · 휴식 (10-09 홍겸 님). kg 칸은 `100.00`, 횟수 칸은 `100`, 휴식 칸은 `10:00` 이 [글크기] 로 다 들어가는 폭:
  * 단추 둘(20 × 2) + 테 둘(1 × 2) + 잰 글자 폭 + 여유 4. 번호 칸은 동그라미 36
  */
-private fun 세트칸최소(측정: androidx.compose.ui.text.TextMeasurer, 밀도: Density, 글크기: TextUnit): List<Float> {
+internal fun 세트칸최소(측정: androidx.compose.ui.text.TextMeasurer, 밀도: Density, 글크기: TextUnit): List<Float> {
     val 굵 = 글꼴.보통(글크기, FontWeight.Bold).copy(fontFeatureSettings = "tnum")
     val 보통 = 글꼴.보통(글크기).copy(fontFeatureSettings = "tnum")
     fun 칸(글: String, 꼴: TextStyle): Float =
@@ -1074,7 +1074,7 @@ private fun 번호동그라미(번호: Int, 완료: Boolean, 설명: String, on�
  * 긴 값('102.5')은 글자를 줄여 넣는다 15 → 13 → 11 (✎ ai39)
  */
 @Composable
-private fun 운값칸(
+internal fun 운값칸(
     값글: String, 이름: String, 소수: Boolean, 끝남: Boolean, 글크기: TextUnit, modifier: Modifier,
     빼기: () -> Unit, 더하기: () -> Unit, 넣기: (String) -> Unit,
 ) {
@@ -1130,7 +1130,7 @@ private fun 운값칸(
 
 /** 휴식 칸 — kg · 회 와 같은 − 값 ＋ (15초씩 · 0:15 ~ 5:00 · ✎ ypk0 · v9). 값 15 · 끝난 줄은 테 · − ＋ 감춤 */
 @Composable
-private fun 운휴칸(
+internal fun 운휴칸(
     초: Int, 끝남: Boolean, 글크기: TextUnit, modifier: Modifier,
     /** 2단계: 시간 칸도 이 부품을 쓴다 — 범위와 설명만 다르다 */
     최소: Int = 휴식칸값.최소, 최대: Int = 휴식칸값.최대, 이름: String = "휴식 15초",
@@ -1152,7 +1152,7 @@ private fun 운휴칸(
 }
 
 @Composable
-private fun 값단추(그림: androidx.compose.ui.graphics.vector.ImageVector, 설명: String, 보임: Boolean, 켬: Boolean = true, onClick: () -> Unit) {
+internal fun 값단추(그림: androidx.compose.ui.graphics.vector.ImageVector, 설명: String, 보임: Boolean, 켬: Boolean = true, onClick: () -> Unit) {
     val c = Local색.current
     Box(
         Modifier.width(운치수.값단추).fillMaxHeight().alpha(if (!보임) 0f else if (!켬) 운치수.흐린단추 else 1f)

@@ -860,101 +860,16 @@ private fun 근육읽기(상태: 앱상태, 이름: String) {
     근육두장(근육, d.설정.색표, { })
 }
 
-/** 기본 세팅 표 칸 폭 (10-08 홍겸 님) — 무게 '100.25' · 횟수 3자리 · 휴식 '10:00' 이 들어갈 만큼만. − ＋ 는 15% 작게 */
-internal object 세트표치수 {
-    val 번호 = 28.dp     // 세트 동그라미 (운동 중 화면처럼 · 높이.아주낮게)
-    val 무게 = 96.dp     // 단추 24 × 2 + 글 48
-    val 횟수 = 76.dp     // 단추 24 × 2 + 글 28
-    val 휴식 = 88.dp     // 단추 24 × 2 + 글 40
-    val 지움 = 20.dp     // 휴지통 칸 (28 → 20)
-    val 단추 = 24.dp     // − ＋ 누르는 칸 (28 의 85%)
-    val 그림 = 16.dp     // − ＋ 그림 (18 의 85% ≈ 16 · U3-6 작게)
-}
-
 /**
- * 기본 세팅 표 (10-08 홍겸 님 · 운동 중 화면과 비슷한 배치) — [세트 ◯][무게 kg][횟수][휴식][휴지통] + [+ 세트 추가하기].
- * 세트 번호는 강조 동그라미. 값 바꾸는 규칙은 [세트줄표] 와 같다(무게폭 · 1회 이상 · 휴식 15초 눈금)
+ * 기본 세팅 표 (종목 편집 상자) — 운동 중 화면과 똑같은 모양의 [세트줄표] 를 그대로 쓴다 (10-23 홍겸 님).
+ * 다른 점은 맨 아래 버튼 글 하나뿐: '+ 세트 추가하기'
  */
 @Composable
 private fun 기본세트표(
     세트: List<종목세트>, 무게폭: Double, 바꿈: ((List<종목세트>) -> List<종목세트>) -> Unit, 최대알림: () -> Unit,
     머리: String = "무게 kg", 작은글: (Double) -> String? = { null }, 방식: 기록방식 = 기록방식.무게,
 ) {
-    val c = Local색.current
-    // 2단계 기록 방식: 횟수만 · 시간은 무게 칸이 없다 (칸을 감춘다). 시간은 횟수 칸이 '시간(m:ss)'이고 무게 칸 자리까지 넓게
-    val 무게있음 = 방식.무게칸있음(); val 시간 = 방식.시간칸(); val 넓힘 = 방식 == 기록방식.시간; val 거리 = 방식.거리칸()
-    val 횟수폭 = if (넓힘) 세트표치수.무게 else 세트표치수.횟수
-    Column(verticalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
-        세트표줄(
-            { 글("세트", 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true) },
-            { 글(머리, 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true) },
-            { 글(if (시간) "시간" else "횟수", 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true) },
-            { 글("휴식", 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true) },
-            { },
-            무게있음 = 무게있음, 횟수폭 = 횟수폭,
-        )
-        val 하나 = 세트.size <= 1
-        val 앞 = 앞줄개수(세트.size)   // 방금 더한 줄은 한 번 점멸 · 눌렸다 제자리
-        세트.forEachIndexed { k, x ->
-            key(k) {
-                세트표줄(
-                    {
-                        Box(
-                            Modifier.size(세트표치수.번호).clip(CircleShape).border(선굵기.보통, c.강조, CircleShape),
-                            contentAlignment = Alignment.Center,
-                        ) { 글("${k + 1}", 크기값 = 크기.조금작게, 색 = c.강조, 굵기 = FontWeight.Bold, 가운데 = true) }
-                    },
-                    {
-                        무게칸아래글(작은글(x.w), Modifier.fillMaxWidth()) {
-                            세트값칸(무게글(x.w), Modifier.fillMaxWidth(), if (거리) "${k + 1}세트 거리" else "${k + 1}세트 무게", x.w > 0,
-                                { 바꿈 { l -> 세트값바꿈(l, k, if (거리) 'd' else 'w', -1, 무게폭) } }, { 바꿈 { l -> 세트값바꿈(l, k, if (거리) 'd' else 'w', 1, 무게폭) } },
-                                { g -> 바꿈 { l -> 세트글넣음(l, k, 'w', g) } }, 단추폭 = 세트표치수.단추, 그림크기 = 세트표치수.그림)
-                        }
-                    },
-                    {
-                        if (시간) 세트값칸(분초(x.r), Modifier.fillMaxWidth(), "${k + 1}세트 시간", x.r > 방식.시간최소(),
-                            { 바꿈 { l -> 세트값바꿈(l, k, if (거리) 'u' else 't', -1, 무게폭) } }, { 바꿈 { l -> 세트값바꿈(l, k, if (거리) 'u' else 't', 1, 무게폭) } },
-                            null, 단추폭 = 세트표치수.단추, 그림크기 = 세트표치수.그림, 더할수있음 = x.r < 방식.시간최대())
-                        else 세트값칸("${x.r}", Modifier.fillMaxWidth(), "${k + 1}세트 횟수", x.r > 1,
-                            { 바꿈 { l -> 세트값바꿈(l, k, 'r', -1, 무게폭) } }, { 바꿈 { l -> 세트값바꿈(l, k, 'r', 1, 무게폭) } },
-                            { g -> 바꿈 { l -> 세트글넣음(l, k, 'r', g) } }, 정수 = true, 단추폭 = 세트표치수.단추, 그림크기 = 세트표치수.그림)
-                    },
-                    {
-                        세트값칸(분초(x.휴), Modifier.fillMaxWidth(), "${k + 1}세트 휴식", x.휴 > 휴식칸값.최소,
-                            { 바꿈 { l -> l.getOrNull(k)?.let { 세트휴식(l, k, 휴식한칸(it.휴, -1)) } ?: l } },
-                            { 바꿈 { l -> l.getOrNull(k)?.let { 세트휴식(l, k, 휴식한칸(it.휴, 1)) } ?: l } },
-                            null, 단추폭 = 세트표치수.단추, 그림크기 = 세트표치수.그림, 더할수있음 = x.휴 < 휴식칸값.최대)
-                    },
-                    {
-                        Box(
-                            Modifier.size(세트표치수.지움, 높이.아주낮게).clip(RoundedCornerShape(모서리.작게))
-                                .then(if (하나) Modifier else Modifier.눌림 { 바꿈 { l -> 세트지움(l, k) } }),
-                            contentAlignment = Alignment.Center,
-                        ) { Icon(아이콘.지우기, "${k + 1}세트 지우기", Modifier.size(종목치수.지움그림), tint = if (하나) c.선 else c.옅음) }
-                    },
-                    줄모양 = Modifier.새줄효과(k >= 앞), 무게있음 = 무게있음, 횟수폭 = 횟수폭,
-                )
-            }
-        }
-        버튼("+ 세트 추가하기", { if (세트.size >= 종목세트최대) 최대알림() else 바꿈 { l -> 세트더함(l) } }, Modifier.fillMaxWidth(), 낮게 = true)
-    }
-}
-
-/** 기본 세팅 표 한 줄 — 칸 폭은 [세트표치수] 로 정하고 남는 자리는 칸 사이에 고르게 (SpaceBetween) */
-@Composable
-private fun 세트표줄(
-    번호: @Composable () -> Unit, 무게: @Composable () -> Unit, 횟수: @Composable () -> Unit,
-    휴식: @Composable () -> Unit, 끝: @Composable () -> Unit, 줄모양: Modifier = Modifier,
-    /** 2단계 기록 방식: 횟수만 · 시간은 무게 칸을 뺀다 · 시간은 횟수 칸을 넓게 */
-    무게있음: Boolean = true, 횟수폭: androidx.compose.ui.unit.Dp = 세트표치수.횟수,
-) {
-    Row(줄모양.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-        Box(Modifier.width(세트표치수.번호), contentAlignment = Alignment.Center) { 번호() }
-        if (무게있음) Box(Modifier.width(세트표치수.무게), contentAlignment = Alignment.Center) { 무게() }
-        Box(Modifier.width(횟수폭), contentAlignment = Alignment.Center) { 횟수() }
-        Box(Modifier.width(세트표치수.휴식), contentAlignment = Alignment.Center) { 휴식() }
-        Box(Modifier.width(세트표치수.지움), contentAlignment = Alignment.Center) { 끝() }
-    }
+    세트줄표(세트, 무게폭, 바꿈, 최대알림, 머리, 작은글, 방식, 더하기글 = "+ 세트 추가하기")
 }
 
 /** 펼친 상자 머리의 사진 칸 28 — 첫 사진 · 없으면 점선 ＋. 누르면 사진 넣기 (시안 `.사진넣칸`) */
@@ -1060,94 +975,39 @@ private fun 종목세팅(상태: 앱상태, 열쇠: String, 플랜있음: Boolea
 }
 
 /**
- * 세트 줄 목록 [번호][무게 kg][횟수][휴식][휴지통] + [+ 세트] — 종목 탭 기본 세팅 · 새 종목 시트가 같이 쓴다 (시안 `.종세트`).
- * 무게 ± = 설정의 무게 조절 폭 · 횟수 1 이상 · 휴식 15초씩 0:15~5:00(휴식값칸) · 마지막 한 줄은 안 지운다 · + 세트 = 앞 줄 값 복사(10줄까지).
+ * 세트 줄 목록 + [+ 세트] — 종목 탭 기본 세팅 · 종목 편집 상자 · 새 종목 시트가 같이 쓴다.
+ * 10-23 홍겸 님: 운동 중 화면과 똑같이 — 칸 폭 · 줄 높이 · − ＋ 칸이 [세트표] (SetTable.kt) 하나다.
+ * 무게 ± = 설정의 무게 조절 폭 · 횟수 1 이상 · 휴식 15초씩 0:15~5:00 · 마지막 한 줄은 안 지운다 · + 세트 = 앞 줄 값 복사(10줄까지).
  * [바꿈] 은 '지금 목록 → 새 목록' 함수를 받는다 (빠르게 연달아 눌러도 가장 새 값에서 계산되게)
  */
 @Composable
 internal fun 세트줄표(
     세트: List<종목세트>, 무게폭: Double, 바꿈: ((List<종목세트>) -> List<종목세트>) -> Unit, 최대알림: () -> Unit,
     머리: String = "무게 kg", 작은글: (Double) -> String? = { null }, 방식: 기록방식 = 기록방식.무게,
+    더하기글: String = "+ 세트",
 ) {
-    val c = Local색.current
-    val 무게있음 = 방식.무게칸있음(); val 시간 = 방식.시간칸(); val 넓힘 = 방식 == 기록방식.시간; val 거리 = 방식.거리칸()   // 2단계 기록 방식 (기본세트표와 같다)
+    val 시간 = 방식.시간칸(); val 거리 = 방식.거리칸()   // 2단계 기록 방식
+    val 하나 = 세트.size <= 1
+    val 앞 = 앞줄개수(세트.size)   // 10-08: 방금 더한 줄은 한 번 점멸 · 눌렸다 제자리
     Column(verticalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
-            글("세트", Modifier.width(종목치수.번호칸), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)
-            if (무게있음) 글(머리, Modifier.weight(종목치수.열무게), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)
-            글(if (시간) "시간" else "횟수", Modifier.weight(if (넓힘) 종목치수.열무게 else 종목치수.열횟수), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)
-            글("휴식", Modifier.weight(종목치수.열휴식), 크기값 = 크기.작게, 색 = c.옅음, 가운데 = true)
-            Box(Modifier.width(종목치수.지움칸))
-        }
-        val 하나 = 세트.size <= 1
-        val 앞 = 앞줄개수(세트.size)   // 10-08: 방금 더한 줄은 한 번 점멸 · 눌렸다 제자리
-        세트.forEachIndexed { k, x ->
-            key(k) {
-                Row(Modifier.새줄효과(k >= 앞), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(간격.아주좁게)) {
-                    글("${k + 1}", Modifier.width(종목치수.번호칸), 크기값 = 크기.조금작게, 굵기 = FontWeight.Bold, 가운데 = true)
-                    if (무게있음) 무게칸아래글(작은글(x.w), Modifier.weight(종목치수.열무게)) {
-                        세트값칸(무게글(x.w), Modifier.fillMaxWidth(), if (거리) "${k + 1}세트 거리" else "${k + 1}세트 무게", x.w > 0,
-                            { 바꿈 { l -> 세트값바꿈(l, k, if (거리) 'd' else 'w', -1, 무게폭) } }, { 바꿈 { l -> 세트값바꿈(l, k, if (거리) 'd' else 'w', 1, 무게폭) } },
-                            { g -> 바꿈 { l -> 세트글넣음(l, k, 'w', g) } })
-                    }
-                    if (시간) 세트값칸(분초(x.r), Modifier.weight(if (넓힘) 종목치수.열무게 else 종목치수.열횟수), "${k + 1}세트 시간", x.r > 방식.시간최소(),
-                        { 바꿈 { l -> 세트값바꿈(l, k, if (거리) 'u' else 't', -1, 무게폭) } }, { 바꿈 { l -> 세트값바꿈(l, k, if (거리) 'u' else 't', 1, 무게폭) } },
-                        null, 더할수있음 = x.r < 방식.시간최대())
-                    else 세트값칸("${x.r}", Modifier.weight(종목치수.열횟수), "${k + 1}세트 횟수", x.r > 1,
-                        { 바꿈 { l -> 세트값바꿈(l, k, 'r', -1, 무게폭) } }, { 바꿈 { l -> 세트값바꿈(l, k, 'r', 1, 무게폭) } },
-                        { g -> 바꿈 { l -> 세트글넣음(l, k, 'r', g) } }, 정수 = true)
-                    휴식값칸(x.휴, { 새 -> 바꿈 { l -> 세트휴식(l, k, 새) } }, Modifier.weight(종목치수.열휴식), 칸높이 = 높이.아주낮게)
-                    Box(
-                        Modifier.size(종목치수.지움칸).clip(RoundedCornerShape(모서리.작게))
-                            .then(if (하나) Modifier else Modifier.눌림 { 바꿈 { l -> 세트지움(l, k) } }),
-                        contentAlignment = Alignment.Center,
-                    ) { Icon(아이콘.지우기, "${k + 1}세트 지우기", Modifier.size(종목치수.지움그림), tint = if (하나) c.선 else c.옅음) }
+        세트표(무게머리 = 머리, 횟수머리 = if (시간) "시간" else "회") { 칸 ->
+            세트.forEachIndexed { k, x ->
+                key(k) {
+                    세트표값줄(
+                        칸, k + 1, 방식, x.w, x.r, x.휴, 작은글(x.w), 휴식보임 = true, 지울수있음 = !하나,
+                        무게바꿈 = { 방향 -> 바꿈 { l -> 세트값바꿈(l, k, if (거리) 'd' else 'w', 방향, 무게폭) } },
+                        무게넣기 = { g -> 바꿈 { l -> 세트글넣음(l, k, 'w', g) } },
+                        횟수바꿈 = { 방향 -> 바꿈 { l -> 세트값바꿈(l, k, 'r', 방향, 무게폭) } },
+                        횟수넣기 = { g -> 바꿈 { l -> 세트글넣음(l, k, 'r', g) } },
+                        시간바꿈 = { 방향 -> 바꿈 { l -> 세트값바꿈(l, k, if (거리) 'u' else 't', 방향, 무게폭) } },
+                        휴식바꿈 = { 방향 -> 바꿈 { l -> l.getOrNull(k)?.let { 세트휴식(l, k, 휴식한칸(it.휴, 방향)) } ?: l } },
+                        지움 = { 바꿈 { l -> 세트지움(l, k) } },
+                        modifier = Modifier.새줄효과(k >= 앞),
+                    )
                 }
             }
         }
-        버튼("+ 세트", { if (세트.size >= 종목세트최대) 최대알림() else 바꿈 { l -> 세트더함(l) } }, Modifier.fillMaxWidth(), 낮게 = true)
-    }
-}
-
-/** − 값 ＋ (가운데 = 쳐서 넣는 칸) — 높이 28. 치는 동안은 친 글 그대로, 손을 떼면 저장된 값으로 (시안 `.종세트 .값칸`) */
-@Composable
-private fun 세트값칸(
-    값글: String, modifier: Modifier, 이름: String, 뺄수있음: Boolean,
-    빼기: () -> Unit, 더하기: () -> Unit, 넣기: ((String) -> Unit)?, 정수: Boolean = false,
-    /** 10-08 기본 세팅 표: − ＋ 를 15% 작게 · [넣기] null = 쳐 넣지 않는 칸(휴식) · [더할수있음] = ＋ 끝 */
-    단추폭: androidx.compose.ui.unit.Dp = 부품치수.값칸단추, 그림크기: androidx.compose.ui.unit.Dp = 종목치수.값그림, 더할수있음: Boolean = true,
-) {
-    val c = Local색.current
-    val 모양 = RoundedCornerShape(모서리.작게)
-    var 초점 by remember { mutableStateOf(false) }
-    var 친글 by remember { mutableStateOf(값글) }
-    // 10-07 홍겸 님: 자판으로 치는 중에 − ＋ 를 누르면 화면 숫자도 바로 바뀌게 (전: 화면은 35 그대로, 값만 38)
-    var 버튼값 by remember { mutableStateOf(false) }
-    LaunchedEffect(값글, 초점) { if (!초점 || 버튼값) { 친글 = 값글; 버튼값 = false } }
-    val 자판 = LocalFocusManager.current
-    Row(modifier.height(높이.아주낮게).clip(모양).border(선굵기.보통, c.속선, 모양), verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.width(단추폭).fillMaxHeight().then(if (뺄수있음) Modifier.눌림 { 버튼값 = true; 빼기() } else Modifier), contentAlignment = Alignment.Center) {
-            Icon(아이콘.빼기, "$이름 빼기", Modifier.size(그림크기), tint = if (뺄수있음) c.강조 else c.옅음)
-        }
-        val 판 = 가운데판(초점)   // 10-07 홍겸 님: 좌우로 밀어도 손 떼면 가운데 (NewExerciseSheet.kt)
-        if (넣기 == null) Text(
-            값글, Modifier.weight(1f), style = 글꼴.보통(크기.버튼, FontWeight.Bold).copy(fontFeatureSettings = "tnum"),
-            color = c.글, maxLines = 1, softWrap = false, textAlign = TextAlign.Center,
-        ) else key(판.번호) {
-            BasicTextField(
-                value = if (초점) 친글 else 값글,
-                onValueChange = { t -> 친글 = t; 넣기(t) },
-                singleLine = true,
-                textStyle = 글꼴.보통(크기.버튼, FontWeight.Bold).copy(color = c.글, textAlign = TextAlign.Center, fontFeatureSettings = "tnum"),
-                cursorBrush = SolidColor(c.강조),
-                keyboardOptions = KeyboardOptions(keyboardType = if (정수) KeyboardType.Number else KeyboardType.Decimal, imeAction = ImeAction.Done),
-                keyboardActions = KeyboardActions(onDone = { 자판.clearFocus() }),
-                modifier = Modifier.weight(1f).then(판.손).onFocusChanged { 초점 = it.isFocused },
-            )
-        }
-        Box(Modifier.width(단추폭).fillMaxHeight().then(if (더할수있음) Modifier.눌림 { 버튼값 = true; 더하기() } else Modifier), contentAlignment = Alignment.Center) {
-            Icon(아이콘.더하기, "$이름 더하기", Modifier.size(그림크기), tint = if (더할수있음) c.강조 else c.옅음)
-        }
+        버튼(더하기글, { if (세트.size >= 종목세트최대) 최대알림() else 바꿈 { l -> 세트더함(l) } }, Modifier.fillMaxWidth(), 낮게 = true)
     }
 }
 
