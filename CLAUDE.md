@@ -27,8 +27,8 @@
 
 ### 작업 자리 = 홍겸 님 컴퓨터의 이 폴더 (2026-10-26 통일)
 
-**코드는 Claude 데스크톱 앱(Code 탭)에서 이 폴더를 열고 고친다:** `C:\Users\slayd\Documents\GitHub\하젠하이데`
-(10-26 폴더 이름을 `gymwork-app` → `하젠하이데` 로 바꿈. GitHub 저장소 이름은 `gymwork-app` 그대로)
+**코드는 Claude 데스크톱 앱(Code 탭)에서 이 폴더를 열고 고친다:** `C:\Users\slayd\Documents\GitHub\gymwork-app`
+(폴더 이름은 그대로 두고, 사이드바 묶음 이름만 `하젠하이데` 로 함 · 10-26 홍겸 님)
 **APK 는 여전히 GitHub 이 만든다** — 이 컴퓨터에는 Android SDK · Java 가 없다. 고친 것을 push 하면 GitHub 이 빌드한다.
 이 컴퓨터는 `gh` 로 slayde3470 계정에 로그인되어 있어 바로 push 된다 (10-26 확인).
 **"권한이 없어 못 올린다"고 말하기 전에 반드시 `gh auth status` 와 `git push --dry-run origin main` 을 먼저 해 본다.**
@@ -54,7 +54,7 @@ APK 고정 주소: `github.com/slayde3470/gymwork-app/releases/latest/download/h
 - **없음: Android SDK · Java · kotlinc** → 여기서는 컴파일 · 시험을 못 돌린다. 시험 · 화면 사진은 GitHub 판(1-1)으로 본다
 - ⚠ `python3` 는 가짜(마이크로소프트 스토어 안내 · exit 49)다 → **`python` 을 쓴다.** `기다리기.sh` 는 알아서 고른다
 - 한글 경로 · 한글 파일 이름은 Git Bash · git 에서 문제없이 돈다 (10-26 시험). python 은 돌지만 한글 경로를 **찍으면 깨져 보인다** → 한글을 찍는 python 은 `PYTHONUTF8=1 python …`. 나중에 Android Studio 를 깔면 한글 경로 경고가 날 수 있다 (미확인)
-- GitHub Desktop 이 깔려 있다 — 폴더 이름을 바꾸면 GitHub Desktop 에서 'Locate' 로 새 폴더를 한 번 다시 찾아 준다
+- GitHub Desktop 이 깔려 있다 — (나중에) 폴더 이름을 바꾸면 GitHub Desktop 에서 'Locate' 로 새 폴더를 한 번 다시 찾아 준다
 
 **옛 클라우드(claude.ai) 환경에서 확인한 것** — 그쪽에서 일할 때만
 - **Android SDK 없음 → 화면을 띄워 볼 수 없다.** 컴파일 통과 ≠ 잘 보인다. 화면은 폰에서만 안다
