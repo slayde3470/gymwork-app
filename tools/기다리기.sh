@@ -4,8 +4,10 @@
 # ⚠ bash 변수 이름은 영문만 된다
 BR=${1:-main}; SHA=${2:-}
 API=https://api.github.com/repos/slayde3470/gymwork-app
+# 10-26: 윈도우 컴퓨터는 python3 가 가짜(마이크로소프트 스토어 안내)라 돌지 않는다 → 되는 쪽을 고른다
+PY=python3; $PY -c "" 2>/dev/null || PY=python
 for i in $(seq 1 60); do
-  LINE=$(curl -sS "$API/actions/runs?branch=$BR&per_page=1" | python3 -c "
+  LINE=$(curl -sS "$API/actions/runs?branch=$BR&per_page=1" | $PY -c "
 import json,sys
 from datetime import datetime
 try:
@@ -26,8 +28,8 @@ except Exception: print('- - - - 0')")
     case "$BR" in screens/*) if [ "$3" = success ] && [ "${5:-0}" -lt 60 ]; then
       echo "⚠ 사진 판이 ${5}초 만에 끝남 — 사진을 안 찍었다. 실패로 본다 (찍을것.txt · screens.yml 확인)"; exit 1; fi;; esac
     if [ "$3" != success ]; then
-      J=$(curl -sS "$API/actions/runs/$1/jobs" | python3 -c "import json,sys;print(json.load(sys.stdin)['jobs'][0]['id'])")
-      curl -sS "$API/check-runs/$J/annotations" | python3 -c "import json,sys;[print(a['message'][:300]) for a in json.load(sys.stdin) if 'Node.js' not in a['message']][:8]"
+      J=$(curl -sS "$API/actions/runs/$1/jobs" | $PY -c "import json,sys;print(json.load(sys.stdin)['jobs'][0]['id'])")
+      curl -sS "$API/check-runs/$J/annotations" | $PY -c "import json,sys;[print(a['message'][:300]) for a in json.load(sys.stdin) if 'Node.js' not in a['message']][:8]"
     fi
     exit 0
   fi

@@ -25,16 +25,18 @@
 
 ## 1. 작업 경로 — 이 길 하나만 쓴다
 
-### ⚠ 컴퓨터는 필요 없다
+### 작업 자리 = 홍겸 님 컴퓨터의 이 폴더 (2026-10-26 통일)
 
-데스크톱 앱 연결 · 폴더 권한 · GitHub Desktop 조작은 **쓰지 않는다.**
-클라우드에서 GitHub 에 바로 push 할 수 있다 (2026-09-30 확인).
-**"권한이 없어 못 올린다"고 말하기 전에 반드시 아래 1번을 먼저 해 본다.**
+**코드는 Claude 데스크톱 앱(Code 탭)에서 이 폴더를 열고 고친다:** `C:\Users\slayd\Documents\GitHub\하젠하이데`
+(10-26 폴더 이름을 `gymwork-app` → `하젠하이데` 로 바꿈. GitHub 저장소 이름은 `gymwork-app` 그대로)
+**APK 는 여전히 GitHub 이 만든다** — 이 컴퓨터에는 Android SDK · Java 가 없다. 고친 것을 push 하면 GitHub 이 빌드한다.
+이 컴퓨터는 `gh` 로 slayde3470 계정에 로그인되어 있어 바로 push 된다 (10-26 확인).
+**"권한이 없어 못 올린다"고 말하기 전에 반드시 `gh auth status` 와 `git push --dry-run origin main` 을 먼저 해 본다.**
 
-1. **클로드코드 세션은 저장소를 이미 열어 두고 시작한다** → 바로 `git fetch origin main` 으로 최신을 맞춘다.
-   저장소가 안 열려 있을 때만(옛 claude.ai 대화 등): `add_repo(owner="slayde3470", repo="gymwork-app", access="push")`
-2. (1번에서 저장소가 없을 때만) `git clone --depth 1 https://github.com/slayde3470/gymwork-app /home/claude/gymwork-app`
-   (타임아웃 10분. `index-pack` 이 멈춘 듯 보여도 끊지 않는다)
+1. **세션을 열면 먼저 `git pull --ff-only origin main` 으로 최신을 맞춘다.**
+   ⚠ 10-26 이 폴더가 GitHub 보다 288 커밋 뒤처져 있었다 (그동안 클라우드에서만 고쳐서). 맞추기 전에는 아무것도 고치지 않는다
+   (옛 클라우드 세션 · claude.ai 대화에서 할 때만: `add_repo(owner="slayde3470", repo="gymwork-app", access="push")` → `git clone --depth 1 https://github.com/slayde3470/gymwork-app`)
+2. 고칠 파일이 있으면 `git status` 로 다른 세션이 남긴 안 올린 변경이 없는지 본다 (있으면 홍겸 님께 여쭌다)
 3. 고친다 → **`grep` 으로 바뀐 줄을 눈으로 확인한다** (09-24 빌드 10 사고)
 4. **저장·계산(`data/`)을 고쳤을 때만** 커밋 전에 `watchdog` 으로 검사한다. 화면(`ui/`)만 고쳤으면 부르지 않는다 (3절)
 5. `git commit` → **`git fetch origin main` 으로 먼저 맞춘 뒤** `git push origin main`
@@ -47,8 +49,14 @@ APK 고정 주소: `github.com/slayde3470/gymwork-app/releases/latest/download/h
 
 ### 이 환경의 제약 (확인된 것)
 
-⚠ 아래는 **옛 claude.ai 환경에서 확인한 것**이다. 클로드코드 첫 세션에서 다시 확인하고 맞게 고친다 (2026-10-25 이사).
+**이 컴퓨터 (윈도우 11 · 2026-10-26 확인)**
+- 있음: `git` · `gh`(로그인됨) · `python` 3.13 · `curl` · Git Bash. 셸은 Bash 도구(Git Bash)를 쓴다 — 저장소 스크립트가 bash 다
+- **없음: Android SDK · Java · kotlinc** → 여기서는 컴파일 · 시험을 못 돌린다. 시험 · 화면 사진은 GitHub 판(1-1)으로 본다
+- ⚠ `python3` 는 가짜(마이크로소프트 스토어 안내 · exit 49)다 → **`python` 을 쓴다.** `기다리기.sh` 는 알아서 고른다
+- 한글 경로 · 한글 파일 이름은 Git Bash · git 에서 문제없이 돈다 (10-26 시험). python 은 돌지만 한글 경로를 **찍으면 깨져 보인다** → 한글을 찍는 python 은 `PYTHONUTF8=1 python …`. 나중에 Android Studio 를 깔면 한글 경로 경고가 날 수 있다 (미확인)
+- GitHub Desktop 이 깔려 있다 — 폴더 이름을 바꾸면 GitHub Desktop 에서 'Locate' 로 새 폴더를 한 번 다시 찾아 준다
 
+**옛 클라우드(claude.ai) 환경에서 확인한 것** — 그쪽에서 일할 때만
 - **Android SDK 없음 → 화면을 띄워 볼 수 없다.** 컴파일 통과 ≠ 잘 보인다. 화면은 폰에서만 안다
 - 시험: `app/src/test/.../PlanTest.kt`. 클라우드에서는 kotlinc 2.0.21(GitHub 릴리스) + `LC_ALL=C.utf8`
   (한글 클래스 이름이 POSIX 로케일에서 깨진다)
@@ -126,7 +134,7 @@ APK 고정 주소: `github.com/slayde3470/gymwork-app/releases/latest/download/h
 
 ## 2-1. ✎ 표시 — 홍겸 님이 "표시해 놨어" 라고 하면 (2026-10-02)
 
-⚠ 아래는 `Artifact` · `ArtifactData` 도구가 있어야 한다. **클로드코드에서 쓸 수 있는지 아직 확인 못 했다** (2026-10-25 이사) — 첫 세션에서 확인하고, 없으면 홍겸 님께 알리고 시안 · ✎ 표시 일은 claude.ai 프로젝트 대화에서 한다.
+아래는 `Artifact` · `ArtifactData` 도구가 있어야 한다. **데스크톱 앱 Code 탭에 두 도구가 있다** (10-26 도구 목록으로 확인 · 실제 읽기는 아직 안 해 봄).
 
 7일 체험 아티팩트 `claude.ai/artifact/89h8RsS6Q6MUVtW4TjBEHh` 위쪽 **✎ 표시** 단추로 폰 화면에 빨갛게 긋고 저장한다.
 저장하면 **화면 사진 + 그은 선 + 메모 + 그때 앱 상태**가 아티팩트 안에 남는다. 읽는 법:
