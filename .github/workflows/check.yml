@@ -2,7 +2,7 @@ name: 컴파일 검사 (port 가지)
 
 # 2026-10-04 앱 옮기기 — port/** 가지에 올리면 시험 + 빌드만 돌린다(릴리스 없음).
 # 로그는 로그인해야 보이므로, 실패한 줄을 '주석(annotation)'으로 남겨 로그인 없이 API 로 읽게 한다:
-#   curl -s https://api.github.com/repos/slayde3470/gymwork-app/check-runs/<job id>/annotations
+#   curl -s https://api.github.com/repos/slayde3470/hasenheide/check-runs/<job id>/annotations
 on:
   push:
     branches: [ 'port/**', 'check/**' ]

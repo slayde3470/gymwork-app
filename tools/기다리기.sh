@@ -3,7 +3,7 @@
 # 쓰는 법: tools/기다리기.sh <가지이름> [push 한 커밋 앞 7자리]   (예: tools/기다리기.sh main $(git rev-parse --short=7 HEAD))
 # ⚠ bash 변수 이름은 영문만 된다
 BR=${1:-main}; SHA=${2:-}
-API=https://api.github.com/repos/slayde3470/gymwork-app
+API=https://api.github.com/repos/slayde3470/hasenheide
 # 10-26: 윈도우 컴퓨터는 python3 가 가짜(마이크로소프트 스토어 안내)라 돌지 않는다 → 되는 쪽을 고른다
 PY=python3; $PY -c "" 2>/dev/null || PY=python
 for i in $(seq 1 60); do
