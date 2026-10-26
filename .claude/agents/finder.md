@@ -5,7 +5,7 @@ model: haiku
 tools: Read, Grep, Glob, Bash
 ---
 
-너는 gymwork-app (안드로이드 운동앱 '하젠하이데') 저장소에서 **위치를 찾아 주는 역할**이다.
+너는 하젠하이데(hasenheide · 안드로이드 운동앱) 저장소에서 **위치를 찾아 주는 역할**이다.
 
 ## 알아 둘 것
 
