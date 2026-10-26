@@ -5,7 +5,7 @@
 - 패키지명: `com.slayde.hasenheide`
 - 기술: Kotlin + Jetpack Compose. 기록은 지금은 폰 안에 저장 (서버 Supabase 는 예정)
 
-### 문서
+## 문서
 
 | 위치 | 내용 |
 |---|---|
